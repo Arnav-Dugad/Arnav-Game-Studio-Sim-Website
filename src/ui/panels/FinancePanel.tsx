@@ -3,11 +3,11 @@ import { fromDay, formatDate, MONTHS } from '@/sim/calendar';
 import { fmtMoney, sum } from '@/sim/util';
 import { annualProfit, creditLimit, loanRate, monthlyBurn, trailingRevenue, valuation } from '@/sim/systems/finance';
 import type { LedgerCat } from '@/sim/types';
-import { BarChart, LineChart } from '../charts';
+import { BarChart, LineChart, StackedArea } from '../charts';
 import { Button, Field, Section, Segmented, Stat, inputCls } from '../components/ui';
 import { useGame } from '../store';
 
-const CAT_LABEL: Partial<Record<LedgerCat, string>> = {
+const CAT_LABEL: Record<LedgerCat, string> = {
   sales: 'Game sales',
   contracts: 'Contracts',
   licensing: 'Engine licensing',
@@ -15,6 +15,9 @@ const CAT_LABEL: Partial<Record<LedgerCat, string>> = {
   merch: 'Merchandise',
   subsidiaries: 'Subsidiaries',
   advances: 'Publisher advances',
+  interest_income: 'Interest',
+  asset_sales: 'Asset sales',
+  other_income: 'Other income',
   hardware: 'Hardware sales',
   platform_fees: 'Platform licence fees',
   subscriptions: 'Subscription pass',
@@ -102,6 +105,7 @@ export default function FinancePanel() {
           })}
         />
       </Section>
+      <RevenueMix months={range} />
       <Section title="Last month in detail">
         <LastMonth />
       </Section>
@@ -181,5 +185,41 @@ function LastMonth() {
         ))}
       </div>
     </div>
+  );
+}
+
+/** Where the money comes from, grouped into a few readable streams. */
+const STREAMS: { key: string; label: string; cats: LedgerCat[] }[] = [
+  { key: 'games', label: 'Game sales', cats: ['sales', 'advances'] },
+  { key: 'live', label: 'Live & merch', cats: ['live', 'merch'] },
+  { key: 'work', label: 'Contracts & licensing', cats: ['contracts', 'licensing'] },
+  { key: 'hardware', label: 'Hardware & platform fees', cats: ['hardware', 'platform_fees'] },
+  { key: 'pass', label: 'Subscription pass', cats: ['subscriptions'] },
+  { key: 'label', label: 'Publishing label', cats: ['publishing'] },
+  { key: 'subs', label: 'Subsidiaries', cats: ['subsidiaries'] },
+];
+
+function RevenueMix({ months }: { months: number }) {
+  const s = useGame((g) => g.s)!;
+  const ledger = s.finance.ledger.slice(-months - 1, -1);
+  const data = ledger.map((m) => {
+    const values: Record<string, number> = {};
+    for (const st of STREAMS) values[st.key] = sum(st.cats.map((c) => m.income[c] ?? 0));
+    return { x: m.day, values };
+  });
+  const keys = STREAMS.filter((st) => data.some((d) => (d.values[st.key] ?? 0) > 0)).map((st) => st.key);
+  if (keys.length < 2) return null; // one stream isn't a mix
+  return (
+    <Section title="Revenue mix">
+      <StackedArea
+        ariaLabel="Share of revenue by source"
+        data={data}
+        keys={keys}
+        labels={Object.fromEntries(STREAMS.map((st) => [st.key, st.label]))}
+        normalize
+        height={170}
+        xFormat={(d) => (months <= 12 ? MONTHS[fromDay(d).month - 1]! : String(fromDay(d).year))}
+      />
+    </Section>
   );
 }
