@@ -15,6 +15,7 @@ import { Toasts, NumberPops } from '../game/Feedback';
 import { Tutorial } from '../game/Tutorial';
 import { BuildBar } from '../game/BuildBar';
 import { sound } from '../sound';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { navigate } from '../router';
 
 const KEYS: Record<string, PanelId> = { n: 'develop', h: 'staff', b: 'office', r: 'research', m: 'market', f: 'finance', c: 'company', j: 'news', g: 'goals', l: 'releases' };
@@ -142,7 +143,9 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       <NumberPops />
       <Toasts />
       <Tutorial />
-      <ModalHost slotId={slotId} />
+      <ErrorBoundary inline onReset={() => useGame.getState().popModal()}>
+        <ModalHost slotId={slotId} />
+      </ErrorBoundary>
     </div>
   );
 }

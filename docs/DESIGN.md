@@ -634,3 +634,49 @@ Rules tests use `@firebase/rules-unit-testing` against the emulator if Java is a
 - **Assets:** sharp for SVG → sprite-atlas rasterisation and WebP/AVIF output. No AI image generation.
 - **Deployment:** Cloudflare Pages (wrangler) · Firebase CLI for rules · GitHub via `gh`.
 - **Versions:** latest stable at scaffold time.
+
+---
+
+## 13. Implementation notes and deviations (as built)
+
+This section records decisions made during the build that differ from, or add to, the plan above.
+
+### Art
+- **No AI-generated images**, at the owner's request (2026-11-16). The Workers AI asset pipeline (`scripts/generate-assets.ts`, prompt file and manifest) was **removed from scope**. All art is hand-built:
+  - SVG icons, procedural avatars, procedural cover art and company badges, and event vignettes (`src/ui/art`);
+  - Pixi Graphics sprites, generated into textures at runtime (`src/render/sprites.ts`).
+- **Atlas build step dropped.** Sprites are generated at runtime and cached as GPU textures, so there are no image downloads at all; `scripts/build-atlas.ts` was therefore not needed.
+
+### People and names
+- Real people appear by name (rival leaders, rare legendary hires) with **initials badges only**. Their descriptions are neutral.
+- Real logos were requested but declined for trademark reasons; monogram badges are used instead.
+- Critic outlets, trade shows ("Summer Games Expo", "Tokyo Play Show"…) and the awards show ("Golden Pixel Gala") use fictional names.
+
+### Saves and accounts
+- **Guest mode.** Play without an account, with saves in IndexedDB only. This keeps the game playable offline, or when sign-in providers are unavailable.
+- **Cloud saves:**
+  - Saves are gzip-compressed (`CompressionStream`) and base64-encoded, then stored as ≤900 KB chunks plus a metadata document. Chunks are written first and the metadata last.
+  - Conflicts are detected when the local copy has unsynced progress and the cloud copy is newer. The slot screen asks which copy to keep.
+- **Autosave** runs locally every in-game month. Cloud sync happens at most once a minute, plus on tab hide/close and on manual save (Shift+P).
+- **Hall of Fame** entries are stored per user, in the user's own profile document.
+
+### Simulation
+- **Explainable quality preview.** During development the quality estimate is extrapolated to completion at the current pace, so early previews aren't misleadingly low.
+- **Post-launch support (added).**
+  - **Patches** (up to 3 per game, within 3 years): fewer bugs, a higher user score and extended sales.
+  - **Outsourced ports** to other live platforms, each with its own fresh sales curve.
+- **Project teams are editable** mid-development (Develop → project → Team).
+- **Market-research uncertainty on trends** was not implemented. Trends are shown directly, alongside the player's own "design notes" journal, which records what worked.
+- **Staff animation** is presentational. The sim decides each person's activity (work, break, chat, burnout, sick), and the renderer animates it with its own timing, so visuals never affect determinism.
+
+### Balance (see `npm run balance`)
+- **Early-era boost.** Small and medium games get extra reach in the uncrowded early market (`INDIE_ERA_BOOST`), fading out by about 2005. Market crowding (`CROWDING`) reduces discoverability over time.
+- **Budgets grow with the era.** Production costs grow at about 6.5% a year in real terms, so AAA budgets reach roughly $50M+ by the 2020s.
+- **Bot outcomes over 46 years** (3 seeds each):
+
+  | Bot | Outcome |
+  |---|---|
+  | Idle | Goes bankrupt in 1983 |
+  | Steady, trend and tycoon | Mostly survive, building $1B–$25B studios |
+  | Aggressive | High variance: some runs boom, some go bankrupt |
+  | Random | Goes bankrupt quickly, but never breaks an invariant |

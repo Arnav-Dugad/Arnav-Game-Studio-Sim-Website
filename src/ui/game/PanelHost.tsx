@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { Icon } from '../icons';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useGame, type PanelId } from '../store';
 
 const DevelopPanel = lazy(() => import('../panels/DevelopPanel'));
@@ -58,7 +59,9 @@ export function PanelHost() {
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 scroll-thin">
-        <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-bg2" />}>{PANELS[panel]()}</Suspense>
+        <ErrorBoundary inline key={panel}>
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-bg2" />}>{PANELS[panel]()}</Suspense>
+        </ErrorBoundary>
       </div>
     </aside>
   );

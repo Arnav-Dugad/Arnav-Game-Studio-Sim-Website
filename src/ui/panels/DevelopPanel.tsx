@@ -82,6 +82,7 @@ function GameCard({ p }: { p: GameProject }) {
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const [showMkt, setShowMkt] = useState(false);
+  const [showTeam, setShowTeam] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const total = p.phaseDays[0] + p.phaseDays[1] + p.phaseDays[2];
   const done = p.phase >= 3 ? total : p.phaseDays.slice(0, p.phase).reduce((a, b) => a + b, 0) + p.phaseDay;
@@ -167,6 +168,9 @@ function GameCard({ p }: { p: GameProject }) {
             Marketing
           </Button>
         )}
+        <Button size="sm" icon="people" onClick={() => setShowTeam((x) => !x)} aria-expanded={showTeam}>
+          Team ({p.team.length}/{BALANCE.SIZE[p.concept.size].teamCap})
+        </Button>
         <Button size="sm" variant={p.crunch ? 'danger' : 'secondary'} icon="fire" onClick={() => run({ type: 'setCrunch', projectId: p.id, on: !p.crunch })} title="+35% output, +60% bugs, burns people out">
           {p.crunch ? 'Stop crunch' : 'Crunch'}
         </Button>
@@ -188,6 +192,7 @@ function GameCard({ p }: { p: GameProject }) {
           </Button>
         )}
       </div>
+      {showTeam && <TeamEditor p={p} />}
       {showMkt && p.announcedDay !== undefined && (
         <div className="mt-2 grid gap-1.5 rounded-xl bg-bg2/60 p-2">
           {channels.map((c) => {
@@ -211,6 +216,66 @@ function GameCard({ p }: { p: GameProject }) {
         </div>
       )}
     </article>
+  );
+}
+
+function TeamEditor({ p }: { p: GameProject }) {
+  const s = useGame((g) => g.s)!;
+  const act = useGame((g) => g.act);
+  const toast = useGame((g) => g.toast);
+  const cap = BALANCE.SIZE[p.concept.size].teamCap;
+  const free = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' || x.assignment.kind === 'research');
+  const set = (team: string[]) => {
+    const r = act({ type: 'setTeam', projectId: p.id, team });
+    if (!r.ok) toast({ text: r.error, tone: 'bad' });
+  };
+  return (
+    <div className="mt-2 grid gap-2 rounded-xl bg-bg2/60 p-2 text-xs sm:grid-cols-2">
+      <div>
+        <div className="mb-1 font-semibold text-ink2">On this game</div>
+        <ul className="space-y-1">
+          {p.team.map((id) => {
+            const st = s.staff[id];
+            if (!st) return null;
+            const [k, v] = bestSkill(st);
+            return (
+              <li key={id} className="flex items-center justify-between gap-2">
+                <span className="truncate">
+                  {st.name} <span className="text-ink3">· {k} {v}</span>
+                </span>
+                {p.team.length > 1 && (
+                  <button type="button" className="rounded-md px-1.5 text-ink3 hover:bg-bg2 hover:text-bad" aria-label={`Remove ${st.name}`} onClick={() => set(p.team.filter((x) => x !== id))}>
+                    <Icon name="minus" size={14} />
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div>
+        <div className="mb-1 font-semibold text-ink2">Available</div>
+        {free.length === 0 ? (
+          <p className="text-ink3">Everyone is busy.</p>
+        ) : (
+          <ul className="space-y-1">
+            {free.map((st) => {
+              const [k, v] = bestSkill(st);
+              return (
+                <li key={st.id} className="flex items-center justify-between gap-2">
+                  <span className="truncate">
+                    {st.name} <span className="text-ink3">· {k} {v}</span>
+                  </span>
+                  <button type="button" disabled={p.team.length >= cap} className="rounded-md px-1.5 text-ink3 hover:bg-bg2 hover:text-good disabled:opacity-30" aria-label={`Add ${st.name}`} onClick={() => set([...p.team, st.id])}>
+                    <Icon name="plus" size={14} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
