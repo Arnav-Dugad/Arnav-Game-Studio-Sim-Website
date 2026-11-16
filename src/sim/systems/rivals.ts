@@ -190,7 +190,7 @@ export function rivalsMonthly(c: Ctx): void {
       pushNews(s, { category: 'rival', headline: `${r.name} closes its doors`, tone: 'neutral' });
     }
     // grow/shrink
-    if (r.cash > money(r.staff * 120_000, s.day)) r.staff = Math.round(r.staff * 1.02 + 1);
+    if (r.cash > money(r.staff * 120_000, s.day)) r.staff = Math.min(8_000, Math.round(r.staff * 1.008 + 1));
     if (r.cash < 0) r.staff = Math.max(3, Math.round(r.staff * 0.97));
     // real companies never go fully bankrupt off-script
     if (!r.procedural && r.cash < 0) r.cash = money(50_000, s.day);
