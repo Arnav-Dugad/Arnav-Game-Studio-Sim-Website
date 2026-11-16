@@ -1,0 +1,84 @@
+import { ITEM_BY_ID } from '@/data/facilities';
+import { fmtMoney, money } from '@/sim/util';
+import { tierDef } from '@/sim/systems/office';
+import { Button, Segmented } from '../components/ui';
+import { useGame, type HeatKind } from '../store';
+
+/** Contextual toolbar while in build mode: what you're placing, rotate, heat-map, floors. */
+export function BuildBar() {
+  const s = useGame((g) => g.s);
+  useGame((g) => g.v);
+  const build = useGame((g) => g.build);
+  const heat = useGame((g) => g.heat);
+  const floor = useGame((g) => g.floor);
+  const panelOpen = useGame((g) => g.panel !== null);
+  const g = useGame.getState();
+  if (!s) return null;
+  const t = tierDef(s.office.tier);
+  const sel = build?.selected ? s.office.items.find((i) => i.id === build.selected) : undefined;
+  const floors = t.floors > 1;
+  if (!build && !floors) return null;
+  return (
+    <div className={`pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center px-2 sm:bottom-4 ${panelOpen ? 'lg:pl-[600px]' : ''}`}>
+      <div className="glass pointer-events-auto flex max-w-full flex-wrap items-center gap-2 rounded-2xl px-3 py-2">
+        {floors && (
+          <Segmented
+            ariaLabel="Floor"
+            value={floor}
+            onChange={(f) => g.setFloor(f)}
+            options={Array.from({ length: t.floors }, (_, i) => ({ value: i, label: `F${i + 1}` }))}
+          />
+        )}
+        {build && (
+          <>
+            {build.item && (
+              <span className="text-sm">
+                Placing <b>{ITEM_BY_ID[build.item].name}</b> · {fmtMoney(money(ITEM_BY_ID[build.item].cost, s.day))}
+              </span>
+            )}
+            {build.moving && <span className="text-sm">Click a tile to move it</span>}
+            {sel && !build.moving && (
+              <>
+                <span className="text-sm font-semibold">{ITEM_BY_ID[sel.item].name}</span>
+                <Button size="sm" icon="move" onClick={() => g.setBuild({ rot: sel.rot, moving: sel.id })}>
+                  Move
+                </Button>
+                <Button
+                  size="sm"
+                  icon="sell"
+                  variant="danger"
+                  onClick={() => {
+                    const r = g.act({ type: 'sellItem', id: sel.id });
+                    if (r.ok) g.setBuild({ rot: 0 });
+                  }}
+                >
+                  Sell ({fmtMoney(money(ITEM_BY_ID[sel.item].cost, s.day) * 0.4)})
+                </Button>
+              </>
+            )}
+            {(build.item || build.moving) && (
+              <Button size="sm" icon="rotate" onClick={() => g.setBuild({ ...build, rot: build.rot ? 0 : 1 })}>
+                Rotate (R)
+              </Button>
+            )}
+            <Segmented<HeatKind>
+              ariaLabel="Heat map"
+              value={heat}
+              onChange={(h) => g.setHeat(h)}
+              options={[
+                { value: 'none', label: 'No overlay' },
+                { value: 'energy', label: 'Break access', title: 'Walking distance to coffee/kitchen/lounge' },
+                { value: 'decor', label: 'Décor', title: 'Morale aura from plants, art and fun stuff' },
+                { value: 'noise', label: 'Quiet', title: 'Green = quiet, red = noisy' },
+                { value: 'crowding', label: 'Space', title: 'Green = roomy, red = crowded' },
+              ]}
+            />
+            <Button size="sm" variant="ghost" onClick={() => g.setBuild(null)}>
+              Done (Esc)
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

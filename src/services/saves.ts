@@ -1,0 +1,395 @@
+/**
+ * Save system: local-first (IndexedDB) with throttled cloud sync (Firestore).
+ * Saves are gzip-compressed JSON, base64 encoded and split into ≤900 KB chunks
+ * (Firestore documents max out at 1 MiB). Every save carries schemaVersion + checksum.
+ */
+import { openDB, type IDBPDatabase } from 'idb';
+import { deserialize, serialize, stateHash, SCHEMA_VERSION } from '@/sim/save';
+import type { GameState } from '@/sim/types';
+import { formatDate } from '@/sim/calendar';
+import { firebaseConfigured, getFirebase } from './firebase';
+
+export const SLOT_IDS = ['slot1', 'slot2', 'slot3', 'slot4', 'slot5'] as const;
+export type SlotId = (typeof SLOT_IDS)[number];
+const CHUNK = 900_000;
+
+export interface SlotMeta {
+  name: string;
+  companyName: string;
+  founderName: string;
+  color: string;
+  difficulty: string;
+  gameDay: number;
+  gameDate: string;
+  cash: number;
+  reputation: number;
+  status: string;
+  schemaVersion: number;
+  updatedAt: number; // ms epoch
+  checksum: string;
+  bytes: number;
+}
+
+interface LocalRecord {
+  key: string; // uid/slotId
+  meta: SlotMeta;
+  data: string; // compressed base64
+  synced: boolean;
+}
+
+export interface SlotInfo {
+  slotId: SlotId;
+  local?: SlotMeta & { synced: boolean };
+  cloud?: SlotMeta;
+  /** Which copy is newest. */
+  newest?: 'local' | 'cloud';
+  conflict: boolean;
+}
+
+// ── compression helpers ──────────────────────────────────────────────────────
+
+async function gzipBase64(text: string): Promise<string> {
+  if (typeof CompressionStream === 'undefined') return 'raw:' + btoa(unescape(encodeURIComponent(text)));
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
+  const buf = new Uint8Array(await new Response(stream).arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+  return 'gz:' + btoa(bin);
+}
+
+async function gunzipBase64(data: string): Promise<string> {
+  if (data.startsWith('raw:')) return decodeURIComponent(escape(atob(data.slice(4))));
+  const bin = atob(data.slice(3));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(stream).text();
+}
+
+export function metaFor(s: GameState, name?: string): SlotMeta {
+  return {
+    name: (name ?? s.company.name).slice(0, 60),
+    companyName: s.company.name.slice(0, 60),
+    founderName: s.company.founderName.slice(0, 60),
+    color: s.company.color,
+    difficulty: s.settings.difficulty,
+    gameDay: s.day,
+    gameDate: formatDate(s.day, false),
+    cash: Math.round(s.company.cash),
+    reputation: Math.round(s.company.reputation),
+    status: s.status,
+    schemaVersion: SCHEMA_VERSION,
+    updatedAt: Date.now(),
+    checksum: stateHash(s),
+    bytes: 0,
+  };
+}
+
+// ── IndexedDB ───────────────────────────────────────────────────────────────
+
+let dbp: Promise<IDBPDatabase> | null = null;
+function idb(): Promise<IDBPDatabase> {
+  dbp ??= openDB('arnav-studio-empire', 1, {
+    upgrade(db) {
+      db.createObjectStore('saves', { keyPath: 'key' });
+    },
+  });
+  return dbp;
+}
+
+export async function saveLocal(uid: string, slotId: SlotId, s: GameState): Promise<SlotMeta> {
+  const json = serialize(s);
+  const data = await gzipBase64(json);
+  const meta = { ...metaFor(s), bytes: data.length };
+  const rec: LocalRecord = { key: `${uid}/${slotId}`, meta, data, synced: false };
+  const db = await idb();
+  await db.put('saves', rec);
+  return meta;
+}
+
+async function getLocal(uid: string, slotId: SlotId): Promise<LocalRecord | undefined> {
+  const db = await idb();
+  return (await db.get('saves', `${uid}/${slotId}`)) as LocalRecord | undefined;
+}
+
+async function markSynced(uid: string, slotId: SlotId): Promise<void> {
+  const db = await idb();
+  const rec = (await db.get('saves', `${uid}/${slotId}`)) as LocalRecord | undefined;
+  if (rec) await db.put('saves', { ...rec, synced: true });
+}
+
+// ── Firestore ───────────────────────────────────────────────────────────────
+
+function cloudEnabled(uid: string): boolean {
+  return firebaseConfigured && !uid.startsWith('guest');
+}
+
+export async function syncSlot(uid: string, slotId: SlotId): Promise<'synced' | 'skipped' | 'offline'> {
+  if (!cloudEnabled(uid)) return 'skipped';
+  const rec = await getLocal(uid, slotId);
+  if (!rec || rec.synced) return 'skipped';
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
+  const { db } = await getFirebase();
+  const { doc, setDoc, deleteDoc, serverTimestamp } = await import('firebase/firestore');
+  const chunks: string[] = [];
+  for (let i = 0; i < rec.data.length; i += CHUNK) chunks.push(rec.data.slice(i, i + CHUNK));
+  if (chunks.length > 20) throw new Error('Save is too large to sync');
+  // Write chunks first, then the meta (so a reader never sees meta pointing at missing chunks).
+  for (let i = 0; i < chunks.length; i++) await setDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${i}`), { data: chunks[i]!, index: i });
+  // remove stale extra chunks from a previous larger save
+  for (let i = chunks.length; i < 20; i++) {
+    try {
+      await deleteDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${i}`));
+    } catch {
+      break;
+    }
+    if (i > chunks.length + 3) break;
+  }
+  const m = rec.meta;
+  await setDoc(doc(db, 'users', uid, 'slots', slotId), {
+    name: m.name,
+    companyName: m.companyName,
+    founderName: m.founderName,
+    color: m.color,
+    difficulty: m.difficulty,
+    gameDay: m.gameDay,
+    gameDate: m.gameDate,
+    cash: m.cash,
+    reputation: m.reputation,
+    status: m.status,
+    schemaVersion: m.schemaVersion,
+    checksum: m.checksum,
+    bytes: m.bytes,
+    chunkCount: chunks.length,
+    updatedAt: serverTimestamp(),
+  });
+  await markSynced(uid, slotId);
+  return 'synced';
+}
+
+async function cloudMetas(uid: string): Promise<Partial<Record<SlotId, SlotMeta & { chunkCount: number }>>> {
+  if (!cloudEnabled(uid)) return {};
+  try {
+    const { db } = await getFirebase();
+    const { collection, getDocs } = await import('firebase/firestore');
+    const snap = await getDocs(collection(db, 'users', uid, 'slots'));
+    const out: Partial<Record<SlotId, SlotMeta & { chunkCount: number }>> = {};
+    snap.forEach((d) => {
+      const v = d.data() as Record<string, unknown>;
+      const ts = v.updatedAt as { toMillis?: () => number } | undefined;
+      out[d.id as SlotId] = { ...(v as unknown as SlotMeta & { chunkCount: number }), updatedAt: ts?.toMillis?.() ?? 0 };
+    });
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+export async function listSlots(uid: string): Promise<SlotInfo[]> {
+  const cloud = await cloudMetas(uid);
+  const out: SlotInfo[] = [];
+  for (const slotId of SLOT_IDS) {
+    const loc = await getLocal(uid, slotId).catch(() => undefined);
+    const c = cloud[slotId];
+    const info: SlotInfo = { slotId, conflict: false };
+    if (loc) info.local = { ...loc.meta, synced: loc.synced };
+    if (c) info.cloud = c;
+    if (info.local && info.cloud) {
+      const sameData = info.local.checksum === info.cloud.checksum;
+      info.newest = info.local.updatedAt >= info.cloud.updatedAt ? 'local' : 'cloud';
+      // Conflict: local has unsynced progress AND cloud has a different, newer save (e.g. another device).
+      info.conflict = !sameData && !info.local.synced && info.cloud.updatedAt > info.local.updatedAt;
+    } else info.newest = info.local ? 'local' : info.cloud ? 'cloud' : undefined;
+    out.push(info);
+  }
+  return out;
+}
+
+export async function loadSlot(uid: string, slotId: SlotId, prefer?: 'local' | 'cloud'): Promise<GameState> {
+  const loc = await getLocal(uid, slotId).catch(() => undefined);
+  let source: 'local' | 'cloud' = prefer ?? 'local';
+  let cloudMeta: (SlotMeta & { chunkCount: number }) | undefined;
+  if (cloudEnabled(uid) && (!loc || prefer !== 'local')) {
+    cloudMeta = (await cloudMetas(uid))[slotId];
+    if (!prefer) source = !loc || (cloudMeta && cloudMeta.updatedAt > loc.meta.updatedAt && loc.synced) ? 'cloud' : 'local';
+  }
+  if (source === 'cloud' && cloudMeta) {
+    const { db } = await getFirebase();
+    const { doc, getDoc } = await import('firebase/firestore');
+    let data = '';
+    for (let i = 0; i < cloudMeta.chunkCount; i++) {
+      const snap = await getDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${i}`));
+      if (!snap.exists()) throw new Error('Cloud save is incomplete');
+      data += (snap.data() as { data: string }).data;
+    }
+    const s = deserialize(await gunzipBase64(data));
+    // refresh the local copy
+    const db2 = await idb();
+    await db2.put('saves', { key: `${uid}/${slotId}`, meta: { ...cloudMeta, bytes: data.length }, data, synced: true } satisfies LocalRecord);
+    return s;
+  }
+  if (!loc) throw new Error('Save not found');
+  return deserialize(await gunzipBase64(loc.data));
+}
+
+export async function deleteSlot(uid: string, slotId: SlotId): Promise<void> {
+  const db = await idb();
+  await db.delete('saves', `${uid}/${slotId}`);
+  if (!cloudEnabled(uid)) return;
+  try {
+    const { db: fdb } = await getFirebase();
+    const { doc, getDoc, deleteDoc } = await import('firebase/firestore');
+    const metaRef = doc(fdb, 'users', uid, 'slots', slotId);
+    const snap = await getDoc(metaRef);
+    const n = snap.exists() ? Number((snap.data() as { chunkCount?: number }).chunkCount ?? 0) : 0;
+    for (let i = 0; i < Math.max(n, 1); i++) await deleteDoc(doc(fdb, 'users', uid, 'slots', slotId, 'chunks', `c${i}`)).catch(() => undefined);
+    await deleteDoc(metaRef);
+  } catch {
+    /* offline: the cloud copy will be overwritten next time this slot is used */
+  }
+}
+
+// ── Profile & hall of fame ─────────────────────────────────────────────────
+
+export interface HallEntry {
+  company: string;
+  founder: string;
+  ending: string;
+  years: string;
+  score: number;
+  bestGame?: string;
+  bestScore: number;
+  peakValuation: number;
+  day: number; // real ms
+}
+
+const HALL_KEY = (uid: string) => `ase:hall:${uid}`;
+
+export async function getHallOfFame(uid: string): Promise<HallEntry[]> {
+  let local: HallEntry[] = [];
+  try {
+    local = JSON.parse(localStorage.getItem(HALL_KEY(uid)) ?? '[]') as HallEntry[];
+  } catch {
+    /* ignore */
+  }
+  if (!cloudEnabled(uid)) return local;
+  try {
+    const { db } = await getFirebase();
+    const { doc, getDoc } = await import('firebase/firestore');
+    const snap = await getDoc(doc(db, 'users', uid));
+    const cloud = (snap.exists() ? ((snap.data() as { hallOfFame?: HallEntry[] }).hallOfFame ?? []) : []) as HallEntry[];
+    const all = [...cloud, ...local];
+    const seen = new Set<string>();
+    return all.filter((e) => (seen.has(`${e.company}${e.day}`) ? false : (seen.add(`${e.company}${e.day}`), true))).sort((a, b) => b.score - a.score).slice(0, 50);
+  } catch {
+    return local;
+  }
+}
+
+export async function addHallOfFame(uid: string, entry: HallEntry): Promise<void> {
+  const all = [entry, ...(await getHallOfFame(uid))].sort((a, b) => b.score - a.score).slice(0, 50);
+  try {
+    localStorage.setItem(HALL_KEY(uid), JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
+  if (!cloudEnabled(uid)) return;
+  try {
+    const { db } = await getFirebase();
+    const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+    await setDoc(doc(db, 'users', uid), { hallOfFame: all, updatedAt: serverTimestamp() }, { merge: true });
+  } catch {
+    /* offline */
+  }
+}
+
+export async function ensureProfile(uid: string, email: string | null, displayName: string | null): Promise<void> {
+  if (!cloudEnabled(uid)) return;
+  try {
+    const { db } = await getFirebase();
+    const { doc, getDoc, setDoc, serverTimestamp } = await import('firebase/firestore');
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) await setDoc(ref, { displayName: (displayName ?? '').slice(0, 60), email: (email ?? '').slice(0, 254), createdAt: serverTimestamp(), updatedAt: serverTimestamp(), hallOfFame: [] });
+  } catch {
+    /* offline — will retry next session */
+  }
+}
+
+// ── Autosave controller ─────────────────────────────────────────────────────
+
+export interface SaveStatus {
+  state: 'idle' | 'saving' | 'saved' | 'offline' | 'error';
+  lastLocal?: number;
+  lastCloud?: number;
+  error?: string;
+}
+
+type Listener = (s: SaveStatus) => void;
+
+/**
+ * Local save every in-game month; cloud sync at most every 60 s, plus on tab hide / close.
+ */
+export class AutoSaver {
+  status: SaveStatus = { state: 'idle' };
+  private listeners = new Set<Listener>();
+  private lastCloud = 0;
+  private pending: Promise<unknown> = Promise.resolve();
+  private latest: GameState | null = null;
+  private onHide = () => {
+    if (document.visibilityState === 'hidden') void this.flush();
+  };
+  private onOnline = () => void this.flush();
+
+  constructor(
+    private uid: string,
+    private slotId: SlotId,
+  ) {
+    document.addEventListener('visibilitychange', this.onHide);
+    window.addEventListener('pagehide', this.onHide);
+    window.addEventListener('online', this.onOnline);
+  }
+
+  dispose(): void {
+    document.removeEventListener('visibilitychange', this.onHide);
+    window.removeEventListener('pagehide', this.onHide);
+    window.removeEventListener('online', this.onOnline);
+  }
+
+  subscribe(l: Listener): () => void {
+    this.listeners.add(l);
+    l(this.status);
+    return () => this.listeners.delete(l);
+  }
+
+  private emit(patch: Partial<SaveStatus>): void {
+    this.status = { ...this.status, ...patch };
+    for (const l of this.listeners) l(this.status);
+  }
+
+  /** Save locally now; sync to the cloud if the throttle window has passed (or force). */
+  save(s: GameState, force = false): Promise<unknown> {
+    this.latest = s;
+    this.pending = this.pending.then(async () => {
+      try {
+        this.emit({ state: 'saving' });
+        await saveLocal(this.uid, this.slotId, s);
+        this.emit({ lastLocal: Date.now() });
+        if (force || Date.now() - this.lastCloud > 60_000) {
+          const r = await syncSlot(this.uid, this.slotId);
+          if (r === 'synced') {
+            this.lastCloud = Date.now();
+            this.emit({ state: 'saved', lastCloud: this.lastCloud });
+          } else this.emit({ state: r === 'offline' ? 'offline' : 'saved' });
+        } else this.emit({ state: 'saved' });
+      } catch (e) {
+        this.emit({ state: navigator.onLine === false ? 'offline' : 'error', error: e instanceof Error ? e.message : String(e) });
+      }
+    });
+    return this.pending;
+  }
+
+  flush(): Promise<unknown> {
+    return this.latest ? this.save(this.latest, true) : this.pending;
+  }
+}

@@ -4,7 +4,7 @@
  */
 import { COMPANY_BY_ID } from '../../data/companies';
 import { clamp } from '../breakdown';
-import { fromDay } from '../calendar';
+import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
 import { earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from '../util';
@@ -284,7 +284,7 @@ export const EVENT_DEFS: EventDef[] = [
     id: 'hardware_failure',
     art: 'smoke',
     cooldown: 360,
-    weight: (s) => (s.office.items.length > 4 ? 0.35 : 0),
+    weight: (s) => (s.office.items.length > 8 ? 0.3 : 0),
     make: ({ s }) => {
       const cost = money(2500 + s.office.items.length * 80, s.day);
       return {
@@ -644,6 +644,8 @@ const DEF_BY_ID = Object.fromEntries(EVENT_DEFS.map((d) => [d.id, d]));
 export function rollRandomEvent(c: Ctx): void {
   const { s, rng } = c;
   if (s.pendingEvents.length >= 2) return;
+  // New studios get a quiet first few months.
+  if (s.day - toDay(s.settings.startYear, 1, 1) < 150) return;
   if (!rng.chance(0.16)) return;
   const eligible = EVENT_DEFS.filter((d) => (s.eventCooldowns[d.id] ?? -1) <= s.day && d.weight(s) > 0);
   if (!eligible.length) return;

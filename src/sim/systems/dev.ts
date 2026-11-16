@@ -204,6 +204,7 @@ function progressGame(c: Ctx, p: GameProject): void {
         p.phaseDay = 0;
         if (s.settings.autopause.gates) {
           p.awaitingGate = true;
+          p.qualityPreview = gameQuality(s, p, true);
           c.out.push({ type: 'gate', projectId: p.id, phase: p.phase });
         }
       } else {
@@ -221,7 +222,7 @@ function progressGame(c: Ctx, p: GameProject): void {
       return;
     }
   }
-  if (s.day % 7 === 0) p.qualityPreview = gameQuality(s, p);
+  if (s.day % 7 === 0 || p.awaitingGate) p.qualityPreview = gameQuality(s, p, true);
   // Publisher deadline penalty: missing a publisher deadline costs reputation once.
   if (p.concept.deal && s.day === p.concept.deal.deadlineDay && p.phase < 3) {
     s.company.reputation = clamp(s.company.reputation - 3, 0, 100);
@@ -263,15 +264,27 @@ export function comboFit(genre: GameProject['concept']['genre'], topic: string, 
   return { gt, gtMul, aud };
 }
 
-export function gameQuality(s: GameState, p: GameProject): Breakdown {
+/** Fraction of the scheduled development time that has elapsed (for previews). */
+export function devProgress(p: GameProject): number {
+  const total = p.phaseDays[0] + p.phaseDays[1] + p.phaseDays[2];
+  const done = p.phase >= 3 ? total : p.phaseDays.slice(0, p.phase).reduce((a, b) => a + b, 0) + p.phaseDay;
+  return Math.max(0.05, Math.min(1, done / Math.max(1, total)));
+}
+
+/**
+ * Quality model. With `project`, effort/bugs are extrapolated to the end of development at the current
+ * pace — used for in-progress estimates so the preview isn't misleadingly low early on.
+ */
+export function gameQuality(s: GameState, p: GameProject, project = false): Breakdown {
   const c = p.concept;
   const g = GENRE_BY_ID[c.genre];
-  const total = p.design + p.tech;
+  const scale = project ? 1 / devProgress(p) : 1;
+  const total = (p.design + p.tech) * scale;
   const bench = benchmarkPoints(c.size, s.day);
   const r = total / bench;
   const bd = new BD('Development effort', r / (r + 0.35));
   // design/tech ratio
-  const ratio = total > 0 ? p.design / total : g.designRatio;
+  const ratio = total > 0 ? (p.design * scale) / total : g.designRatio;
   bd.mul(`Design/tech balance (${Math.round(ratio * 100)}% design, ideal ${Math.round(g.designRatio * 100)}%)`, 1 - Math.min(0.35, Math.abs(ratio - g.designRatio) * 1.2));
   // focus alignment
   const al = focusAlignment(p);
@@ -312,8 +325,8 @@ export function gameQuality(s: GameState, p: GameProject): Breakdown {
   if (p.novelty > 0) bd.mul('Visionary ideas', 1 + Math.min(0.08, p.novelty));
   if (p.cut) bd.mul('Cut features', BALANCE.CUT_FEATURES_PENALTY);
   // bugs
-  const density = total > 0 ? p.bugs / total : 0;
-  bd.mul(`Bugs (${Math.round(p.bugs)} remaining)`, 1 - Math.min(0.45, density * 1.6));
+  const density = total > 0 ? (p.bugs * scale) / total : 0;
+  bd.mul(project ? `Bugs (~${Math.round(p.bugs * scale)} expected)` : `Bugs (${Math.round(p.bugs)} remaining)`, 1 - Math.min(0.45, density * 1.6));
   bd.clamp(0, 1.2);
   return bd.done();
 }

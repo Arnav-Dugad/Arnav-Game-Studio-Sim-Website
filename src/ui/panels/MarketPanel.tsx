@@ -1,0 +1,208 @@
+import { useMemo } from 'react';
+import { GENRES, GENRE_BY_ID } from '@/data/genres';
+import { COMPANY_BY_ID } from '@/data/companies';
+import { PERSON_BY_ID } from '@/data/people';
+import { fromDay, formatDate } from '@/sim/calendar';
+import { fmtUnits } from '@/sim/util';
+import { genrePopularity, livePlatforms, platformName } from '@/sim/systems/market';
+import { StackedArea, LineChart } from '../charts';
+import { Pill, Section, Segmented, cx } from '../components/ui';
+import { CompanyBadge } from '../art/CompanyBadge';
+import { InitialsBadge } from '../art/Avatar';
+import { Icon } from '../icons';
+import { useGame } from '../store';
+import { dayAxis } from '../game/format';
+
+export default function MarketPanel() {
+  useGame((g) => g.v);
+  const tab = useGame((g) => g.panelTab) ?? 'platforms';
+  const setTab = (t: string) => useGame.setState({ panelTab: t });
+  return (
+    <div>
+      <Segmented
+        ariaLabel="Market sections"
+        value={tab}
+        onChange={setTab}
+        className="mb-4"
+        options={[
+          { value: 'platforms', label: 'Platforms' },
+          { value: 'trends', label: 'Trends' },
+          { value: 'rivals', label: 'Rivals' },
+          { value: 'releases', label: 'Rival releases' },
+        ]}
+      />
+      {tab === 'platforms' && <Platforms />}
+      {tab === 'trends' && <Trends />}
+      {tab === 'rivals' && <Rivals />}
+      {tab === 'releases' && <RivalReleases />}
+    </div>
+  );
+}
+
+function Platforms() {
+  const s = useGame((g) => g.s)!;
+  const hist = s.market.shareHistory.slice(-240);
+  const keys = useMemo(() => {
+    const tot: Record<string, number> = {};
+    for (const h of hist) for (const [k, v] of Object.entries(h.share)) tot[k] = (tot[k] ?? 0) + v;
+    return Object.entries(tot)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([k]) => k);
+  }, [hist]);
+  const labels = Object.fromEntries(keys.map((k) => [k, platformName(s, k)]));
+  const live = livePlatforms(s).sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0));
+  return (
+    <div>
+      <Section title="Market share over time">
+        <StackedArea
+          data={hist.map((h) => ({ x: h.day, values: h.share }))}
+          keys={keys}
+          labels={labels}
+          height={210}
+          ariaLabel="Platform market share over time"
+          xFormat={dayAxis((hist[hist.length - 1]?.day ?? 0) - (hist[0]?.day ?? 0))}
+        />
+      </Section>
+      <Section title="Platforms on sale">
+        <ul className="divide-y divide-line">
+          {live.map((p) => {
+            const owned = s.devkits.includes(p.id);
+            const locked = p.research && !s.research.done.includes(p.research);
+            const age = (s.day - p.launchDay) / 365;
+            return (
+              <li key={p.id} className="flex items-center gap-3 py-2 text-sm">
+                <span className="grid size-8 place-items-center rounded-lg bg-bg2 text-ink2">
+                  <Icon name={p.kind === 'handheld' ? 'handheld' : p.kind === 'computer' ? 'pc' : p.kind === 'mobile' ? 'mobile' : p.kind === 'vr' ? 'vr' : p.kind === 'cloud' ? 'cloud-game' : 'controller'} size={16} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">{p.name}</div>
+                  <div className="text-xs text-ink3">
+                    {COMPANY_BY_ID[p.maker]?.name ?? 'Open platform'} · {age < 1 ? 'new!' : `${age.toFixed(0)} yrs old`}
+                    {p.endDay && ` · discontinued ${fromDay(p.endDay).year}`}
+                  </div>
+                </div>
+                <div className="text-right text-xs">
+                  <div className="num font-semibold">{fmtUnits((s.market.users[p.id] ?? 0) * 1e6)} users</div>
+                  <div className="num text-ink3">{((s.market.share[p.id] ?? 0) * 100).toFixed(1)}% share</div>
+                </div>
+                {locked ? <Pill>Needs research</Pill> : owned ? <Pill tone="good">Kit</Pill> : null}
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
+    </div>
+  );
+}
+
+function Trends() {
+  const s = useGame((g) => g.s)!;
+  const yr = fromDay(s.day).year;
+  const genres = GENRES.filter((g) => g.year <= yr);
+  const ranked = genres.map((g) => ({ g, pop: genrePopularity(s, g.id), trend: s.market.genreTrend[g.id] ?? 0 })).sort((a, b) => b.pop - a.pop);
+  const hist = s.market.trendHistory.slice(-180);
+  const top = ranked.slice(0, 5).map((r) => r.g.id);
+  return (
+    <div>
+      <Section title="Hottest genres right now">
+        <ul className="space-y-1.5">
+          {ranked.map(({ g, pop, trend }) => (
+            <li key={g.id} className="grid grid-cols-[7rem_1fr_3.5rem] items-center gap-2 text-xs">
+              <span className="font-semibold">{g.name}</span>
+              <span className="h-2 overflow-hidden rounded-full bg-bg2">
+                <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.min(100, (pop / ranked[0]!.pop) * 100)}%` }} />
+              </span>
+              <span className={cx('num text-right font-semibold', trend > 0.05 ? 'text-good' : trend < -0.05 ? 'text-bad' : 'text-ink3')}>
+                {trend > 0.05 ? '▲' : trend < -0.05 ? '▼' : '–'} {Math.round(trend * 100)}%
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[11px] text-ink3">Trends drift month to month and react to history (the 3D boom, battle royale…). Popular genres sell more; chasing trends risks repetition.</p>
+      </Section>
+      <Section title="Top genres over time">
+        <LineChart
+          ariaLabel="Genre popularity over time"
+          height={180}
+          series={top.map((id) => ({ name: GENRE_BY_ID[id].name, points: hist.map((h) => ({ x: h.day, y: h.trend[id] ?? 0 })) }))}
+          xFormat={dayAxis((hist[hist.length - 1]?.day ?? 0) - (hist[0]?.day ?? 0))}
+          yFormat={(v) => v.toFixed(1)}
+        />
+      </Section>
+      {s.progress.journal.length > 0 && (
+        <Section title="Your design notes">
+          <ul className="list-disc space-y-1 pl-5 text-xs text-ink2">
+            {s.progress.journal.slice(-14).map((j) => (
+              <li key={j}>{j}</li>
+            ))}
+          </ul>
+        </Section>
+      )}
+    </div>
+  );
+}
+
+function Rivals() {
+  const s = useGame((g) => g.s)!;
+  const rivals = Object.values(s.rivals)
+    .filter((r) => r.alive)
+    .sort((a, b) => b.reputation - a.reputation);
+  return (
+    <ul className="space-y-1.5">
+      {rivals.map((r) => {
+        const def = COMPANY_BY_ID[r.id];
+        const leader = def?.leader ? PERSON_BY_ID[def.leader] : undefined;
+        const last = [...s.rivalGames].reverse().find((g) => g.company === r.id);
+        return (
+          <li key={r.id} className="flex items-center gap-3 rounded-xl border border-line p-2.5">
+            <CompanyBadge name={r.name} color={r.color} size={36} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-sm font-semibold">
+                <span className="truncate">{r.name}</span>
+                {r.ownedByPlayer && <Pill tone="gold">Yours</Pill>}
+                {r.procedural && <Pill>Indie</Pill>}
+              </div>
+              <div className="truncate text-xs text-ink3">
+                {r.genres.map((g) => GENRE_BY_ID[g]?.name).filter(Boolean).join(', ')} · ~{Math.round(r.staff)} staff
+                {last && ` · latest: ${last.name} (${last.score})`}
+              </div>
+            </div>
+            {leader && (
+              <span title={`${leader.name} — ${leader.knownFor}`}>
+                <InitialsBadge name={leader.name} size={28} />
+              </span>
+            )}
+            <div className="w-12 text-right">
+              <div className="num text-sm font-semibold">{Math.round(r.reputation)}</div>
+              <div className="text-[10px] text-ink3">rep</div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function RivalReleases() {
+  const s = useGame((g) => g.s)!;
+  const games = [...s.rivalGames].reverse().slice(0, 60);
+  return (
+    <ul className="divide-y divide-line">
+      {games.map((g, i) => (
+        <li key={`${g.name}-${g.day}-${i}`} className="flex items-center gap-3 py-2 text-sm">
+          <span className={cx('num grid size-9 shrink-0 place-items-center rounded-lg text-xs font-bold', g.score >= 85 ? 'bg-gold/20 text-gold' : g.score >= 70 ? 'bg-good/15 text-good' : g.score >= 50 ? 'bg-bg2 text-ink2' : 'bg-bad/15 text-bad')}>{g.score}</span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-semibold">
+              {g.name} {g.franchise && <Pill tone="accent">Classic</Pill>}
+            </div>
+            <div className="truncate text-xs text-ink3">
+              {s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company} · {GENRE_BY_ID[g.genre]?.name} · {g.platforms.map((p) => platformName(s, p)).join(', ')}
+            </div>
+          </div>
+          <span className="num shrink-0 text-xs text-ink3">{formatDate(g.day, false)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}

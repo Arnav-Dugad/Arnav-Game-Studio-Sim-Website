@@ -12,3 +12,4 @@ reports/*.csv
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+.playwright-mcp

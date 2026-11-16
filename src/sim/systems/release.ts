@@ -27,13 +27,15 @@ export function reputationReach(rep: number): number {
 // ── Blurbs ───────────────────────────────────────────────────────────────────
 
 const PRAISE: Record<string, string[]> = {
-  effort: ['Brimming with content and craft.', 'You can feel the hours poured into every corner.', 'An astonishing amount of game for the price.'],
-  focus: ['Every system pulls in the same direction.', 'It knows exactly what kind of game it wants to be.', 'The core loop is tight and endlessly replayable.'],
-  combo: ['A premise and genre made for each other.', 'The setting and mechanics click instantly.'],
-  tech: ['A technical showcase that pushes the hardware.', 'Looks and runs like a generation ahead.'],
-  bugs: ['Rock solid. Not a crash in sight.', 'Polished to a mirror shine.'],
-  trend: ['Lands right in the middle of what players crave.', 'Perfectly in tune with the moment.'],
-  fresh: ['Something genuinely new.', 'A breath of fresh air.'],
+  effort: ['Brimming with content and craft.', 'You can feel the hours poured into every corner.', 'An astonishing amount of game for the price.', 'Generous, confident and packed with ideas.'],
+  focus: ['Every system pulls in the same direction.', 'It knows exactly what kind of game it wants to be.', 'The core loop is tight and endlessly replayable.', 'Smart priorities: the team put effort exactly where it counts.'],
+  combo: ['A premise and genre made for each other.', 'The setting and mechanics click instantly.', 'The theme gives every mechanic a reason to exist.'],
+  tech: ['A technical showcase that pushes the hardware.', 'Looks and runs like a generation ahead.', 'Silky smooth on the hardware it targets.'],
+  bugs: ['Rock solid. Not a crash in sight.', 'Polished to a mirror shine.', 'Remarkably stable for a launch build.'],
+  trend: ['Lands right in the middle of what players crave.', 'Perfectly in tune with the moment.', 'Exactly the game everyone is talking about this season.'],
+  fresh: ['Something genuinely new.', 'A breath of fresh air.', 'Bold, original and a little bit strange — in a good way.'],
+  balance: ['Design and technology in perfect balance.', 'Feels as good as it looks.'],
+  repeat: ['Comfort food done right.'],
 };
 const CRITIQUE: Record<string, string[]> = {
   effort: ['Feels thin and rushed.', 'There just isn’t much here.', 'Over before it gets going.'],
@@ -43,7 +45,7 @@ const CRITIQUE: Record<string, string[]> = {
   bugs: ['Riddled with bugs and crashes.', 'Needed another month of QA.', 'Glitches undermine every good idea.'],
   trend: ['Arrives after the party ended.', 'Players have moved on from this.'],
   repeat: ['We have played this before. Several times.', 'Familiar to a fault.'],
-  balance: ['Ambition outpaces execution.', 'Lopsided — great ideas, shaky foundations.'],
+  balance: ['Ambition outpaces execution.', 'Lopsided — great ideas, shaky foundations.', 'Lovely on paper, wobbly in the hands.'],
 };
 
 function partKey(label: string): string {
@@ -59,10 +61,13 @@ function partKey(label: string): string {
   return 'effort';
 }
 
-function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, gameName: string): string {
+function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, gameName: string, idx = 0): string {
   const muls = quality.parts.filter((p) => p.kind === 'mul');
-  const best = [...muls].sort((a, b) => b.value - a.value)[0];
-  const worst = [...muls].sort((a, b) => a.value - b.value)[0];
+  // Each outlet notices different things: rotate through the top strengths / weaknesses.
+  const bests = [...muls].sort((a, b) => b.value - a.value).slice(0, 3);
+  const worsts = [...muls].sort((a, b) => a.value - b.value).slice(0, 3);
+  const best = bests[idx % Math.max(1, bests.length)];
+  const worst = worsts[idx % Math.max(1, worsts.length)];
   const base = quality.parts[0];
   const effortGood = (base?.value ?? 0) > 0.7;
   let line: string;
@@ -106,7 +111,7 @@ export function generateReviews(rng: Rng, s: GameState, quality: Breakdown, base
   let total = 0;
   for (const o of outlets) {
     const sc = clamp(baseScore + o.bias + (o.genreBias[genre as keyof typeof o.genreBias] ?? 0) + rng.normal(0, BALANCE.CRITIC_NOISE) - o.bugHate * bugDensity * 40, 1, 100);
-    reviews.push({ outlet: o.name, score: sc, display: displayScore(sc, o.scale), blurb: blurb(rng, o, quality, sc, name) });
+    reviews.push({ outlet: o.name, score: sc, display: displayScore(sc, o.scale), blurb: blurb(rng, o, quality, sc, name, reviews.length) });
     total += sc * o.weight;
     wsum += o.weight;
   }
@@ -157,7 +162,9 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   const deal = concept.deal;
   const marketingHype = deal ? Math.min(1.2, (deal.marketingBudget / Math.max(1, inflation(s.day) * 20_000)) * 0.4) : 0;
   const hype = Math.min(BALANCE.HYPE_MAX, rawHype + marketingHype);
-  const reach = BALANCE.SIZE[concept.size].reach * reputationReach(s.company.reputation) * (deal ? deal.reach : 0.9);
+  const yrs = fromDay(s.day).year - 1980;
+  const indie = concept.size === 'small' || concept.size === 'medium' ? 1 + BALANCE.INDIE_ERA_BOOST * Math.max(0, 1 - yrs / 25) : 1;
+  const reach = BALANCE.SIZE[concept.size].reach * indie * reputationReach(s.company.reputation) * (deal ? deal.reach : 0.9);
   const monet = BALANCE.MONETIZATION[concept.monetization];
   const fatigueMul = fr ? 1 - fr.fatigue * 0.45 : 1;
   const sb = new BD('Reach (size × reputation × distribution)', reach);

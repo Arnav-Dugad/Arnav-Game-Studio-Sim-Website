@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// Strict per-user isolation. Every document lives under users/{uid}; only that signed-in user can read
+// or write it, and writes are shape- and size-checked. Nothing else in the database is accessible.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validProfile() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['displayName', 'email', 'createdAt', 'updatedAt', 'settings', 'hallOfFame'])
+        && (!('displayName' in d) || (d.displayName is string && d.displayName.size() <= 60))
+        && (!('email' in d) || (d.email is string && d.email.size() <= 254))
+        && (!('settings' in d) || d.settings is map)
+        && (!('hallOfFame' in d) || (d.hallOfFame is list && d.hallOfFame.size() <= 50));
+    }
+
+    function validSlotMeta() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 'companyName', 'gameDay', 'gameDate', 'cash', 'reputation', 'status', 'schemaVersion', 'updatedAt', 'chunkCount', 'checksum', 'bytes', 'founderName', 'color', 'difficulty'])
+        && d.name is string && d.name.size() <= 60
+        && d.companyName is string && d.companyName.size() <= 60
+        && d.schemaVersion is int && d.schemaVersion >= 1
+        && d.chunkCount is int && d.chunkCount >= 0 && d.chunkCount <= 20
+        && d.checksum is string && d.checksum.size() <= 64
+        && d.updatedAt is timestamp;
+    }
+
+    function validChunk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['data', 'index'])
+        && d.data is string && d.data.size() <= 900000
+        && d.index is int && d.index >= 0 && d.index < 20;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validProfile();
+      allow delete: if isOwner(uid);
+
+      // Five save slots per user: slot1 … slot5
+      match /slots/{slotId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && slotId.matches('^slot[1-5]$') && validSlotMeta();
+        allow delete: if isOwner(uid);
+
+        match /chunks/{chunkId} {
+          allow read: if isOwner(uid);
+          allow create, update: if isOwner(uid) && slotId.matches('^slot[1-5]$') && chunkId.matches('^c([0-9]|1[0-9])$') && validChunk();
+          allow delete: if isOwner(uid);
+        }
+      }
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

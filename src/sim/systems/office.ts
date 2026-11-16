@@ -318,3 +318,41 @@ export function assignDesks(s: GameState): void {
 export function freeDesks(s: GameState): number {
   return deskCount(s) - Object.values(s.staff).filter((st) => st.deskId).length;
 }
+
+/**
+ * Per-tile heat-map values (0..1, higher = better for the player) for build-mode overlays.
+ * - energy: closeness to the best energy station (walking distance)
+ * - decor: morale aura strength
+ * - noise: quietness (1 = silent)
+ * - crowding: openness (1 = no desks nearby)
+ */
+export function heatField(s: GameState, floor: number, kind: 'energy' | 'decor' | 'noise' | 'crowding'): Float32Array {
+  const t = tierDef(s.office.tier);
+  const out = new Float32Array(t.w * t.h);
+  const items = s.office.items.filter((i) => i.floor === floor);
+  if (kind === 'energy') {
+    const occ = occupancy(s, floor);
+    const starts: [number, number][] = [];
+    for (const it of items) if (ITEM_BY_ID[it.item].energy) starts.push(...adjacentFree(s, it, occ));
+    if (!starts.length) return out;
+    const d = bfs(s, floor, starts);
+    for (let i = 0; i < out.length; i++) out[i] = d[i]! < 0 ? 0 : Math.max(0, 1 - d[i]! / 14);
+    return out;
+  }
+  for (let y = 0; y < t.h; y++)
+    for (let x = 0; x < t.w; x++) {
+      let v = 0;
+      for (const it of items) {
+        const d = ITEM_BY_ID[it.item];
+        const fp = footprint(it);
+        const cx = it.x + fp.w / 2 - 0.5;
+        const cy = it.y + fp.h / 2 - 0.5;
+        const dist = Math.max(Math.abs(cx - x), Math.abs(cy - y));
+        if (kind === 'decor' && d.aura && d.radius && dist <= d.radius + 0.5) v += d.aura * (1 - dist / (d.radius + 1.5));
+        if (kind === 'noise' && d.noise && dist <= 3.5) v += d.noise * (1 - dist / 4.5);
+        if (kind === 'crowding' && d.category === 'desk' && dist <= 2 && dist > 0) v += 1;
+      }
+      out[y * t.w + x] = kind === 'decor' ? Math.min(1, v / 14) : kind === 'noise' ? Math.max(0, 1 - Math.max(0, v) / 6) : Math.max(0, 1 - v / 8);
+    }
+  return out;
+}
