@@ -17,6 +17,7 @@ import { creditLimit, ipoEligible, monthlyBurn } from '../../src/sim/systems/fin
 import { researchAvailable, researchCost } from '../../src/sim/systems/research';
 import { engineTechFor, sizeDailyCost } from '../../src/sim/systems/dev';
 import { estimateContractDays } from '../../src/sim/systems/offers';
+import { MARKETING, canDesignConsole, consoleSpec, liveConsoles, refPrice } from '../../src/sim/systems/hardware';
 import type { Focus3, GameState, Size } from '../../src/sim/types';
 import { money } from '../../src/sim/util';
 
@@ -309,6 +310,21 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
     if (ipoEligible(s).ok) dispatch(s, { type: 'ipo', pct: 0.3 });
     const t = s.offers.acquisitions[0];
     if (t && s.company.cash > t.price * 3) dispatch(s, { type: 'acquire', targetId: t.id });
+    hardware(s);
+  }
+}
+
+/** Tycoons build a console once they are rich and famous, and keep its price in line with the market. */
+function hardware(s: GameState): void {
+  if (!canDesignConsole(s)) {
+    const spec = consoleSpec(s, 'console', 'standard');
+    if (s.company.cash > (spec.rdTotal + money(MARKETING.standard.cost, s.day)) * 4) {
+      dispatch(s, { type: 'designConsole', name: `Bot Box ${s.hardware.length + 1}`, kind: 'console', tier: 'standard', price: Math.round(spec.refPrice), feeRate: 0.2, marketing: 'standard' });
+    }
+  }
+  for (const hw of liveConsoles(s)) {
+    const ref = Math.round(refPrice(hw, s.day));
+    if (Math.abs(hw.price - ref) / ref > 0.15) dispatch(s, { type: 'setConsole', id: hw.id, price: ref });
   }
 }
 
@@ -351,6 +367,17 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
     const fs = Object.values(s.franchises);
     return fs.length && rng.chance(0.1) ? { type: 'sellFranchise', franchiseId: rng.pick(fs).id } : null;
   },
+  (_s, rng) => ({
+    type: 'designConsole',
+    name: rng.chance(0.1) ? '' : 'Fuzz',
+    kind: rng.chance(0.5) ? 'console' : 'handheld',
+    tier: rng.pick(['budget', 'standard', 'premium'] as const),
+    price: rng.range(-10, 900),
+    feeRate: rng.range(-0.1, 0.6),
+    marketing: rng.pick(['none', 'standard', 'blitz'] as const),
+  }),
+  (s, rng) => (s.hardware.length ? { type: 'setConsole', id: rng.pick(s.hardware).id, price: rng.chance(0.5) ? rng.range(-5, 900) : undefined, feeRate: rng.chance(0.5) ? rng.range(-0.1, 0.6) : undefined } : null),
+  (s, rng) => (s.hardware.length ? { type: rng.chance(0.5) ? 'retireConsole' : 'cancelConsole', id: rng.pick(s.hardware).id } : null),
 ];
 
 export function makeBot(name: BotName): Bot {

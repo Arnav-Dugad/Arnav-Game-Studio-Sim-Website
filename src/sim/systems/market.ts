@@ -11,7 +11,7 @@ import type { Audience, GenreId, PlatformDef, PlatformKind } from '../../data/ty
 import { fromDay, interp, parseYM, toDay, yearFrac } from '../calendar';
 import { clamp } from '../breakdown';
 import type { Ctx } from '../ctx';
-import type { FuturePlatform, GameState, Id } from '../types';
+import type { FuturePlatform, GameState, Id, PlayerConsole } from '../types';
 import { pushNews } from '../util';
 
 const YEAR = 365.2425;
@@ -21,6 +21,9 @@ export interface PlatformInfo extends PlatformDef {
   launchDay: number;
   endDay: number | null;
   future?: boolean;
+  /** Player-made hardware: install base comes from sim state, not a curve. */
+  own?: boolean;
+  fixedInstalledM?: number;
 }
 
 const staticInfo: Record<string, PlatformInfo> = {};
@@ -55,15 +58,46 @@ function futureToInfo(f: FuturePlatform): PlatformInfo {
   };
 }
 
+function ownToInfo(c: PlayerConsole): PlatformInfo {
+  return {
+    id: c.id,
+    name: c.name,
+    maker: 'player',
+    kind: c.kind,
+    generation: 0,
+    launch: '1980-01',
+    unitsM: c.potentialM,
+    peakYears: 3,
+    curve: 'normal',
+    devKit: 0,
+    royalty: 0, // your own platform: no platform-holder cut on your games
+    tech: c.tech,
+    media: c.media,
+    audience: { kids: 1, everyone: 1, teen: 1, mature: 1 },
+    gamePrice: Math.round(22 * Math.pow(1 + BALANCE.INFLATION, fromDay(c.launchDay).year - 1980)),
+    launchDay: c.launchDay,
+    endDay: c.endDay,
+    own: true,
+    fixedInstalledM: c.installedM,
+  };
+}
+
+/** Player consoles that have reached the market. */
+function ownLaunched(s: GameState): PlayerConsole[] {
+  return (s.hardware ?? []).filter((c) => c.status !== 'dev');
+}
+
 export function platformInfo(s: GameState, id: Id): PlatformInfo | undefined {
   const st = staticInfo[id];
   if (st) return st;
   const f = s.market.futurePlatforms.find((p) => p.id === id);
-  return f ? futureToInfo(f) : undefined;
+  if (f) return futureToInfo(f);
+  const o = ownLaunched(s).find((c) => c.id === id);
+  return o ? ownToInfo(o) : undefined;
 }
 
 export function allPlatforms(s: GameState): PlatformInfo[] {
-  return [...Object.values(staticInfo), ...s.market.futurePlatforms.map(futureToInfo)];
+  return [...Object.values(staticInfo), ...s.market.futurePlatforms.map(futureToInfo), ...ownLaunched(s).map(ownToInfo)];
 }
 
 const cumCache = new Map<string, number>();
@@ -80,11 +114,12 @@ function cumShape(T: number, pk: number): number {
 }
 
 function isOpenPlatform(p: PlatformInfo): boolean {
-  return p.endDay === null && (p.kind === 'computer' || p.kind === 'mobile');
+  return !p.own && p.endDay === null && (p.kind === 'computer' || p.kind === 'mobile');
 }
 
 /** Installed base / active users in millions at `day`. */
 export function installedM(p: PlatformInfo, day: number): number {
+  if (p.fixedInstalledM !== undefined) return day < p.launchDay ? 0 : p.fixedInstalledM;
   const y = (day - p.launchDay) / YEAR;
   if (y <= 0) return 0;
   if (isOpenPlatform(p)) {

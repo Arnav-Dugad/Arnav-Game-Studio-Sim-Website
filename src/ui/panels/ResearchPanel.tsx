@@ -8,6 +8,7 @@ import { engineBuildPoints, engineTechFor } from '@/sim/systems/dev';
 import { Button, Empty, Field, Meter, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
 import { Icon } from '../icons';
 import { useGame } from '../store';
+import HardwarePanel from './HardwarePanel';
 
 const BRANCHES: { id: ResearchBranch; label: string }[] = [
   { id: 'graphics', label: 'Graphics' },
@@ -34,9 +35,10 @@ export default function ResearchPanel() {
         options={[
           { value: 'tree', label: `Tech tree (${s.research.done.length}/${RESEARCH.length})` },
           { value: 'engines', label: `Engines (${Object.keys(s.engines).length})` },
+          { value: 'hardware', label: `Hardware${s.hardware?.length ? ` (${s.hardware.length})` : ''}` },
         ]}
       />
-      {tab === 'tree' ? <Tree /> : <Engines />}
+      {tab === 'tree' ? <Tree /> : tab === 'engines' ? <Engines /> : <HardwarePanel />}
     </div>
   );
 }

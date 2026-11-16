@@ -27,6 +27,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'units_100k', name: 'Six Figures', desc: 'Sell 100,000 copies of one game.', icon: 'chart', check: (s) => rels(s).some((r) => r.units >= 100_000) },
   { id: 'units_1m', name: 'Million Seller', desc: 'Sell 1 million copies of one game.', icon: 'disc', check: (s) => rels(s).some((r) => r.units >= 1_000_000) },
   { id: 'units_10m', name: 'Phenomenon', desc: 'Sell 10 million copies of one game.', icon: 'fire', check: (s) => rels(s).some((r) => r.units >= 10_000_000) },
+  { id: 'console_launch', name: 'Platform Holder', desc: 'Launch your own console or handheld.', icon: 'controller', check: (s) => (s.hardware ?? []).some((h) => h.status !== 'dev') },
+  { id: 'console_10m', name: 'In Every Living Room', desc: 'Sell 10 million units of your own hardware.', icon: 'handheld', check: (s) => (s.hardware ?? []).some((h) => h.unitsSold >= 10_000_000) },
   { id: 'franchise', name: 'Franchise Builder', desc: 'Release 3 games in one franchise.', icon: 'chain', check: (s) => Object.values(s.franchises).some((f) => f.entries.length >= 3) },
   { id: 'franchise_6', name: 'Long-Running Saga', desc: 'Release 6 games in one franchise.', icon: 'scroll', check: (s) => Object.values(s.franchises).some((f) => f.entries.length >= 6) },
   { id: 'survive_crash', name: 'Survive the Crash', desc: 'Still be in business at the start of 1986.', icon: 'shield', check: (s) => s.settings.startYear <= 1983 && s.day >= toDay(1986, 1, 1) },

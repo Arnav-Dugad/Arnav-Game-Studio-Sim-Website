@@ -4,7 +4,7 @@
  */
 import type { GameState } from './types';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 type Raw = Record<string, unknown> & { schemaVersion?: number };
 
@@ -20,6 +20,12 @@ export const MIGRATIONS: Record<number, (raw: Raw) => Raw> = {
     market.scheduleIndex ??= 0;
     raw.market = market;
     raw.schemaVersion = 2;
+    return raw;
+  },
+  // v2 → v3: hardware division.
+  2: (raw) => {
+    raw.hardware ??= [];
+    raw.schemaVersion = 3;
     return raw;
   },
 };

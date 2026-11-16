@@ -8,6 +8,7 @@ import { Rng } from './rng';
 import { checkAchievements } from './systems/achievements';
 import { updateProjectsDaily } from './systems/dev';
 import { expireEvents, rollRandomEvent } from './systems/events';
+import { hardwareMonthly } from './systems/hardware';
 import { financeMonthly, quarterlyEarnings, solvencyCheck, stockWeekly, valuation, yearlyTaxes } from './systems/finance';
 import { processHistory, updateFuturePlatforms, updateMarketMonthly } from './systems/market';
 import { refreshOffers } from './systems/offers';
@@ -70,6 +71,7 @@ export function tick(c: Ctx): void {
     const fade = Math.exp(-1 / (BALANCE.FATIGUE_DECAY_YEARS * 12));
     for (const f of Object.values(s.franchises)) f.fatigue *= fade;
     rivalsHistory(c);
+    hardwareMonthly(c);
     updateMarketMonthly(c);
     rivalsMonthly(c);
     subsidiariesMonthly(c);

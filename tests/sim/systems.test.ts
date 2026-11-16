@@ -14,6 +14,8 @@ import { demandMul, platformInfo, isPlatformAvailable, availablePlatforms } from
 import { creditLimit, ipoEligible } from '../../src/sim/systems/finance';
 import { EVENT_DEFS } from '../../src/sim/systems/events';
 import { layout, touchOffice } from '../../src/sim/systems/office';
+import { consoleSpec, exclusiveBuzz, monthlyDemandM, packInMul } from '../../src/sim/systems/hardware';
+import { migrate } from '../../src/sim/save';
 import type { GameProject, GameState } from '../../src/sim/types';
 
 function game(startYear = 1980, seed = 5): GameState {
@@ -294,5 +296,106 @@ describe('regressions from code review', () => {
   it('rejects non-finite numbers', () => {
     const s = game();
     expect(dispatch(s, { type: 'takeLoan', amount: NaN, months: 12 }).ok).toBe(false);
+  });
+});
+
+describe('hardware division', () => {
+  function rich(): GameState {
+    const s = game(1994, 11);
+    s.research.done.push('biz_rnd_lab', 'biz_self_publishing', 'biz_hardware_lab');
+    s.company.reputation = 75;
+    s.company.cash = 2e8;
+    return s;
+  }
+  const design = (s: GameState, extra: Record<string, unknown> = {}) =>
+    dispatch(s, { type: 'designConsole', name: 'Cube', kind: 'console', tier: 'standard', price: Math.round(consoleSpec(s, 'console', 'standard').refPrice), feeRate: 0.2, marketing: 'none', ...extra });
+
+  it('is gated by research and reputation', () => {
+    const s = game(1994, 11);
+    s.company.cash = 2e8;
+    expect(design(s).ok).toBe(false);
+    s.research.done.push('biz_hardware_lab');
+    s.company.reputation = 20;
+    expect(design(s).ok).toBe(false);
+    s.company.reputation = 80;
+    expect(design(s).ok).toBe(true);
+    expect(design(s).ok).toBe(false); // one project at a time
+  });
+
+  it('pays R&D, launches as a real platform, sells hardware and earns licence fees', () => {
+    const s = rich();
+    expect(design(s).ok).toBe(true);
+    const hw = s.hardware[0]!;
+    expect(platformInfo(s, hw.id)).toBeUndefined(); // not on the market while in development
+    advance(s, 700);
+    expect(hw.status).toBe('live');
+    expect(hw.rdPaid).toBeCloseTo(hw.rdTotal, -2);
+    const pl = platformInfo(s, hw.id)!;
+    expect(pl.own).toBe(true);
+    expect(pl.royalty).toBe(0);
+    expect(availablePlatforms(s).some((p) => p.id === hw.id)).toBe(true);
+    advance(s, 365 * 2);
+    expect(hw.unitsSold).toBeGreaterThan(100_000);
+    expect(s.market.users[hw.id]).toBeGreaterThan(0);
+    expect(hw.feeRevenue).toBeGreaterThan(0);
+  });
+
+  it('cheaper hardware sells more units, a higher licence fee costs third-party support', () => {
+    const s = rich();
+    design(s);
+    advance(s, 700);
+    const hw = s.hardware[0]!;
+    const base = monthlyDemandM(hw, s.day);
+    expect(monthlyDemandM({ ...hw, price: hw.price * 0.7 }, s.day)).toBeGreaterThan(base);
+    expect(monthlyDemandM({ ...hw, feeRate: 0.45 }, s.day)).toBeLessThan(base);
+  });
+
+  it('great exclusives boost hardware sales', () => {
+    const s = rich();
+    design(s);
+    advance(s, 700);
+    const hw = s.hardware[0]!;
+    const rel = { concept: { platforms: [hw.id], size: 'aaa' }, score: 92 } as unknown as Parameters<typeof exclusiveBuzz>[1];
+    exclusiveBuzz(s, rel);
+    expect(hw.boost).toBeGreaterThan(0.3);
+  });
+
+  it('can be cancelled in development or discontinued once live', () => {
+    const s = rich();
+    design(s);
+    expect(dispatch(s, { type: 'retireConsole', id: s.hardware[0]!.id }).ok).toBe(false);
+    expect(dispatch(s, { type: 'cancelConsole', id: s.hardware[0]!.id }).ok).toBe(true);
+    expect(s.hardware.length).toBe(0);
+    design(s);
+    advance(s, 700);
+    const hw = s.hardware[0]!;
+    expect(dispatch(s, { type: 'retireConsole', id: hw.id }).ok).toBe(true);
+    expect(hw.status).toBe('retired');
+    const sold = hw.unitsSold;
+    advance(s, 90);
+    expect(hw.unitsSold).toBe(sold);
+  });
+
+  it('a pack-in must be on the console and lifts hardware demand', () => {
+    const s = rich();
+    design(s);
+    advance(s, 700);
+    const hw = s.hardware[0]!;
+    const rel = { id: 'r_pack', name: 'Pack', concept: { platforms: ['pc'] }, score: 90 } as unknown as GameState['releases'][string];
+    s.releases.r_pack = rel;
+    expect(dispatch(s, { type: 'setConsole', id: hw.id, packIn: 'r_pack' }).ok).toBe(false);
+    rel.concept.platforms = [hw.id];
+    expect(dispatch(s, { type: 'setConsole', id: hw.id, packIn: 'r_pack' }).ok).toBe(true);
+    expect(packInMul(s, hw)).toBeCloseTo(1.3);
+    expect(dispatch(s, { type: 'setConsole', id: hw.id, packIn: null }).ok).toBe(true);
+    expect(packInMul(s, hw)).toBe(1);
+  });
+
+  it('migrates v2 saves', () => {
+    const s = game();
+    const raw = JSON.parse(JSON.stringify(s));
+    delete raw.hardware;
+    raw.schemaVersion = 2;
+    expect(migrate(raw).hardware).toEqual([]);
   });
 });

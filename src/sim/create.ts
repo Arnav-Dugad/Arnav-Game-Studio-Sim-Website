@@ -92,6 +92,7 @@ export function createGame(o: NewGameOptions): GameState {
     finance: { ledger: [{ day, income: {}, expense: {}, cashEnd: 0 }], loans: [], stock: null, revenue12m: [], profitYTD: 0 },
     offers: { contracts: [], deals: [], acquisitions: [] },
     devkits: [],
+    hardware: [],
     news: [],
     pendingEvents: [],
     eventCooldowns: {},

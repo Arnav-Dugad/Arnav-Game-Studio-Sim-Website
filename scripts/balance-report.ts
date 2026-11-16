@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { runBot } from '../tests/bots/run';
 import type { BotName } from '../tests/bots/bots';
 import { fmtMoney } from '../src/sim/util';
+import { fromDay } from '../src/sim/calendar';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split('=') as [string, string]));
 const seeds = Number(args.seeds ?? 4);
@@ -30,6 +31,8 @@ for (const bot of bots) {
       const last = s.releaseOrder.slice(-3).map((id) => s.releases[id]!);
       for (const rel of last) console.log('  ', rel.name, rel.concept.size, rel.score, rel.units, fmtMoney(rel.net));
       if (r.errors.length) console.log('  ERR', r.errors.slice(0, 3));
+      for (const hw of s.hardware)
+        console.log(`  HW ${hw.name} ${hw.status} launched ${fromDay(hw.launchDay).year} sold ${(hw.unitsSold / 1e6).toFixed(1)}M hw ${fmtMoney(hw.hwRevenue - hw.hwCost)} fees ${fmtMoney(hw.feeRevenue)} rd ${fmtMoney(hw.rdPaid)}`);
     }
   }
 }

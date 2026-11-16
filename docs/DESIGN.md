@@ -691,6 +691,13 @@ This section records decisions made during the build that differ from, or add to
 - **Projects dock.** At-a-glance progress for active projects.
 - **Rival profiles.** Each rival's leader, real franchises and recent releases.
 - **In-game guide.**
+- **Hardware division (save schema v3).** After the Hardware Lab research and with 55+ reputation, design a console or handheld (Research → Hardware). You choose the type, a budget, standard or premium tier (tech relative to the current frontier), the retail price, the licence fee for other publishers, and launch marketing. R&D is paid monthly until launch. Lifetime demand is fixed at launch from:
+  - typical sales for that kind of hardware in the era;
+  - reputation and tech against the frontier;
+  - brand trust (a newcomer penalty, then the record of your past hardware);
+  - your franchise fans and the marketing spend.
+  
+  Monthly sales then follow a launch curve, scaled by price against what the market expects (that expectation falls 5% a year), third-party support (a lower fee means more support) and buzz from great exclusives. Manufacturing costs fall about 8% a year, so hardware sells at a small loss at launch and turns profitable later. A launched console becomes a real platform: it has an install base and market share and appears in the Develop wizard with a free dev kit and no platform cut on your own games. Licence fees from other publishers' games scale with active users. You can keep at most two consoles on sale, and each is retired automatically after 12 years. The tycoon bot builds consoles, and the random bot fuzzes the hardware actions.
 - **Correctness fixes from an independent code review:**
   - equity accounting for IPOs and share sales;
   - publisher advances are repaid on cancellation;

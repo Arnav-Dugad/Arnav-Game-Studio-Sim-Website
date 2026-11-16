@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { exclusiveBuzz } from './hardware';
 import { BALANCE } from '../../data/balance';
 import { GENRE_BY_ID } from '../../data/genres';
 import { OUTLETS, type OutletDef } from '../../data/outlets';
@@ -258,6 +259,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   };
   s.releases[id] = rel;
   s.releaseOrder.push(id);
+  exclusiveBuzz(s, rel);
   // Engine maturity
   const eng = s.engines[p.concept.engineId];
   if (eng) {

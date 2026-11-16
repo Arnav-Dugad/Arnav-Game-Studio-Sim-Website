@@ -31,6 +31,14 @@ export function checkInvariants(s: GameState): string[] {
     for (const [k, v] of Object.entries(st.skills)) if (v < 0 || v > 100) errs.push(`${st.name}.skill.${k}=${v}`);
     if (st.salary < 0) errs.push(`${st.name}.salary<0`);
   }
+  for (const hw of s.hardware) {
+    if (hw.installedM < 0 || hw.unitsSold < 0) errs.push(`console ${hw.name} negative sales`);
+    if (hw.rdPaid > hw.rdTotal + 1) errs.push(`console ${hw.name} overpaid R&D`);
+    if (hw.feeRate < 0 || hw.feeRate > 0.5) errs.push(`console ${hw.name} feeRate=${hw.feeRate}`);
+    if (hw.price <= 0) errs.push(`console ${hw.name} price=${hw.price}`);
+  }
+  if (s.hardware.filter((h) => h.status === 'live').length > 2) errs.push('more than 2 live consoles');
+  if (s.hardware.filter((h) => h.status === 'dev').length > 1) errs.push('more than 1 console in development');
   for (const r of Object.values(s.releases)) {
     if (r.units < 0 || !Number.isInteger(r.units)) errs.push(`release ${r.name} units=${r.units}`);
     for (const p of r.platforms) {

@@ -365,6 +365,9 @@ export type LedgerCat =
   | 'recruiting'
   | 'office'
   | 'manufacturing'
+  | 'hardware'
+  | 'platform_fees'
+  | 'hardware_rd'
   | 'royalties'
   | 'acquisitions'
   | 'other_expense';
@@ -463,6 +466,44 @@ export interface MarketState {
   futurePlatforms: FuturePlatform[];
 }
 
+/** A console or handheld designed and sold by the player's own hardware division. */
+export interface PlayerConsole {
+  id: Id; // 'own_1', 'own_2'…
+  name: string;
+  kind: 'console' | 'handheld';
+  tier: 'budget' | 'standard' | 'premium';
+  tech: number;
+  media: 'cartridge' | 'cd' | 'dvd' | 'bluray' | 'digital';
+  status: 'dev' | 'live' | 'retired';
+  devStartDay: number;
+  launchDay: number;
+  endDay: number | null;
+  /** Total R&D budget (nominal) and how much has been paid so far. */
+  rdTotal: number;
+  rdPaid: number;
+  /** Retail price (nominal dollars). */
+  price: number;
+  /** Manufacturing cost per unit at launch, in 1980 dollars (falls every year). */
+  unitCost1980: number;
+  /** Licence fee charged to third-party publishers (0..0.5). */
+  feeRate: number;
+  marketing: 'none' | 'standard' | 'blitz';
+  /** Lifetime demand (millions) at the reference price, fixed at launch. */
+  potentialM: number;
+  potentialWhy?: Breakdown;
+  installedM: number;
+  /** Buzz from great exclusives (decays monthly). */
+  boost: number;
+  unitsSold: number;
+  hwRevenue: number;
+  hwCost: number;
+  feeRevenue: number;
+  /** Units sold per month (millions), most recent last. */
+  monthly: number[];
+  /** Your game bundled in the box, if any. */
+  packIn?: Id;
+}
+
 export interface FuturePlatform {
   id: Id;
   name: string;
@@ -558,6 +599,8 @@ export interface GameState {
   };
   offers: { contracts: ContractOffer[]; deals: DealOffer[]; acquisitions: AcquisitionTarget[] };
   devkits: Id[]; // platforms licensed
+  /** Player-made consoles (hardware division). */
+  hardware: PlayerConsole[];
   news: NewsItem[];
   pendingEvents: EventInstance[];
   eventCooldowns: Record<string, number>;

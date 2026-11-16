@@ -16,6 +16,7 @@ import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
 import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
+import { MARKETING, canDesignConsole, consoleSpec, mediaFor, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
 import { applyPatch, applyPort, canPatch, patchCost, portCost } from './systems/release';
 import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
@@ -90,7 +91,11 @@ export type Action =
   | { type: 'patchGame'; releaseId: string }
   | { type: 'portGame'; releaseId: string; platform: string }
   | { type: 'secondaryOffering'; pct: number }
-  | { type: 'marketResearch'; genre: GenreId; topic: string };
+  | { type: 'marketResearch'; genre: GenreId; topic: string }
+  | { type: 'designConsole'; name: string; kind: ConsoleKind; tier: ConsoleTier; price: number; feeRate: number; marketing: ConsoleMarketing }
+  | { type: 'setConsole'; id: string; price?: number; feeRate?: number; packIn?: string | null }
+  | { type: 'retireConsole'; id: string }
+  | { type: 'cancelConsole'; id: string };
 
 export type ActionResult = { ok: true; events: SimEvent[] } | { ok: false; error: string };
 
@@ -175,6 +180,8 @@ function apply(c: Ctx, a: Action): string | null {
   if ('weeks' in a && !finite(a.weeks)) return 'Invalid duration';
   if ('months' in a && !finite(a.months)) return 'Invalid term';
   if ('pct' in a && !finite(a.pct)) return 'Invalid percentage';
+  if ('price' in a && a.price !== undefined && (!finite(a.price) || a.price <= 0)) return 'Invalid price';
+  if ('feeRate' in a && a.feeRate !== undefined && (!finite(a.feeRate) || a.feeRate < 0 || a.feeRate > 0.5)) return 'Licence fee must be between 0% and 50%';
   if (a.type === 'tradeShow' && ![0, 1, 2].includes(a.booth)) return 'Invalid booth';
   if ((a.type === 'placeItem' || a.type === 'moveItem') && !finite(a.x, a.y, a.floor)) return 'Invalid position';
   if (s.status !== 'running' && a.type !== 'continueEndless') return 'The game has ended';
@@ -785,6 +792,81 @@ function apply(c: Ctx, a: Action): string | null {
       spend(s, 'other_expense', portCost(s, rel));
       applyPort(s, rel, a.platform);
       pushNews(s, { category: 'studio', headline: `${rel.name} is out now on ${pl.name}`, tone: 'good' });
+      return null;
+    }
+    case 'designConsole': {
+      const why = canDesignConsole(s);
+      if (why) return why;
+      if (a.kind !== 'console' && a.kind !== 'handheld') return 'Invalid hardware type';
+      if (!['budget', 'standard', 'premium'].includes(a.tier)) return 'Invalid tier';
+      if (!MARKETING[a.marketing]) return 'Invalid marketing plan';
+      const name = a.name.trim().slice(0, 40);
+      if (!name) return 'Give your hardware a name';
+      const spec = consoleSpec(s, a.kind, a.tier);
+      const mkt = money(MARKETING[a.marketing].cost, s.day);
+      const firstMonths = Math.ceil(spec.rdTotal / spec.months) * 3;
+      if (s.company.cash < mkt + firstMonths) return `Need ${fmtMoney(mkt + firstMonths)} on hand (launch marketing + 3 months of R&D)`;
+      if (a.price < spec.refPrice * 0.3 || a.price > spec.refPrice * 4) return 'That price is unrealistic';
+      spend(s, 'marketing', mkt);
+      const n = s.hardware.length + 1;
+      const launchDay = s.day + Math.round(spec.months * 30.44);
+      s.hardware.push({
+        id: `own_${n}_${s.nextId++}`,
+        name,
+        kind: a.kind,
+        tier: a.tier,
+        tech: spec.tech,
+        media: mediaFor(fromDay(launchDay).year),
+        status: 'dev',
+        devStartDay: s.day,
+        launchDay,
+        endDay: null,
+        rdTotal: spec.rdTotal,
+        rdPaid: 0,
+        price: Math.round(a.price),
+        unitCost1980: spec.unitCost1980,
+        feeRate: a.feeRate,
+        marketing: a.marketing,
+        potentialM: 0,
+        installedM: 0,
+        boost: 0,
+        unitsSold: 0,
+        hwRevenue: 0,
+        hwCost: 0,
+        feeRevenue: 0,
+        monthly: [],
+      });
+      pushNews(s, { category: 'studio', headline: `${s.company.name} is secretly building a ${a.kind}: codename “${name}”`, tone: 'neutral' });
+      return null;
+    }
+    case 'setConsole': {
+      const hw = s.hardware.find((h) => h.id === a.id);
+      if (!hw || hw.status === 'retired') return 'No such console';
+      if (a.packIn !== undefined) {
+        if (a.packIn === null) delete hw.packIn;
+        else {
+          const rel = s.releases[a.packIn];
+          if (!rel) return 'No such game';
+          if (!rel.concept.platforms.includes(hw.id)) return `${rel.name} isn’t on the ${hw.name} — port it first`;
+          hw.packIn = rel.id;
+        }
+      }
+      if (a.price !== undefined) hw.price = Math.round(a.price);
+      if (a.feeRate !== undefined) hw.feeRate = a.feeRate;
+      return null;
+    }
+    case 'retireConsole': {
+      const hw = s.hardware.find((h) => h.id === a.id);
+      if (!hw || hw.status !== 'live') return 'That console isn’t on sale';
+      retireConsole(c, hw);
+      return null;
+    }
+    case 'cancelConsole': {
+      const i = s.hardware.findIndex((h) => h.id === a.id);
+      if (i < 0 || s.hardware[i]!.status !== 'dev') return 'Only consoles still in development can be cancelled';
+      const hw = s.hardware[i]!;
+      s.hardware.splice(i, 1);
+      pushNews(s, { category: 'studio', headline: `${s.company.name} scraps its ${hw.name} hardware project`, body: `${fmtMoney(hw.rdPaid)} of R&D written off.`, tone: 'bad' });
       return null;
     }
     case 'refreshCandidates': {

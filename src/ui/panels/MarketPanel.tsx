@@ -79,9 +79,11 @@ function Platforms() {
                   <Icon name={p.kind === 'handheld' ? 'handheld' : p.kind === 'computer' ? 'pc' : p.kind === 'mobile' ? 'mobile' : p.kind === 'vr' ? 'vr' : p.kind === 'cloud' ? 'cloud-game' : 'controller'} size={16} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{p.name}</div>
+                  <div className="truncate font-semibold">
+                    {p.name} {p.own && <Pill tone="gold">Yours</Pill>}
+                  </div>
                   <div className="text-xs text-ink3">
-                    {COMPANY_BY_ID[p.maker]?.name ?? 'Open platform'} · {age < 1 ? 'new!' : `${age.toFixed(0)} yrs old`}
+                    {p.own ? s.company.name : COMPANY_BY_ID[p.maker]?.name ?? 'Open platform'} · {age < 1 ? 'new!' : `${age.toFixed(0)} yrs old`}
                     {p.endDay && ` · discontinued ${fromDay(p.endDay).year}`}
                   </div>
                 </div>
@@ -89,7 +91,7 @@ function Platforms() {
                   <div className="num font-semibold">{fmtUnits((s.market.users[p.id] ?? 0) * 1e6)} users</div>
                   <div className="num text-ink3">{((s.market.share[p.id] ?? 0) * 100).toFixed(1)}% share</div>
                 </div>
-                {locked ? <Pill>Needs research</Pill> : owned ? <Pill tone="good">Kit</Pill> : null}
+                {p.own ? null : locked ? <Pill>Needs research</Pill> : owned ? <Pill tone="good">Kit</Pill> : null}
               </li>
             );
           })}
