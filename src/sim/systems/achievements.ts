@@ -90,6 +90,10 @@ export const MILESTONES: { id: string; text: string; check: (s: GameState) => bo
   { id: 'm_aaa', text: 'Release a AAA game', check: (s) => rels(s).some((r) => r.concept.size === 'aaa') },
   { id: 'm_acquire', text: 'Acquire a studio', check: (s) => s.progress.stats.acquisitions >= 1 },
   { id: 'm_hq', text: 'Build a Campus HQ', check: (s) => s.office.tier >= 5 },
+  { id: 'm_label', text: 'Publish an indie studio’s game (Company → Publishing)', check: (s) => (s.publishingDeals ?? []).some((d) => d.status !== 'dev') },
+  { id: 'm_console', text: 'Launch your own console (Research → Hardware)', check: (s) => (s.hardware ?? []).some((h) => h.status !== 'dev') },
+  { id: 'm_pass', text: 'Launch a subscription pass (Company → Pass)', check: (s) => !!s.subscription },
+  { id: 'm_goty', text: 'Win Game of the Year', check: (s) => Object.values(s.releases).some((r) => r.awards.includes('Game of the Year')) },
 ];
 
 export function checkAchievements(c: Ctx): void {
