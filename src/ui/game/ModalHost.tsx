@@ -25,7 +25,7 @@ import { FocusSliders } from './FocusEditor';
 import { GuideModal } from './Guide';
 import { RivalModal } from './RivalModal';
 import { genreExperience, idealFocus, PHASE_NAMES } from './lib';
-import { Face, SkillBars, Traits } from '../panels/StaffPanel';
+import { Face, SkillBars, Traits } from '../panels/staffBits';
 import { sound } from '../sound';
 import { navigate } from '../router';
 import { prefersReducedMotion, useSettings } from '../settings';
