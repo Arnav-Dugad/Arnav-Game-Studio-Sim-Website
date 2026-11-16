@@ -384,10 +384,7 @@ export function drawPerson(g: Graphics, look: Look, pose: 'stand' | 'sit' | 'slu
   const s = 1;
   g.ellipse(0, 0, 9 * s, 3.5 * s).fill({ color: 0x000000, alpha: 0.18 });
   const bodyY = pose === 'sit' ? -12 : -14;
-  if (pose !== 'sit') {
-    g.roundRect(-5, -8, 4, 8, 2).fill(0x3a3f4a);
-    g.roundRect(1, -8, 4, 8, 2).fill(0x3a3f4a);
-  }
+  // legs are separate (animated) graphics owned by the renderer when standing
   // torso
   g.roundRect(-8, bodyY - 10, 16, 14, 6).fill(look.top);
   g.roundRect(-8, bodyY - 10, 16, 4, 3).fill({ color: 0xffffff, alpha: 0.15 });

@@ -57,6 +57,8 @@ interface Agent {
   sweat: number;
   label: Text | null;
   ring: Graphics;
+  legL: Graphics;
+  legR: Graphics;
 }
 
 const GLYPHS = ['♪', '!', '?', '☕', '💡', '…', '★', '♥'];
@@ -556,9 +558,11 @@ export class OfficeRenderer {
     const fig = new Graphics();
     const look = lookFor(st.look, st.role, color);
     drawPerson(fig, look, 'sit', this.P);
-    c.addChild(ring, fig);
+    const legL = new Graphics().roundRect(-5, -8, 4, 8, 2).fill(0x3a3f4a);
+    const legR = new Graphics().roundRect(1, -8, 4, 8, 2).fill(0x3a3f4a);
+    c.addChild(ring, legL, legR, fig);
     this.itemLayer.addChild(c);
-    return { id: st.id, c, fig, look, pose: 'sit', x: 0, y: 0, path: [], mode: 'desk', next: 'desk', wait: 0, cooldown: 3 + Math.random() * 8, bubble: null, bubbleT: 0, icon: null, t: Math.random() * 10, floor: 0, sweat: 0, label: null, ring };
+    return { id: st.id, c, fig, look, pose: 'sit', x: 0, y: 0, path: [], mode: 'desk', next: 'desk', wait: 0, cooldown: 3 + Math.random() * 8, bubble: null, bubbleT: 0, icon: null, t: Math.random() * 10, floor: 0, sweat: 0, label: null, ring, legL, legR };
   }
 
   private setPose(a: Agent, pose: Agent['pose']): void {
@@ -685,6 +689,13 @@ export class OfficeRenderer {
       }
       if (st.morale > 82 && atDesk && Math.sin(a.t * 1.3) > 0.995) bob += 5;
       a.fig.position.set(0, -bob);
+      const standing = a.pose !== 'sit' && a.pose !== 'slump';
+      a.legL.visible = a.legR.visible = standing;
+      if (standing) {
+        const swing = a.mode === 'walk' ? Math.sin(a.t * 12) * 2 : 0;
+        a.legL.position.set(0, -bob * 0.3 + Math.max(0, swing));
+        a.legR.position.set(0, -bob * 0.3 + Math.max(0, -swing));
+      }
       a.c.position.set(a.x, a.y);
       a.c.zIndex = a.y + 1;
       a.fig.tint = st.activity === 'burnout' ? 0x9a9a9a : 0xffffff;
