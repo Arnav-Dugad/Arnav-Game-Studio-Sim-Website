@@ -692,6 +692,14 @@ This section records decisions made during the build that differ from, or add to
 - **Rival profiles.** Each rival's leader, real franchises and recent releases.
 - **In-game guide.**
 - **Remasters.** Any release scoring 70+ that is at least 8 years old can be remastered once, from its release window. Genre, topic and franchise are locked to the original. A remaster needs 55% of a new game's work (shorter phases and a lower effort benchmark) and sells to 70% of the market. Its review gets a ×0.9–1.1 factor from the original's score.
+- **Vacations.** Paid leave of one or two weeks: +10 energy and −4 burnout a day, morale up, loyalty +3 or +5. Each person waits 120 days between vacations. People on vacation don't work on projects or research.
+- **Studio history.** Company → History builds a timeline from data the sim already keeps: the founding, notable releases, achievements, console launches and the IPO.
+- **Second review pass (hardware/remasters):**
+  - Demand now falls exponentially above the expected console price (it used to have a 20% floor that made huge prices profitable), and `setConsole` enforces the 0.3–4× price bounds, validating before it changes anything.
+  - The licence-fee support curve is now exponential, so mid-range fees earn the most.
+  - Consoles can't be retired while games are still in development for them.
+  - IP you have sold can't be remastered.
+  - UI state now resyncs after events change a console.
 - **Hardware events.** Three random events apply only to a live console: a fault that needs a recall, a crack that brings piracy, and a retailer bundle deal.
 - **Hardware division (save schema v3).** After the Hardware Lab research and with 55+ reputation, design a console or handheld (Research → Hardware). You choose the type, a budget, standard or premium tier (tech relative to the current frontier), the retail price, the licence fee for other publishers, and launch marketing. R&D is paid monthly until launch. Lifetime demand is fixed at launch from:
   - typical sales for that kind of hardware in the era;
