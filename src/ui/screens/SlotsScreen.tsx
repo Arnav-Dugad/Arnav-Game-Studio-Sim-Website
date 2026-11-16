@@ -14,6 +14,7 @@ import { navigate } from '../router';
 import { useSettings } from '../settings';
 import { sound } from '../sound';
 import { WhatsNew } from '../game/WhatsNew';
+import { exportSave, readSaveFile } from '../saveFiles';
 
 const COLORS = ['#e07a5f', '#3d85c6', '#9b6bd3', '#2eb5a8', '#e3b23c', '#d1495b', '#5f9e6e', '#334155'];
 
@@ -73,6 +74,31 @@ export function SlotsScreen() {
     }
   };
 
+  const exportSlot = async (slotId: SlotId) => {
+    setError('');
+    try {
+      exportSave(await loadSlot(user.uid, slotId));
+    } catch (e) {
+      setError(`Couldn’t export that save: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const importInto = async (slotId: SlotId, input: HTMLInputElement) => {
+    const file = input.files?.[0];
+    input.value = ''; // allow picking the same file again
+    if (!file) return;
+    setError('');
+    try {
+      const s = await readSaveFile(file);
+      await saveLocal(user.uid, slotId, s);
+      if (!user.guest) await syncSlot(user.uid, slotId).catch(() => 'offline');
+      useGame.getState().toast({ text: `${s.company.name} imported`, tone: 'good', icon: 'save' });
+      void refresh();
+    } catch (e) {
+      setError(`Couldn’t import that file: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
   return (
     <div className="min-h-dvh bg-bg">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
@@ -119,17 +145,21 @@ export function SlotsScreen() {
             const meta = sl.newest === 'cloud' ? sl.cloud : sl.local;
             if (!meta)
               return (
-                <li key={sl.slotId}>
+                <li key={sl.slotId} className="flex flex-col gap-1">
                   <button
                     type="button"
                     onClick={() => setCreating(sl.slotId)}
-                    className="grid h-full min-h-36 w-full place-items-center rounded-2xl border-2 border-dashed border-line text-ink3 transition hover:border-accent hover:text-accent"
+                    className="grid min-h-36 w-full flex-1 place-items-center rounded-2xl border-2 border-dashed border-line text-ink3 transition hover:border-accent hover:text-accent"
                   >
                     <span className="flex flex-col items-center gap-1">
                       <Icon name="plus" size={24} />
                       <span className="text-sm font-semibold">New studio · slot {i + 1}</span>
                     </span>
                   </button>
+                  <label className="cursor-pointer self-center text-[11px] text-ink3 underline decoration-dotted hover:text-accent">
+                    or import a save file
+                    <input type="file" accept="application/json,.json" className="sr-only" onChange={(e) => void importInto(sl.slotId, e.currentTarget)} />
+                  </label>
                 </li>
               );
             return (
@@ -183,6 +213,9 @@ export function SlotsScreen() {
                       Delete
                     </Button>
                   )}
+                  <Button size="sm" variant="ghost" icon="download" onClick={() => void exportSlot(sl.slotId)} aria-label={`Export ${meta.companyName} to a file`} title="Download this save as a file (backup or move it to another device)">
+                    Export
+                  </Button>
                   {!sl.conflict && (
                     <Button variant="primary" icon="play" onClick={() => open(sl.slotId)} disabled={loading !== null}>
                       {loading === sl.slotId ? 'Loading…' : meta.status === 'running' ? 'Continue' : 'View ending'}

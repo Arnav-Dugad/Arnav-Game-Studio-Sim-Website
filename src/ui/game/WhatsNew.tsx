@@ -10,6 +10,7 @@ const ITEMS: { icon: IconName; title: string; body: string }[] = [
   { icon: 'people', title: 'Subscription pass', body: 'Turn a strong back catalogue into monthly income (Company → Pass).' },
   { icon: 'briefcase', title: 'Publishing label', body: 'Fund indie studios’ games for a share of their revenue.' },
   { icon: 'trophy', title: 'Golden Pixel Gala', body: 'Yearly industry awards with real-history winners (News → Awards).' },
+  { icon: 'download', title: 'Export & import saves', body: 'Back up a studio to a file or move it to another device from this screen.' },
   { icon: 'sparkle', title: 'Remasters, vacations, showcases', body: 'Remaster 8-year-old classics, send tired staff on holiday, and host your own showcase once famous.' },
 ];
 

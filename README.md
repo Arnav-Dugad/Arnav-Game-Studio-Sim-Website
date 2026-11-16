@@ -42,6 +42,7 @@
   - Email/password, Google sign-in or guest play, with five save slots.
   - Saves land locally first (IndexedDB), then sync to the cloud (Firestore) with versioned, compressed, chunked data.
   - Offline play and conflict resolution are supported.
+- **Save files.** Export any slot to a JSON file and import it into another browser or device. Useful for guest players, whose saves otherwise live in one browser.
 - **Polish.** Light/dark themes, reduced motion, keyboard shortcuts, an interactive tutorial, an in-game guide, a year-in-review card, synthesized sound with a mute option, offline support (service worker), and responsive layouts for desktop and tablet.
 - **Original art only.** All art is hand-built SVG or procedural code: no AI-generated images, no real logos and no likenesses.
 
