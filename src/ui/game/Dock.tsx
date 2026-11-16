@@ -17,9 +17,27 @@ export function ProjectDock() {
   if (!s || panel || build) return null;
   const projects = Object.values(s.projects);
   const research = s.research.active;
-  if (!projects.length && !research) return null;
+  const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' && x.sickDays <= 0 && !x.vacationDays).length;
+  const nudge = !projects.length && idle > 0 && s.status === 'running';
+  if (!projects.length && !research && !nudge) return null;
   return (
     <div className="pointer-events-none absolute bottom-16 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap justify-center gap-2 sm:bottom-4">
+      {nudge && (
+        <div className="glass pointer-events-auto flex items-center gap-2 rounded-xl px-3 py-2 text-xs">
+          <Icon name="hourglass" size={14} className="shrink-0 text-warn" />
+          <span className="font-semibold">
+            {idle === 1 ? 'Your team is' : `${idle} people are`} idle
+          </span>
+          <button type="button" className="rounded-lg bg-accent px-2 py-1 font-semibold text-accent-ink hover:brightness-110" onClick={() => openPanel('develop', 'new')}>
+            New game
+          </button>
+          {s.offers.contracts.length > 0 && (
+            <button type="button" className="rounded-lg border border-line px-2 py-1 font-semibold hover:bg-bg2" onClick={() => openPanel('develop', 'contracts')}>
+              Contracts ({s.offers.contracts.length})
+            </button>
+          )}
+        </div>
+      )}
       {projects.slice(0, 4).map((p) => {
         const pct =
           p.kind === 'game' ? devProgress(p) : p.kind === 'contract' ? Math.min(1, (p.design + p.tech) / Math.max(1, p.needDesign + p.needTech)) : Math.min(1, p.points / p.needPoints);

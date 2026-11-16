@@ -8,6 +8,11 @@ export function inflation(day: number): number {
   return Math.pow(1 + BALANCE.INFLATION, yearFrac(day) - 1980);
 }
 
+/** "a" or "an" for a word (handles acronyms like RPG, MMO, FPS that start with a vowel sound). */
+export function aOrAn(word: string): string {
+  return /^([aeiou]|RPG|MMO|FPS|RTS|MOBA|SNES|NES|X)/i.test(word) && !/^(uni|use|one)/i.test(word) ? `an ${word}` : `a ${word}`;
+}
+
 /** Convert a 1980-dollar amount to nominal dollars on `day`. */
 export function money(amount1980: number, day: number): number {
   return Math.round(amount1980 * inflation(day));

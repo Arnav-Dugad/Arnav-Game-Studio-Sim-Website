@@ -4,7 +4,7 @@ import { TOPIC_BY_ID } from '@/data/topics';
 import { PERSON_BY_ID } from '@/data/people';
 import { SKILLS, type Skill } from '@/data/types';
 import { formatDate, fromDay } from '@/sim/calendar';
-import { fmtMoney, fmtUnits } from '@/sim/util';
+import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
 import { canPatch, canRemaster, patchCost, portCost } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
@@ -330,7 +330,7 @@ function GateModal({ projectId, onClose }: { projectId: string; onClose: () => v
         {PHASE_NAMES[phase - 1] ?? 'Phase'} complete → {PHASE_NAMES[phase]}
       </h2>
       <p className="mt-1 text-sm text-ink2">
-        Decide where the team puts its effort for the next phase. {learned ? 'Gold marks show what worked for this genre before.' : `You haven't shipped a ${GENRE_BY_ID[p.concept.genre].name} game yet — think about what players of this genre care about.`}
+        Decide where the team puts its effort for the next phase. {learned ? 'Gold marks show what worked for this genre before.' : `You haven't shipped ${aOrAn(GENRE_BY_ID[p.concept.genre].name)} game yet — think about what players of this genre care about.`}
       </p>
       <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
         <div className="rounded-xl bg-bg2 p-2">
@@ -519,7 +519,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
             <Section title="Specialise">
               <div className="grid gap-1">
                 {SPECS.map((sp) => (
-                  <button key={sp.id} type="button" onClick={() => run({ type: 'setSpec', staffId, spec: sp.id }, `${st.name} is now a ${sp.label}`)} className="rounded-lg border border-line px-2 py-1.5 text-left text-xs hover:bg-bg2">
+                  <button key={sp.id} type="button" onClick={() => run({ type: 'setSpec', staffId, spec: sp.id }, `${st.name} is now ${aOrAn(sp.label)}`)} className="rounded-lg border border-line px-2 py-1.5 text-left text-xs hover:bg-bg2">
                     <b>{sp.label}</b> <span className="text-ink3">— {sp.desc}</span>
                   </button>
                 ))}

@@ -7,7 +7,7 @@ import { clamp } from '../breakdown';
 import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
-import { addRep, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from '../util';
+import { addRep, aOrAn, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from '../util';
 import { valuation } from './finance';
 import { generateCandidate, candidateToStaff, marketSalary, removeStaff } from './staff';
 import { assignDesks, freeDesks } from './office';
@@ -337,7 +337,7 @@ export const EVENT_DEFS: EventDef[] = [
       const salary = Math.round(marketSalary(s, cand.skills) * 0.45);
       return {
         title: 'Eager intern',
-        body: `${cand.name}, a ${cand.role} student, begs for an internship. Raw, but full of potential (${cand.potential}).`,
+        body: `${cand.name}, ${aOrAn(cand.role)} student, begs for an internship. Raw, but full of potential (${cand.potential}).`,
         options: [
           { id: 'hire', label: `Hire as intern (${fmtMoney(salary)}/yr)`, preview: 'A junior with high potential joins' },
           { id: 'no', label: 'Not right now', preview: 'No change' },

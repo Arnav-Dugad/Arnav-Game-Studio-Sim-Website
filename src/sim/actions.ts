@@ -27,7 +27,7 @@ import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacatio
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { Focus3, GameProject, GameState, Size, Specialisation } from './types';
-import { addRep, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from './util';
+import { addRep, aOrAn, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from './util';
 
 export interface StartGamePayload {
   name: string;
@@ -570,7 +570,7 @@ function apply(c: Ctx, a: Action): string | null {
       }
       touchOffice(s);
       assignDesks(s);
-      pushNews(s, { category: 'studio', headline: `${s.company.name} moves into a ${t.name}`, tone: 'good' });
+      pushNews(s, { category: 'studio', headline: `${s.company.name} moves into ${aOrAn(t.name)}`, tone: 'good' });
       return null;
     }
     case 'research':
@@ -852,7 +852,7 @@ function apply(c: Ctx, a: Action): string | null {
         feeRevenue: 0,
         monthly: [],
       });
-      pushNews(s, { category: 'studio', headline: `${s.company.name} is secretly building a ${a.kind}: codename “${name}”`, tone: 'neutral' });
+      pushNews(s, { category: 'studio', headline: `${s.company.name} is secretly building ${aOrAn(a.kind)}: codename “${name}”`, tone: 'neutral' });
       return null;
     }
     case 'setConsole': {

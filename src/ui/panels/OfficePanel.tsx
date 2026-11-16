@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ITEMS, OFFICE_TIERS, type ItemCategory } from '@/data/facilities';
 import { RESEARCH_BY_ID } from '@/data/research';
 import { fromDay } from '@/sim/calendar';
-import { fmtMoney, money } from '@/sim/util';
+import { aOrAn, fmtMoney, money } from '@/sim/util';
 import { layout, tierDef } from '@/sim/systems/office';
 import { monthlyRent, monthlyUpkeep } from '@/sim/systems/finance';
 import { Button, Pill, Section, Segmented, cx } from '../components/ui';
@@ -74,7 +74,7 @@ export default function OfficePanel() {
           )}
           {prev &&
             (confirmDown ? (
-              <Button variant="danger" onClick={() => { setConfirmDown(false); useGame.getState().actOrToast({ type: 'moveOffice', tier: prev.tier }, `Moved to a ${prev.name}`); }}>
+              <Button variant="danger" onClick={() => { setConfirmDown(false); useGame.getState().actOrToast({ type: 'moveOffice', tier: prev.tier }, `Moved to ${aOrAn(prev.name)}`); }}>
                 Confirm downsize (furniture that doesn’t fit is sold at 40%)
               </Button>
             ) : (

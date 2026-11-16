@@ -6,7 +6,7 @@ import { CHANNELS } from '@/data/marketing';
 import { COMPANY_BY_ID } from '@/data/companies';
 import { AUDIENCES, type Audience, type GenreId, type Monetization } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
-import { fmtMoney, fmtUnits, money } from '@/sim/util';
+import { aOrAn, fmtMoney, fmtUnits, money } from '@/sim/util';
 import { availablePlatforms } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
@@ -25,9 +25,10 @@ import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, 
 import { sound } from '../sound';
 
 export default function DevelopPanel() {
-  const tab = useGame((g) => g.panelTab) ?? 'projects';
-  const setTab = (t: string) => useGame.setState({ panelTab: t });
   const s = useGame((g) => g.s)!;
+  // With nothing in development, jump straight to the new-game wizard.
+  const tab = useGame((g) => g.panelTab) ?? (Object.keys(s.projects).length ? 'projects' : 'new');
+  const setTab = (t: string) => useGame.setState({ panelTab: t });
   useGame((g) => g.v);
   const wizardNonce = useGame((g) => g.wizardNonce);
   const projects = Object.values(s.projects);
@@ -639,7 +640,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
         {team.length > cap && <p className="mt-1 text-xs text-warn">Only the first {cap} will join a {SIZE_LABEL[size]} game.</p>}
       </Section>
 
-      <Section title="8 · Focus" right={ideal ? <Pill tone="gold">Gold marks = your notes on {GENRE_BY_ID[genre].name}</Pill> : <Pill>Ship a {GENRE_BY_ID[genre].name} game to learn what works</Pill>}>
+      <Section title="8 · Focus" right={ideal ? <Pill tone="gold">Gold marks = your notes on {GENRE_BY_ID[genre].name}</Pill> : <Pill>Ship {aOrAn(GENRE_BY_ID[genre].name)} game to learn what works</Pill>}>
         <div className="space-y-3">
           {([0, 1, 2] as const).map((ph) => (
             <FocusSliders key={ph} phase={ph} value={focus[ph]} ideal={ideal?.[ph]} onChange={(f) => setFocus((x) => x.map((y, i) => (i === ph ? f : y)) as [Focus3, Focus3, Focus3])} />
