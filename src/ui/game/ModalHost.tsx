@@ -595,6 +595,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
             Best <b className="num block text-lg">{s.progress.stats.bestScore}</b>
           </div>
         </div>
+        <EndingHighlights />
         <p className="mt-2 text-xs text-ink3">Recorded in your Hall of Fame.</p>
       </div>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -776,4 +777,19 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
       </div>
     </Section>
   );
+}
+
+/** Extra lines for the ending screen: the empire's biggest achievements. */
+function EndingHighlights() {
+  const s = useGame((g) => g.s)!;
+  const st = s.progress.stats;
+  const hwUnits = (s.hardware ?? []).reduce((t, h) => t + h.unitsSold, 0);
+  const lines: string[] = [];
+  if (st.totalUnits > 0) lines.push(`${fmtUnits(st.totalUnits)} games sold`);
+  if (st.awardsWon > 0) lines.push(`${st.awardsWon} Golden Pixel award${st.awardsWon > 1 ? 's' : ''}`);
+  if (hwUnits > 0) lines.push(`${fmtUnits(hwUnits)} consoles sold`);
+  if (s.subscription && s.subscription.peak > 0) lines.push(`${fmtUnits(s.subscription.peak)} pass subscribers at peak`);
+  if (st.peakValuation > 0) lines.push(`peak valuation ${fmtMoney(st.peakValuation)}`);
+  if (!lines.length) return null;
+  return <p className="mt-3 text-xs text-ink2">{lines.join(' · ')}</p>;
 }
