@@ -10,6 +10,12 @@ export const BALANCE = {
   START_CASH: { relaxed: 90_000, standard: 55_000, hardcore: 30_000 },
   CORPORATE_TAX: 0.25, // on positive yearly profit
   BANKRUPTCY_GRACE_DAYS: { relaxed: 150, standard: 90, hardcore: 30 },
+  /** Market harshness per difficulty: sales reach, rival competition weight, salary demands. */
+  DIFFICULTY: {
+    relaxed: { sales: 1.2, competition: 0.8, salary: 0.95 },
+    standard: { sales: 1, competition: 1, salary: 1 },
+    hardcore: { sales: 0.72, competition: 1.5, salary: 1.15 },
+  },
 
   // ── Staff ──────────────────────────────────────────────────────────────────
   SALARY_BASE: 17_000, // yearly salary of a 50-skill mid-level employee in 1980

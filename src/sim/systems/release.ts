@@ -166,7 +166,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   const hype = Math.min(BALANCE.HYPE_MAX, rawHype + marketingHype);
   const yrs = fromDay(s.day).year - 1980;
   const indie = concept.size === 'small' || concept.size === 'medium' ? 1 + BALANCE.INDIE_ERA_BOOST * Math.max(0, 1 - yrs / 25) : 1;
-  const reach = BALANCE.SIZE[concept.size].reach * indie * reputationReach(s.company.reputation) * (deal ? deal.reach : 0.9);
+  const reach = BALANCE.SIZE[concept.size].reach * indie * reputationReach(s.company.reputation) * (deal ? deal.reach : 0.9) * BALANCE.DIFFICULTY[s.settings.difficulty].sales;
   const monet = BALANCE.MONETIZATION[concept.monetization];
   const fatigueMul = fr ? 1 - fr.fatigue * 0.45 : 1;
   const sb = new BD('Reach (size × reputation × distribution)', reach);
@@ -424,7 +424,7 @@ export function competition(s: GameState, rel: Release): number {
   for (const g of s.rivalGames) {
     if (Math.abs(g.day - rel.day) > w || g.genre !== rel.concept.genre) continue;
     if (!g.platforms.some((p) => rel.concept.platforms.includes(p))) continue;
-    comp += BALANCE.COMPETITION_WEIGHT * Math.pow(g.score / 100, 2) * (g.franchise ? 1.6 : 1);
+    comp += BALANCE.COMPETITION_WEIGHT * BALANCE.DIFFICULTY[s.settings.difficulty].competition * Math.pow(g.score / 100, 2) * (g.franchise ? 1.6 : 1);
   }
   for (const o of Object.values(s.releases)) {
     if (o.id === rel.id || Math.abs(o.day - rel.day) > w || o.concept.genre !== rel.concept.genre) continue;

@@ -28,9 +28,9 @@ export interface BotRun {
   ms: number;
 }
 
-export function runBot(bot: BotName, seed: number, years = 46, startYear = 1980): BotRun {
+export function runBot(bot: BotName, seed: number, years = 46, startYear = 1980, difficulty: 'relaxed' | 'standard' | 'hardcore' = 'standard'): BotRun {
   const t0 = Date.now();
-  const s = createGame({ seed, companyName: `${bot} Games`, founderName: 'Bot', startYear, endless: true, autopause: false });
+  const s = createGame({ seed, companyName: `${bot} Games`, founderName: 'Bot', startYear, endless: true, autopause: false, difficulty });
   const b = makeBot(bot);
   const rng = new Rng([seed ^ 0x55, seed ^ 0xaa, 7, 11]);
   const rows: YearRow[] = [];

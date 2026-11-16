@@ -67,7 +67,8 @@ export function marketSalary(s: GameState, skills: Record<Skill, number>, day = 
     Math.pow(Math.max(8, eff) / 50, BALANCE.SALARY_SKILL_EXP) *
     inflation(day) *
     Math.pow(1 + BALANCE.SALARY_ERA_PREMIUM, yrs) *
-    s.market.salaryMul;
+    s.market.salaryMul *
+    BALANCE.DIFFICULTY[s.settings.difficulty].salary;
   return Math.round(v / 100) * 100;
 }
 
