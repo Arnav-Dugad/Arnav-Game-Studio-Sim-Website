@@ -269,7 +269,7 @@ function Charts() {
     <div>
       <p className="mb-2 text-xs text-ink3">
         The best-selling games released so far, real classics and yours together.{' '}
-        {myBest >= 0 ? <b className="text-gold">Your best is #{myBest + 1}.</b> : 'None of yours has cracked the top 30 yet.'}
+        {myBest >= 0 ? <b className="text-gold">Your best seller ranks #{myBest + 1} of {rows.length}.</b> : 'None of yours has cracked the top 30 yet.'}
       </p>
       <ol className="divide-y divide-line">
         {rows.map((r, i) => (
