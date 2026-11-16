@@ -217,6 +217,7 @@ function CandidateCard({ c, onHire, disabled }: { c: Candidate; onHire: () => vo
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-semibold">{c.name}</span>
             {person && <Pill tone="gold">Industry legend</Pill>}
+            {c.fromRival && <Pill tone="tech">Poach from {s.rivals[c.fromRival]?.name ?? 'rival'}</Pill>}
           </div>
           <div className="text-xs text-ink3">
             {c.level} {ROLE_NAMES[c.role]} · potential {c.potential}
@@ -228,7 +229,7 @@ function CandidateCard({ c, onHire, disabled }: { c: Candidate; onHire: () => vo
         </div>
         <div className="text-right">
           <div className="num text-sm font-semibold">{fmtMoney(c.askSalary)}/yr</div>
-          <div className="text-[10px] text-ink3">market {fmtMoney(market)}</div>
+          <div className="text-[10px] text-ink3">{c.fromRival ? `+${fmtMoney(c.askSalary * 0.25)} fee · −1 rep` : `market ${fmtMoney(market)}`}</div>
           <Button size="sm" variant="primary" className="mt-1" onClick={onHire} disabled={disabled}>
             Hire
           </Button>

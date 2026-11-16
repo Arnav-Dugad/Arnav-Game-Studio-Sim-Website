@@ -180,6 +180,19 @@ export function refreshCandidates(c: Ctx): void {
   const n = Math.round((BALANCE.HIRE_POOL_BASE + s.company.reputation / 14 + head * 2 + rec * 1.5) * Math.sqrt(talent));
   const quality = s.company.reputation * 0.6 + head * 12 + rec * 6 + (talent - 1) * 25;
   while (s.candidates.length < Math.min(14, n)) s.candidates.push(generateCandidate(s, rng, { quality }));
+  // Headhunters can lure a rival's senior developer (premium salary, small reputation cost).
+  if (s.research.done.includes('biz_headhunters') && !s.candidates.some((c) => c.fromRival) && rng.chance(0.6)) {
+    const rivals = Object.values(s.rivals).filter((r) => r.alive && !r.ownedByPlayer && r.staff > 20);
+    if (rivals.length) {
+      const r = rng.weighted(rivals, (x) => x.reputation);
+      const c = generateCandidate(s, rng, { quality: 70 + r.quality * 30 });
+      c.fromRival = r.id;
+      c.askSalary = Math.round((c.askSalary * 1.4) / 100) * 100;
+      c.salary = c.askSalary;
+      c.expiresDay = s.day + 30;
+      s.candidates.unshift(c);
+    }
+  }
   if (s.company.reputation >= 35 && rng.chance(0.03 + s.company.reputation / 2500)) {
     const L = legendaryCandidate(s, rng);
     if (L) {

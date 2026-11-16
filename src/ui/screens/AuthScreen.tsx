@@ -5,6 +5,7 @@ import { Wordmark } from '../art/EventArt';
 import { Avatar } from '../art/Avatar';
 import { Button, Field, inputCls, cx } from '../components/ui';
 import { Icon } from '../icons';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { navigate } from '../router';
 
 type Mode = 'login' | 'signup' | 'reset';
@@ -73,9 +74,12 @@ export function AuthScreen({ mode }: { mode: Mode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="flex flex-col px-5 py-6 sm:px-10">
-        <button type="button" className="self-start" onClick={() => navigate('')} aria-label="Home">
-          <Wordmark />
-        </button>
+        <div className="flex items-center justify-between">
+          <button type="button" onClick={() => navigate('')} aria-label="Home">
+            <Wordmark />
+          </button>
+          <ThemeToggle />
+        </div>
         <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
           <h1 className="font-display text-3xl font-bold">{title}</h1>
           <p className="mt-1 text-sm text-ink2">{sub}</p>

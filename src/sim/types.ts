@@ -65,6 +65,8 @@ export type Assignment =
 export interface Candidate extends Omit<Staff, 'assignment' | 'deskId' | 'activity' | 'hiredDay' | 'contributed' | 'gamesShipped' | 'sickDays' | 'poachCooldown'> {
   askSalary: number;
   expiresDay: number;
+  /** Poachable: currently employed by this rival (company id). */
+  fromRival?: string;
 }
 
 export interface PlacedItem {

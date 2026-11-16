@@ -8,6 +8,7 @@ import { Wordmark } from '../art/EventArt';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { Button, Field, Modal, Pill, Segmented, cx, inputCls } from '../components/ui';
 import { Icon } from '../icons';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { useGame } from '../store';
 import { navigate } from '../router';
 import { useSettings } from '../settings';
@@ -77,6 +78,7 @@ export function SlotsScreen() {
           <Wordmark />
         </button>
         <div className="flex items-center gap-2 text-sm">
+          <ThemeToggle />
           <span className="hidden text-ink2 sm:inline">
             {user.guest ? 'Guest (this device only)' : (user.displayName ?? user.email)}
           </span>

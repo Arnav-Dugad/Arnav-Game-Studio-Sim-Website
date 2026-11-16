@@ -9,6 +9,7 @@ import { HISTORICAL_EVENTS } from '@/data/events';
 import { Wordmark } from '../art/EventArt';
 import { Icon, type IconName } from '../icons';
 import { Button } from '../components/ui';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { navigate } from '../router';
 import { useAuth } from '@/services/auth';
 import { buildDemoState } from './demoState';
@@ -44,6 +45,7 @@ export function Landing() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
         <Wordmark />
         <nav className="flex items-center gap-2">
+          <ThemeToggle />
           {user ? (
             <Button variant="primary" onClick={() => navigate('slots')}>
               Continue

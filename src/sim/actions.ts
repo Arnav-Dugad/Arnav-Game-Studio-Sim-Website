@@ -371,6 +371,13 @@ function apply(c: Ctx, a: Action): string | null {
       s.staff[id] = candidateToStaff(s, cand, id, salary);
       s.candidates = s.candidates.filter((x) => x.id !== cand.id);
       spend(s, 'recruiting', money(300, s.day));
+      if (cand.fromRival) {
+        const rv = s.rivals[cand.fromRival];
+        if (rv) rv.quality = clamp(rv.quality - 0.01, 0.1, 1);
+        s.company.reputation = clamp(s.company.reputation - 1, 0, 100);
+        spend(s, 'recruiting', cand.askSalary * 0.25); // headhunter fee
+        pushNews(s, { category: 'staff', headline: `${cand.name} defects from ${rv?.name ?? 'a rival'} to ${s.company.name}`, tone: 'neutral' });
+      }
       s.progress.stats.staffHired += 1;
       assignDesks(s);
       c.out.push({ type: 'hired', staffId: id });
