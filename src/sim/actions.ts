@@ -17,7 +17,7 @@ import { Rng } from './rng';
 import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
-import { applyPatch, applyPort, canPatch, patchCost, portCost } from './systems/release';
+import { applyPatch, applyPort, canPatch, canRemaster, patchCost, portCost } from './systems/release';
 import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, tierDef, touchOffice } from './systems/office';
@@ -39,6 +39,7 @@ export interface StartGamePayload {
   engineId: string;
   franchiseId?: string;
   dealId?: string;
+  remasterOf?: string;
   team: string[];
   focus?: [Focus3, Focus3, Focus3];
 }
@@ -210,6 +211,14 @@ function apply(c: Ctx, a: Action): string | null {
       const te = teamValid(s, g.team);
       if (te) return te;
       if (g.franchiseId && !s.franchises[g.franchiseId]) return 'Unknown franchise';
+      const orig = g.remasterOf ? s.releases[g.remasterOf] : undefined;
+      if (g.remasterOf) {
+        if (!orig) return 'Unknown game to remaster';
+        const why = canRemaster(s, orig);
+        if (why) return why;
+        if (g.genre !== orig.concept.genre || g.topic !== orig.concept.topic) return 'A remaster keeps the original genre and topic';
+        if (g.franchiseId !== (orig.concept.franchiseId && s.franchises[orig.concept.franchiseId] ? orig.concept.franchiseId : undefined)) return 'A remaster belongs to the original’s franchise';
+      }
       // dev kits
       const kitCost = g.platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
       if (kitCost > 0 && kitCost > s.company.cash) return `Need ${fmtMoney(kitCost)} for dev kits`;
@@ -239,11 +248,12 @@ function apply(c: Ctx, a: Action): string | null {
           monetization: g.monetization,
           engineId: g.engineId,
           franchiseId: g.franchiseId,
+          remasterOf: orig?.id,
           deal: deal ? { publisherId: deal.publisherId, advance: deal.advance, royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
         },
         phase: 0,
         phaseDay: 0,
-        phaseDays: [phaseLength(g.size, 0), phaseLength(g.size, 1), phaseLength(g.size, 2)],
+        phaseDays: [0, 1, 2].map((ph) => Math.max(4, Math.round(phaseLength(g.size, ph) * (orig ? BALANCE.REMASTER_WORK : 1)))) as [number, number, number],
         focus: g.focus ?? defaultFocus(g.genre),
         points: { engine: 0, gameplay: 0, story: 0, level: 0, dialogue: 0, ai: 0, world: 0, graphics: 0, sound: 0 },
         design: 0,

@@ -73,7 +73,7 @@ interface GameStore {
   selectedStaff: string | null;
   lastSavedDay: number;
   /** Pre-fill for the new-game wizard (e.g. planning a sequel). */
-  wizardPreset: { franchiseId: string } | null;
+  wizardPreset: { franchiseId?: string; remasterOf?: string } | null;
   onMonth: ((s: GameState) => void) | null;
   load: (s: GameState, slotId: string, uid: string) => void;
   /** Run an action and show its error as a toast (returns success). */

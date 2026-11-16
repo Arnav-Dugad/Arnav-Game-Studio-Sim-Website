@@ -130,6 +130,8 @@ export interface Concept {
   franchiseId?: Id;
   /** Publisher deal id if published by a third party. */
   deal?: PublisherDeal;
+  /** Release id of the classic this game remasters. */
+  remasterOf?: Id;
 }
 
 export interface PublisherDeal {

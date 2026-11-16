@@ -6,7 +6,7 @@ import { SKILLS, type Skill } from '@/data/types';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
-import { canPatch, patchCost, portCost } from '@/sim/systems/release';
+import { canPatch, canRemaster, patchCost, portCost } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
 import { marketSalary, productivity, moraleTarget, ROLE_NAMES } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
@@ -274,8 +274,22 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         </ul>
       </Section>
       <PostLaunch releaseId={releaseId} />
-      {r.concept.franchiseId && s.franchises[r.concept.franchiseId] && (
-        <div className="mt-2 flex justify-end">
+      <div className="mt-2 flex flex-wrap justify-end gap-2">
+        {!r.concept.remasterOf && r.score >= 70 && (
+          <Button
+            icon="sparkle"
+            disabled={!!canRemaster(s, r)}
+            title={canRemaster(s, r) ?? 'Rebuild this classic for modern hardware: about half the work of a new game, sold to a nostalgic audience'}
+            onClick={() => {
+              useGame.setState({ wizardPreset: { remasterOf: r.id } });
+              onClose();
+              useGame.getState().openPanel('develop', 'new');
+            }}
+          >
+            Remaster…
+          </Button>
+        )}
+        {r.concept.franchiseId && s.franchises[r.concept.franchiseId] && (
           <Button
             variant="primary"
             icon="chain"
@@ -287,8 +301,8 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
           >
             Plan a sequel
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </Modal>
   );
 }

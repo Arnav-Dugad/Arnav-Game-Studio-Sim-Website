@@ -45,7 +45,7 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Read the reviews', 'Every review screen shows exactly what drove the score. Hover numbers everywhere for the “why”.'],
       ['Watch the market', 'Platforms rise and fall on their real dates. Don’t be the last studio making cartridges in 1997.'],
       ['Keep fans happy', 'Good games build franchise fans who buy sequels — but sequels too close together cause fatigue.'],
-      ['Patches & ports', 'Open a released game (Games panel) to patch bugs or port it to new platforms.'],
+      ['Patches, ports & remasters', 'Open a released game (Games panel) to patch bugs, port it to new platforms, or — once a 70+ game is 8 years old — remaster it for about half the work of a new game.'],
     ],
   },
 ];

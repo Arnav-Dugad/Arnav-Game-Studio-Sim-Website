@@ -329,14 +329,21 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const topics = availableTopics(s);
   const firstGenre = (genres.find((g) => g.ok)?.g.id ?? 'action') as GenreId;
   // Planning a sequel pre-fills the wizard from the franchise
+  // …and remastering pre-fills it from the original release.
+  const [remasterRel, setRemasterRel] = useState(() => {
+    const p = useGame.getState().wizardPreset;
+    return p?.remasterOf ? s.releases[p.remasterOf] : undefined;
+  });
   const [presetFr] = useState(() => {
     const p = useGame.getState().wizardPreset;
-    return p ? s.franchises[p.franchiseId] : undefined;
+    const fid = p?.franchiseId ?? (remasterRel?.concept.franchiseId && s.franchises[remasterRel.concept.franchiseId] ? remasterRel.concept.franchiseId : undefined);
+    return fid ? s.franchises[fid] : undefined;
   });
-  const [genre, setGenre] = useState<GenreId>(presetFr?.genre ?? firstGenre);
-  const [topic, setTopic] = useState<string>(presetFr?.topic ?? topics.find((t) => t.ok)?.t.id ?? 'fantasy');
-  const [name, setName] = useState(() => (presetFr ? `${presetFr.name} ${presetFr.entries.length + 1 + (presetFr.origin ? 1 : 0)}` : suggestName(s.day, 'fantasy')));
-  const [audience, setAudience] = useState<Audience>('everyone');
+  const [genre, setGenre] = useState<GenreId>(remasterRel?.concept.genre ?? presetFr?.genre ?? firstGenre);
+  const [topic, setTopic] = useState<string>(remasterRel?.concept.topic ?? presetFr?.topic ?? topics.find((t) => t.ok)?.t.id ?? 'fantasy');
+  const [name, setName] = useState(() => (remasterRel ? `${remasterRel.name} Remastered` : presetFr ? `${presetFr.name} ${presetFr.entries.length + 1 + (presetFr.origin ? 1 : 0)}` : suggestName(s.day, 'fantasy')));
+  const [audience, setAudience] = useState<Audience>(remasterRel?.concept.audience ?? 'everyone');
+  const locked = !!remasterRel;
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
   const plats = availablePlatforms(s).sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0));
@@ -347,8 +354,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const [team, setTeam] = useState<string[]>(idle.slice(0, BALANCE.SIZE.small.teamCap).map((x) => x.id));
   const [franchiseId, setFranchiseId] = useState<string>(presetFr?.id ?? '');
   useEffect(() => {
-    if (presetFr) useGame.setState({ wizardPreset: null });
-  }, [presetFr]);
+    if (presetFr || remasterRel) useGame.setState({ wizardPreset: null });
+  }, [presetFr, remasterRel]);
   const selfPub = s.research.done.includes('biz_self_publishing');
   const [dealId, setDealId] = useState<string>(selfPub ? '' : (s.offers.deals[0]?.id ?? ''));
   const learned = genreExperience(s, genre) > 0;
@@ -360,14 +367,14 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const ideal = learned ? idealFocus(genre) : undefined;
   const franchises = Object.values(s.franchises).filter((f) => f.bestScore > 0 || f.origin);
   const teamStaff = team.map((id) => s.staff[id]!).filter(Boolean);
-  const cost = estimateCost(s, size, teamStaff);
+  const cost = estimateCost(s, size, teamStaff, locked);
   const kitCost = platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
   const deal = s.offers.deals.find((d) => d.id === dealId);
   const liveDealId = deal ? dealId : ''; // the offer may have expired since it was picked
   const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
   const conceptPreview = useMemo(
-    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined }),
-    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal],
+    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id }),
+    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel],
   );
   const forecast = useMemo(() => {
     if (!platforms.length) return null;
@@ -381,7 +388,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id },
     });
     if (r.ok) {
       sound.play('success');
@@ -393,6 +400,25 @@ function NewGame({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="space-y-5">
+      {remasterRel && (
+        <div className="flex items-center gap-3 rounded-2xl border border-gold/50 bg-gold/10 p-3 text-xs">
+          <Icon name="sparkle" size={18} className="shrink-0 text-gold" />
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold">Remastering {remasterRel.name} ({Math.round(remasterRel.score)})</div>
+            <div className="text-ink3">Genre, topic and franchise are locked to the original. About {Math.round((1 - BALANCE.REMASTER_WORK) * 100)}% less work than a new game, but it sells to a smaller, nostalgic market.</div>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setRemasterRel(undefined);
+              setName(suggestName(s.day, topic));
+            }}
+          >
+            Make a new game instead
+          </Button>
+        </div>
+      )}
       <Section title="1 · Concept">
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <Field label="Title">
@@ -405,6 +431,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             <Field label="Sequel to">
               <select
                 className={inputCls}
+                disabled={locked}
                 value={franchiseId}
                 onChange={(e) => {
                   const f = s.franchises[e.target.value];
@@ -434,7 +461,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             <button
               key={g.id}
               type="button"
-              disabled={!ok}
+              disabled={!ok || (locked && g.id !== genre)}
               onClick={() => {
                 setGenre(g.id);
                 sound.play('click');
@@ -471,7 +498,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               <button
                 key={t.id}
                 type="button"
-                disabled={!ok}
+                disabled={!ok || (locked && t.id !== topic)}
                 title={ok ? (k ? `${fitLabel(f).label} with ${GENRE_BY_ID[genre].name}` : 'Fit unknown') : why}
                 aria-pressed={topic === t.id}
                 onClick={() => setTopic(t.id)}

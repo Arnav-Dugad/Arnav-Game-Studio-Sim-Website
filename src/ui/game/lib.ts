@@ -76,8 +76,8 @@ export function genreExperience(s: GameState, genre: GenreId): number {
   return Object.values(s.releases).filter((r) => r.concept.genre === genre).length;
 }
 
-export function estimateCost(s: GameState, size: Size, team: Staff[]): { salaries: number; production: number; total: number; days: number } {
-  const days = BALANCE.SIZE[size].days;
+export function estimateCost(s: GameState, size: Size, team: Staff[], remaster = false): { salaries: number; production: number; total: number; days: number } {
+  const days = Math.round(BALANCE.SIZE[size].days * (remaster ? BALANCE.REMASTER_WORK : 1));
   const salaries = team.reduce((t, st) => t + st.salary, 0) * (days / 365);
   const production = sizeDailyCost(size, s.day) * days;
   return { salaries, production, total: salaries + production, days };

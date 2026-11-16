@@ -278,7 +278,8 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   const g = GENRE_BY_ID[c.genre];
   const scale = project ? 1 / devProgress(p) : 1;
   const total = (p.design + p.tech) * scale;
-  const bench = benchmarkPoints(c.size, s.day);
+  const orig = c.remasterOf ? s.releases[c.remasterOf] : undefined;
+  const bench = benchmarkPoints(c.size, s.day) * (orig ? BALANCE.REMASTER_WORK : 1);
   const r = total / bench;
   const bd = new BD('Development effort', r / (r + 0.35));
   // design/tech ratio
@@ -313,7 +314,8 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   bd.mul('Genre trend', clamp(0.94 + (pop - 1) * 0.12, 0.88, 1.08));
   bd.mul('Topic trend', clamp(0.97 + (topicPopularity(s, c.topic) - 1) * 0.08, 0.93, 1.06));
   // novelty / repetition
-  if (!c.franchiseId) {
+  if (orig) bd.mul(`Remaster of ${orig.name} (${Math.round(orig.score)})`, clamp(0.9 + (orig.score - 70) / 150, 0.9, 1.1));
+  if (!c.franchiseId && !orig) {
     const recent = s.releaseOrder.slice(-6).map((id) => s.releases[id]!);
     const same = recent.filter((rr) => rr.concept.genre === c.genre && rr.concept.topic === c.topic).length;
     const ever = Object.values(s.releases).some((rr) => rr.concept.genre === c.genre && rr.concept.topic === c.topic);

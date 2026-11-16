@@ -6,6 +6,9 @@ import type { Monetization } from './types';
 
 export const BALANCE = {
   // ── Economy ────────────────────────────────────────────────────────────────
+  /** Remasters need this share of a new game's work and reach this share of its market. */
+  REMASTER_WORK: 0.55,
+  REMASTER_REACH: 0.7,
   INFLATION: 0.032, // ~3.2%/yr compounding (1980→2026 ≈ ×4.25)
   START_CASH: { relaxed: 90_000, standard: 55_000, hardcore: 30_000 },
   CORPORATE_TAX: 0.25, // on positive yearly profit

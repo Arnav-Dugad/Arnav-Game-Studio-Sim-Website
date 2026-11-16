@@ -169,12 +169,13 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   const indie = concept.size === 'small' || concept.size === 'medium' ? 1 + BALANCE.INDIE_ERA_BOOST * Math.max(0, 1 - yrs / 25) : 1;
   const reach = BALANCE.SIZE[concept.size].reach * indie * reputationReach(s.company.reputation) * (deal ? deal.reach : 0.9) * BALANCE.DIFFICULTY[s.settings.difficulty].sales;
   const monet = BALANCE.MONETIZATION[concept.monetization];
-  const fatigueMul = fr ? 1 - fr.fatigue * 0.45 : 1;
+  const fatigueMul = (fr ? 1 - fr.fatigue * 0.45 : 1) * (concept.remasterOf ? BALANCE.REMASTER_REACH : 1);
   const sb = new BD('Reach (size × reputation × distribution)', reach);
+  if (concept.remasterOf) sb.mul('Remaster (a nostalgia market)', BALANCE.REMASTER_REACH);
   sb.mul(`Review appeal (${Math.round(effScore)})`, attach * 10);
   sb.mul('Hype', 1 + hype * 0.45);
   sb.mul('Monetization', monet.units);
-  if (fr) sb.mul('Franchise fatigue', fatigueMul);
+  if (fr) sb.mul('Franchise fatigue', fr ? 1 - fr.fatigue * 0.45 : 1);
   let totalUsers = 0;
   const g = GENRE_BY_ID[concept.genre];
   const platforms = concept.platforms
@@ -510,6 +511,19 @@ const PORT_COST: Record<Size, number> = { small: 6_000, medium: 25_000, large: 9
 
 export function patchCost(s: GameState, rel: Release): number {
   return Math.round((2_000 + rel.bugs * 250) * inflation(s.day) * (rel.concept.size === 'aaa' ? 4 : rel.concept.size === 'large' ? 2 : 1));
+}
+
+/** Remasters: classics (70+) at least 8 years old, once each. */
+export const REMASTER_MIN_AGE_YEARS = 8;
+export const REMASTER_MIN_SCORE = 70;
+export function canRemaster(s: GameState, rel: Release): string | null {
+  if (rel.concept.remasterOf) return 'Already a remaster';
+  if (rel.score < REMASTER_MIN_SCORE) return `Only games scoring ${REMASTER_MIN_SCORE}+ are worth remastering`;
+  const age = (s.day - rel.day) / 365.25;
+  if (age < REMASTER_MIN_AGE_YEARS) return `Too recent — remasters work for games at least ${REMASTER_MIN_AGE_YEARS} years old (${Math.ceil(REMASTER_MIN_AGE_YEARS - age)} to go)`;
+  const taken = Object.values(s.projects).some((p) => p.kind === 'game' && p.concept.remasterOf === rel.id) || Object.values(s.releases).some((r) => r.concept.remasterOf === rel.id);
+  if (taken) return 'Already remastered';
+  return null;
 }
 
 export function canPatch(s: GameState, rel: Release): string | null {

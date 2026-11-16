@@ -9,7 +9,8 @@ import { toDay } from '../../src/sim/calendar';
 import { Rng } from '../../src/sim/rng';
 import { productivity, moraleTarget, generateCandidate, topSkill } from '../../src/sim/systems/staff';
 import { gameQuality, engineTechFor, comboFit } from '../../src/sim/systems/dev';
-import { salesPotential, competition } from '../../src/sim/systems/release';
+import { salesPotential, competition, canRemaster } from '../../src/sim/systems/release';
+import { BALANCE } from '../../src/data/balance';
 import { demandMul, platformInfo, isPlatformAvailable, availablePlatforms } from '../../src/sim/systems/market';
 import { creditLimit, ipoEligible } from '../../src/sim/systems/finance';
 import { EVENT_DEFS } from '../../src/sim/systems/events';
@@ -413,5 +414,26 @@ describe('hardware division', () => {
     delete raw.hardware;
     raw.schemaVersion = 2;
     expect(migrate(raw).hardware).toEqual([]);
+  });
+});
+
+describe('remasters', () => {
+  it('rebuild an old classic with less work, once', () => {
+    const s = game(1981, 21);
+    startSmall(s);
+    advance(s, 90);
+    const orig = s.releases[s.releaseOrder[0]!]!;
+    orig.score = 84;
+    const base = { name: 'Again', genre: orig.concept.genre, topic: orig.concept.topic, platforms: [availablePlatforms(s)[0]!.id], audience: orig.concept.audience, size: 'small' as const, monetization: 'premium' as const, engineId: 'e0', team: ['founder'], franchiseId: orig.concept.franchiseId };
+    expect(dispatch(s, { type: 'startGame', game: { ...base, remasterOf: orig.id } }).ok).toBe(false); // too recent
+    orig.day -= 365 * 9;
+    expect(dispatch(s, { type: 'startGame', game: { ...base, topic: orig.concept.topic === 'scifi' ? 'fantasy' : 'scifi', remasterOf: orig.id } }).ok).toBe(false);
+    const r = dispatch(s, { type: 'startGame', game: { ...base, remasterOf: orig.id } });
+    expect(r).toEqual({ ok: true, events: expect.any(Array) });
+    const p = Object.values(s.projects).find((x) => x.kind === 'game') as GameProject;
+    expect(p.concept.remasterOf).toBe(orig.id);
+    expect(p.phaseDays[1]).toBeLessThan(BALANCE.SIZE.small.days * BALANCE.PHASE_SHARE[1]);
+    expect(gameQuality(s, p, true).parts.some((x) => x.label.startsWith('Remaster of'))).toBe(true);
+    expect(canRemaster(s, orig)).toMatch(/Already/);
   });
 });

@@ -691,6 +691,8 @@ This section records decisions made during the build that differ from, or add to
 - **Projects dock.** At-a-glance progress for active projects.
 - **Rival profiles.** Each rival's leader, real franchises and recent releases.
 - **In-game guide.**
+- **Remasters.** Any release scoring 70+ that is at least 8 years old can be remastered once, from its release window. Genre, topic and franchise are locked to the original. A remaster needs 55% of a new game's work (shorter phases and a lower effort benchmark) and sells to 70% of the market. Its review gets a ×0.9–1.1 factor from the original's score.
+- **Hardware events.** Three random events apply only to a live console: a fault that needs a recall, a crack that brings piracy, and a retailer bundle deal.
 - **Hardware division (save schema v3).** After the Hardware Lab research and with 55+ reputation, design a console or handheld (Research → Hardware). You choose the type, a budget, standard or premium tier (tech relative to the current frontier), the retail price, the licence fee for other publishers, and launch marketing. R&D is paid monthly until launch. Lifetime demand is fixed at launch from:
   - typical sales for that kind of hardware in the era;
   - reputation and tech against the frontier;
