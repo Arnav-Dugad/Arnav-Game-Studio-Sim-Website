@@ -29,9 +29,10 @@
   - IPO, stock price and board, acquisitions and subsidiaries, and hostile takeovers.
   - Bankruptcy is a real fail state.
 - **Reviews.** Critic outlets with their own biases and generated blurbs, user scores, franchises, fans, fatigue and yearly awards.
-- **Post-launch.** Patch buggy games to win players back, or port hits to new platforms. Holiday seasons sell, January slumps.
+- **Post-launch.** Patch buggy games to win players back, port hits to new platforms, or remaster an 8-year-old classic for half the work. Holiday seasons sell, January slumps.
+- **Your own console.** Research the Hardware Lab, then design a console or handheld: choose its tier, price, licence fee and launch campaign. It becomes a real platform with its own install base and market share. Hardware sells near cost, while licence fees, royalty-free exclusives and a pack-in hit are where the money is. Faults, piracy and retail bundle deals keep you on your toes.
 - **Rival poaching, both ways.** Rivals try to lure your stars; with Headhunters research you can poach theirs.
-- **32 choice events** with real trade-offs: crunch exposés, review bombs, exclusivity offers, crowdfunding, buyouts, hostile takeovers and more.
+- **35 choice events** with real trade-offs: crunch exposés, review bombs, exclusivity offers, crowdfunding, buyouts, hostile takeovers and more.
 - **Explainable numbers.** Every key number (productivity, morale, review score, sales, cash flow) has a "why" breakdown on hover.
 - **Accounts & saves.**
   - Email/password, Google sign-in or guest play, with five save slots.
