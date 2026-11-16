@@ -70,6 +70,8 @@ interface GameStore {
   floor: number;
   selectedStaff: string | null;
   lastSavedDay: number;
+  /** Pre-fill for the new-game wizard (e.g. planning a sequel). */
+  wizardPreset: { franchiseId: string } | null;
   onMonth: ((s: GameState) => void) | null;
   load: (s: GameState, slotId: string) => void;
   unload: () => void;
@@ -107,6 +109,7 @@ export const useGame = create<GameStore>((set, get) => ({
   floor: 0,
   selectedStaff: null,
   lastSavedDay: 0,
+  wizardPreset: null,
   onMonth: null,
   load: (s, slotId) => set({ s, slotId, v: get().v + 1, speed: 0, modals: s.status === 'running' ? [] : [{ kind: 'gameOver' }], toasts: [], pops: [], panel: null, build: null, floor: 0, lastSavedDay: s.day }),
   unload: () => set({ s: null, slotId: null, speed: 0, modals: [], toasts: [], pops: [], panel: null, build: null }),

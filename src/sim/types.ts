@@ -567,6 +567,8 @@ export interface GameState {
     stats: LifetimeStats;
     tutorialStep: number;
     journal: string[]; // design discoveries ("RPG likes Story")
+    /** genre|topic combos revealed by paid market research. */
+    researchedCombos?: string[];
   };
   status: GameStatus;
   endReason?: string;

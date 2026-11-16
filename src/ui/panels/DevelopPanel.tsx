@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BALANCE } from '@/data/balance';
 import { GENRE_BY_ID } from '@/data/genres';
 import { TOPIC_BY_ID } from '@/data/topics';
@@ -12,7 +12,7 @@ import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore } from '@/sim/systems/dev';
 import { salesPotential } from '@/sim/systems/release';
-import { devkitCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
+import { devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import type { ContractProject, EngineProject, Focus3, GameProject, Size } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { Cover } from '../art/Cover';
@@ -328,9 +328,14 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const genres = availableGenres(s);
   const topics = availableTopics(s);
   const firstGenre = (genres.find((g) => g.ok)?.g.id ?? 'action') as GenreId;
-  const [genre, setGenre] = useState<GenreId>(firstGenre);
-  const [topic, setTopic] = useState<string>(topics.find((t) => t.ok)?.t.id ?? 'fantasy');
-  const [name, setName] = useState(() => suggestName(s.day, 'fantasy'));
+  // Planning a sequel pre-fills the wizard from the franchise
+  const [presetFr] = useState(() => {
+    const p = useGame.getState().wizardPreset;
+    return p ? s.franchises[p.franchiseId] : undefined;
+  });
+  const [genre, setGenre] = useState<GenreId>(presetFr?.genre ?? firstGenre);
+  const [topic, setTopic] = useState<string>(presetFr?.topic ?? topics.find((t) => t.ok)?.t.id ?? 'fantasy');
+  const [name, setName] = useState(() => (presetFr ? `${presetFr.name} ${presetFr.entries.length + 1 + (presetFr.origin ? 1 : 0)}` : suggestName(s.day, 'fantasy')));
   const [audience, setAudience] = useState<Audience>('everyone');
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
@@ -340,7 +345,10 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const [engineId, setEngineId] = useState(engines[0]?.id ?? 'e0');
   const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' || x.assignment.kind === 'research');
   const [team, setTeam] = useState<string[]>(idle.slice(0, BALANCE.SIZE.small.teamCap).map((x) => x.id));
-  const [franchiseId, setFranchiseId] = useState<string>('');
+  const [franchiseId, setFranchiseId] = useState<string>(presetFr?.id ?? '');
+  useEffect(() => {
+    if (presetFr) useGame.setState({ wizardPreset: null });
+  }, [presetFr]);
   const selfPub = s.research.done.includes('biz_self_publishing');
   const [dealId, setDealId] = useState<string>(selfPub ? '' : (s.offers.deals[0]?.id ?? ''));
   const learned = genreExperience(s, genre) > 0;
@@ -441,7 +449,18 @@ function NewGame({ onDone }: { onDone: () => void }) {
         <p className="mt-2 text-xs text-ink3">{GENRE_BY_ID[genre].blurb}</p>
       </Section>
 
-      <Section title="3 · Topic" right={<Pill tone={known ? fitLabel(fit).tone : 'neutral'}>{known ? `${fitLabel(fit).label} fit` : 'Fit unknown — experiment!'}</Pill>}>
+      <Section
+        title="3 · Topic"
+        right={
+          known ? (
+            <Pill tone={fitLabel(fit).tone}>{`${fitLabel(fit).label} fit`}</Pill>
+          ) : (
+            <Button size="sm" icon="search" onClick={() => act({ type: 'marketResearch', genre, topic })} title="Run focus groups to learn how well this genre and topic fit">
+              Research fit · {fmtMoney(marketResearchCost(s))}
+            </Button>
+          )
+        }
+      >
         <div className="flex flex-wrap gap-1.5">
           {topics.map(({ t, ok, why }) => {
             const f = comboFitValue(genre, t.id);

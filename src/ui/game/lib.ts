@@ -45,6 +45,7 @@ export function availableTopics(s: GameState) {
 
 /** Has the player shipped this genre or this topic? (Fit hints unlock with experience.) */
 export function knowsCombo(s: GameState, genre: GenreId, topic: string): boolean {
+  if (s.progress.researchedCombos?.includes(`${genre}|${topic}`)) return true;
   return Object.values(s.releases).some((r) => r.concept.genre === genre || r.concept.topic === topic);
 }
 

@@ -89,11 +89,17 @@ export type Action =
   | { type: 'refreshCandidates' }
   | { type: 'patchGame'; releaseId: string }
   | { type: 'portGame'; releaseId: string; platform: string }
-  | { type: 'secondaryOffering'; pct: number };
+  | { type: 'secondaryOffering'; pct: number }
+  | { type: 'marketResearch'; genre: GenreId; topic: string };
 
 export type ActionResult = { ok: true; events: SimEvent[] } | { ok: false; error: string };
 
 const fail = (error: string): ActionResult => ({ ok: false, error });
+
+/** Price of a focus-group study that reveals how well a genre and topic fit together. */
+export function marketResearchCost(s: GameState): number {
+  return money(1_500, s.day);
+}
 
 export function devkitCost(s: GameState, platform: string): number {
   const pl = platformInfo(s, platform);
@@ -724,6 +730,16 @@ function apply(c: Ctx, a: Action): string | null {
     case 'tutorial':
       s.progress.tutorialStep = a.step;
       return null;
+    case 'marketResearch': {
+      const key = `${a.genre}|${a.topic}`;
+      const list = (s.progress.researchedCombos ??= []);
+      if (list.includes(key)) return 'Already researched';
+      const cost = marketResearchCost(s);
+      if (s.company.cash < cost) return 'Not enough cash';
+      spend(s, 'research', cost);
+      list.push(key);
+      return null;
+    }
     case 'secondaryOffering': {
       const st = s.finance.stock;
       if (!st) return 'Not public';

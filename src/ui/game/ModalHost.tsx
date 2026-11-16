@@ -259,6 +259,21 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         </ul>
       </Section>
       <PostLaunch releaseId={releaseId} />
+      {r.concept.franchiseId && s.franchises[r.concept.franchiseId] && (
+        <div className="mt-2 flex justify-end">
+          <Button
+            variant="primary"
+            icon="chain"
+            onClick={() => {
+              useGame.setState({ wizardPreset: { franchiseId: r.concept.franchiseId! } });
+              onClose();
+              useGame.getState().openPanel('develop', 'new');
+            }}
+          >
+            Plan a sequel
+          </Button>
+        </div>
+      )}
     </Modal>
   );
 }
