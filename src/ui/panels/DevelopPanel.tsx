@@ -20,6 +20,7 @@ import { Avatar, InitialsBadge } from '../art/Avatar';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { Icon } from '../icons';
 import { useGame } from '../store';
+import { isAway } from '@/sim/systems/staff';
 import { FocusSliders } from '../game/FocusEditor';
 import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, bestSkill, comboFitValue, estimateCost, fitLabel, genreExperience, idealFocus, knowsCombo, suggestName } from '../game/lib';
 import { sound } from '../sound';
@@ -352,7 +353,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const [platforms, setPlatforms] = useState<string[]>(plats[0] ? [plats[0].id] : []);
   const engines = Object.values(s.engines).sort((a, b) => b.tech - a.tech);
   const [engineId, setEngineId] = useState(engines[0]?.id ?? 'e0');
-  const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' || x.assignment.kind === 'research');
+  const idle = Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
   const [team, setTeam] = useState<string[]>(idle.slice(0, BALANCE.SIZE.small.teamCap).map((x) => x.id));
   const [franchiseId, setFranchiseId] = useState<string>(presetFr?.id ?? '');
   useEffect(() => {

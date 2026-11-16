@@ -486,29 +486,27 @@ export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
       .map((g) => ({ name: g.name, company: s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company, score: g.score, genre: g.genre, mine: false, classic: !!g.franchise })),
   ];
   if (!entries.length) return;
-  // Real-history classics carry their legend with the jury; ties go to the player.
-  const weight = (e: Entry) => e.score + (e.classic ? 3 : e.mine ? 0 : -3);
-  const rank = (a: Entry, b: Entry) => weight(b) - weight(a) || Number(b.mine) - Number(a.mine);
+  // The player is judged on raw score (same rules as ever: 85+ and at least as good as every rival for GOTY,
+  // 80+ and strictly ahead for a genre). Among rivals, real-history classics carry their legend with the jury
+  // (+3) over generic titles (-3) — but a rival never wins a category over a better-scoring player game.
+  const weight = (e: Entry) => e.score + (e.classic ? 3 : -3);
+  const byWeight = (a: Entry, b: Entry) => weight(b) - weight(a) || b.score - a.score;
   const winners: AwardWinner[] = [];
-  const goty = [...entries].sort(rank)[0]!;
-  if (goty.score >= 75) winners.push({ category: 'Game of the Year', name: goty.name, company: goty.company, score: goty.score, mine: goty.mine && goty.score >= 85, releaseId: goty.releaseId });
-  for (const g of GENRES) {
-    const pool = entries.filter((e) => e.genre === g.id).sort(rank);
-    const top = pool[0];
-    if (!top || top.score < 70) continue;
-    // The player needs a clear win (80+ and strictly ahead) to take a genre award.
-    const rivalTop = pool.find((e) => !e.mine);
-    const mineWins = top.mine && top.score >= 80 && (!rivalTop || top.score > rivalTop.score);
-    const w = mineWins || !top.mine ? top : rivalTop;
-    if (w && w.score >= 70) winners.push({ category: `Best ${g.name}`, name: w.name, company: w.company, score: w.score, mine: mineWins, releaseId: mineWins ? w.releaseId : undefined });
-  }
-  // If the best game was ours but under 85, the jury gives GOTY to the best rival instead.
+  const pick = (category: string, pool: Entry[], minScore: number, mineMin: number, strict: boolean) => {
+    const mine = pool.filter((e) => e.mine).sort((a, b) => b.score - a.score)[0];
+    const rivalsIn = pool.filter((e) => !e.mine);
+    const bestRivalRaw = rivalsIn.reduce((m, e) => Math.max(m, e.score), 0);
+    if (mine && mine.score >= mineMin && (strict ? mine.score > bestRivalRaw : mine.score >= bestRivalRaw)) {
+      winners.push({ category, name: mine.name, company: mine.company, score: mine.score, mine: true, releaseId: mine.releaseId });
+      return;
+    }
+    const floor = Math.max(minScore, mine?.score ?? 0);
+    const r = rivalsIn.filter((e) => e.score >= floor).sort(byWeight)[0];
+    if (r) winners.push({ category, name: r.name, company: r.company, score: r.score, mine: false });
+  };
+  pick('Game of the Year', entries, 75, 85, false);
+  for (const g of GENRES) pick(`Best ${g.name}`, entries.filter((e) => e.genre === g.id), 70, 80, true);
   const gotyW = winners.find((w) => w.category === 'Game of the Year');
-  if (gotyW && goty.mine && !gotyW.mine) {
-    const r = [...entries].filter((e) => !e.mine).sort(rank)[0];
-    if (r && r.score >= 75) Object.assign(gotyW, { name: r.name, company: r.company, score: r.score, mine: false, releaseId: undefined });
-    else winners.splice(winners.indexOf(gotyW), 1);
-  }
   s.awardHistory = [...(s.awardHistory ?? []), { year: yr, winners }].slice(-60);
   const awards: string[] = [];
   for (const w of winners) {

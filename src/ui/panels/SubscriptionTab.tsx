@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { RESEARCH_BY_ID } from '@/data/research';
 import { formatDate } from '@/sim/calendar';
-import { fmtMoney, fmtUnits, money } from '@/sim/util';
-import { SUB_CANNIBALIZE, SUB_MIN_GAMES, SUB_MIN_REP, SUB_RESEARCH, canLaunchSub, catalogValue, subLaunchCost, subRefPrice, subTarget } from '@/sim/systems/subscription';
+import { fmtMoney, fmtUnits } from '@/sim/util';
+import { SUB_CANNIBALIZE, SUB_MIN_GAMES, SUB_MIN_REP, SUB_RESEARCH, canLaunchSub, catalogValue, subLaunchCost, subRefPrice, subServerCost, subTarget } from '@/sim/systems/subscription';
 import { Sparkline } from '../charts';
 import { BreakdownList, Button, Field, Section, Stat, Tip, inputCls } from '../components/ui';
 import { Icon } from '../icons';
@@ -20,7 +20,7 @@ export function SubscriptionTab() {
   const [confirmClose, setConfirmClose] = useState(false);
   const act = useGame.getState().actOrToast;
   const preview = subTarget(s, price);
-  const monthly = preview.subsM * 1e6 * price * 0.7 - preview.subsM * 1e6 * money(0.12, s.day);
+  const monthly = preview.subsM * 1e6 * price * 0.7 - preview.subsM * 1e6 * subServerCost(s);
   const blocked = canLaunchSub(s);
 
   return (
@@ -51,7 +51,14 @@ export function SubscriptionTab() {
             </div>
             <div className="mt-3 flex justify-end">
               {confirmClose ? (
-                <Button size="sm" variant="danger" onClick={() => act({ type: 'closeSubscription' }, `${sub.name} closed`)}>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    setConfirmClose(false);
+                    act({ type: 'closeSubscription' }, `${sub.name} closed`);
+                  }}
+                >
                   Confirm shutdown (reputation −2)
                 </Button>
               ) : (

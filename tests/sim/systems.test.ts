@@ -9,7 +9,7 @@ import { toDay } from '../../src/sim/calendar';
 import { Rng } from '../../src/sim/rng';
 import { productivity, moraleTarget, generateCandidate, topSkill } from '../../src/sim/systems/staff';
 import { gameQuality, engineTechFor, comboFit } from '../../src/sim/systems/dev';
-import { salesPotential, competition, canRemaster } from '../../src/sim/systems/release';
+import { salesPotential, competition, canRemaster, yearlyAwards } from '../../src/sim/systems/release';
 import { BALANCE } from '../../src/data/balance';
 import { demandMul, platformInfo, isPlatformAvailable, availablePlatforms } from '../../src/sim/systems/market';
 import { creditLimit, ipoEligible } from '../../src/sim/systems/finance';
@@ -565,5 +565,27 @@ describe('studio showcase', () => {
     expect(dispatch(s, { type: 'hostShowcase' }).ok).toBe(true);
     expect(p.hype).toBeGreaterThan(before + 0.5);
     expect(dispatch(s, { type: 'hostShowcase' }).ok).toBe(false); // cooldown
+  });
+});
+
+describe('gala fairness (review regressions)', () => {
+  const setup = (mine: number, rival: number, classic: boolean, genre: 'rpg' | 'action' = 'rpg') => {
+    const s = game(1990, 2);
+    s.rivalGames = [];
+    const day = toDay(1990, 6, 1);
+    s.releases.r1 = { id: 'r1', name: 'Mine', day, score: mine, concept: { genre: 'rpg', platforms: [] }, awards: [] } as unknown as GameState['releases'][string];
+    s.releaseOrder = ['r1'];
+    s.rivalGames.push({ name: 'Theirs', company: 'nintendo', genre, topic: 'fantasy', platforms: [], day, score: rival, units: 1, franchise: classic ? 'x' : undefined });
+    yearlyAwards({ s, rng: new Rng([1, 2, 3, 4]), out: [] }, 1990);
+    const w = s.awardHistory!.at(-1)!.winners;
+    return { goty: w.find((x) => x.category === 'Game of the Year'), rpg: w.find((x) => x.category === 'Best RPG') };
+  };
+  it('never lets a rival beat a better player game, or the player beat a better rival', () => {
+    expect(setup(85, 87, false).goty?.mine).toBe(false);
+    expect(setup(85, 87, false).rpg?.name).toBe('Theirs');
+    expect(setup(88, 86, true).goty?.mine).toBe(true);
+    expect(setup(82, 80, true).rpg?.mine).toBe(true);
+    expect(setup(80, 76, false).goty).toBeUndefined();
+    expect(setup(60, 79, false, 'action').goty?.name).toBe('Theirs');
   });
 });

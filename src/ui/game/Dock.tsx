@@ -26,7 +26,7 @@ export function ProjectDock() {
         <div className="glass pointer-events-auto flex items-center gap-2 rounded-xl px-3 py-2 text-xs">
           <Icon name="hourglass" size={14} className="shrink-0 text-warn" />
           <span className="font-semibold">
-            {idle === 1 ? 'Your team is' : `${idle} people are`} idle
+            {idle === 1 && Object.keys(s.staff).length === 1 ? 'Your team is idle' : `${idle} ${idle === 1 ? 'person is' : 'people are'} idle`}
           </span>
           <button type="button" className="rounded-lg bg-accent px-2 py-1 font-semibold text-accent-ink hover:brightness-110" onClick={() => openPanel('develop', 'new')}>
             New game

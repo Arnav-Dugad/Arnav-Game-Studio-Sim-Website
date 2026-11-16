@@ -700,7 +700,7 @@ This section records decisions made during the build that differ from, or add to
   - Closing the pass costs 2 reputation.
 - **Cross-play.** The research now gives a ×1.1 sales boost to online-leaning genres (or F2P/live-service games) released on two or more platforms.
 - **Golden Pixel Gala.** Every January, the gala judges the whole industry's releases from the year before, both yours and your rivals'. It names a Game of the Year (75+) and a Best of each genre (70+); results go into `awardHistory` and appear under News → Awards and on the Year in Review card.
-  - The jury gives real-history classics +3 and generic rival titles −3; ties go to the player.
+  - The player is judged on raw score. Classic vs generic weighting (+3/−3) applies only between rivals, and a rival never beats a better-scoring player game. Categories are filtered by score threshold before ranking.
   - You still need 85+ for Game of the Year, and 80+ while strictly beating every rival in the genre for a genre award.
   - Real winners come out plausibly, e.g. Super Mario Bros. in 1985, Grand Theft Auto V in 2013 and Breath of the Wild in 2017.
 - **New-player polish.** Develop opens on the new-game wizard when nothing is in development. An idle-team nudge offers New game or Contracts. Article grammar is now correct ("an RPG").
@@ -710,6 +710,12 @@ This section records decisions made during the build that differ from, or add to
 - **Second review pass (hardware/remasters):**
   - Demand now falls exponentially above the expected console price (it used to have a 20% floor that made huge prices profitable), and `setConsole` enforces the 0.3–4× price bounds, validating before it changes anything.
   - The licence-fee support curve is now exponential, so mid-range fees earn the most.
+- **Third review pass:**
+  - Subscription prices and server costs are no longer rounded to whole dollars (server cost was $0 before 2025).
+  - Award fairness fixes.
+  - The pass's shutdown confirmation resets.
+  - The new-game wizard skips people on vacation.
+  - Clearer idle and subscriber text.
   - Consoles can't be retired while games are still in development for them.
   - IP you have sold can't be remastered.
   - UI state now resyncs after events change a console.

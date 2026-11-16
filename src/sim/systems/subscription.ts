@@ -8,7 +8,7 @@
 import { BD, clamp } from '../breakdown';
 import type { Ctx } from '../ctx';
 import type { GameState } from '../types';
-import { earn, money, pushNews, spend } from '../util';
+import { earn, inflation, money, pushNews, spend } from '../util';
 
 export const SUB_RESEARCH = 'biz_subscription';
 export const SUB_MIN_GAMES = 8;
@@ -23,7 +23,12 @@ export function subLaunchCost(s: GameState): number {
 
 /** Expected monthly price (nominal) players consider fair. */
 export function subRefPrice(s: GameState): number {
-  return money(3.5, s.day);
+  return 3.5 * inflation(s.day);
+}
+
+/** Server cost per subscriber per month (nominal, unrounded). */
+export function subServerCost(s: GameState): number {
+  return 0.12 * inflation(s.day);
 }
 
 export function canLaunchSub(s: GameState): string | null {
@@ -51,7 +56,7 @@ export function catalogValue(s: GameState): number {
 export function subTarget(s: GameState, price = s.subscription?.price ?? subRefPrice(s)) {
   const usersM = Object.values(s.market.users).reduce((t, u) => t + u, 0);
   const cat = catalogValue(s);
-  const b = new BD('Players on platforms you ship to (M)', usersM * 0.005);
+  const b = new BD('Potential subscribers: 0.5% of active players (M)', usersM * 0.005);
   b.mul(`Catalogue strength (${cat.toFixed(1)})`, cat / (cat + 12));
   b.mul(`Reputation ${Math.round(s.company.reputation)}`, clamp(s.company.reputation / 80, 0.3, 1.25));
   const rel = Math.max(0.01, price) / subRefPrice(s);
@@ -68,7 +73,7 @@ export function subscriptionMonthly(c: Ctx): void {
   sub.subscribers = Math.max(0, Math.round(sub.subscribers + (target - sub.subscribers) * 0.18));
   sub.peak = Math.max(sub.peak, sub.subscribers);
   const revenue = sub.subscribers * sub.price * 0.7; // stores keep ~30%
-  const servers = sub.subscribers * money(0.12, s.day);
+  const servers = sub.subscribers * subServerCost(s);
   earn(s, 'subscriptions', revenue);
   spend(s, 'servers', servers);
   sub.revenue += Math.round(revenue);
