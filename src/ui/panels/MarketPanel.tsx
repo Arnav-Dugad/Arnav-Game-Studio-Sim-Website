@@ -5,6 +5,7 @@ import { PERSON_BY_ID } from '@/data/people';
 import { fromDay, formatDate } from '@/sim/calendar';
 import { fmtUnits } from '@/sim/util';
 import { genrePopularity, livePlatforms, platformName } from '@/sim/systems/market';
+import { upcomingReleases } from '@/sim/systems/rivals';
 import { StackedArea, LineChart } from '../charts';
 import { Pill, Section, Segmented, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
@@ -29,12 +30,14 @@ export default function MarketPanel() {
           { value: 'trends', label: 'Trends' },
           { value: 'rivals', label: 'Rivals' },
           { value: 'releases', label: 'Rival releases' },
+          { value: 'upcoming', label: 'Coming soon' },
         ]}
       />
       {tab === 'platforms' && <Platforms />}
       {tab === 'trends' && <Trends />}
       {tab === 'rivals' && <Rivals />}
       {tab === 'releases' && <RivalReleases />}
+      {tab === 'upcoming' && <Upcoming />}
     </div>
   );
 }
@@ -206,5 +209,29 @@ function RivalReleases() {
         </li>
       ))}
     </ul>
+  );
+}
+
+function Upcoming() {
+  const s = useGame((g) => g.s)!;
+  const list = upcomingReleases(s, s.day, s.day + 365);
+  if (!list.length) return <p className="text-sm text-ink3">No major releases announced for the next 12 months.</p>;
+  return (
+    <div>
+      <p className="mb-2 text-xs text-ink3">Big franchise releases announced for the next 12 months. Launching the same genre on the same platforms within about five weeks means sharing the spotlight.</p>
+      <ul className="divide-y divide-line">
+        {list.map((g) => (
+          <li key={`${g.title}-${g.day}`} className="flex items-center gap-3 py-2 text-sm">
+            <span className="num w-20 shrink-0 text-xs font-semibold text-accent">{formatDate(g.day, false)}</span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-semibold">{g.title}</div>
+              <div className="truncate text-xs text-ink3">
+                {COMPANY_BY_ID[g.company]?.name ?? g.company} · {GENRE_BY_ID[g.genre]?.name} · {g.platforms.map((p) => platformName(s, p)).join(', ')}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

@@ -240,3 +240,17 @@ export function rivalSummary(s: GameState) {
     .filter((r) => r.alive)
     .sort((a, b) => b.reputation - a.reputation);
 }
+
+/** Real franchise releases expected between `from` and `to` (industry release calendar). */
+export function upcomingReleases(s: GameState, from: number, to: number) {
+  const out: { day: number; title: string; company: string; genre: GenreId; platforms: string[]; franchise: string }[] = [];
+  for (const ev of SCHEDULE) {
+    if (ev.day < from) continue;
+    if (ev.day > to) break;
+    if (franchiseOwner(s, ev.franchise) === '__player') continue;
+    const r = s.rivals[ev.company];
+    if (r && (!r.alive || r.ownedByPlayer)) continue;
+    out.push({ day: ev.day, title: ev.title, company: ev.company, genre: ev.genre, platforms: ev.platforms, franchise: ev.franchise });
+  }
+  return out;
+}

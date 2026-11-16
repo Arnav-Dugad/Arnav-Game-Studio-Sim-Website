@@ -9,6 +9,7 @@ import { fromDay, formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits, money } from '@/sim/util';
 import { availablePlatforms } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
+import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore } from '@/sim/systems/dev';
 import { salesPotential } from '@/sim/systems/release';
 import { devkitCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
@@ -630,6 +631,15 @@ function NewGame({ onDone }: { onDone: () => void }) {
             </Tip>
           )}
         </div>
+        {(() => {
+          const ship = s.day + cost.days;
+          const clashes = upcomingReleases(s, ship - 35, ship + 35).filter((g) => g.genre === genre && g.platforms.some((p) => platforms.includes(p)));
+          return clashes.length ? (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-warn">
+              <Icon name="warning" size={14} /> Your launch window clashes with {clashes.map((c) => `${c.title} (${formatDate(c.day, false)})`).join(', ')}.
+            </p>
+          ) : null;
+        })()}
         {kitCost + cost.production > s.company.cash && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-warn">
             <Icon name="warning" size={14} /> This will cost more cash than you have. Consider a publisher deal or a smaller game.
