@@ -172,7 +172,7 @@ export function rivalsMonthly(c: Ctx): void {
       const own = live.filter((l) => l.maker === r.id).map((l) => l.id);
       const pool = own.length ? own : pref && pref.length ? pref : live.map((l) => l.id);
       const plats = rng.shuffle([...pool]).slice(0, rng.int(1, Math.min(3, pool.length)));
-      const score = clamp(Math.round(rng.normal(BALANCE.RIVAL_SCORE_BASE + r.quality * BALANCE.RIVAL_SCORE_QUALITY - 8 + r.reputation / 12, BALANCE.RIVAL_SCORE_SD)), 15, 96);
+      const score = clamp(Math.round(rng.normal(BALANCE.RIVAL_SCORE_BASE + r.quality * BALANCE.RIVAL_SCORE_QUALITY - 8 + r.reputation / 12, BALANCE.RIVAL_SCORE_SD)), 15, 93);
       const units = Math.round(Math.pow(score / 100, 4) * sizeF * 400_000 * rng.range(0.4, 1.6) * Math.pow(1.04, yr - 1980));
       addRivalGame(s, { name: genTitle(rng, topic), company: r.id, genre, topic, platforms: plats, day: s.day, score, units });
       r.lastRelease = s.day;

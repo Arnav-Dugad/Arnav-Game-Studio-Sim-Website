@@ -91,7 +91,7 @@ export const BALANCE = {
   PE_BASE: 16,
 
   // ── Rivals ─────────────────────────────────────────────────────────────────
-  RIVAL_SCORE_BASE: 58,
+  RIVAL_SCORE_BASE: 54,
   RIVAL_SCORE_QUALITY: 30,
   RIVAL_SCORE_SD: 8,
   COMPETITION_WINDOW_DAYS: 35,

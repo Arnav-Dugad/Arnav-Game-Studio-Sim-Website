@@ -14,6 +14,7 @@ import { ModalHost } from '../game/ModalHost';
 import { Toasts, NumberPops } from '../game/Feedback';
 import { Tutorial } from '../game/Tutorial';
 import { BuildBar } from '../game/BuildBar';
+import { ProjectDock, YearInReview } from '../game/Dock';
 import { sound } from '../sound';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { navigate } from '../router';
@@ -139,6 +140,8 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       }} onZoom={(f) => (f === 0 ? rendererRef.current?.fit() : rendererRef.current?.zoomBy(f))} />
       <Rail />
       <BuildBar />
+      <ProjectDock />
+      <YearInReview />
       <PanelHost />
       <NumberPops />
       <Toasts />
