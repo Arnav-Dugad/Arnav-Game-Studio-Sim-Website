@@ -17,6 +17,7 @@ import { Rng } from './rng';
 import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
 import { hostShowcase, showcaseBlocked } from './systems/showcase';
+import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
 import { applyPatch, applyPort, canPatch, canRemaster, patchCost, portCost } from './systems/release';
@@ -103,6 +104,7 @@ export type Action =
   | { type: 'setSubscriptionPrice'; price: number }
   | { type: 'closeSubscription' }
   | { type: 'hostShowcase' }
+  | { type: 'signIndie'; rivalId: string; tier: 'small' | 'medium' | 'large' }
   | { type: 'cancelConsole'; id: string };
 
 export type ActionResult = { ok: true; events: SimEvent[] } | { ok: false; error: string };
@@ -874,6 +876,16 @@ function apply(c: Ctx, a: Action): string | null {
       else if (pack) hw.packIn = pack.id;
       if (a.price !== undefined) hw.price = Math.round(a.price);
       if (a.feeRate !== undefined) hw.feeRate = a.feeRate;
+      return null;
+    }
+    case 'signIndie': {
+      const why = labelBlocked(s);
+      if (why) return why;
+      if (!LABEL_TIERS[a.tier]) return 'Invalid budget';
+      const rv = signableIndies(s).find((r) => r.id === a.rivalId);
+      if (!rv) return 'That studio isn’t available';
+      if (s.company.cash < dealAdvance(s, a.tier)) return 'Not enough cash for the advance';
+      signIndie(c, rv, a.tier);
       return null;
     }
     case 'hostShowcase': {

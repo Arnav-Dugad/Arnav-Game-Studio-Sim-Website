@@ -373,6 +373,8 @@ export type LedgerCat =
   | 'hardware'
   | 'platform_fees'
   | 'subscriptions'
+  | 'publishing'
+  | 'advances_paid'
   | 'hardware_rd'
   | 'royalties'
   | 'acquisitions'
@@ -485,6 +487,25 @@ export interface AwardWinner {
 export interface AwardYear {
   year: number;
   winners: AwardWinner[];
+}
+
+/** A game you fund and publish for an independent studio. */
+export interface PublishedDeal {
+  id: Id;
+  rivalId: Id;
+  studio: string;
+  tier: 'small' | 'medium' | 'large';
+  advance: number;
+  genre: GenreId;
+  signedDay: number;
+  releaseDay: number;
+  status: 'dev' | 'released' | 'done';
+  gameName?: string;
+  score?: number;
+  units?: number;
+  payoutsLeft: number;
+  monthlyPayout: number;
+  earned: number;
 }
 
 export interface SubscriptionState {
@@ -639,6 +660,8 @@ export interface GameState {
   hardware: PlayerConsole[];
   /** Golden Pixel Gala results by year (industry-wide). */
   awardHistory?: AwardYear[];
+  /** Games you publish for indie studios. */
+  publishingDeals?: PublishedDeal[];
   /** Your catalogue subscription service, once launched. */
   subscription?: SubscriptionState;
   news: NewsItem[];

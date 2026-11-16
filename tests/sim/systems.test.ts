@@ -17,6 +17,7 @@ import { EVENT_DEFS } from '../../src/sim/systems/events';
 import { layout, touchOffice } from '../../src/sim/systems/office';
 import { consoleSpec, exclusiveBuzz, monthlyDemandM, packInMul, priceFactor, refPrice, unitCost } from '../../src/sim/systems/hardware';
 import { migrate } from '../../src/sim/save';
+import { signableIndies } from '../../src/sim/systems/publishing';
 import { catalogSalesMul, subRefPrice, subTarget } from '../../src/sim/systems/subscription';
 import type { GameProject, GameState } from '../../src/sim/types';
 
@@ -616,5 +617,32 @@ describe('legacy events', () => {
     ev.resolve({ s, rng, out: [] }, { uid: 1, defId: 'movie_deal', title: made.title, body: made.body, art: 'press', options: made.options, ctx: made.ctx, day: s.day, expires: s.day + 30 } as never, 'license');
     expect(s.company.cash).toBeGreaterThan(cash);
     expect(s.franchises.f1!.fans).not.toBe(3_000_000);
+  });
+});
+
+describe('publishing label', () => {
+  it('funds an indie game, ships it, and pays a revenue share over six months', () => {
+    const s = game(2000, 21);
+    s.company.cash = 1e8;
+    s.company.reputation = 60;
+    expect(dispatch(s, { type: 'signIndie', rivalId: 'x', tier: 'small' }).ok).toBe(false); // no self-publishing
+    s.research.done.push('biz_self_publishing');
+    for (let i = 0; i < 6 && !signableIndies(s).length; i++) advance(s, 31);
+    const indie = signableIndies(s)[0]!;
+    expect(indie).toBeDefined();
+    const cash = s.company.cash;
+    expect(dispatch(s, { type: 'signIndie', rivalId: indie.id, tier: 'medium' }).ok).toBe(true);
+    expect(s.company.cash).toBeLessThan(cash);
+    expect(signableIndies(s).some((r) => r.id === indie.id)).toBe(false); // busy
+    for (let m = 0; m < 22; m++) {
+      advance(s, 31);
+      s.pendingEvents = [];
+      s.company.cash = Math.max(s.company.cash, 1e6);
+    }
+    const d = s.publishingDeals![0]!;
+    expect(d.status).toBe('done');
+    expect(d.score).toBeGreaterThan(0);
+    expect(d.earned).toBeGreaterThan(0);
+    expect(s.rivalGames.some((g) => g.name === d.gameName)).toBe(true);
   });
 });

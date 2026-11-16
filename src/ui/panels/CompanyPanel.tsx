@@ -11,6 +11,7 @@ import { Button, Empty, Pill, Section, Segmented, Stat, cx } from '../components
 import { CompanyBadge } from '../art/CompanyBadge';
 import { useGame } from '../store';
 import { Icon } from '../icons';
+import { LABEL_SHARE, LABEL_TIERS, dealAdvance, labelBlocked, signableIndies, talentStars, type DealTier } from '@/sim/systems/publishing';
 import { SHOWCASE_MIN_REP, SHOWCASE_MIN_YEAR, showcaseBlocked, showcaseCost, showcaseHype, showcaseName } from '@/sim/systems/showcase';
 import { HistoryTab } from './HistoryTab';
 import { SubscriptionTab } from './SubscriptionTab';
@@ -42,6 +43,76 @@ export default function CompanyPanel() {
       {tab === 'pass' && <SubscriptionTab />}
       {tab === 'history' && <HistoryTab />}
     </div>
+  );
+}
+
+/** Fund and publish games by indie studios. */
+function Label() {
+  const s = useGame((g) => g.s)!;
+  const why = labelBlocked(s);
+  const deals = [...(s.publishingDeals ?? [])].reverse();
+  const indies = signableIndies(s).slice(0, 5);
+  if (!s.research.done.includes('biz_self_publishing')) return null;
+  return (
+    <Section title="Your publishing label">
+      <p className="mb-2 text-xs text-ink3">
+        Fund an indie studio’s next game. You pay the advance now; when it ships you get {Math.round(LABEL_SHARE * 100)}% of its revenue over six months. Talent and budget make better games — but there are no guarantees.
+      </p>
+      {deals.length > 0 && (
+        <ul className="mb-2 space-y-1">
+          {deals.slice(0, 6).map((d) => (
+            <li key={d.id} className="flex items-center gap-2 rounded-lg bg-bg2/60 px-2.5 py-1.5 text-xs">
+              <span className="min-w-0 flex-1 truncate">
+                <b>{d.gameName ?? `${GENRE_BY_ID[d.genre]?.name ?? ''} game`}</b> · {d.studio} · {LABEL_TIERS[d.tier].label.toLowerCase()} budget
+              </span>
+              {d.status === 'dev' ? (
+                <Pill tone="tech">ships ~{formatDate(d.releaseDay, false)}</Pill>
+              ) : (
+                <>
+                  <Pill tone={(d.score ?? 0) >= 75 ? 'good' : (d.score ?? 0) < 55 ? 'bad' : 'neutral'}>{d.score}</Pill>
+                  <span className={cx('num w-24 text-right', d.earned >= d.advance ? 'text-good' : 'text-ink2')}>
+                    {fmtMoney(d.earned)} / {fmtMoney(d.advance)}
+                  </span>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {why ? (
+        <p className="text-[11px] text-ink3">{why}</p>
+      ) : indies.length === 0 ? (
+        <p className="text-[11px] text-ink3">No indie studios are looking for a publisher right now. Check back next month.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {indies.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-2 text-xs">
+              <CompanyBadge name={r.name} color={r.color} size={28} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold">{r.name}</div>
+                <div className="truncate text-ink3">
+                  {'★'.repeat(talentStars(r))}
+                  <span className="opacity-30">{'★'.repeat(5 - talentStars(r))}</span> talent · {r.genres.map((g) => GENRE_BY_ID[g]?.name).join(', ')} · ~{Math.round(r.staff)} staff
+                </div>
+              </div>
+              <div className="flex gap-1">
+                {(Object.keys(LABEL_TIERS) as DealTier[]).map((tier) => (
+                  <Button
+                    key={tier}
+                    size="sm"
+                    disabled={s.company.cash < dealAdvance(s, tier)}
+                    title={`${LABEL_TIERS[tier].label} budget: ${fmtMoney(dealAdvance(s, tier))} advance, ships in ${Math.round(LABEL_TIERS[tier].days[0] / 30)}–${Math.round(LABEL_TIERS[tier].days[1] / 30)} months`}
+                    onClick={() => useGame.getState().actOrToast({ type: 'signIndie', rivalId: r.id, tier }, `${r.name} signed!`)}
+                  >
+                    {fmtMoney(dealAdvance(s, tier))}
+                  </Button>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
   );
 }
 
@@ -100,6 +171,7 @@ function Publishing() {
         )}
         <p className="mt-1.5 text-[11px] text-ink3">Pick a deal when starting a new game (Develop → New game → Publishing).</p>
       </Section>
+      <Label />
       <Showcase />
       <Section title="Trade shows">
         <ul className="space-y-1.5">
