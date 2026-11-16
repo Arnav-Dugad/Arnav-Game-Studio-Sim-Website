@@ -16,6 +16,7 @@ import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
 import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
+import { applyPatch, applyPort, canPatch, patchCost, portCost } from './systems/release';
 import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, tierDef, touchOffice } from './systems/office';
@@ -85,7 +86,9 @@ export type Action =
   | { type: 'retire' }
   | { type: 'setAutopause'; key: 'gates' | 'events' | 'releases' | 'research'; on: boolean }
   | { type: 'tutorial'; step: number }
-  | { type: 'refreshCandidates' };
+  | { type: 'refreshCandidates' }
+  | { type: 'patchGame'; releaseId: string }
+  | { type: 'portGame'; releaseId: string; platform: string };
 
 export type ActionResult = { ok: true; events: SimEvent[] } | { ok: false; error: string };
 
@@ -128,7 +131,7 @@ function assignTeam(s: GameState, projectId: string, team: string[]): void {
 export function sizeAllowed(s: GameState, size: Size): string | null {
   if (size === 'large' && s.office.tier < 2) return 'Large games need at least a Small Office';
   if (size === 'aaa' && (s.office.tier < 4 || fromDay(s.day).year < 1995)) return 'AAA needs a Studio Building and 1995+';
-  if (size === 'medium' && s.releaseOrder.length < 1) return 'Ship a small game first';
+  if (size !== 'small' && s.releaseOrder.length < 1) return 'Ship a small game first';
   return null;
 }
 
@@ -691,6 +694,36 @@ function apply(c: Ctx, a: Action): string | null {
     case 'tutorial':
       s.progress.tutorialStep = a.step;
       return null;
+    case 'patchGame': {
+      const rel = s.releases[a.releaseId];
+      if (!rel) return 'No such game';
+      const why = canPatch(s, rel);
+      if (why) return why;
+      const cost = patchCost(s, rel);
+      if (s.company.cash < cost) return 'Not enough cash';
+      spend(s, 'other_expense', cost);
+      const gain = applyPatch(s, rel);
+      pushNews(s, { category: 'studio', headline: `Patch for ${rel.name} fixes bugs (user score +${gain})`, tone: 'good' });
+      return null;
+    }
+    case 'portGame': {
+      const rel = s.releases[a.releaseId];
+      if (!rel) return 'No such game';
+      if (rel.concept.platforms.includes(a.platform)) return 'Already on that platform';
+      const pl = platformInfo(s, a.platform);
+      if (!pl || !isPlatformAvailable(s, pl)) return 'Platform not available';
+      if (s.day - rel.day > 365 * 4) return 'Too old to port profitably';
+      if (rel.concept.monetization === 'subscription') return 'Subscription games can’t be ported';
+      const kit = s.devkits.includes(a.platform) ? 0 : devkitCost(s, a.platform);
+      const cost = portCost(s, rel) + kit;
+      if (s.company.cash < cost) return 'Not enough cash';
+      if (kit) s.devkits.push(a.platform);
+      spend(s, 'devkits', kit);
+      spend(s, 'other_expense', portCost(s, rel));
+      applyPort(s, rel, a.platform);
+      pushNews(s, { category: 'studio', headline: `${rel.name} is out now on ${pl.name}`, tone: 'good' });
+      return null;
+    }
     case 'refreshCandidates': {
       const cost = money(1_200, s.day);
       if (s.company.cash < cost) return 'Not enough cash';

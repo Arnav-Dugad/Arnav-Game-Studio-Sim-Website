@@ -5,7 +5,9 @@ import { PERSON_BY_ID } from '@/data/people';
 import { SKILLS, type Skill } from '@/data/types';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
-import { platformName } from '@/sim/systems/market';
+import { availablePlatforms, platformName } from '@/sim/systems/market';
+import { canPatch, patchCost, portCost } from '@/sim/systems/release';
+import { devkitCost } from '@/sim/actions';
 import { marketSalary, productivity, moraleTarget, ROLE_NAMES } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
 import { runScore } from '@/sim/systems/achievements';
@@ -242,12 +244,15 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         <ul className="text-sm">
           {r.platforms.map((p) => (
             <li key={p.platform} className="flex justify-between border-b border-line py-1">
-              <span>{platformName(s, p.platform)}</span>
+              <span>
+                {platformName(s, p.platform)} {p.startWeek ? <Pill tone="tech">port</Pill> : null}
+              </span>
               <span className="num">{fmtUnits(p.units)}</span>
             </li>
           ))}
         </ul>
       </Section>
+      <PostLaunch releaseId={releaseId} />
     </Modal>
   );
 }
@@ -652,5 +657,56 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
         ))}
       </dl>
     </Modal>
+  );
+}
+
+function PostLaunch({ releaseId }: { releaseId: string }) {
+  const s = useGame((g) => g.s)!;
+  useGame((g) => g.v);
+  const act = useGame((g) => g.act);
+  const toast = useGame((g) => g.toast);
+  const r = s.releases[releaseId]!;
+  const ports = availablePlatforms(s).filter((p) => !r.concept.platforms.includes(p.id));
+  const [port, setPort] = useState(ports[0]?.id ?? '');
+  const patchWhy = canPatch(s, r);
+  const tooOld = s.day - r.day > 365 * 4;
+  const run = (a: Parameters<typeof act>[0], ok: string) => {
+    const res = act(a);
+    toast(res.ok ? { text: ok, tone: 'good', icon: 'wrench' } : { text: res.error, tone: 'bad' });
+  };
+  return (
+    <Section title="Post-launch support">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl border border-line p-3 text-xs">
+          <div className="text-sm font-semibold">Patch it</div>
+          <p className="mt-0.5 text-ink3">
+            {Math.round(r.bugs)} known bugs · {r.patches ?? 0}/3 patches. Fixing bugs lifts the user score and extends sales.
+          </p>
+          <Button size="sm" className="mt-2" icon="wrench" disabled={!!patchWhy || s.company.cash < patchCost(s, r)} title={patchWhy ?? undefined} onClick={() => run({ type: 'patchGame', releaseId }, `Patch shipped for ${r.name}`)}>
+            {patchWhy ?? `Ship patch · ${fmtMoney(patchCost(s, r))}`}
+          </Button>
+        </div>
+        <div className="rounded-xl border border-line p-3 text-xs">
+          <div className="text-sm font-semibold">Port to another platform</div>
+          <p className="mt-0.5 text-ink3">An outsourced port launches with a fresh (smaller) sales curve.</p>
+          {tooOld || !ports.length ? (
+            <p className="mt-2 text-ink3">{tooOld ? 'Too old to port profitably.' : 'No other platforms available.'}</p>
+          ) : (
+            <div className="mt-2 flex gap-2">
+              <select className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-2" value={port} onChange={(e) => setPort(e.target.value)} aria-label="Port to">
+                {ports.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <Button size="sm" disabled={!port} onClick={() => run({ type: 'portGame', releaseId, platform: port }, `${r.name} ported!`)}>
+                {fmtMoney(portCost(s, r) + (s.devkits.includes(port) ? 0 : devkitCost(s, port)))}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </Section>
   );
 }

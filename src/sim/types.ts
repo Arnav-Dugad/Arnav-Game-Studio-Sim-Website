@@ -232,6 +232,8 @@ export interface PlatformSales {
   platform: Id;
   potential: number; // lifetime unit potential at release (before competition)
   units: number;
+  /** Release week this platform version launched (ports launch later). */
+  startWeek?: number;
 }
 
 export interface Release {
@@ -262,6 +264,8 @@ export interface Release {
   liveIncome: number;
   serverLoad: number;
   why: { sales?: Breakdown; user?: Breakdown };
+  /** Post-launch patches shipped. */
+  patches?: number;
 }
 
 export interface Franchise {

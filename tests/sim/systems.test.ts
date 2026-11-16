@@ -233,3 +233,24 @@ describe('a full first game', () => {
     expect(r.net).toBeGreaterThan(0);
   });
 });
+
+describe('post-launch support', () => {
+  it('patching lifts user score and porting adds a platform with its own sales curve', () => {
+    const s = game(1985, 33);
+    s.company.cash = 1_000_000;
+    startSmall(s, { platforms: ['c64'] });
+    advance(s, 120);
+    const rel = s.releases[s.releaseOrder[0]!]!;
+    rel.bugs = 12;
+    const before = rel.userScore;
+    expect(dispatch(s, { type: 'patchGame', releaseId: rel.id }).ok).toBe(true);
+    expect(rel.userScore).toBeGreaterThan(before);
+    expect(rel.bugs).toBeLessThan(12);
+    const r = dispatch(s, { type: 'portGame', releaseId: rel.id, platform: 'zx_spectrum' });
+    expect(r.ok).toBe(true);
+    const port = rel.platforms.find((p) => p.platform === 'zx_spectrum')!;
+    expect(port.startWeek).toBeGreaterThan(0);
+    advance(s, 60);
+    expect(port.units).toBeGreaterThan(0);
+  });
+});

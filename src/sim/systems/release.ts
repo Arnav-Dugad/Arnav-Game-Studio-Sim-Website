@@ -348,7 +348,7 @@ export function updateSalesWeekly(c: Ctx): void {
       const pl = platformInfo(s, ps.platform);
       if (!pl) continue;
       const decay = rel.decay * (rel.concept.monetization === 'premium' ? 1 : Math.min(0.985, 1 - (1 - rel.decay) / BALANCE.MONETIZATION[rel.concept.monetization].tailMul));
-      const share = (1 - decay) * Math.pow(decay, rel.week);
+      const share = (1 - decay) * Math.pow(decay, Math.max(0, rel.week - (ps.startWeek ?? 0)));
       // platform decline after discontinuation scales sales down
       const life = pl.endDay !== null && s.day > pl.endDay ? Math.exp(-(s.day - pl.endDay) / 250) : 1;
       let u = (ps.potential * share * life * demandMul(s, pl) * (rel.serverLoad > 0 ? outage : 1)) / comp;
@@ -409,7 +409,7 @@ export function competition(s: GameState, rel: Release): number {
   const w = BALANCE.COMPETITION_WINDOW_DAYS;
   const now = s.day;
   // Only meaningful during the launch window (first ~10 weeks)
-  if (rel.week > 10) return 1;
+  if (rel.week > 10 && rel.platforms.every((p) => rel.week - (p.startWeek ?? 0) > 10)) return 1;
   let comp = 1;
   for (const g of s.rivalGames) {
     if (Math.abs(g.day - rel.day) > w || g.genre !== rel.concept.genre) continue;
@@ -492,3 +492,46 @@ export function releaseSummary(r: Release): string {
   return `${fmtUnits(r.units)} sold · ${fmtMoney(r.net)} earned`;
 }
 
+
+// ── Post-launch support ─────────────────────────────────────────────────────
+
+const PORT_COST: Record<Size, number> = { small: 6_000, medium: 25_000, large: 90_000, aaa: 300_000 };
+
+export function patchCost(s: GameState, rel: Release): number {
+  return Math.round((2_000 + rel.bugs * 250) * inflation(s.day) * (rel.concept.size === 'aaa' ? 4 : rel.concept.size === 'large' ? 2 : 1));
+}
+
+export function canPatch(s: GameState, rel: Release): string | null {
+  if (s.day - rel.day > 365 * 3) return 'Too old to patch';
+  if ((rel.patches ?? 0) >= 3) return 'Already patched three times';
+  if (rel.bugs < 2) return 'Nothing left worth patching';
+  return null;
+}
+
+/** Ship a patch: fewer bugs, happier players, a small sales bump. */
+export function applyPatch(s: GameState, rel: Release): number {
+  const before = rel.userScore;
+  const gain = Math.min(10, Math.round(rel.bugs * 0.5 + 1));
+  rel.userScore = clamp(rel.userScore + gain, 1, 100);
+  rel.bugs = Math.round(rel.bugs * 0.3);
+  rel.patches = (rel.patches ?? 0) + 1;
+  rel.active = true;
+  for (const p of rel.platforms) p.potential *= 1 + gain / 100;
+  s.company.reputation = clamp(s.company.reputation + 0.5, 0, 100);
+  return rel.userScore - before;
+}
+
+export function portCost(s: GameState, rel: Release): number {
+  return Math.round(PORT_COST[rel.concept.size] * inflation(s.day));
+}
+
+/** Outsourced port: the game launches on a new platform with a fresh (smaller) sales curve. */
+export function applyPort(s: GameState, rel: Release, platform: string): number {
+  const eff = rel.score * 0.7 + rel.userScore * 0.3;
+  const pot = salesPotential(s, { ...rel.concept, platforms: [platform], franchiseId: undefined }, eff - 3, 0.2);
+  const potential = (pot.platforms[0]?.potential ?? 0) * 0.65;
+  rel.platforms.push({ platform, potential, units: 0, startWeek: rel.week });
+  rel.concept = { ...rel.concept, platforms: [...rel.concept.platforms, platform] };
+  rel.active = true;
+  return potential;
+}

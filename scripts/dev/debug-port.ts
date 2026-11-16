@@ -1,0 +1,13 @@
+import { createGame } from '../../src/sim/create';
+import { advance } from '../../src/sim/advance';
+import { dispatch } from '../../src/sim/actions';
+import { availablePlatforms } from '../../src/sim/systems/market';
+const s = createGame({ seed: 33, companyName: 'T', founderName: 'T', startYear: 1985, autopause: false });
+s.company.cash = 1_000_000;
+console.log(dispatch(s, { type: 'startGame', game: { name: 'G', genre: 'action', topic: 'scifi', platforms: ['c64'], audience: 'teen', size: 'small', monetization: 'premium', engineId: 'e0', team: ['founder'] } }));
+advance(s, 120);
+const rel = s.releases[s.releaseOrder[0]!]!;
+console.log('active', rel.active, 'bugs', rel.bugs, availablePlatforms(s).map((p) => p.id).join(','));
+rel.bugs = 12;
+console.log(dispatch(s, { type: 'patchGame', releaseId: rel.id }));
+console.log(dispatch(s, { type: 'portGame', releaseId: rel.id, platform: 'zx_spectrum' }));
