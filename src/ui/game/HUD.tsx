@@ -95,7 +95,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom }: { saveStatus: SaveSt
         </div>
         <div className="glass pointer-events-auto flex items-center gap-1 rounded-2xl p-1">
           <SaveBadge st={saveStatus} onSave={onSave} />
-          <IconButton icon="help" label="Shortcuts (?)" onClick={() => pushModal({ kind: 'shortcuts' })} />
+          <IconButton icon="help" label="How to play" onClick={() => pushModal({ kind: 'guide' })} />
           <div className="relative">
             <IconButton icon="menu" label="Menu" onClick={() => setMenu((m) => !m)} aria-expanded={menu} />
             {menu && (
@@ -103,7 +103,8 @@ export function HUD({ saveStatus, onSave, onExit, onZoom }: { saveStatus: SaveSt
                 {[
                   { icon: 'save' as const, label: 'Save now', run: onSave },
                   { icon: 'settings' as const, label: 'Settings', run: () => openPanel('settings') },
-                  { icon: 'keyboard' as const, label: 'Shortcuts', run: () => pushModal({ kind: 'shortcuts' }) },
+                  { icon: 'book' as const, label: 'How to play', run: () => pushModal({ kind: 'guide' }) },
+                  { icon: 'keyboard' as const, label: 'Shortcuts (?)', run: () => pushModal({ kind: 'shortcuts' }) },
                   { icon: 'logout' as const, label: 'Save & exit', run: onExit },
                 ].map((m) => (
                   <button

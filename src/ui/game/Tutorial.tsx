@@ -20,7 +20,7 @@ const STEPS: Step[] = [
   { title: 'Let time run', body: 'Press play (Space) or pick a speed at the top. Watch your team work. At each phase gate you’ll decide where to focus effort.', done: (g) => g.speed > 0 },
   { title: 'Phase gates & reviews', body: 'When a phase ends, the game pauses so you can adjust focus. When it ships, critics review it — hover any number to see why.', done: (g) => !!g.s && g.s.releaseOrder.length > 0 },
   { title: 'Grow the studio', body: 'Hire people from the Staff panel (H) when you can afford them, and assign someone to Research (R) to unlock new tech.', done: (g) => !!g.s && (g.s.progress.stats.staffHired > 0 || !!g.s.research.active), target: 'rail-staff' },
-  { title: 'You’ve got this', body: 'Shape your office in build mode (B) — break areas, décor and space affect morale and productivity. Keep an eye on cash. Good luck!', next: 'Finish' },
+  { title: 'You’ve got this', body: 'Shape your office in build mode (B) — break areas, décor and space affect morale and productivity. The (?) button at the top has a full guide. Good luck!', next: 'Finish' },
 ];
 
 export function Tutorial() {

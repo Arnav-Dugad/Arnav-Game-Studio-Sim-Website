@@ -22,6 +22,7 @@ import { LineChart } from '../charts';
 import { Icon } from '../icons';
 import { useGame } from '../store';
 import { FocusSliders } from './FocusEditor';
+import { GuideModal } from './Guide';
 import { genreExperience, idealFocus, PHASE_NAMES } from './lib';
 import { Face, SkillBars, Traits } from '../panels/StaffPanel';
 import { sound } from '../sound';
@@ -52,6 +53,8 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       return <MajorNewsModal newsId={modal.newsId} onClose={pop} />;
     case 'shortcuts':
       return <ShortcutsModal onClose={pop} />;
+    case 'guide':
+      return <GuideModal onClose={pop} />;
     default:
       return null;
   }
