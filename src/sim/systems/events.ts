@@ -7,7 +7,7 @@ import { clamp } from '../breakdown';
 import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
-import { earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from '../util';
+import { addRep, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from '../util';
 import { valuation } from './finance';
 import { generateCandidate, candidateToStaff, marketSalary, removeStaff } from './staff';
 import { assignDesks, freeDesks } from './office';
@@ -210,10 +210,10 @@ export const EVENT_DEFS: EventDef[] = [
     resolve: ({ s }, _e, opt) => {
       if (opt === 'end') {
         for (const p of activeGames(s)) p.crunch = false;
-        s.company.reputation = clamp(s.company.reputation + 1, 0, 100);
+        addRep(s, 1, 'Ended crunch publicly');
         mod(s, 6, 60, 'Crunch ended');
       } else {
-        s.company.reputation = clamp(s.company.reputation - 4, 0, 100);
+        addRep(s, -(4), 'Denied crunch reports');
         mod(s, -6, 60, 'Crunch denial');
       }
     },
@@ -275,7 +275,7 @@ export const EVENT_DEFS: EventDef[] = [
         if (p && p.kind === 'game') p.hype = Math.min(3, p.hype + 0.4);
         pushNews(s, { category: 'studio', headline: `Crowdfunding success: ${fmtMoney(raised)} raised`, tone: 'good' });
       } else {
-        s.company.reputation = clamp(s.company.reputation - 2, 0, 100);
+        addRep(s, -(2), 'Crowdfunding fell short');
         pushNews(s, { category: 'studio', headline: 'Crowdfunding campaign falls short', tone: 'bad' });
       }
     },
@@ -477,9 +477,9 @@ export const EVENT_DEFS: EventDef[] = [
     },
     resolve: ({ s }, e, opt) => {
       const r = s.releases[String(e.ctx.rel)];
-      if (opt === 'apologise') s.company.reputation = clamp(s.company.reputation - 1, 0, 100);
+      if (opt === 'apologise') addRep(s, -(1), 'Apologised for a controversy');
       else {
-        s.company.reputation = clamp(s.company.reputation - 5, 0, 100);
+        addRep(s, -(5), 'Leaned into a controversy');
         if (r) for (const p of r.platforms) p.potential *= 1.2;
       }
     },
@@ -521,7 +521,7 @@ export const EVENT_DEFS: EventDef[] = [
     }),
     resolve: ({ s }, _e, opt) => {
       if (opt === 'join') {
-        s.company.reputation = clamp(s.company.reputation + 2, 0, 100);
+        addRep(s, 2, 'Charity bundle');
         s.company.fans *= 1.05;
       }
     },
@@ -580,9 +580,9 @@ export const EVENT_DEFS: EventDef[] = [
     }),
     resolve: ({ s }, _e, opt) => {
       if (opt === 'disclose') {
-        s.company.reputation = clamp(s.company.reputation + 1, 0, 100);
+        addRep(s, 1, 'Clear AI-use policy');
         mod(s, 3, 90, 'Clear AI policy');
-      } else s.company.reputation = clamp(s.company.reputation - 3, 0, 100);
+      } else addRep(s, -(3), 'AI tools backlash');
     },
   },
   {
@@ -606,7 +606,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt !== 'sponsor') return;
       spend(s, 'marketing', Number(e.ctx.cost));
       s.company.fans *= 1.08;
-      s.company.reputation = clamp(s.company.reputation + 2, 0, 100);
+      addRep(s, 2, 'Esports sponsorship');
     },
   },
   {

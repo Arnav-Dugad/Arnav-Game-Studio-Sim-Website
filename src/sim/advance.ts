@@ -17,8 +17,7 @@ import { rivalScheduledReleases, rivalsHistory, rivalsMonthly } from './systems/
 import { refreshCandidates, updateStaffDaily, updateStaffMonthly } from './systems/staff';
 import { subsidiariesMonthly } from './systems/subsidiaries';
 import type { GameState } from './types';
-import { clamp } from './breakdown';
-import { pushNews } from './util';
+import { addRep, pushNews } from './util';
 
 export const STORY_END_DAY = toDay(2027, 1, 1);
 
@@ -80,7 +79,7 @@ export function tick(c: Ctx): void {
     if (v > s.progress.stats.peakValuation) s.progress.stats.peakValuation = v;
     // reputation slowly decays toward a floor without new releases (attention economy)
     const lastRel = s.releaseOrder.length ? s.releases[s.releaseOrder[s.releaseOrder.length - 1]!]!.day : -1e9;
-    if (s.day - lastRel > 270) s.company.reputation = clamp(s.company.reputation - 0.15, 0, 100);
+    if (s.day - lastRel > 270) addRep(s, -(0.15), 'Quiet spell (no recent releases)');
     checkAchievements(c);
     c.out.push({ type: 'month', day: s.day });
   }

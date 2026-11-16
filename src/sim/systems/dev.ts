@@ -11,7 +11,7 @@ import { BD, clamp, type Breakdown } from '../breakdown';
 import { fromDay, weekday } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { ContractProject, EngineProject, GameProject, GameState, Size, Staff } from '../types';
-import { earn, inflation, newId, pushNews, spend } from '../util';
+import { addRep, earn, inflation, newId, pushNews, spend } from '../util';
 import { layout } from './office';
 import { growSkill, hasTrait, isCrunching, productivity } from './staff';
 import { expectedTech, platformAudienceFit, platformGenreFit, platformInfo, genrePopularity, topicPopularity } from './market';
@@ -225,7 +225,7 @@ function progressGame(c: Ctx, p: GameProject): void {
   if (s.day % 7 === 0 || p.awaitingGate) p.qualityPreview = gameQuality(s, p, true);
   // Publisher deadline penalty: missing a publisher deadline costs reputation once.
   if (p.concept.deal && s.day === p.concept.deal.deadlineDay && p.phase < 3) {
-    s.company.reputation = clamp(s.company.reputation - 3, 0, 100);
+    addRep(s, -(3), 'Missed a publisher deadline');
     pushNews(s, { category: 'studio', headline: `Publisher frustrated: ${p.concept.name} misses its deadline`, tone: 'bad' });
   }
 }
@@ -367,14 +367,14 @@ function progressContract(c: Ctx, p: ContractProject): void {
     if (done) {
       earn(s, 'contracts', p.pay);
       c.out.push({ type: 'income', amount: p.pay, source: 'contract' });
-      s.company.reputation = clamp(s.company.reputation + 0.6, 0, 100);
+      addRep(s, 0.6, 'Delivered a contract');
       s.progress.stats.contractsDone += 1;
       pushNews(s, { category: 'studio', headline: `Contract delivered: ${p.title}`, body: `Paid in full.`, tone: 'good' });
     } else {
       const partial = Math.round(p.pay * completion * 0.5);
       earn(s, 'contracts', partial);
       spend(s, 'other_expense', p.penalty);
-      s.company.reputation = clamp(s.company.reputation - 1.5, 0, 100);
+      addRep(s, -(1.5), 'Missed a contract deadline');
       pushNews(s, { category: 'studio', headline: `Contract missed deadline: ${p.title}`, body: `Penalty applied; partial payment for ${Math.round(completion * 100)}% done.`, tone: 'bad' });
     }
     finishProject(s, p.id);

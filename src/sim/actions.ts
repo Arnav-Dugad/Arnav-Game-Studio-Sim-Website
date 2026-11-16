@@ -25,7 +25,7 @@ import { candidateToStaff, marketSalary, refreshCandidates, removeStaff } from '
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { Focus3, GameProject, GameState, Size, Specialisation } from './types';
-import { earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from './util';
+import { addRep, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from './util';
 
 export interface StartGamePayload {
   name: string;
@@ -317,7 +317,7 @@ function apply(c: Ctx, a: Action): string | null {
         }
       }
       delete s.projects[a.projectId];
-      if (p.kind === 'game' && p.announcedDay !== undefined) s.company.reputation = clamp(s.company.reputation - 2, 0, 100);
+      if (p.kind === 'game' && p.announcedDay !== undefined) addRep(s, -(2), 'Cancelled an announced game');
       return null;
     }
     case 'marketing': {
@@ -353,7 +353,7 @@ function apply(c: Ctx, a: Action): string | null {
       s.eventCooldowns[key] = s.day;
       const announced = Object.values(s.projects).filter((p): p is GameProject => p.kind === 'game' && p.announcedDay !== undefined);
       for (const p of announced) p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + show.hype[a.booth] / Math.max(1, Math.sqrt(announced.length)));
-      s.company.reputation = clamp(s.company.reputation + show.rep[a.booth], 0, 100);
+      addRep(s, show.rep[a.booth], 'Trade show appearance');
       pushNews(s, { category: 'studio', headline: `${s.company.name} wows crowds at ${show.name}`, tone: 'good' });
       return null;
     }
@@ -374,7 +374,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (cand.fromRival) {
         const rv = s.rivals[cand.fromRival];
         if (rv) rv.quality = clamp(rv.quality - 0.01, 0.1, 1);
-        s.company.reputation = clamp(s.company.reputation - 1, 0, 100);
+        addRep(s, -(1), 'Poached a rival developer');
         spend(s, 'recruiting', cand.askSalary * 0.25); // headhunter fee
         pushNews(s, { category: 'staff', headline: `${cand.name} defects from ${rv?.name ?? 'a rival'} to ${s.company.name}`, tone: 'neutral' });
       }
@@ -640,7 +640,7 @@ function apply(c: Ctx, a: Action): string | null {
       // Real companies bring their franchises
       if (!r.procedural) adoptFranchises(s, r.id);
       pushNews(s, { category: 'studio', headline: `${s.company.name} acquires ${r.name}`, tone: 'good' });
-      s.company.reputation = clamp(s.company.reputation + 3, 0, 100);
+      addRep(s, 3, 'Acquired a studio');
       return null;
     }
     case 'setSubsidiary': {

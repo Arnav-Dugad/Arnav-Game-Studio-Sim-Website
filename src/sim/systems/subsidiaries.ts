@@ -2,7 +2,7 @@
 import { GENRE_BY_ID } from '../../data/genres';
 import { clamp } from '../breakdown';
 import type { Ctx } from '../ctx';
-import { earn, fmtMoney, inflation, pushNews, spend } from '../util';
+import { addRep, earn, fmtMoney, inflation, pushNews, spend } from '../util';
 import { genTitle, addRivalGame } from './rivals';
 import { TOPICS } from '../../data/topics';
 import { fromDay } from '../calendar';
@@ -28,7 +28,7 @@ export function subsidiariesMonthly(c: Ctx): void {
     sub.quality = clamp(sub.quality + (score - 70) / 500, 0.2, 0.95);
     const plats = livePlatforms(s).slice(0, 3).map((p) => p.id);
     addRivalGame(s, { name: genTitle(rng, topic), company: sub.origin, genre, topic, platforms: plats, day: s.day, score, units: Math.round(revenue / 20) });
-    s.company.reputation = clamp(s.company.reputation + (score - 70) / 25, 0, 100);
+    addRep(s, (score - 70) / 25, `${sub.name} release`);
     pushNews(s, {
       category: 'studio',
       headline: `${sub.name} ships a new ${GENRE_BY_ID[genre].name} game (${score})`,

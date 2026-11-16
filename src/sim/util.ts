@@ -86,6 +86,23 @@ export function fmtUnits(n: number): string {
   return `${Math.round(n)}`;
 }
 
+/** Change reputation (clamped 0..100) and remember why. */
+export function addRep(s: GameState, delta: number, reason: string): void {
+  if (!Number.isFinite(delta) || delta === 0) return;
+  const before = s.company.reputation;
+  s.company.reputation = Math.min(100, Math.max(0, before + delta));
+  const applied = s.company.reputation - before;
+  if (Math.abs(applied) < 0.005) return;
+  const log = (s.company.repLog ??= []);
+  const last = log[log.length - 1];
+  // merge repeated small drifts (e.g. the monthly quiet-spell decay) into one entry
+  if (last && last.reason === reason && s.day - last.day < 400) {
+    last.delta += applied;
+    last.day = s.day;
+  } else log.push({ day: s.day, delta: applied, reason });
+  if (log.length > 30) log.splice(0, log.length - 30);
+}
+
 export function hasFlag(s: GameState, flag: keyof GameState['market']['flags']): boolean {
   return s.market.flags[flag] !== undefined;
 }

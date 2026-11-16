@@ -515,6 +515,8 @@ export interface Company {
   lastLayoffDay?: number;
   /** Recruitment spend level 0..3 (job ads/headhunting). */
   recruiting: number;
+  /** Recent reputation changes with reasons (newest last) — powers the "why" tooltip. */
+  repLog?: { day: number; delta: number; reason: string }[];
 }
 
 export interface Settings {

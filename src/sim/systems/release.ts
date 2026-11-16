@@ -11,7 +11,7 @@ import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
 import type { CriticReview, GameProject, GameState, Release, Size } from '../types';
-import { earn, fmtMoney, fmtUnits, hasFlag, inflation, newId, pushNews, spend } from '../util';
+import { addRep, earn, fmtMoney, fmtUnits, hasFlag, inflation, newId, pushNews, spend } from '../util';
 import { finishProject, qualityToScore } from './dev';
 import { demandMul, genreInterest, platformAudienceFit, platformGenreFit, platformInfo, topicPopularity, type PlatformInfo } from './market';
 
@@ -285,7 +285,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   f.bestScore = Math.max(f.bestScore, score);
   // Reputation
   const rd = ((score - 60) / 7) * SIZE_REP[p.concept.size];
-  s.company.reputation = clamp(s.company.reputation + (rd > 0 ? rd * (1 - s.company.reputation / 115) : rd), 0, 100);
+  addRep(s, (rd > 0 ? rd * (1 - s.company.reputation / 115) : rd), `Reviews of ${rel.name}`);
   // Stats
   const st = s.progress.stats;
   st.gamesReleased += 1;
@@ -298,7 +298,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   // Publisher minimum score clause
   const deal = p.concept.deal;
   if (deal && score < deal.minScore) {
-    s.company.reputation = clamp(s.company.reputation - 2, 0, 100);
+    addRep(s, -(2), 'Publisher disappointed');
     pushNews(s, { category: 'studio', headline: `Publisher disappointed with ${rel.name}`, body: `The contract wanted ${deal.minScore}+.`, tone: 'bad' });
   }
   pushNews(s, {
@@ -479,11 +479,11 @@ export function yearlyAwards(c: Ctx): void {
   if (awards.includes('Game of the Year')) {
     best.awards.push('Game of the Year');
     c.out.push({ type: 'award', releaseId: best.id, award: 'Game of the Year' });
-    s.company.reputation = clamp(s.company.reputation + 4, 0, 100);
+    addRep(s, 4, 'Game of the Year');
   }
   if (awards.length) {
     s.progress.stats.awardsWon += awards.length;
-    s.company.reputation = clamp(s.company.reputation + awards.length, 0, 100);
+    addRep(s, awards.length, 'Award wins');
     s.company.moraleMods.push({ v: 6, until: s.day + 120, label: 'Award win' });
     pushNews(s, { category: 'studio', headline: `${s.company.name} wins ${awards.length} award${awards.length > 1 ? 's' : ''} at the Golden Pixel Gala`, body: awards.join(', '), tone: 'good' });
   }
@@ -519,7 +519,7 @@ export function applyPatch(s: GameState, rel: Release): number {
   rel.patches = (rel.patches ?? 0) + 1;
   rel.active = true;
   for (const p of rel.platforms) p.potential *= 1 + gain / 100;
-  s.company.reputation = clamp(s.company.reputation + 0.5, 0, 100);
+  addRep(s, 0.5, 'Shipped a patch');
   return rel.userScore - before;
 }
 

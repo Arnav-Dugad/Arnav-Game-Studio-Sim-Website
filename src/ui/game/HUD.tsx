@@ -67,7 +67,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom }: { saveStatus: SaveSt
             </div>
           </div>
         </Tip>
-        <Tip content={<span>Reputation affects hiring quality, sales reach, publisher terms and office moves.</span>} side="bottom">
+        <Tip content={<RepWhy />} side="bottom">
           <div className="flex items-center gap-1.5 px-3 py-2">
             <Icon name="reputation" size={16} className="text-accent" />
             <span className="num text-sm font-semibold">{Math.round(s.company.reputation)}</span>
@@ -141,5 +141,31 @@ function SaveBadge({ st, onSave }: { st: SaveStatus; onSave: () => void }) {
       onClick={onSave}
       className={cx(st.state === 'saving' && 'animate-pulse', st.state === 'error' && 'text-bad', st.state === 'offline' && 'text-warn')}
     />
+  );
+}
+
+function RepWhy() {
+  const s = useGame((g) => g.s)!;
+  const log = [...(s.company.repLog ?? [])].reverse().slice(0, 8);
+  return (
+    <div className="min-w-60 text-xs">
+      <div className="font-semibold">Reputation {Math.round(s.company.reputation)}/100</div>
+      <p className="mt-0.5 text-ink3">Affects hiring quality, sales reach, publisher terms and office moves.</p>
+      {log.length > 0 && (
+        <ul className="mt-2 space-y-1 border-t border-line pt-2">
+          {log.map((e, i) => (
+            <li key={i} className="flex justify-between gap-3">
+              <span className="text-ink2">
+                {e.reason} <span className="text-ink3">· {formatDate(e.day, false)}</span>
+              </span>
+              <span className={cx('num font-semibold', e.delta >= 0 ? 'text-good' : 'text-bad')}>
+                {e.delta >= 0 ? '+' : ''}
+                {e.delta.toFixed(1)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
