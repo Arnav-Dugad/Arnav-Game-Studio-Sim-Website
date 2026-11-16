@@ -25,6 +25,7 @@ const staffList = (s: GameState) => Object.values(s.staff).filter((x) => x.role 
 const activeGames = (s: GameState) => Object.values(s.projects).filter((p): p is GameProject => p.kind === 'game');
 const anyCrunch = (s: GameState) => activeGames(s).some((p) => p.crunch);
 const yr = (s: GameState) => fromDay(s.day).year;
+const liveHw = (s: GameState) => (s.hardware ?? []).filter((h) => h.status === 'live');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
 function staffById(s: GameState, id: string | number | undefined): Staff | undefined {
@@ -898,6 +899,110 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt !== 'yes' || !p || p.kind !== 'game') return;
       spend(s, 'marketing', money(6_000, s.day));
       p.hype = Math.min(3, p.hype + 0.35);
+    },
+  },
+  // ── Your own hardware ─────────────────────────────────────────────────────
+  {
+    id: 'hw_defect',
+    art: 'console',
+    cooldown: 900,
+    weight: (s) => (liveHw(s).some((h) => s.day - h.launchDay > 60 && s.day - h.launchDay < 3 * 365 && h.installedM > 0.2) ? 0.5 : 0),
+    make: ({ s }) => {
+      const hw = liveHw(s).find((h) => s.day - h.launchDay > 60 && s.day - h.launchDay < 3 * 365 && h.installedM > 0.2);
+      if (!hw) return null;
+      const recall = Math.round(hw.installedM * 1e6 * 0.25 * money(8, s.day));
+      return {
+        title: `${hw.name} units are failing`,
+        body: `Forums are full of owners reporting a fault that bricks their ${hw.name}. Retailers are asking what you'll do about it.`,
+        options: [
+          { id: 'recall', label: `Free repairs for everyone (${fmtMoney(recall)})`, preview: 'Expensive, but reputation +2 and buyers trust the brand' },
+          { id: 'warranty', label: `Quietly extend the warranty (${fmtMoney(recall * 0.4)})`, preview: 'Cheaper; reputation −3' },
+          { id: 'deny', label: 'Deny there is a problem', preview: 'Free; reputation −8 and hardware sales slump' },
+        ],
+        ctx: { hw: hw.id, recall },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const hw = s.hardware.find((h) => h.id === e.ctx.hw);
+      if (!hw) return;
+      const recall = Number(e.ctx.recall);
+      if (opt === 'recall') {
+        spend(s, 'manufacturing', recall);
+        addRep(s, 2, `Fixed every faulty ${hw.name}`);
+        hw.boost += 0.05;
+      } else if (opt === 'warranty') {
+        spend(s, 'manufacturing', recall * 0.4);
+        addRep(s, -3, `${hw.name} fault handled quietly`);
+      } else {
+        addRep(s, -8, `Denied the ${hw.name} hardware fault`);
+        hw.boost = Math.max(-0.4, hw.boost - 0.35);
+        pushNews(s, { category: 'studio', headline: `${s.company.name} denies ${hw.name} fault as complaints pile up`, tone: 'bad' });
+      }
+    },
+  },
+  {
+    id: 'hw_piracy',
+    art: 'console',
+    cooldown: 1200,
+    weight: (s) => (liveHw(s).some((h) => s.day - h.launchDay > 365) ? 0.35 : 0),
+    make: ({ s }) => {
+      const hw = liveHw(s).find((h) => s.day - h.launchDay > 365);
+      if (!hw) return null;
+      const patch = money(400_000, s.day);
+      return {
+        title: `The ${hw.name} has been cracked`,
+        body: `Hackers have published a way to run copied games on the ${hw.name}. Publishers on your platform are nervous.`,
+        options: [
+          { id: 'patch', label: `Rush out a security update (${fmtMoney(patch)})`, preview: 'Closes the hole' },
+          { id: 'sue', label: `Take the hackers to court (${fmtMoney(patch / 3)})`, preview: '60%: shut it down. 40%: bad press, reputation −3, piracy spreads' },
+          { id: 'ignore', label: 'Ignore it', preview: 'More consoles sell, but software and licence fees drop for 18 months' },
+        ],
+        ctx: { hw: hw.id, patch },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      const hw = s.hardware.find((h) => h.id === e.ctx.hw);
+      if (!hw) return;
+      const piracy = () => {
+        hw.boost += 0.15;
+        s.market.modifiers.push({ target: `platform:${hw.id}`, mul: 0.8, startDay: s.day, untilDay: s.day + 548 });
+      };
+      if (opt === 'patch') spend(s, 'hardware_rd', Number(e.ctx.patch));
+      else if (opt === 'sue') {
+        spend(s, 'other_expense', Number(e.ctx.patch) / 3);
+        if (!rng.chance(0.6)) {
+          addRep(s, -3, 'Sued console hackers and lost');
+          piracy();
+        }
+      } else piracy();
+    },
+  },
+  {
+    id: 'hw_retailer',
+    art: 'console',
+    cooldown: 700,
+    weight: (s) => (liveHw(s).some((h) => s.day - h.launchDay > 180) ? 0.45 : 0),
+    make: ({ s, rng }) => {
+      const hws = liveHw(s).filter((h) => s.day - h.launchDay > 180);
+      if (!hws.length) return null;
+      const hw = rng.pick(hws);
+      const bonus = money(rng.int(3, 8) * 100_000, s.day);
+      return {
+        title: 'A holiday bundle deal',
+        body: `A national retail chain wants an exclusive ${hw.name} holiday bundle. They'll pay a marketing fee, but they want 10% off the shelf price.`,
+        options: [
+          { id: 'accept', label: `Accept (+${fmtMoney(bonus)})`, preview: 'Price −10%; a burst of hardware sales' },
+          { id: 'decline', label: 'Decline', preview: 'No change' },
+        ],
+        ctx: { hw: hw.id, bonus },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const hw = s.hardware.find((h) => h.id === e.ctx.hw);
+      if (!hw || opt !== 'accept') return;
+      earn(s, 'other_income', Number(e.ctx.bonus));
+      hw.price = Math.max(1, Math.round(hw.price * 0.9));
+      hw.boost += 0.2;
     },
   },
 ];

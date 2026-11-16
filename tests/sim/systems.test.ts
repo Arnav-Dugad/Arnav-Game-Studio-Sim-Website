@@ -391,6 +391,22 @@ describe('hardware division', () => {
     expect(packInMul(s, hw)).toBe(1);
   });
 
+  it('hardware events only fire for live consoles and resolve sensibly', () => {
+    const s = rich();
+    const defect = EVENT_DEFS.find((e) => e.id === 'hw_defect')!;
+    expect(defect.weight(s)).toBe(0);
+    design(s);
+    advance(s, 700 + 120);
+    const hw = s.hardware[0]!;
+    expect(defect.weight(s)).toBeGreaterThan(0);
+    const rng = new Rng([1, 2, 3, 4]);
+    const made = defect.make({ s, rng, out: [] })!;
+    const rep = s.company.reputation;
+    defect.resolve({ s, rng, out: [] }, { uid: 1, defId: 'hw_defect', title: made.title, body: made.body, art: 'console', options: made.options, ctx: made.ctx, day: s.day, expires: s.day + 30 } as never, 'deny');
+    expect(s.company.reputation).toBeLessThan(rep);
+    expect(hw.boost).toBeLessThan(0);
+  });
+
   it('migrates v2 saves', () => {
     const s = game();
     const raw = JSON.parse(JSON.stringify(s));

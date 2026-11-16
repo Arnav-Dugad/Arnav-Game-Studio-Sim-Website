@@ -31,6 +31,7 @@ const EVENT_KEYS = [
   'robot',
   'trophy',
   'leak',
+  'console',
   'unknown-key',
 ];
 
@@ -115,7 +116,7 @@ export function ArtGallery() {
         <div className="flex flex-col gap-4">
           {GENRES.map((g, gi) => {
             const fits = TOPICS.filter((t) => t.genreFit[g.id] === 3).slice(0, 3);
-            const topics = fits.length >= 3 ? fits : [...fits, ...TOPICS.slice(gi, gi + 3 - fits.length)];
+            const topics = fits.length >= 3 ? fits : [...fits, ...TOPICS.filter((t) => !fits.includes(t)).slice(gi, gi + 3 - fits.length)];
             return (
               <div key={g.id} className="flex flex-wrap items-end gap-3">
                 <span className="font-display w-24 text-sm font-semibold text-ink2">{g.name}</span>

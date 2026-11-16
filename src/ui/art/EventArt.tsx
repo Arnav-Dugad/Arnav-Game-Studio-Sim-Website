@@ -481,6 +481,29 @@ const VIGNETTES: Record<string, Vignette> = {
       </>
     ),
   },
+  console: {
+    tint: C.coral,
+    draw: () => (
+      <>
+        <Shadow cy={96} rx={44} />
+        {/* the box: lighter top face, darker front */}
+        <path d="M22 50L44 38H98L76 50Z" fill="#F2ECE3" />
+        <path d="M76 50L98 38V62L76 74Z" fill={C.metal} />
+        <rect x={22} y={50} width={54} height={24} rx={2} fill={C.paperDk} />
+        <rect x={28} y={58} width={30} height={3} rx={1.5} fill={C.metalDk} />
+        <circle cx={68} cy={62} r={3} fill={C.coral} />
+        <circle cx={68} cy={62} r={6} fill={C.coral} opacity={0.25} />
+        {/* controller */}
+        <path d="M40 82Q40 76 48 76H72Q80 76 80 82L84 94Q85 99 80 99Q76 99 73 93H47Q44 99 40 99Q35 99 36 94Z" fill={C.ink} />
+        <path d="M47 83v6M44 86h6" stroke={C.paper} strokeWidth={2} strokeLinecap="round" />
+        <circle cx={70} cy={84} r={1.8} fill={C.gold} />
+        <circle cx={74} cy={87.5} r={1.8} fill={C.tech} />
+        <path d="M60 76Q62 66 76 60" stroke={C.ink} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+        <Twinkle x={102} y={24} r={6} />
+        <Twinkle x={18} y={30} r={4} fill={C.coral} />
+      </>
+    ),
+  },
   leak: {
     tint: C.audio,
     draw: () => (
