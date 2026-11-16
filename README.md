@@ -36,7 +36,7 @@
 - **Subscription pass.** Turn a strong back catalogue into recurring revenue with your own all-you-can-play pass. Price it right and keep shipping good games, but watch older-game sales and server bills.
 - **Your own console.** Research the Hardware Lab, then design a console or handheld: choose its tier, price, licence fee and launch campaign. It becomes a real platform with its own install base and market share. Hardware sells near cost, while licence fees, royalty-free exclusives and a pack-in hit are where the money is. Faults, piracy and retail bundle deals keep you on your toes.
 - **Rival poaching, both ways.** Rivals try to lure your stars; with Headhunters research you can poach theirs.
-- **37 choice events** with real trade-offs: crunch exposés, review bombs, exclusivity offers, crowdfunding, buyouts, hostile takeovers, Hollywood adaptations and more.
+- **39 choice events** with real trade-offs: crunch exposés, review bombs, exclusivity offers, crowdfunding, buyouts, hostile takeovers, Hollywood adaptations and more.
 - **Explainable numbers.** Every key number (productivity, morale, review score, sales, cash flow) has a "why" breakdown on hover.
 - **Accounts & saves.**
   - Email/password, Google sign-in or guest play, with five save slots.

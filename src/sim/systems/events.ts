@@ -910,6 +910,61 @@ export const EVENT_DEFS: EventDef[] = [
       p.hype = Math.min(3, p.hype + 0.35);
     },
   },
+  // ── Grassroots (help small studios get noticed) ───────────────────────────
+  {
+    id: 'club_demo_night',
+    art: 'crowd',
+    cooldown: 400,
+    weight: (s) => (yr(s) < 1995 && s.company.reputation < 25 && s.releaseOrder.length > 0 ? 0.6 : 0),
+    make: ({ s }) => {
+      const last = s.releases[s.releaseOrder[s.releaseOrder.length - 1]!];
+      if (!last) return null;
+      return {
+        title: 'Computer club demo night',
+        body: `The local computer club invites you to show ${last.name} at their monthly meeting. Mostly hobbyists — but one of them writes for a magazine.`,
+        options: [
+          { id: 'go', label: 'Bring the floppies (a day off work)', preview: 'Reputation +3; your next game gets a little hype' },
+          { id: 'skip', label: 'Too busy', preview: 'No change' },
+        ],
+        ctx: {},
+      };
+    },
+    resolve: ({ s }, _e, opt) => {
+      if (opt !== 'go') return;
+      addRep(s, 3, 'Demo night at the computer club');
+      for (const p of activeGames(s)) p.hype = Math.min(3, p.hype + 0.15);
+    },
+  },
+  {
+    id: 'game_jam',
+    art: 'lightbulb',
+    cooldown: 500,
+    weight: (s) => (yr(s) >= 2005 && s.company.reputation < 35 && staffList(s).length + 1 <= 12 ? 0.5 : 0),
+    make: ({ s }) => ({
+      title: 'A weekend game jam',
+      body: 'A popular online game jam starts this weekend. Your team could enter — 48 hours, one theme, no sleep.',
+      options: [
+        { id: 'enter', label: 'Enter as a team', preview: 'Reputation +3, morale +5 for a month, everyone a bit tired' },
+        { id: 'host', label: `Sponsor the jam (${fmtMoney(money(4_000, s.day))})`, preview: 'Reputation +4, a talented candidate joins the hiring pool' },
+        { id: 'skip', label: 'Rest instead', preview: 'No change' },
+      ],
+      ctx: {},
+    }),
+    resolve: (c, _e, opt) => {
+      const { s } = c;
+      if (opt === 'enter') {
+        addRep(s, 3, 'Game jam entry went viral');
+        mod(s, 5, 30, 'Game jam buzz');
+        for (const st of Object.values(s.staff)) st.energy = Math.max(10, st.energy - 25);
+      } else if (opt === 'host') {
+        spend(s, 'marketing', money(4_000, s.day));
+        addRep(s, 4, 'Sponsored a game jam');
+        const cand = generateCandidate(s, c.rng, { quality: 25 });
+        cand.potential = Math.min(100, cand.potential + 15);
+        s.candidates.push(cand);
+      }
+    },
+  },
   // ── Your legacy ───────────────────────────────────────────────────────────
   {
     id: 'movie_deal',
