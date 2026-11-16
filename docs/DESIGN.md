@@ -692,6 +692,13 @@ This section records decisions made during the build that differ from, or add to
 - **Rival profiles.** Each rival's leader, real franchises and recent releases.
 - **In-game guide.**
 - **Remasters.** Any release scoring 70+ that is at least 8 years old can be remastered once, from its release window. Genre, topic and franchise are locked to the original. A remaster needs 55% of a new game's work (shorter phases and a lower effort benchmark) and sells to 70% of the market. Its review gets a ×0.9–1.1 factor from the original's score.
+- **Subscription pass.** Unlocked by Subscription Service research (2012+), 8+ released games and 50+ reputation; you launch it from Company → Pass. Subscribers move 18% a month toward a target:
+  - Target = 0.5% of active players × catalogue strength / (strength + 12) × reputation factor × price factor.
+  - Catalogue strength counts each game by quality, (score − 50) / 40, times its size weight, decaying 15% a year.
+  - Price demand falls off exponentially above the expected price (about $3.50 in 1980 dollars).
+  - Stores keep 30% of revenue, servers cost about $0.12 per subscriber in 1980 dollars, and games older than a year sell 15% fewer copies while the pass runs.
+  - Closing the pass costs 2 reputation.
+- **Cross-play.** The research now gives a ×1.1 sales boost to online-leaning genres (or F2P/live-service games) released on two or more platforms.
 - **Vacations.** Paid leave of one or two weeks: +10 energy and −4 burnout a day, morale up, loyalty +3 or +5. Each person waits 120 days between vacations. People on vacation don't work on projects or research.
 - **Studio history.** Company → History builds a timeline from data the sim already keeps: the founding, notable releases, achievements, console launches and the IPO.
 - **Second review pass (hardware/remasters):**

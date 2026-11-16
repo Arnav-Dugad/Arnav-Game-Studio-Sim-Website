@@ -34,6 +34,7 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Publishing', 'Publishers pay an advance and give wider reach but keep most of the revenue. Self-publishing (after research) keeps everything — if the game sells.'],
       ['Loans & insolvency', 'If cash goes negative you have a grace period to recover. Borrow, cut costs or sell IP — or go bankrupt.'],
       ['Going big', 'With enough revenue and reputation you can IPO, acquire studios (real companies bring their franchises!) and run subsidiaries.'],
+      ['Subscription pass', 'With Subscription Service research, 8+ games and decent reputation, launch a monthly pass (Company → Pass). Good recent games bring subscribers; older games sell a little less while it runs.'],
       ['Your own console', 'Research the Hardware Lab, then design a console or handheld (Research → Hardware). Hardware is sold near cost; licence fees from other publishers and your own royalty-free exclusives are where the money is. Price it against what the market expects and keep releasing hits on it.'],
     ],
   },

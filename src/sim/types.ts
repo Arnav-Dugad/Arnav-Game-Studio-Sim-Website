@@ -372,6 +372,7 @@ export type LedgerCat =
   | 'manufacturing'
   | 'hardware'
   | 'platform_fees'
+  | 'subscriptions'
   | 'hardware_rd'
   | 'royalties'
   | 'acquisitions'
@@ -469,6 +470,19 @@ export interface MarketState {
   historicalIndex: number; // next HISTORICAL_EVENTS index to fire
   scheduleIndex: number; // next real franchise release to fire
   futurePlatforms: FuturePlatform[];
+}
+
+export interface SubscriptionState {
+  name: string;
+  /** Monthly price (nominal). */
+  price: number;
+  launchedDay: number;
+  subscribers: number;
+  peak: number;
+  revenue: number;
+  /** Monthly subscriber counts. */
+  history: number[];
+  active: boolean;
 }
 
 /** A console or handheld designed and sold by the player's own hardware division. */
@@ -606,6 +620,8 @@ export interface GameState {
   devkits: Id[]; // platforms licensed
   /** Player-made consoles (hardware division). */
   hardware: PlayerConsole[];
+  /** Your catalogue subscription service, once launched. */
+  subscription?: SubscriptionState;
   news: NewsItem[];
   pendingEvents: EventInstance[];
   eventCooldowns: Record<string, number>;

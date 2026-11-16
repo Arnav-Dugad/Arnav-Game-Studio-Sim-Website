@@ -17,6 +17,7 @@ const CAT_LABEL: Partial<Record<LedgerCat, string>> = {
   advances: 'Publisher advances',
   hardware: 'Hardware sales',
   platform_fees: 'Platform licence fees',
+  subscriptions: 'Subscription pass',
   hardware_rd: 'Hardware R&D',
   manufacturing: 'Manufacturing',
   salaries: 'Salaries',

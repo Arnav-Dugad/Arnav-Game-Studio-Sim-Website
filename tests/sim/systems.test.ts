@@ -17,6 +17,7 @@ import { EVENT_DEFS } from '../../src/sim/systems/events';
 import { layout, touchOffice } from '../../src/sim/systems/office';
 import { consoleSpec, exclusiveBuzz, monthlyDemandM, packInMul, priceFactor, refPrice, unitCost } from '../../src/sim/systems/hardware';
 import { migrate } from '../../src/sim/save';
+import { catalogSalesMul, subRefPrice, subTarget } from '../../src/sim/systems/subscription';
 import type { GameProject, GameState } from '../../src/sim/types';
 
 function game(startYear = 1980, seed = 5): GameState {
@@ -480,6 +481,37 @@ describe('vacations', () => {
     expect(dispatch(s, { type: 'vacation', staffId: 'founder', days: 7 }).ok).toBe(false);
     advance(s, 120);
     expect(dispatch(s, { type: 'vacation', staffId: 'founder', days: 7 }).ok).toBe(true);
+  });
+});
+
+describe('subscription pass', () => {
+  it('needs research and a catalogue, then grows recurring revenue', () => {
+    const s = game(2015, 8);
+    s.company.cash = 1e8;
+    s.company.reputation = 80;
+    expect(dispatch(s, { type: 'launchSubscription', name: 'P', price: subRefPrice(s) }).ok).toBe(false);
+    s.research.done.push('biz_subscription');
+    expect(dispatch(s, { type: 'launchSubscription', name: 'P', price: subRefPrice(s) }).ok).toBe(false); // no catalogue
+    for (let i = 0; i < 10; i++) {
+      startSmall(s);
+      advance(s, 70);
+      const rel = s.releases[s.releaseOrder[s.releaseOrder.length - 1]!]!;
+      rel.score = 85;
+      for (const st of Object.values(s.staff)) st.assignment = { kind: 'idle' };
+      for (const id of Object.keys(s.projects)) delete s.projects[id];
+    }
+    s.company.reputation = 80;
+    expect(dispatch(s, { type: 'launchSubscription', name: 'P', price: subRefPrice(s) * 10 }).ok).toBe(false);
+    expect(dispatch(s, { type: 'launchSubscription', name: 'P', price: subRefPrice(s) }).ok).toBe(true);
+    advance(s, 200);
+    expect(s.subscription!.subscribers).toBeGreaterThan(0);
+    expect(s.subscription!.revenue).toBeGreaterThan(0);
+    expect(catalogSalesMul(s, s.day - 400)).toBeLessThan(1);
+    expect(catalogSalesMul(s, s.day - 100)).toBe(1);
+    // pricier pass → fewer subscribers
+    expect(subTarget(s, subRefPrice(s) * 2).subsM).toBeLessThan(subTarget(s, subRefPrice(s)).subsM);
+    expect(dispatch(s, { type: 'closeSubscription' }).ok).toBe(true);
+    expect(catalogSalesMul(s, s.day - 400)).toBe(1);
   });
 });
 

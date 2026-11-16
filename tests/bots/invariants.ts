@@ -37,6 +37,7 @@ export function checkInvariants(s: GameState): string[] {
     if (hw.feeRate < 0 || hw.feeRate > 0.5) errs.push(`console ${hw.name} feeRate=${hw.feeRate}`);
     if (hw.price <= 0) errs.push(`console ${hw.name} price=${hw.price}`);
   }
+  if (s.subscription && (s.subscription.subscribers < 0 || s.subscription.price <= 0)) errs.push(`subscription out of range`);
   if (s.hardware.filter((h) => h.status === 'live').length > 2) errs.push('more than 2 live consoles');
   if (s.hardware.filter((h) => h.status === 'dev').length > 1) errs.push('more than 1 console in development');
   for (const r of Object.values(s.releases)) {

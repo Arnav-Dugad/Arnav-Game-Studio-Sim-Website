@@ -16,6 +16,7 @@ import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
 import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
+import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
 import { applyPatch, applyPort, canPatch, canRemaster, patchCost, portCost } from './systems/release';
 import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
@@ -97,6 +98,9 @@ export type Action =
   | { type: 'setConsole'; id: string; price?: number; feeRate?: number; packIn?: string | null }
   | { type: 'retireConsole'; id: string }
   | { type: 'vacation'; staffId: string; days: 7 | 14 }
+  | { type: 'launchSubscription'; name: string; price: number }
+  | { type: 'setSubscriptionPrice'; price: number }
+  | { type: 'closeSubscription' }
   | { type: 'cancelConsole'; id: string };
 
 export type ActionResult = { ok: true; events: SimEvent[] } | { ok: false; error: string };
@@ -868,6 +872,30 @@ function apply(c: Ctx, a: Action): string | null {
       else if (pack) hw.packIn = pack.id;
       if (a.price !== undefined) hw.price = Math.round(a.price);
       if (a.feeRate !== undefined) hw.feeRate = a.feeRate;
+      return null;
+    }
+    case 'launchSubscription': {
+      const why = canLaunchSub(s);
+      if (why) return why;
+      const name = a.name.trim().slice(0, 32);
+      if (!name) return 'Name your pass';
+      if (a.price < subRefPrice(s) * 0.25 || a.price > subRefPrice(s) * 4) return 'That price is unrealistic';
+      if (s.company.cash < subLaunchCost(s)) return `Launching costs ${fmtMoney(subLaunchCost(s))}`;
+      launchSub(c, name, Math.round(a.price * 100) / 100);
+      return null;
+    }
+    case 'setSubscriptionPrice': {
+      if (!s.subscription?.active) return 'No pass is running';
+      if (a.price < subRefPrice(s) * 0.25 || a.price > subRefPrice(s) * 4) return 'That price is unrealistic';
+      s.subscription.price = Math.round(a.price * 100) / 100;
+      return null;
+    }
+    case 'closeSubscription': {
+      if (!s.subscription?.active) return 'No pass is running';
+      s.subscription.active = false;
+      s.subscription.subscribers = 0;
+      addRep(s, -2, `Shut down ${s.subscription.name}`);
+      pushNews(s, { category: 'studio', headline: `${s.subscription.name} is shutting down`, tone: 'bad' });
       return null;
     }
     case 'vacation': {

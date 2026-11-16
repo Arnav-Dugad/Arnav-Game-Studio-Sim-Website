@@ -3,6 +3,7 @@
  * reputation, live-service income and yearly awards.
  */
 import { exclusiveBuzz } from './hardware';
+import { catalogSalesMul } from './subscription';
 import { BALANCE } from '../../data/balance';
 import { GENRE_BY_ID } from '../../data/genres';
 import { OUTLETS, type OutletDef } from '../../data/outlets';
@@ -369,7 +370,7 @@ export function updateSalesWeekly(c: Ctx): void {
       const share = (1 - decay) * Math.pow(decay, Math.max(0, rel.week - (ps.startWeek ?? 0)));
       // platform decline after discontinuation scales sales down
       const life = pl.endDay !== null && s.day > pl.endDay ? Math.exp(-(s.day - pl.endDay) / 250) : 1;
-      let u = (ps.potential * share * life * demandMul(s, pl) * season * (rel.serverLoad > 0 ? outage : 1)) / comp;
+      let u = (ps.potential * share * life * demandMul(s, pl) * season * (rel.serverLoad > 0 ? outage : 1) * catalogSalesMul(s, rel.day)) / comp;
       u = Math.floor(u + c.rng.next()); // stochastic rounding keeps integers without bias
       u = Math.min(u, Math.max(0, Math.floor(ps.potential * 1.5) - ps.units)); // can't exceed the addressable market
       if (u <= 0) continue;

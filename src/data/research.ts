@@ -78,6 +78,7 @@ export const RESEARCH: readonly ResearchDef[] = [
   { id: 'biz_esports', name: 'Esports', branch: 'business', year: 2009, points: 160, cost: 70_000, requires: ['online_matchmaking'], desc: 'Unlocks the Esports topic and tournament sponsorships.' },
   { id: 'biz_community', name: 'Community Management', branch: 'business', year: 2009, points: 120, cost: 40_000, requires: [], desc: 'Fans convert better; backlash is softer.' },
   { id: 'biz_hardware_lab', name: 'Hardware Lab', branch: 'business', year: 1985, points: 150, cost: 90_000, requires: ['biz_rnd_lab', 'biz_self_publishing'], desc: 'Design and sell your own console or handheld (Research → Hardware).' },
+  { id: 'biz_subscription', name: 'Subscription Service', branch: 'business', year: 2012, points: 220, cost: 120_000, requires: ['biz_digital_store'], desc: 'Launch an all-you-can-play pass for your back catalogue (Company → Pass).' },
   { id: 'biz_merch', name: 'Merchandising', branch: 'business', year: 1988, points: 70, cost: 25_000, requires: [], desc: 'Franchises earn monthly merch income.' },
   // AI
   { id: 'ai_ml_tools', name: 'ML Tooling', branch: 'ai', year: 2016, points: 260, cost: 100_000, requires: ['sys_ai_adv'], engineTech: 0.3, desc: 'Machine-learned animation and testing. +10% QA.' },

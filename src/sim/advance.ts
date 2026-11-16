@@ -9,6 +9,7 @@ import { checkAchievements } from './systems/achievements';
 import { updateProjectsDaily } from './systems/dev';
 import { expireEvents, rollRandomEvent } from './systems/events';
 import { hardwareMonthly } from './systems/hardware';
+import { subscriptionMonthly } from './systems/subscription';
 import { financeMonthly, quarterlyEarnings, solvencyCheck, stockWeekly, valuation, yearlyTaxes } from './systems/finance';
 import { processHistory, updateFuturePlatforms, updateMarketMonthly } from './systems/market';
 import { refreshOffers } from './systems/offers';
@@ -76,6 +77,7 @@ export function tick(c: Ctx): void {
     rivalsMonthly(c);
     subsidiariesMonthly(c);
     updateLiveMonthly(c);
+    subscriptionMonthly(c);
     updateStaffMonthly(c);
     refreshCandidates(c);
     refreshOffers(c);
