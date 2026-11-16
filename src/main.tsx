@@ -18,3 +18,9 @@ if (import.meta.env.DEV) {
     (window as unknown as { __ase: unknown }).__ase = { useGame, useAuth, saves };
   });
 }
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+  });
+}
