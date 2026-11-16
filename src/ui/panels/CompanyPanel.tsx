@@ -10,6 +10,7 @@ import { LineChart } from '../charts';
 import { Button, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { useGame } from '../store';
+import { HistoryTab } from './HistoryTab';
 
 export default function CompanyPanel() {
   const tab = useGame((g) => g.panelTab) ?? 'publishing';
@@ -27,12 +28,14 @@ export default function CompanyPanel() {
           { value: 'stock', label: 'Stock' },
           { value: 'acquire', label: 'Acquisitions' },
           { value: 'ip', label: 'IP' },
+          { value: 'history', label: 'History' },
         ]}
       />
       {tab === 'publishing' && <Publishing />}
       {tab === 'stock' && <Stock />}
       {tab === 'acquire' && <Acquire />}
       {tab === 'ip' && <IP />}
+      {tab === 'history' && <HistoryTab />}
     </div>
   );
 }

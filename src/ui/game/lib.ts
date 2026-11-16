@@ -87,7 +87,7 @@ export function bestSkill(st: Staff): [string, number] {
   let k = 'design';
   let v = -1;
   for (const [kk, vv] of Object.entries(st.skills)) if (vv > v) [k, v] = [kk, vv];
-  return [k, Math.round(v)];
+  return [k === 'qa' ? 'QA' : k, Math.round(v)];
 }
 
 export function suggestName(seed: number, topic: string): string {

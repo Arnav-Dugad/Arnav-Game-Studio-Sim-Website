@@ -44,6 +44,9 @@ export interface Staff {
   deskId?: Id;
   activity: Activity;
   sickDays: number;
+  /** Paid leave remaining, and when the last one started. */
+  vacationDays?: number;
+  lastVacationDay?: number;
   /** Explanation of the latest target morale. */
   moraleWhy?: Breakdown;
   productivityWhy?: Breakdown;

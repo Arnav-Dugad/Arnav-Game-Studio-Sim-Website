@@ -23,7 +23,7 @@
   - Each game combines genre × topic × platform × audience × size × business model.
   - You set focus sliders per phase, then manage phase gates, bugs, QA, crunch, delays and cut features.
   - Engines can be custom-built or licensed, and there is a research tree with ~55 nodes.
-- **Staff.** A hiring pool shaped by reputation, 18 traits, specialisations, morale, energy, burnout, loyalty, training, poaching and rare legendary hires.
+- **Staff.** A hiring pool shaped by reputation, 18 traits, specialisations, morale, energy, burnout, vacations, loyalty, training, poaching and rare legendary hires.
 - **Business.**
   - Publishing deals or self-publishing, contracts, marketing channels, trade shows and loans.
   - IPO, stock price and board, acquisitions and subsidiaries, and hostile takeovers.

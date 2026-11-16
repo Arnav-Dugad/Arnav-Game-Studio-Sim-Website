@@ -21,7 +21,7 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
   { icon: 'company', title: 'Legendary rivals', body: `${COMPANIES.length} real companies compete with you, releasing ${FRANCHISES.reduce((t, f) => t + f.releases.length, 0)} classic games on their real dates.` },
   { icon: 'build', title: 'A living office', body: 'Design your studio tile by tile. Staff walk to the coffee machine, chat, crunch and burn out — and layout really changes the numbers.' },
   { icon: 'sliders', title: 'Deep development', body: 'Genre × topic × platform × audience. Focus sliders per phase, bugs, crunch, delays, engines and research.' },
-  { icon: 'chart', title: 'Build an empire', body: 'Publishing deals, self-publishing, loans, IPOs, stock prices, acquisitions and subsidiaries. Or go bankrupt trying.' },
+  { icon: 'chart', title: 'Build an empire', body: 'Publishing deals, self-publishing, IPOs, acquisitions and subsidiaries — then launch your own console and take on the platform giants. Or go bankrupt trying.' },
 ];
 
 export function Landing() {

@@ -37,6 +37,7 @@ export default function StaffPanel() {
 
 function assignmentLabel(s: NonNullable<ReturnType<typeof useGame.getState>['s']>, st: Staff): string {
   if (st.sickDays > 0) return `Sick (${st.sickDays}d)`;
+  if ((st.vacationDays ?? 0) > 0) return `On vacation (${st.vacationDays}d)`;
   switch (st.assignment.kind) {
     case 'idle':
       return 'Idle';

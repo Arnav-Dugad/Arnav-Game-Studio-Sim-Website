@@ -103,7 +103,7 @@ function mentorBoost(s: GameState, st: Staff, team: Staff[]): number {
 }
 
 function teamOf(s: GameState, ids: string[]): Staff[] {
-  return ids.map((id) => s.staff[id]).filter((x): x is Staff => !!x && x.sickDays <= 0);
+  return ids.map((id) => s.staff[id]).filter((x): x is Staff => !!x && x.sickDays <= 0 && !(x.vacationDays ?? 0));
 }
 
 function isWorkday(s: GameState, crunch: boolean): boolean {

@@ -120,13 +120,27 @@ export function refPrice(c: PlayerConsole, day: number): number {
   return money(TIERS[c.tier].refPrice * KIND_MUL[c.kind].price, day) * Math.pow(0.95, age);
 }
 
+/** Demand vs. the price the market expects: gentle below it, falling off a cliff above it. */
 export function priceFactor(c: PlayerConsole, day: number): number {
-  return clamp(Math.pow(refPrice(c, day) / Math.max(1, c.price), 1.3), 0.2, 2.3);
+  const rel = Math.max(1, c.price) / refPrice(c, day);
+  if (rel <= 1) return Math.min(2.3, Math.pow(1 / rel, 1.3));
+  return Math.max(0.01, Math.exp(-2.5 * (rel - 1)));
+}
+
+/** Allowed retail price range for a console today. */
+export function priceBounds(c: PlayerConsole, day: number): [number, number] {
+  const ref = refPrice(c, day);
+  return [Math.round(ref * 0.3), Math.round(ref * 4)];
 }
 
 /** Third-party publishers support cheap-to-license platforms more. */
 export function supportFactor(feeRate: number): number {
-  return clamp(1 + 0.9 * (0.3 - feeRate), 0.7, 1.3);
+  return clamp(Math.exp(-3 * (feeRate - 0.2)), 0.35, 1.5);
+}
+
+/** Projects still in development for a console. */
+export function projectsTargeting(s: GameState, id: string): number {
+  return Object.values(s.projects).filter((p) => p.kind === 'game' && p.concept.platforms.includes(id)).length;
 }
 
 /** Lifetime demand estimate at launch, with an explanation. */
@@ -214,7 +228,8 @@ export function hardwareMonthly(c: Ctx): void {
     const pack = hw.packIn ? s.releases[hw.packIn] : undefined;
     if (pim > 1 && pack?.concept.franchiseId && s.franchises[pack.concept.franchiseId]) s.franchises[pack.concept.franchiseId]!.fans += Math.round(units * 1e6 * 0.08);
     hw.boost *= 0.95;
-    if ((s.day - hw.launchDay) / YEAR >= AUTO_RETIRE_YEARS) retireConsole(c, hw, 'reached the end of its life');
+    // End of life — but never strand a game that is still being made for it.
+    if ((s.day - hw.launchDay) / YEAR >= AUTO_RETIRE_YEARS && projectsTargeting(s, hw.id) === 0) retireConsole(c, hw, 'reached the end of its life');
   }
 }
 

@@ -15,7 +15,9 @@ import {
   launchPotential,
   packInMul,
   mediaFor,
+  priceBounds,
   priceFactor,
+  projectsTargeting,
   refPrice,
   supportFactor,
   unitCost,
@@ -48,7 +50,8 @@ export default function HardwarePanel() {
       ) : (
         <>
           {consoles.map((c) => (
-            <ConsoleCard key={c.id} c={c} />
+            // remount when the sim changes price/fee/status so local edits never resurrect stale values
+            <ConsoleCard key={`${c.id}-${c.status}-${c.price}-${c.feeRate}`} c={c} />
           ))}
           <Designer key={s.hardware?.length ?? 0} />
         </>
@@ -128,7 +131,7 @@ function ConsoleCard({ c }: { c: PlayerConsole }) {
         </div>
         {live && (
           <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <Field label={`Retail price · market expects ~${fmtMoney(refPrice(c, s.day))}`} hint={`Demand ×${priceFactor({ ...c, price }, s.day).toFixed(2)}`}>
+            <Field label={`Retail price · market expects ~${fmtMoney(refPrice(c, s.day))}`} hint={`Demand ×${priceFactor({ ...c, price }, s.day).toFixed(2)} · allowed ${fmtMoney(priceBounds(c, s.day)[0])}–${fmtMoney(priceBounds(c, s.day)[1])}`}>
               <input type="number" min={1} className={inputCls} value={price} onChange={(e) => setPrice(Math.max(1, Number(e.target.value) || 1))} />
             </Field>
             <Field label={`Licence fee · ${fee}%`} hint={`Third-party support ×${supportFactor(fee / 100).toFixed(2)}`}>
@@ -137,7 +140,9 @@ function ConsoleCard({ c }: { c: PlayerConsole }) {
             <Button
               size="sm"
               disabled={price === c.price && fee === Math.round(c.feeRate * 100)}
-              onClick={() => act({ type: 'setConsole', id: c.id, price, feeRate: fee / 100 }, 'Pricing updated')}
+              onClick={() =>
+                act({ type: 'setConsole', id: c.id, price: price !== c.price ? price : undefined, feeRate: fee !== Math.round(c.feeRate * 100) ? fee / 100 : undefined }, 'Pricing updated')
+              }
             >
               Apply
             </Button>
@@ -151,7 +156,13 @@ function ConsoleCard({ c }: { c: PlayerConsole }) {
                 Confirm discontinue
               </Button>
             ) : (
-              <Button size="sm" variant="ghost" onClick={() => setConfirm(true)} title="Stop manufacturing. Owners keep playing for a while, but the user base fades.">
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={projectsTargeting(s, c.id) > 0}
+                onClick={() => setConfirm(true)}
+                title={projectsTargeting(s, c.id) > 0 ? 'Finish the games you are making for it first' : 'Stop manufacturing. Owners keep playing for a while, but the user base fades.'}
+              >
                 Discontinue…
               </Button>
             )}

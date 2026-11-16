@@ -20,7 +20,7 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
     body: [
       ['Hiring', 'Reputation attracts better candidates. Traits matter: Perfectionists add quality, Hotheads cause conflicts, Mentors teach.'],
       ['Morale & energy', 'Pay, décor, space, noise, crunch and recent success drive morale. Energy drains while working and refills at break areas — keep the coffee close.'],
-      ['Burnout', 'Low energy and crunch build burnout. Burnt-out staff slump at their desks, get sick, and eventually quit.'],
+      ['Burnout', 'Low energy and crunch build burnout. Burnt-out staff slump at their desks, get sick, and eventually quit. Send them on a week or two of vacation (click a person) before it gets that far.'],
       ['Layout', 'Use build mode (B) and the heat-map overlays to place break areas, décor and desks. Seating a team together boosts synergy.'],
       ['Growth', 'Staff learn by doing. Training (after research) and specialisations (seniors+) push them further.'],
     ],

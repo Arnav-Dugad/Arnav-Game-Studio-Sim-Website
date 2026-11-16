@@ -518,6 +518,7 @@ export const REMASTER_MIN_AGE_YEARS = 8;
 export const REMASTER_MIN_SCORE = 70;
 export function canRemaster(s: GameState, rel: Release): string | null {
   if (rel.concept.remasterOf) return 'Already a remaster';
+  if (rel.concept.franchiseId && !s.franchises[rel.concept.franchiseId]) return 'You sold this IP';
   if (rel.score < REMASTER_MIN_SCORE) return `Only games scoring ${REMASTER_MIN_SCORE}+ are worth remastering`;
   const age = (s.day - rel.day) / 365.25;
   if (age < REMASTER_MIN_AGE_YEARS) return `Too recent — remasters work for games at least ${REMASTER_MIN_AGE_YEARS} years old (${Math.ceil(REMASTER_MIN_AGE_YEARS - age)} to go)`;

@@ -15,7 +15,7 @@ import { demandMul, platformInfo, isPlatformAvailable, availablePlatforms } from
 import { creditLimit, ipoEligible } from '../../src/sim/systems/finance';
 import { EVENT_DEFS } from '../../src/sim/systems/events';
 import { layout, touchOffice } from '../../src/sim/systems/office';
-import { consoleSpec, exclusiveBuzz, monthlyDemandM, packInMul } from '../../src/sim/systems/hardware';
+import { consoleSpec, exclusiveBuzz, monthlyDemandM, packInMul, priceFactor, refPrice, unitCost } from '../../src/sim/systems/hardware';
 import { migrate } from '../../src/sim/save';
 import type { GameProject, GameState } from '../../src/sim/types';
 
@@ -408,6 +408,32 @@ describe('hardware division', () => {
     expect(hw.boost).toBeLessThan(0);
   });
 
+  it('overpricing kills demand and absurd prices are rejected (review fix)', () => {
+    const s = rich();
+    design(s);
+    advance(s, 700);
+    const hw = s.hardware[0]!;
+    const ref = refPrice(hw, s.day);
+    expect(priceFactor({ ...hw, price: ref * 4 }, s.day)).toBeLessThan(0.001 + 0.01);
+    // hardware margin per month must not grow without bound with price
+    const margin = (mul: number) => monthlyDemandM({ ...hw, price: ref * mul }, s.day) * (ref * mul * 0.8 - unitCost(hw, s.day));
+    expect(margin(4)).toBeLessThan(margin(1.5));
+    expect(dispatch(s, { type: 'setConsole', id: hw.id, price: ref * 10 }).ok).toBe(false);
+    expect(dispatch(s, { type: 'setConsole', id: hw.id, price: ref * 10, feeRate: 0.1 }).ok).toBe(false);
+    expect(hw.feeRate).toBe(0.2); // rejected change applies nothing
+  });
+
+  it('cannot retire a console while games are being made for it', () => {
+    const s = rich();
+    design(s);
+    advance(s, 700);
+    const hw = s.hardware[0]!;
+    s.staff.founder!.assignment = { kind: 'idle' };
+    const r = dispatch(s, { type: 'startGame', game: { name: 'Launch title', genre: 'action', topic: 'scifi', platforms: [hw.id], audience: 'teen', size: 'small', monetization: 'premium', engineId: 'e0', team: ['founder'] } });
+    expect(r.ok).toBe(true);
+    expect(dispatch(s, { type: 'retireConsole', id: hw.id }).ok).toBe(false);
+  });
+
   it('migrates v2 saves', () => {
     const s = game();
     const raw = JSON.parse(JSON.stringify(s));
@@ -435,5 +461,24 @@ describe('remasters', () => {
     expect(p.phaseDays[1]).toBeLessThan(BALANCE.SIZE.small.days * BALANCE.PHASE_SHARE[1]);
     expect(gameQuality(s, p, true).parts.some((x) => x.label.startsWith('Remaster of'))).toBe(true);
     expect(canRemaster(s, orig)).toMatch(/Already/);
+  });
+});
+
+describe('vacations', () => {
+  it('take people out of work, cut burnout, and have a cooldown', () => {
+    const s = game(1985, 3);
+    const f = s.staff.founder!;
+    f.burnout = 70;
+    f.energy = 20;
+    expect(dispatch(s, { type: 'vacation', staffId: 'founder', days: 14 }).ok).toBe(true);
+    advance(s, 3);
+    expect(f.activity).toBe('vacation');
+    advance(s, 12);
+    expect(f.vacationDays).toBe(0);
+    expect(f.burnout).toBeLessThan(30);
+    expect(f.energy).toBeGreaterThan(80);
+    expect(dispatch(s, { type: 'vacation', staffId: 'founder', days: 7 }).ok).toBe(false);
+    advance(s, 120);
+    expect(dispatch(s, { type: 'vacation', staffId: 'founder', days: 7 }).ok).toBe(true);
   });
 });

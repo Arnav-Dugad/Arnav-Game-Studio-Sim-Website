@@ -23,7 +23,7 @@ export function Rail() {
   useGame((g) => g.v);
   const badge: Partial<Record<PanelId, number>> = {
     develop: s ? Object.values(s.projects).filter((p) => p.kind === 'game' && p.awaitingGate).length : 0,
-    staff: s ? Object.values(s.staff).filter((x) => x.burnout > 70 || x.morale < 30 || (x.assignment.kind === 'idle' && x.role !== 'founder')).length : 0,
+    staff: s ? Object.values(s.staff).filter((x) => x.burnout > 70 || x.morale < 30 || (x.assignment.kind === 'idle' && x.role !== 'founder' && !x.vacationDays)).length : 0,
     research: s && !s.research.active && Object.values(s.staff).some((x) => x.assignment.kind === 'research') ? 1 : 0,
   };
   return (

@@ -8,7 +8,7 @@ import { fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
 import { canPatch, canRemaster, patchCost, portCost } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
-import { marketSalary, productivity, moraleTarget, ROLE_NAMES } from '@/sim/systems/staff';
+import { marketSalary, productivity, moraleTarget, ROLE_NAMES, vacationBlocked } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
 import { runScore } from '@/sim/systems/achievements';
 import { qualityToScore } from '@/sim/systems/dev';
@@ -281,7 +281,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             disabled={!!canRemaster(s, r)}
             title={canRemaster(s, r) ?? 'Rebuild this classic for modern hardware: about half the work of a new game, sold to a nostalgic audience'}
             onClick={() => {
-              useGame.setState({ wizardPreset: { remasterOf: r.id } });
+              useGame.setState((g) => ({ wizardPreset: { remasterOf: r.id }, wizardNonce: g.wizardNonce + 1 }));
               onClose();
               useGame.getState().openPanel('develop', 'new');
             }}
@@ -294,7 +294,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             variant="primary"
             icon="chain"
             onClick={() => {
-              useGame.setState({ wizardPreset: { franchiseId: r.concept.franchiseId! } });
+              useGame.setState((g) => ({ wizardPreset: { franchiseId: r.concept.franchiseId! }, wizardNonce: g.wizardNonce + 1 }));
               onClose();
               useGame.getState().openPanel('develop', 'new');
             }}
@@ -415,7 +415,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
           </Section>
           <Section title="Condition">
             <div className="space-y-2 text-xs">
-              <Tip content={<BreakdownList bd={morale} format={(v) => v.toFixed(1)} title="What drives their morale" />}>
+              <Tip className="w-full" content={<BreakdownList bd={morale} format={(v) => v.toFixed(1)} title="What drives their morale" />}>
                 <div className="w-full cursor-help">
                   <div className="flex justify-between">
                     <span>Morale</span>
@@ -490,7 +490,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
               <select className="h-8 flex-1 rounded-lg border border-line bg-panel2 px-2 text-sm capitalize" value={skill} onChange={(e) => setSkill(e.target.value as Skill)} aria-label="Skill to train">
                 {SKILLS.map((k) => (
                   <option key={k} value={k}>
-                    {k} ({Math.round(st.skills[k])})
+                    {k === 'qa' ? 'QA' : k} ({Math.round(st.skills[k])})
                   </option>
                 ))}
               </select>
@@ -498,6 +498,22 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
                 Train
               </Button>
             </div>
+          </Section>
+          <Section title="Time off">
+            {(st.vacationDays ?? 0) > 0 ? (
+              <p className="text-xs text-ink2">On vacation — back in {st.vacationDays} day{st.vacationDays === 1 ? '' : 's'}.</p>
+            ) : (
+              <>
+                <div className="flex gap-1.5">
+                  {([7, 14] as const).map((d) => (
+                    <Button key={d} size="sm" disabled={!!vacationBlocked(s, st)} title={vacationBlocked(s, st) ?? undefined} onClick={() => run({ type: 'vacation', staffId, days: d }, `${st.name} is off for ${d === 7 ? 'a week' : 'two weeks'}`)}>
+                      {d === 7 ? '1 week' : '2 weeks'}
+                    </Button>
+                  ))}
+                </div>
+                <p className="mt-1 text-[11px] text-ink3">Paid leave: energy refills, burnout drops fast, loyalty rises. Their project slows while they’re away.</p>
+              </>
+            )}
           </Section>
           {(st.level === 'senior' || st.level === 'lead' || st.role === 'founder') && !st.spec && (
             <Section title="Specialise">

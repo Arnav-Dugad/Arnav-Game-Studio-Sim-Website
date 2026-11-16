@@ -15,7 +15,7 @@ export function SkillBars({ skills, compact }: { skills: Staff['skills']; compac
       {top.map((k) => (
         <div key={k} className="text-[11px]">
           <div className="flex justify-between">
-            <span className="capitalize text-ink3">{k}</span>
+            <span className="capitalize text-ink3">{k === 'qa' ? 'QA' : k}</span>
             <span className="num font-semibold">{Math.round(skills[k])}</span>
           </div>
           <Meter value={skills[k]} tone="tech" label={k} />

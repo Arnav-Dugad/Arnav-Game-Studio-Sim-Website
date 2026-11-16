@@ -294,6 +294,22 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
   return bd.done();
 }
 
+/** Off sick or on vacation: not working today. */
+export function isAway(st: Staff): boolean {
+  return st.sickDays > 0 || (st.vacationDays ?? 0) > 0;
+}
+
+export const VACATION_COOLDOWN_DAYS = 120;
+
+/** Why this person can't take a vacation right now (or null if they can). */
+export function vacationBlocked(s: GameState, st: Staff): string | null {
+  if (st.sickDays > 0) return `${st.name} is off sick`;
+  if ((st.vacationDays ?? 0) > 0) return `${st.name} is already on vacation`;
+  if (st.assignment.kind === 'training') return `${st.name} is in training`;
+  if (st.lastVacationDay !== undefined && s.day - st.lastVacationDay < VACATION_COOLDOWN_DAYS) return `${st.name} had time off recently (again in ${VACATION_COOLDOWN_DAYS - (s.day - st.lastVacationDay)} days)`;
+  return null;
+}
+
 /** Daily update for every staffer. Returns total salary cost is NOT handled here (monthly). */
 export function updateStaffDaily(c: Ctx): void {
   const { s, rng } = c;
@@ -308,6 +324,15 @@ export function updateStaffDaily(c: Ctx): void {
       st.activity = 'sick';
       st.energy = clamp(st.energy + 6, 0, 100);
       st.burnout = clamp(st.burnout - 2.5, 0, 100);
+      continue;
+    }
+    // Vacation: away from the office, recharging fast
+    if ((st.vacationDays ?? 0) > 0) {
+      st.vacationDays = st.vacationDays! - 1;
+      st.activity = 'vacation';
+      st.energy = clamp(st.energy + 10, 0, 100);
+      st.burnout = clamp(st.burnout - 4, 0, 100);
+      st.morale = clamp(st.morale + 0.8, 0, 100);
       continue;
     }
     const crunch = isCrunching(s, st);

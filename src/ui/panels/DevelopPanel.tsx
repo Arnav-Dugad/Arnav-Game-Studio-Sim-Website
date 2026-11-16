@@ -29,6 +29,7 @@ export default function DevelopPanel() {
   const setTab = (t: string) => useGame.setState({ panelTab: t });
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
+  const wizardNonce = useGame((g) => g.wizardNonce);
   const projects = Object.values(s.projects);
   return (
     <div>
@@ -44,7 +45,7 @@ export default function DevelopPanel() {
         ]}
       />
       {tab === 'projects' && <Projects onNew={() => setTab('new')} />}
-      {tab === 'new' && <NewGame onDone={() => setTab('projects')} />}
+      {tab === 'new' && <NewGame key={wizardNonce} onDone={() => setTab('projects')} />}
       {tab === 'contracts' && <Contracts />}
     </div>
   );

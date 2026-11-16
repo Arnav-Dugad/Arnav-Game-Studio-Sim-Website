@@ -19,7 +19,7 @@ export function researchCost(s: GameState, r: ResearchDef): number {
 }
 
 export function researchers(s: GameState) {
-  return Object.values(s.staff).filter((st) => st.assignment.kind === 'research' && st.sickDays <= 0);
+  return Object.values(s.staff).filter((st) => st.assignment.kind === 'research' && st.sickDays <= 0 && !(st.vacationDays ?? 0));
 }
 
 export function researchRate(s: GameState): number {

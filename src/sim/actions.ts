@@ -16,13 +16,13 @@ import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
 import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
-import { MARKETING, canDesignConsole, consoleSpec, mediaFor, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
+import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
 import { applyPatch, applyPort, canPatch, canRemaster, patchCost, portCost } from './systems/release';
 import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost } from './systems/research';
-import { candidateToStaff, marketSalary, refreshCandidates, removeStaff } from './systems/staff';
+import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { Focus3, GameProject, GameState, Size, Specialisation } from './types';
@@ -96,6 +96,7 @@ export type Action =
   | { type: 'designConsole'; name: string; kind: ConsoleKind; tier: ConsoleTier; price: number; feeRate: number; marketing: ConsoleMarketing }
   | { type: 'setConsole'; id: string; price?: number; feeRate?: number; packIn?: string | null }
   | { type: 'retireConsole'; id: string }
+  | { type: 'vacation'; staffId: string; days: 7 | 14 }
   | { type: 'cancelConsole'; id: string };
 
 export type ActionResult = { ok: true; events: SimEvent[] } | { ok: false; error: string };
@@ -474,6 +475,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!s.research.done.includes('biz_training')) return 'Research the Training Programme first';
       if (st.assignment.kind === 'project') return 'Take them off their project first';
       if (st.assignment.kind === 'training') return `${st.name} is already in training`;
+      if ((st.vacationDays ?? 0) > 0) return `${st.name} is on vacation`;
       const cost = money(2_500, s.day);
       if (s.company.cash < cost) return 'Not enough cash';
       spend(s, 'training', cost);
@@ -852,22 +854,38 @@ function apply(c: Ctx, a: Action): string | null {
     case 'setConsole': {
       const hw = s.hardware.find((h) => h.id === a.id);
       if (!hw || hw.status === 'retired') return 'No such console';
-      if (a.packIn !== undefined) {
-        if (a.packIn === null) delete hw.packIn;
-        else {
-          const rel = s.releases[a.packIn];
-          if (!rel) return 'No such game';
-          if (!rel.concept.platforms.includes(hw.id)) return `${rel.name} isn’t on the ${hw.name} — port it first`;
-          hw.packIn = rel.id;
-        }
+      // validate everything first so a rejected change applies nothing
+      const pack = a.packIn ? s.releases[a.packIn] : undefined;
+      if (a.packIn) {
+        if (!pack) return 'No such game';
+        if (!pack.concept.platforms.includes(hw.id)) return `${pack.name} isn’t on the ${hw.name} — port it first`;
       }
+      if (a.price !== undefined) {
+        const [lo, hi] = priceBounds(hw, s.day);
+        if (a.price < lo || a.price > hi) return `Price must be between ${fmtMoney(lo)} and ${fmtMoney(hi)}`;
+      }
+      if (a.packIn === null) delete hw.packIn;
+      else if (pack) hw.packIn = pack.id;
       if (a.price !== undefined) hw.price = Math.round(a.price);
       if (a.feeRate !== undefined) hw.feeRate = a.feeRate;
+      return null;
+    }
+    case 'vacation': {
+      const st = s.staff[a.staffId];
+      if (!st) return 'Unknown staff member';
+      if (a.days !== 7 && a.days !== 14) return 'Vacations are one or two weeks';
+      const why = vacationBlocked(s, st);
+      if (why) return why;
+      st.vacationDays = a.days;
+      st.lastVacationDay = s.day;
+      st.loyalty = clamp(st.loyalty + (a.days === 14 ? 5 : 3), 0, 100);
       return null;
     }
     case 'retireConsole': {
       const hw = s.hardware.find((h) => h.id === a.id);
       if (!hw || hw.status !== 'live') return 'That console isn’t on sale';
+      const n = projectsTargeting(s, hw.id);
+      if (n) return `${n} game${n > 1 ? 's are' : ' is'} still in development for the ${hw.name}`;
       retireConsole(c, hw);
       return null;
     }

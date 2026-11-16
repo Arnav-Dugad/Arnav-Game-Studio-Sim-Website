@@ -74,6 +74,8 @@ interface GameStore {
   lastSavedDay: number;
   /** Pre-fill for the new-game wizard (e.g. planning a sequel). */
   wizardPreset: { franchiseId?: string; remasterOf?: string } | null;
+  /** Bumped whenever a preset is set, so an already-open wizard remounts with it. */
+  wizardNonce: number;
   onMonth: ((s: GameState) => void) | null;
   load: (s: GameState, slotId: string, uid: string) => void;
   /** Run an action and show its error as a toast (returns success). */
@@ -115,6 +117,7 @@ export const useGame = create<GameStore>((set, get) => ({
   selectedStaff: null,
   lastSavedDay: 0,
   wizardPreset: null,
+  wizardNonce: 0,
   onMonth: null,
   load: (s, slotId, uid) => {
     // Re-surface anything that was waiting for the player when the game was saved.

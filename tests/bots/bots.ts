@@ -294,6 +294,7 @@ function tradeShows(s: GameState, big: boolean): void {
 
 function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; aggressive: boolean; tycoon?: boolean }) {
   events(s, rng, true);
+  if (!o.aggressive) for (const st of Object.values(s.staff)) if (st.burnout > 60) dispatch(s, { type: 'vacation', staffId: st.id, days: 14 });
   manageGames(s, o.aggressive);
   startGameIfIdle(s, rng, { mode: o.mode, aggressive: o.aggressive, maxPlatforms: o.aggressive ? 3 : 2 });
   research(s);
