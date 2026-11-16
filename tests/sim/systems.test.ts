@@ -246,6 +246,8 @@ describe('post-launch support', () => {
     expect(dispatch(s, { type: 'patchGame', releaseId: rel.id }).ok).toBe(true);
     expect(rel.userScore).toBeGreaterThan(before);
     expect(rel.bugs).toBeLessThan(12);
+    rel.score = 88; // a hit is worth porting
+    rel.userScore = 88;
     const r = dispatch(s, { type: 'portGame', releaseId: rel.id, platform: 'zx_spectrum' });
     expect(r.ok).toBe(true);
     const port = rel.platforms.find((p) => p.platform === 'zx_spectrum')!;
