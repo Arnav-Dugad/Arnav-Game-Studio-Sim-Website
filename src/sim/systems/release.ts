@@ -158,7 +158,9 @@ export function netPerUnit(s: GameState, pl: PlatformInfo, price: number, selfPu
 export function salesPotential(s: GameState, concept: GameProject['concept'], effScore: number, rawHype: number) {
   const fr = concept.franchiseId ? s.franchises[concept.franchiseId] : undefined;
   const crowd = BALANCE.ERA_BOOST / (1 + BALANCE.CROWDING * Math.max(0, fromDay(s.day).year - 1980));
-  const attach = BALANCE.ATTACH_PEAK * Math.pow(clamp(effScore, 0, 100) / 100, BALANCE.ATTACH_EXP) * crowd;
+  // Steep curve for hits, blended with a gentler one so mid-scoring games still find an audience.
+  const q = clamp(effScore, 0, 100) / 100;
+  const attach = BALANCE.ATTACH_PEAK * (0.85 * Math.pow(q, BALANCE.ATTACH_EXP) + 0.15 * Math.pow(q, 4)) * crowd;
   const deal = concept.deal;
   const marketingHype = deal ? Math.min(1.2, (deal.marketingBudget / Math.max(1, inflation(s.day) * 20_000)) * 0.4) : 0;
   const hype = Math.min(BALANCE.HYPE_MAX, rawHype + marketingHype);
