@@ -160,6 +160,10 @@ export function netPerUnit(s: GameState, pl: PlatformInfo, price: number, selfPu
  */
 const CROSSPLAY_GENRES = new Set<string>(['shooter', 'fighting', 'sports', 'racing', 'mmo', 'strategy', 'sandbox']);
 
+function crossplayEligible(s: GameState, concept: GameProject['concept'], platformCount: number): boolean {
+  return s.research.done.includes('online_crossplay') && platformCount >= 2 && (CROSSPLAY_GENRES.has(concept.genre) || concept.monetization === 'live_service' || concept.monetization === 'f2p');
+}
+
 export function salesPotential(s: GameState, concept: GameProject['concept'], effScore: number, rawHype: number) {
   const fr = concept.franchiseId ? s.franchises[concept.franchiseId] : undefined;
   const crowd = BALANCE.ERA_BOOST / (1 + BALANCE.CROWDING * Math.max(0, fromDay(s.day).year - 1980));
@@ -177,7 +181,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   const sb = new BD('Reach (size × reputation × distribution)', reach);
   if (concept.remasterOf) sb.mul('Remaster (a nostalgia market)', BALANCE.REMASTER_REACH);
   // Cross-play: online-leaning games on several platforms share one player pool.
-  const crossplay = s.research.done.includes('online_crossplay') && concept.platforms.length >= 2 && (CROSSPLAY_GENRES.has(concept.genre) || concept.monetization === 'live_service' || concept.monetization === 'f2p');
+  const crossplay = crossplayEligible(s, concept, concept.platforms.length);
   if (crossplay) sb.mul('Cross-play', BALANCE.CROSSPLAY_SALES);
   sb.mul(`Review appeal (${Math.round(effScore)})`, attach * 10);
   sb.mul('Hype', 1 + hype * 0.45);
@@ -584,7 +588,9 @@ export function portCost(s: GameState, rel: Release): number {
 export function applyPort(s: GameState, rel: Release, platform: string): number {
   const eff = rel.score * 0.7 + rel.userScore * 0.3;
   const pot = salesPotential(s, { ...rel.concept, platforms: [platform], franchiseId: undefined }, eff - 3, 0.2);
-  const potential = (pot.platforms[0]?.potential ?? 0) * 0.65;
+  // A port joins the existing player pool, so cross-play counts all the game's platforms.
+  const cross = crossplayEligible(s, rel.concept, rel.concept.platforms.length + 1) ? BALANCE.CROSSPLAY_SALES : 1;
+  const potential = (pot.platforms[0]?.potential ?? 0) * 0.65 * cross;
   rel.platforms.push({ platform, potential, units: 0, startWeek: rel.week });
   rel.concept = { ...rel.concept, platforms: [...rel.concept.platforms, platform] };
   rel.active = true;
