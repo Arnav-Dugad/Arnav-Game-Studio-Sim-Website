@@ -23,7 +23,7 @@ export function ProjectDock() {
   return (
     <div className="pointer-events-none absolute bottom-16 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap justify-center gap-2 sm:bottom-4">
       {nudge && (
-        <div className="glass pointer-events-auto flex items-center gap-2 rounded-xl px-3 py-2 text-xs">
+        <div className="glass pointer-events-auto flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-xs">
           <Icon name="hourglass" size={14} className="shrink-0 text-warn" />
           <span className="font-semibold">
             {idle === 1 && Object.keys(s.staff).length === 1 ? 'Your team is idle' : `${idle} ${idle === 1 ? 'person is' : 'people are'} idle`}
@@ -33,7 +33,7 @@ export function ProjectDock() {
           </button>
           {s.offers.contracts.length > 0 && (
             <button type="button" className="rounded-lg border border-line px-2 py-1 font-semibold hover:bg-bg2" onClick={() => openPanel('develop', 'contracts')}>
-              Contracts ({s.offers.contracts.length})
+              Contracts<span className="hidden sm:inline"> ({s.offers.contracts.length})</span>
             </button>
           )}
         </div>
