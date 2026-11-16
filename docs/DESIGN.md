@@ -680,3 +680,27 @@ This section records decisions made during the build that differ from, or add to
   | Steady, trend and tycoon | Mostly survive, building $1B–$25B studios |
   | Aggressive | High variance: some runs boom, some go bankrupt |
   | Random | Goes bankrupt quickly, but never breaks an invariant |
+
+### Added after the first playable build
+- **Release calendar.** Market → Coming soon lists real franchise releases due in the next 12 months. The new-game wizard warns when your expected ship window clashes with one of them in the same genre and on the same platforms.
+- **Seasonality.** Monthly sales multipliers peak in November–December and dip in January and summer. Digital sales are only half as seasonal as boxed sales.
+- **Rival poaching for the player.** With Headhunters research, a senior developer from a rival may appear in the hiring pool. They cost a premium salary plus a recruiter fee, and −1 reputation.
+- **Secondary share offerings.** After the IPO you can sell more shares. Dropping below 50% ownership makes hostile takeovers possible.
+- **Explainable reputation.** Every reputation change is logged with its reason and shown in the HUD tooltip.
+- **Year in review.** A non-blocking recap card each January.
+- **Projects dock.** At-a-glance progress for active projects.
+- **Rival profiles.** Each rival's leader, real franchises and recent releases.
+- **In-game guide.**
+- **Correctness fixes from an independent code review:**
+  - equity accounting for IPOs and share sales;
+  - publisher advances are repaid on cancellation;
+  - duplicate-ID validation in actions;
+  - the research queue now respects prerequisites;
+  - corrected sales-tail decay for non-premium business models;
+  - awards are held in January, so December releases count;
+  - publisher deadlines are enforced at release;
+  - tax timing fixed, with loss carry-forward;
+  - franchise fatigue now decays;
+  - high-interest loans show as interest in the ledger;
+  - double-buffered cloud chunks with checksum verification;
+  - offline deletions are remembered (tombstones).

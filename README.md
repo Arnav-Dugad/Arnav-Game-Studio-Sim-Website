@@ -93,6 +93,15 @@ src/
 tests/       sim, data, rules and bot playthrough tests
 ```
 
+## Known limitations
+
+- **Sign-in providers.** Online accounts need the Email/Password and Google providers enabled in the Firebase console, plus the live domain in Authorized domains. Until then the live site works in guest mode, with saves kept on the device.
+- **Hall of Fame scope.** It is per player. Strict per-user security rules mean there is no global leaderboard.
+- **Rivals.** Rival AI is abstracted: monthly releases with strategy-driven scores and real franchises on their dates. Rivals don't manage offices or staff like the player does.
+- **Subsidiaries.** Acquired studios run on autopilot. You set their budget and genre focus only.
+- **Phones.** The game is playable on phones, but it's best on tablet or desktop screens.
+- **Accessibility.** Keyboard and screen-reader support covers menus, panels, modals and charts. Placing furniture still needs a pointer (mouse, pen or touch).
+
 ## Disclaimer
 
 This is a work of simulation. Real company, platform, game and people names are used as historical references only. No logos, artwork, characters or likenesses are reproduced, and no endorsement is implied.
