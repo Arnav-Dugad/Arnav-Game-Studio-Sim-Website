@@ -29,7 +29,7 @@ export function Rail() {
   return (
     <nav
       aria-label="Game sections"
-      className="glass absolute bottom-2 left-1/2 z-30 flex -translate-x-1/2 gap-0.5 rounded-2xl p-1 sm:bottom-auto sm:left-3 sm:top-1/2 sm:-translate-x-0 sm:-translate-y-1/2 sm:flex-col"
+      className="glass absolute bottom-2 left-1/2 z-30 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 gap-0.5 overflow-x-auto rounded-2xl p-1 scroll-thin sm:bottom-auto sm:left-3 sm:top-1/2 sm:max-w-none sm:-translate-x-0 sm:-translate-y-1/2 sm:flex-col sm:overflow-visible"
     >
       {ITEMS.map((it) => (
         <button
@@ -40,7 +40,7 @@ export function Rail() {
           aria-pressed={panel === it.id}
           title={`${it.label} (${it.key})`}
           className={cx(
-            'group relative grid size-10 place-items-center rounded-xl transition sm:size-11',
+            'group relative grid size-10 shrink-0 place-items-center rounded-xl transition sm:size-11',
             panel === it.id ? 'bg-accent text-accent-ink' : 'text-ink2 hover:bg-bg2 hover:text-ink',
           )}
         >

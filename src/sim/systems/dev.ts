@@ -50,7 +50,9 @@ export function areaSkill(st: Staff, a: Area): number {
 /** Points per 100%-productive person-day that define "par" for a size in a year. */
 export function benchmarkPoints(size: Size, day: number): number {
   const sz = BALANCE.SIZE[size];
-  const yrs = fromDay(day).year - 1980;
+  const raw = fromDay(day).year - 1980;
+  // In endless mode (after 2026) the bar keeps rising, but half as fast.
+  const yrs = Math.min(raw, 46) + Math.max(0, raw - 46) * 0.5;
   return sz.typicalTeam * sz.days * BALANCE.POINTS_PER_DAY * BALANCE.BENCHMARK_SKILL * BALANCE.BENCHMARK_PROD * Math.pow(1 + BALANCE.BENCHMARK_GROWTH, yrs);
 }
 
