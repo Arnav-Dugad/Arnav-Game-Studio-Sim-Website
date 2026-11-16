@@ -156,6 +156,8 @@ export function netPerUnit(s: GameState, pl: PlatformInfo, price: number, selfPu
  * Lifetime unit potential per platform for a concept at a given effective score and hype.
  * Shared by releases, the in-game forecast, and the balance probe.
  */
+const CROSSPLAY_GENRES = new Set<string>(['shooter', 'fighting', 'sports', 'racing', 'mmo', 'strategy', 'sandbox']);
+
 export function salesPotential(s: GameState, concept: GameProject['concept'], effScore: number, rawHype: number) {
   const fr = concept.franchiseId ? s.franchises[concept.franchiseId] : undefined;
   const crowd = BALANCE.ERA_BOOST / (1 + BALANCE.CROWDING * Math.max(0, fromDay(s.day).year - 1980));
@@ -172,6 +174,9 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   const fatigueMul = (fr ? 1 - fr.fatigue * 0.45 : 1) * (concept.remasterOf ? BALANCE.REMASTER_REACH : 1);
   const sb = new BD('Reach (size × reputation × distribution)', reach);
   if (concept.remasterOf) sb.mul('Remaster (a nostalgia market)', BALANCE.REMASTER_REACH);
+  // Cross-play: online-leaning games on several platforms share one player pool.
+  const crossplay = s.research.done.includes('online_crossplay') && concept.platforms.length >= 2 && (CROSSPLAY_GENRES.has(concept.genre) || concept.monetization === 'live_service' || concept.monetization === 'f2p');
+  if (crossplay) sb.mul('Cross-play', BALANCE.CROSSPLAY_SALES);
   sb.mul(`Review appeal (${Math.round(effScore)})`, attach * 10);
   sb.mul('Hype', 1 + hype * 0.45);
   sb.mul('Monetization', monet.units);
@@ -190,7 +195,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
         Math.sqrt(platformGenreFit(pl, concept.genre)) *
         Math.sqrt(platformAudienceFit(pl, concept.audience) * (g.audience[concept.audience] ?? 1) * (TOPIC_BY_ID[concept.topic]?.audience[concept.audience] ?? 1)) *
         Math.sqrt(topicPopularity(s, concept.topic));
-      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul;
+      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1);
       return { platform: pid, potential: Math.max(0, potential), units: 0, pl };
     });
   if (fr && fr.fans > 0) {

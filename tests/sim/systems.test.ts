@@ -482,3 +482,18 @@ describe('vacations', () => {
     expect(dispatch(s, { type: 'vacation', staffId: 'founder', days: 7 }).ok).toBe(true);
   });
 });
+
+describe('cross-play research', () => {
+  it('boosts multi-platform online games only', () => {
+    const s = game(2019, 4);
+    const plats = availablePlatforms(s).slice(0, 2).map((p) => p.id);
+    const concept = { name: 'X', genre: 'shooter' as const, topic: 'scifi', platforms: plats, audience: 'teen' as const, size: 'medium' as const, monetization: 'premium' as const, engineId: 'e0' };
+    const before = salesPotential(s, concept, 80, 0.5).platforms.reduce((t, p) => t + p.potential, 0);
+    s.research.done.push('online_crossplay');
+    const after = salesPotential(s, concept, 80, 0.5).platforms.reduce((t, p) => t + p.potential, 0);
+    expect(after / before).toBeCloseTo(BALANCE.CROSSPLAY_SALES, 5);
+    const puzzle = { ...concept, genre: 'puzzle' as const };
+    const p1 = salesPotential(s, puzzle, 80, 0.5).salesWhy.parts.some((x) => x.label === 'Cross-play');
+    expect(p1).toBe(false);
+  });
+});

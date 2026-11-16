@@ -34,7 +34,7 @@ export interface RendererCallbacks {
   onRotate?: () => void;
 }
 
-type Mode = 'desk' | 'walk' | 'station' | 'away' | 'wander';
+type Mode = 'desk' | 'walk' | 'station' | 'away' | 'wander' | 'meeting';
 
 interface Agent {
   id: string;
@@ -654,6 +654,18 @@ export class OfficeRenderer {
             }
           }
           a.cooldown = 8 + Math.random() * 14;
+        } else if (st.assignment.kind === 'project' && st.activity === 'work' && Math.random() < 0.12) {
+          // project teams huddle at a meeting table or whiteboard now and then (cosmetic)
+          const target = this.nearestStation(s, floor, a.seat!, 'meeting');
+          if (target) {
+            const [tx, ty] = this.tileCenter(target[0], target[1]);
+            a.path = this.route(s, floor, a, tx, ty);
+            if (a.path.length) {
+              a.mode = 'walk';
+              a.next = 'meeting';
+            }
+          }
+          a.cooldown = 10 + Math.random() * 16;
         } else if (st.assignment.kind === 'idle' && Math.random() < 0.5) {
           const rx = Math.floor(Math.random() * t.w);
           const ry = Math.floor(Math.random() * t.h);
@@ -673,7 +685,7 @@ export class OfficeRenderer {
         const target = a.path[0];
         if (!target) {
           a.mode = a.next;
-          a.wait = a.next === 'station' ? 3 + Math.random() * 3 : a.next === 'wander' ? 1.5 + Math.random() * 2 : 0;
+          a.wait = a.next === 'station' ? 3 + Math.random() * 3 : a.next === 'meeting' ? 4 + Math.random() * 4 : a.next === 'wander' ? 1.5 + Math.random() * 2 : 0;
         } else {
           const sp = 2.3 * T * dt * speedMul * (st.activity === 'burnout' ? 0.6 : 1);
           const dx = target[0] - a.x;
@@ -688,7 +700,7 @@ export class OfficeRenderer {
             a.y += (dy / d) * sp;
           }
         }
-      } else if (a.mode === 'station' || a.mode === 'wander') {
+      } else if (a.mode === 'station' || a.mode === 'wander' || a.mode === 'meeting') {
         a.wait -= dt * speedMul;
         if (a.mode === 'station' && Math.random() < dt * 0.8) this.puff(a.x + 8, a.y - 30, 0xffffff);
         if (a.wait <= 0 && a.seat) {
@@ -731,8 +743,8 @@ export class OfficeRenderer {
       }
       // bubbles
       a.bubbleT -= dt;
-      if ((st.activity === 'chat' && a.bubbleT < -2 && Math.random() < dt * 2) || (a.mode === 'station' && a.bubbleT < -4 && Math.random() < dt)) {
-        this.showBubble(a, a.mode === 'station' ? '☕' : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!);
+      if ((st.activity === 'chat' && a.bubbleT < -2 && Math.random() < dt * 2) || ((a.mode === 'station' || a.mode === 'meeting') && a.bubbleT < -4 && Math.random() < dt * 1.5)) {
+        this.showBubble(a, a.mode === 'station' ? '☕' : a.mode === 'meeting' ? (Math.random() < 0.5 ? '💡' : '📋') : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!);
       }
       if (a.bubble) {
         a.bubble.visible = a.bubbleT > 0;
@@ -780,13 +792,14 @@ export class OfficeRenderer {
     return p.slice(1).map(([x, y]) => this.tileCenter(x, y));
   }
 
-  private nearestStation(s: GameState, floor: number, seat: [number, number]): [number, number] | null {
+  private nearestStation(s: GameState, floor: number, seat: [number, number], kind: 'energy' | 'meeting' = 'energy'): [number, number] | null {
     const t = tierDef(s.office.tier);
     const occ = occupancy(s, floor);
     let best: [number, number] | null = null;
     let bd = Infinity;
     for (const it of s.office.items) {
-      if (it.floor !== floor || !ITEM_BY_ID[it.item].energy) continue;
+      const def = ITEM_BY_ID[it.item];
+      if (it.floor !== floor || (kind === 'energy' ? !def.energy : def.effect !== 'meeting')) continue;
       const fp = footprint(it);
       for (let dy = -1; dy <= fp.h; dy++)
         for (let dx = -1; dx <= fp.w; dx++) {
