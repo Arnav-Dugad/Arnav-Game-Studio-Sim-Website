@@ -551,3 +551,19 @@ describe('Golden Pixel Gala', () => {
     expect(y2.winners.every((w) => !w.mine)).toBe(true);
   });
 });
+
+describe('studio showcase', () => {
+  it('needs fame and an announced game, hypes it, then cools down for a year', () => {
+    const s = game(1995, 14);
+    s.company.cash = 1e7;
+    const p = startSmall(s);
+    expect(dispatch(s, { type: 'hostShowcase' }).ok).toBe(false); // not famous
+    s.company.reputation = 90;
+    expect(dispatch(s, { type: 'hostShowcase' }).ok).toBe(false); // nothing announced
+    expect(dispatch(s, { type: 'announce', projectId: p.id }).ok).toBe(true);
+    const before = p.hype;
+    expect(dispatch(s, { type: 'hostShowcase' }).ok).toBe(true);
+    expect(p.hype).toBeGreaterThan(before + 0.5);
+    expect(dispatch(s, { type: 'hostShowcase' }).ok).toBe(false); // cooldown
+  });
+});

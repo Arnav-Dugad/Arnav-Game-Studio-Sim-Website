@@ -16,6 +16,7 @@ import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
 import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
+import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
 import { applyPatch, applyPort, canPatch, canRemaster, patchCost, portCost } from './systems/release';
@@ -101,6 +102,7 @@ export type Action =
   | { type: 'launchSubscription'; name: string; price: number }
   | { type: 'setSubscriptionPrice'; price: number }
   | { type: 'closeSubscription' }
+  | { type: 'hostShowcase' }
   | { type: 'cancelConsole'; id: string };
 
 export type ActionResult = { ok: true; events: SimEvent[] } | { ok: false; error: string };
@@ -872,6 +874,12 @@ function apply(c: Ctx, a: Action): string | null {
       else if (pack) hw.packIn = pack.id;
       if (a.price !== undefined) hw.price = Math.round(a.price);
       if (a.feeRate !== undefined) hw.feeRate = a.feeRate;
+      return null;
+    }
+    case 'hostShowcase': {
+      const why = showcaseBlocked(s);
+      if (why) return why;
+      hostShowcase(c);
       return null;
     }
     case 'launchSubscription': {

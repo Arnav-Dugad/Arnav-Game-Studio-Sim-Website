@@ -18,6 +18,7 @@ import { researchAvailable, researchCost } from '../../src/sim/systems/research'
 import { engineTechFor, sizeDailyCost } from '../../src/sim/systems/dev';
 import { estimateContractDays } from '../../src/sim/systems/offers';
 import { canLaunchSub, subLaunchCost, subRefPrice } from '../../src/sim/systems/subscription';
+import { showcaseBlocked, showcaseCost } from '../../src/sim/systems/showcase';
 import { MARKETING, canDesignConsole, consoleSpec, liveConsoles, refPrice } from '../../src/sim/systems/hardware';
 import type { Focus3, GameState, Size } from '../../src/sim/types';
 import { money } from '../../src/sim/util';
@@ -313,6 +314,7 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
     const t = s.offers.acquisitions[0];
     if (t && s.company.cash > t.price * 3) dispatch(s, { type: 'acquire', targetId: t.id });
     hardware(s);
+    if (!showcaseBlocked(s) && s.company.cash > showcaseCost(s) * 20) dispatch(s, { type: 'hostShowcase' });
     if (!canLaunchSub(s) && s.company.cash > subLaunchCost(s) * 20) dispatch(s, { type: 'launchSubscription', name: 'Bot Pass', price: subRefPrice(s) });
   }
 }
@@ -382,6 +384,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => (s.hardware.length ? { type: 'setConsole', id: rng.pick(s.hardware).id, price: rng.chance(0.5) ? rng.range(-5, 900) : undefined, feeRate: rng.chance(0.5) ? rng.range(-0.1, 0.6) : undefined } : null),
   (s, rng) => (s.hardware.length ? { type: rng.chance(0.5) ? 'retireConsole' : 'cancelConsole', id: rng.pick(s.hardware).id } : null),
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
+  () => ({ type: 'hostShowcase' }),
   (_s, rng) => (rng.chance(0.7) ? { type: 'setSubscriptionPrice', price: rng.range(-1, 60) } : { type: 'closeSubscription' }),
   (s, rng) => { const st = Object.values(s.staff); return st.length ? { type: 'vacation', staffId: rng.pick(st).id, days: rng.chance(0.5) ? 7 : 14 } : null; },
 ];

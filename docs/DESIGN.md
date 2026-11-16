@@ -704,6 +704,7 @@ This section records decisions made during the build that differ from, or add to
   - You still need 85+ for Game of the Year, and 80+ while strictly beating every rival in the genre for a genre award.
   - Real winners come out plausibly, e.g. Super Mario Bros. in 1985, Grand Theft Auto V in 2013 and Breath of the Wild in 2017.
 - **New-player polish.** Develop opens on the new-game wizard when nothing is in development. An idle-team nudge offers New game or Contracts. Article grammar is now correct ("an RPG").
+- **Your own showcase.** From 1990, a studio with 70+ reputation can host a yearly "Press Event" (a "Direct" from 2005) under Company → Publishing. It gives every announced game +1.3 × reputation/100 hype, divided by √(number of announced games); franchise fans +3%, reputation +2, and a small boost to any of your consoles on sale.
 - **Vacations.** Paid leave of one or two weeks: +10 energy and −4 burnout a day, morale up, loyalty +3 or +5. Each person waits 120 days between vacations. People on vacation don't work on projects or research.
 - **Studio history.** Company → History builds a timeline from data the sim already keeps: the founding, notable releases, achievements, console launches and the IPO.
 - **Second review pass (hardware/remasters):**

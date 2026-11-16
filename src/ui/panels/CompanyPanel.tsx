@@ -10,6 +10,8 @@ import { LineChart } from '../charts';
 import { Button, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { useGame } from '../store';
+import { Icon } from '../icons';
+import { SHOWCASE_MIN_REP, SHOWCASE_MIN_YEAR, showcaseBlocked, showcaseCost, showcaseHype, showcaseName } from '@/sim/systems/showcase';
 import { HistoryTab } from './HistoryTab';
 import { SubscriptionTab } from './SubscriptionTab';
 
@@ -40,6 +42,28 @@ export default function CompanyPanel() {
       {tab === 'pass' && <SubscriptionTab />}
       {tab === 'history' && <HistoryTab />}
     </div>
+  );
+}
+
+/** Host your own yearly presentation (famous studios only). */
+function Showcase() {
+  const s = useGame((g) => g.s)!;
+  const why = showcaseBlocked(s);
+  if (fromDay(s.day).year < SHOWCASE_MIN_YEAR || s.company.reputation < SHOWCASE_MIN_REP - 15) return null;
+  return (
+    <Section title="Your own showcase">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line p-2.5 text-xs">
+        <Icon name="megaphone" size={18} className="text-accent" />
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold">{showcaseName(s)}</div>
+          <div className="text-ink3">Present every announced game to the world. +{showcaseHype(s).toFixed(2)} hype each, franchise fans +3%, reputation +2. Once a year.</div>
+        </div>
+        <Button size="sm" variant="primary" disabled={!!why} title={why ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'hostShowcase' }, `${showcaseName(s)} is live — the crowd goes wild!`)}>
+          Host · {fmtMoney(showcaseCost(s))}
+        </Button>
+      </div>
+      {why && <p className="mt-1 text-[11px] text-ink3">{why}</p>}
+    </Section>
   );
 }
 
@@ -76,6 +100,7 @@ function Publishing() {
         )}
         <p className="mt-1.5 text-[11px] text-ink3">Pick a deal when starting a new game (Develop → New game → Publishing).</p>
       </Section>
+      <Showcase />
       <Section title="Trade shows">
         <ul className="space-y-1.5">
           {shows.map((t) => {
