@@ -29,12 +29,15 @@
   - IPO, stock price and board, acquisitions and subsidiaries, and hostile takeovers.
   - Bankruptcy is a real fail state.
 - **Reviews.** Critic outlets with their own biases and generated blurbs, user scores, franchises, fans, fatigue and yearly awards.
+- **Post-launch.** Patch buggy games to win players back, or port hits to new platforms. Holiday seasons sell, January slumps.
+- **Rival poaching, both ways.** Rivals try to lure your stars; with Headhunters research you can poach theirs.
+- **31 choice events** with real trade-offs: crunch exposés, review bombs, exclusivity offers, crowdfunding, buyouts, hostile takeovers and more.
 - **Explainable numbers.** Every key number (productivity, morale, review score, sales, cash flow) has a "why" breakdown on hover.
 - **Accounts & saves.**
   - Email/password, Google sign-in or guest play, with five save slots.
   - Saves land locally first (IndexedDB), then sync to the cloud (Firestore) with versioned, compressed, chunked data.
   - Offline play and conflict resolution are supported.
-- **Polish.** Light/dark themes, reduced motion, keyboard shortcuts, an interactive tutorial, synthesized sound with a mute option, and responsive layouts for desktop and tablet.
+- **Polish.** Light/dark themes, reduced motion, keyboard shortcuts, an interactive tutorial, an in-game guide, a year-in-review card, synthesized sound with a mute option, offline support (service worker), and responsive layouts for desktop and tablet.
 - **Original art only.** All art is hand-built SVG or procedural code: no AI-generated images, no real logos and no likenesses.
 
 ## Tech

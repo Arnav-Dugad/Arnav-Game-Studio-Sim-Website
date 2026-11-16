@@ -1,13 +1,16 @@
 import { ACHIEVEMENTS, MILESTONES, nextMilestone, runScore } from '@/sim/systems/achievements';
 import { formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
-import { Pill, Section, Stat, cx } from '../components/ui';
+import { useState } from 'react';
+import { Button, Pill, Section, Stat, cx } from '../components/ui';
 import { Icon, type IconName } from '../icons';
 import { useGame } from '../store';
 
 export default function GoalsPanel() {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
+  const act = useGame((g) => g.act);
+  const [confirmRetire, setConfirmRetire] = useState(false);
   const next = nextMilestone(s);
   const st = s.progress.stats;
   const unlocked = Object.keys(s.progress.achievements).length;
@@ -65,6 +68,23 @@ export default function GoalsPanel() {
             );
           })}
         </ul>
+      </Section>
+      <Section title="End this run">
+        <p className="mb-2 text-xs text-ink3">Retire to lock in your score ({runScore(s).toLocaleString()}) and add {s.company.name} to your Hall of Fame. This ends the game for this save.</p>
+        {confirmRetire ? (
+          <div className="flex gap-2">
+            <Button variant="danger" icon="flag" onClick={() => act({ type: 'retire' })}>
+              Yes, retire now
+            </Button>
+            <Button variant="ghost" onClick={() => setConfirmRetire(false)}>
+              Keep playing
+            </Button>
+          </div>
+        ) : (
+          <Button icon="flag" onClick={() => setConfirmRetire(true)}>
+            Retire…
+          </Button>
+        )}
       </Section>
     </div>
   );
