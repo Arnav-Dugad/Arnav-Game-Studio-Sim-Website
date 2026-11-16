@@ -295,8 +295,13 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   }
   if (score >= 85) st.hits += 1;
   if (score < 50) st.flops += 1;
-  // Publisher minimum score clause
+  // Publisher clauses: deadline and minimum score
   const deal = p.concept.deal;
+  if (deal && s.day > deal.deadlineDay) {
+    const monthsLate = Math.ceil((s.day - deal.deadlineDay) / 30);
+    addRep(s, -Math.min(8, 2 + monthsLate), 'Missed a publisher deadline');
+    pushNews(s, { category: 'studio', headline: `Publisher frustrated: ${p.concept.name} shipped ${monthsLate} month${monthsLate > 1 ? 's' : ''} late`, tone: 'bad' });
+  }
   if (deal && score < deal.minScore) {
     addRep(s, -(2), 'Publisher disappointed');
     pushNews(s, { category: 'studio', headline: `Publisher disappointed with ${rel.name}`, body: `The contract wanted ${deal.minScore}+.`, tone: 'bad' });
@@ -352,7 +357,7 @@ export function updateSalesWeekly(c: Ctx): void {
       const pl = platformInfo(s, ps.platform);
       if (!pl) continue;
       const season = 1 + (rawSeason - 1) * (1 - 0.5 * digitalShare(s, pl));
-      const decay = rel.decay * (rel.concept.monetization === 'premium' ? 1 : Math.min(0.985, 1 - (1 - rel.decay) / BALANCE.MONETIZATION[rel.concept.monetization].tailMul));
+      const decay = rel.concept.monetization === 'premium' ? rel.decay : Math.min(0.985, 1 - (1 - rel.decay) / BALANCE.MONETIZATION[rel.concept.monetization].tailMul);
       const share = (1 - decay) * Math.pow(decay, Math.max(0, rel.week - (ps.startWeek ?? 0)));
       // platform decline after discontinuation scales sales down
       const life = pl.endDay !== null && s.day > pl.endDay ? Math.exp(-(s.day - pl.endDay) / 250) : 1;
@@ -459,9 +464,8 @@ export function updateLiveMonthly(c: Ctx): void {
 }
 
 /** Yearly awards ceremony (December). */
-export function yearlyAwards(c: Ctx): void {
+export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
   const { s } = c;
-  const yr = fromDay(s.day).year;
   const mine = Object.values(s.releases).filter((r) => fromDay(r.day).year === yr);
   const rivals = s.rivalGames.filter((g) => fromDay(g.day).year === yr);
   const bestRival = rivals.reduce((m, g) => Math.max(m, g.score), 0);

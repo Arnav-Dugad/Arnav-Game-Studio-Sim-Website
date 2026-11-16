@@ -25,6 +25,7 @@ const meta = () => ({
   checksum: 'abc123',
   bytes: 1234,
   chunkCount: 1,
+  chunkBase: 10,
   updatedAt: serverTimestamp(),
 });
 
@@ -64,6 +65,7 @@ run('firestore.rules', () => {
     await assertFails(setDoc(doc(db, 'users/alice/slots/slot9'), meta()));
     await assertFails(setDoc(doc(db, 'users/alice/slots/slot1'), { ...meta(), hacked: true }));
     await assertFails(setDoc(doc(db, 'users/alice/slots/slot1'), { ...meta(), chunkCount: 99 }));
+    await assertFails(setDoc(doc(db, 'users/alice/slots/slot1'), { ...meta(), chunkBase: 5 }));
     await assertFails(setDoc(doc(db, 'users/alice/slots/slot1/chunks/c0'), { data: 'x'.repeat(900_001), index: 0 }));
     await assertFails(setDoc(doc(db, 'users/alice'), { displayName: 'x'.repeat(61) }));
     await assertFails(setDoc(doc(db, 'users/alice'), { isAdmin: true }));

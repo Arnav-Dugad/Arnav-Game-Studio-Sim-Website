@@ -81,7 +81,7 @@ export function financeMonthly(c: Ctx): void {
     s.finance.revenue12m.push(rev);
     if (s.finance.revenue12m.length > 12) s.finance.revenue12m.shift();
     const exp = sum(Object.values(prev.expense).map((v) => v ?? 0));
-    s.finance.profitYTD += rev - exp;
+    s.finance.profitYTD += rev - (exp - (prev.expense.taxes ?? 0));
   }
   const ledger: MonthLedger = { day: s.day, income: {}, expense: {}, cashEnd: s.company.cash };
   s.finance.ledger.push(ledger);
@@ -145,8 +145,11 @@ export function yearlyTaxes(c: Ctx): void {
   if (s.finance.profitYTD > 0) {
     const tax = s.finance.profitYTD * BALANCE.CORPORATE_TAX;
     spend(s, 'taxes', tax);
+    s.finance.profitYTD = 0;
+  } else {
+    // losses carry forward (capped at three years' worth of payroll to stay sane)
+    s.finance.profitYTD = Math.max(s.finance.profitYTD, -payrollMonthly(s) * 36);
   }
-  s.finance.profitYTD = 0;
 }
 
 // ── Valuation & stock ───────────────────────────────────────────────────────
@@ -202,7 +205,7 @@ export function doIPO(s: GameState, sellPct: number): number {
     dividendsPaid: 0,
   };
   s.company.publicSince = s.day;
-  earn(s, 'other_income', raised);
+  s.company.cash += Math.round(raised); // equity raise: not revenue, not taxable
   return raised;
 }
 
@@ -238,7 +241,8 @@ export function quarterlyEarnings(c: Ctx): void {
     body: `Quarterly profit ${Math.round(profit / 1e3)}k vs ${Math.round(st.expectation / 1e3)}k expected. Board mood ${Math.round(st.boardMood)}%.`,
     tone: beat ? 'good' : 'bad',
   });
-  st.expectation = Math.max(0, Math.max(profit, st.expectation) * 1.04);
+  // expectations track recent performance (they can fall after a bad year)
+  st.expectation = Math.max(0, (st.expectation * 0.5 + profit * 0.5) * 1.04);
   if (st.boardMood < 25) {
     s.company.moraleMods.push({ v: -6, until: s.day + 90, label: 'Board pressure' });
   }
@@ -246,4 +250,18 @@ export function quarterlyEarnings(c: Ctx): void {
 
 export function yearOf(s: GameState): number {
   return fromDay(s.day).year;
+}
+
+/** Sell more shares (secondary offering): cash now, less control. */
+export function secondaryOffering(s: GameState, pct: number): number {
+  const st = s.finance.stock;
+  if (!st) return 0;
+  const n = Math.round(st.shares * pct);
+  const sell = Math.min(n, st.founderShares);
+  if (sell <= 0) return 0;
+  const raised = sell * st.price * 0.92;
+  st.founderShares -= sell;
+  st.price *= 0.96;
+  s.company.cash += Math.round(raised);
+  return raised;
 }

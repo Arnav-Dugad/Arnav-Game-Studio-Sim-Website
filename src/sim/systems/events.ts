@@ -453,8 +453,11 @@ export const EVENT_DEFS: EventDef[] = [
     resolve: ({ s }, e, opt) => {
       if (opt !== 'take') return;
       const amount = Number(e.ctx.amount);
+      // ~100% APR over 12 months ≈ 1.6× repaid; interest shows up in the ledger as loan interest
+      const rate = 1.0;
+      const i = rate / 12;
       s.company.cash += amount;
-      s.finance.loans.push({ id: newId(s, 'l'), principal: amount, remaining: amount * 1.6, rate: 0, monthly: (amount * 1.6) / 12, monthsLeft: 12, takenDay: s.day });
+      s.finance.loans.push({ id: newId(s, 'l'), principal: amount, remaining: amount, rate, monthly: (amount * i) / (1 - Math.pow(1 + i, -12)), monthsLeft: 12, takenDay: s.day });
       s.company.creditScore = clamp(s.company.creditScore - 30, 300, 850);
     },
   },

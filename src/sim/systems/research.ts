@@ -35,9 +35,15 @@ export function updateResearchDaily(c: Ctx): void {
   const { s } = c;
   const active = s.research.active;
   if (!active) {
-    // auto-advance queue
-    const next = s.research.queue.shift();
-    if (next) s.research.active = next;
+    // auto-advance to the first queued item whose prerequisites are now met
+    const idx = s.research.queue.findIndex((id) => {
+      const d = RESEARCH_BY_ID[id];
+      return d && researchAvailable(s, d).ok;
+    });
+    if (idx >= 0) {
+      s.research.active = s.research.queue.splice(idx, 1)[0]!;
+      s.research.progress = 0;
+    }
     return;
   }
   const def = RESEARCH_BY_ID[active];
@@ -58,8 +64,6 @@ export function updateResearchDaily(c: Ctx): void {
     s.progress.stats.researchDone += 1;
     pushNews(s, { category: 'tech', headline: `Research complete: ${def.name}`, body: def.desc, tone: 'good' });
     c.out.push({ type: 'researchDone', id: def.id });
-    const next = s.research.queue.shift();
-    if (next) s.research.active = next;
   }
 }
 

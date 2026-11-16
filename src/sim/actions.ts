@@ -17,7 +17,7 @@ import { Rng } from './rng';
 import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
 import { applyPatch, applyPort, canPatch, patchCost, portCost } from './systems/release';
-import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, takeLoan } from './systems/finance';
+import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost } from './systems/research';
@@ -88,7 +88,8 @@ export type Action =
   | { type: 'tutorial'; step: number }
   | { type: 'refreshCandidates' }
   | { type: 'patchGame'; releaseId: string }
-  | { type: 'portGame'; releaseId: string; platform: string };
+  | { type: 'portGame'; releaseId: string; platform: string }
+  | { type: 'secondaryOffering'; pct: number };
 
 export type ActionResult = { ok: true; events: SimEvent[] } | { ok: false; error: string };
 
@@ -111,7 +112,9 @@ export function defaultFocus(genre: GenreId): [Focus3, Focus3, Focus3] {
 }
 
 function teamValid(s: GameState, team: string[], projectIdToIgnore?: string): string | null {
+  if (new Set(team).size !== team.length) return 'Each person can only be listed once';
   for (const id of team) {
+    if (s.staff[id]?.assignment.kind === 'training') return `${s.staff[id]!.name} is in training`;
     const st = s.staff[id];
     if (!st) return 'Unknown staff member';
     if (st.assignment.kind === 'project' && st.assignment.id !== projectIdToIgnore && s.projects[st.assignment.id]) {
@@ -156,8 +159,18 @@ export function dispatch(s: GameState, a: Action): ActionResult {
   return { ok: true, events: c.out };
 }
 
+const finite = (...xs: unknown[]) => xs.every((x) => typeof x === 'number' && Number.isFinite(x));
+
 function apply(c: Ctx, a: Action): string | null {
   const { s } = c;
+  if ('amount' in a && !finite(a.amount)) return 'Invalid amount';
+  if ('salary' in a && a.salary !== undefined && !finite(a.salary)) return 'Invalid salary';
+  if ('shares' in a && !finite(a.shares)) return 'Invalid share count';
+  if ('weeks' in a && !finite(a.weeks)) return 'Invalid duration';
+  if ('months' in a && !finite(a.months)) return 'Invalid term';
+  if ('pct' in a && !finite(a.pct)) return 'Invalid percentage';
+  if (a.type === 'tradeShow' && ![0, 1, 2].includes(a.booth)) return 'Invalid booth';
+  if ((a.type === 'placeItem' || a.type === 'moveItem') && !finite(a.x, a.y, a.floor)) return 'Invalid position';
   if (s.status !== 'running' && a.type !== 'continueEndless') return 'The game has ended';
   switch (a.type) {
     case 'startGame': {
@@ -169,6 +182,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!topic || yr < topic.year || (topic.research && !s.research.done.includes(topic.research))) return 'Topic not available';
       if (!g.name.trim()) return 'Give your game a name';
       if (!g.platforms.length || g.platforms.length > 6) return 'Choose 1–6 platforms';
+      if (new Set(g.platforms).size !== g.platforms.length) return 'Each platform can only be chosen once';
       for (const pid of g.platforms) {
         const pl = platformInfo(s, pid);
         if (!pl || !isPlatformAvailable(s, pl)) return `${pl?.name ?? pid} is not available`;
@@ -318,6 +332,15 @@ function apply(c: Ctx, a: Action): string | null {
       }
       delete s.projects[a.projectId];
       if (p.kind === 'game' && p.announcedDay !== undefined) addRep(s, -(2), 'Cancelled an announced game');
+      if (p.kind === 'game' && p.concept.deal) {
+        // the publisher wants its advance back
+        spend(s, 'other_expense', p.concept.deal.advance);
+        addRep(s, -2, 'Cancelled a published game');
+      }
+      if (p.kind === 'contract') {
+        spend(s, 'other_expense', p.penalty);
+        addRep(s, -1.5, 'Abandoned a contract');
+      }
       return null;
     }
     case 'marketing': {
@@ -543,7 +566,7 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'buildEngine': {
       if (!a.name.trim()) return 'Name your engine';
-      const feats = a.features.filter((f) => s.research.done.includes(f) && RESEARCH_BY_ID[f]?.engineTech);
+      const feats = [...new Set(a.features)].filter((f) => s.research.done.includes(f) && RESEARCH_BY_ID[f]?.engineTech);
       if (!feats.length) return 'Pick at least one researched feature';
       if (!a.team.length) return 'Assign at least one programmer';
       const te = teamValid(s, a.team);
@@ -701,6 +724,14 @@ function apply(c: Ctx, a: Action): string | null {
     case 'tutorial':
       s.progress.tutorialStep = a.step;
       return null;
+    case 'secondaryOffering': {
+      const st = s.finance.stock;
+      if (!st) return 'Not public';
+      const raised = secondaryOffering(s, Math.min(0.2, Math.max(0.02, a.pct)));
+      if (raised <= 0) return 'No shares left to sell';
+      pushNews(s, { category: 'studio', headline: `${s.company.name} raises ${fmtMoney(raised)} in a share sale`, tone: 'neutral' });
+      return null;
+    }
     case 'patchGame': {
       const rel = s.releases[a.releaseId];
       if (!rel) return 'No such game';
@@ -721,6 +752,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!pl || !isPlatformAvailable(s, pl)) return 'Platform not available';
       if (s.day - rel.day > 365 * 4) return 'Too old to port profitably';
       if (rel.concept.monetization === 'subscription') return 'Subscription games can’t be ported';
+      if (!rel.concept.deal && pl.kind !== 'computer' && !s.research.done.includes('biz_self_publishing')) return 'Research Self-Publishing to put your games on consoles yourself';
       const kit = s.devkits.includes(a.platform) ? 0 : devkitCost(s, a.platform);
       const cost = portCost(s, rel) + kit;
       if (s.company.cash < cost) return 'Not enough cash';

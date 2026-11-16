@@ -164,6 +164,15 @@ function Stock() {
       </div>
       <LineChart ariaLabel="Share price" height={170} area series={[{ name: 'Share price', points: st.history.map((y, i) => ({ x: i, y })) }]} yFormat={(v) => `$${v.toFixed(2)}`} xFormat={(i) => `wk ${i}`} />
       <p className="mt-2 text-xs text-ink3">Quarterly profit expectation: {fmtMoney(st.expectation)}. Beat it to lift the price and keep the board happy.</p>
+      <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
+        <span>
+          Sell 5% more shares for cash
+          {own - 0.05 < 0.5 && <b className="ml-1 text-bad">· drops you below 50% — takeover risk</b>}
+        </span>
+        <Button size="sm" disabled={own < 0.06} onClick={() => act({ type: 'secondaryOffering', pct: 0.05 })}>
+          +{fmtMoney(st.shares * 0.05 * st.price * 0.92)}
+        </Button>
+      </div>
       {own < 0.6 && (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
           <span>Buy back 5% of shares to tighten control</span>

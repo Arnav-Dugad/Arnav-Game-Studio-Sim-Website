@@ -98,6 +98,8 @@ function idb(): Promise<IDBPDatabase> {
 }
 
 export async function saveLocal(uid: string, slotId: SlotId, s: GameState): Promise<SlotMeta> {
+  const tomb = tombstones();
+  if (tomb.includes(`${uid}/${slotId}`)) setTombstones(tomb.filter((t) => t !== `${uid}/${slotId}`));
   const json = serialize(s);
   const data = await gzipBase64(json);
   const meta = { ...metaFor(s), bytes: data.length };
@@ -112,10 +114,28 @@ async function getLocal(uid: string, slotId: SlotId): Promise<LocalRecord | unde
   return (await db.get('saves', `${uid}/${slotId}`)) as LocalRecord | undefined;
 }
 
-async function markSynced(uid: string, slotId: SlotId): Promise<void> {
+/** Mark the local copy synced — only if it is still the exact save that was uploaded. */
+async function markSynced(uid: string, slotId: SlotId, checksum: string): Promise<void> {
   const db = await idb();
   const rec = (await db.get('saves', `${uid}/${slotId}`)) as LocalRecord | undefined;
-  if (rec) await db.put('saves', { ...rec, synced: true });
+  if (rec && rec.meta.checksum === checksum) await db.put('saves', { ...rec, synced: true });
+}
+
+// Slots deleted while offline: remembered so they don't reappear from the cloud, and retried later.
+const TOMB_KEY = 'ase:deleted';
+function tombstones(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(TOMB_KEY) ?? '[]') as string[];
+  } catch {
+    return [];
+  }
+}
+function setTombstones(list: string[]): void {
+  try {
+    localStorage.setItem(TOMB_KEY, JSON.stringify(list));
+  } catch {
+    /* ignore */
+  }
 }
 
 // ── Firestore ───────────────────────────────────────────────────────────────
@@ -138,20 +158,18 @@ export async function syncSlot(uid: string, slotId: SlotId): Promise<'synced' | 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
   const { db } = await cloudReady();
   const { doc, setDoc, deleteDoc, serverTimestamp } = await import('firebase/firestore');
+  const { getDoc } = await import('firebase/firestore');
   const chunks: string[] = [];
   for (let i = 0; i < rec.data.length; i += CHUNK) chunks.push(rec.data.slice(i, i + CHUNK));
-  if (chunks.length > 20) throw new Error('Save is too large to sync');
-  // Write chunks first, then the meta (so a reader never sees meta pointing at missing chunks).
-  for (let i = 0; i < chunks.length; i++) await setDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${i}`), { data: chunks[i]!, index: i });
-  // remove stale extra chunks from a previous larger save
-  for (let i = chunks.length; i < 20; i++) {
-    try {
-      await deleteDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${i}`));
-    } catch {
-      break;
-    }
-    if (i > chunks.length + 3) break;
-  }
+  if (chunks.length > 10) throw new Error('Save is too large to sync');
+  // Double-buffered chunks: write the new save into the generation NOT referenced by the current meta,
+  // then flip the meta. An interrupted sync can never corrupt the save other devices will load.
+  const metaRef = doc(db, 'users', uid, 'slots', slotId);
+  const cur = await getDoc(metaRef);
+  const curBase = cur.exists() ? Number((cur.data() as { chunkBase?: number }).chunkBase ?? 0) : 10;
+  const oldCount = cur.exists() ? Number((cur.data() as { chunkCount?: number }).chunkCount ?? 0) : 0;
+  const base = curBase === 0 ? 10 : 0;
+  for (let i = 0; i < chunks.length; i++) await setDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${base + i}`), { data: chunks[i]!, index: base + i });
   const m = rec.meta;
   await setDoc(doc(db, 'users', uid, 'slots', slotId), {
     name: m.name,
@@ -168,9 +186,12 @@ export async function syncSlot(uid: string, slotId: SlotId): Promise<'synced' | 
     checksum: m.checksum,
     bytes: m.bytes,
     chunkCount: chunks.length,
+    chunkBase: base,
     updatedAt: serverTimestamp(),
   });
-  await markSynced(uid, slotId);
+  await markSynced(uid, slotId, m.checksum);
+  // tidy up the previous generation (best effort)
+  if (cur.exists()) for (let i = 0; i < oldCount; i++) await deleteDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${curBase + i}`)).catch(() => undefined);
   return 'synced';
 }
 
@@ -194,11 +215,15 @@ async function cloudMetas(uid: string): Promise<Partial<Record<SlotId, SlotMeta 
 }
 
 export async function listSlots(uid: string): Promise<SlotInfo[]> {
+  // retry deletions that happened offline
+  const pending = tombstones().filter((t) => t.startsWith(`${uid}/`));
+  for (const t of pending) await deleteSlot(uid, t.split('/')[1] as SlotId).catch(() => undefined);
   const cloud = await cloudMetas(uid);
+  const dead = new Set(tombstones());
   const out: SlotInfo[] = [];
   for (const slotId of SLOT_IDS) {
     const loc = await getLocal(uid, slotId).catch(() => undefined);
-    const c = cloud[slotId];
+    const c = dead.has(`${uid}/${slotId}`) ? undefined : cloud[slotId];
     const info: SlotInfo = { slotId, conflict: false };
     if (loc) info.local = { ...loc.meta, synced: loc.synced };
     if (c) info.cloud = c;
@@ -225,12 +250,16 @@ export async function loadSlot(uid: string, slotId: SlotId, prefer?: 'local' | '
     const { db } = await cloudReady();
     const { doc, getDoc } = await import('firebase/firestore');
     let data = '';
+    const base = Number((cloudMeta as { chunkBase?: number }).chunkBase ?? 0);
     for (let i = 0; i < cloudMeta.chunkCount; i++) {
-      const snap = await getDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${i}`));
+      const snap = await getDoc(doc(db, 'users', uid, 'slots', slotId, 'chunks', `c${base + i}`));
       if (!snap.exists()) throw new Error('Cloud save is incomplete');
       data += (snap.data() as { data: string }).data;
     }
     const s = deserialize(await gunzipBase64(data));
+    if (cloudMeta.checksum && stateHash(s) !== cloudMeta.checksum && cloudMeta.schemaVersion === SCHEMA_VERSION) {
+      throw new Error('Cloud save failed its integrity check — try this device’s copy');
+    }
     // refresh the local copy
     const db2 = await idb();
     await db2.put('saves', { key: `${uid}/${slotId}`, meta: { ...cloudMeta, bytes: data.length }, data, synced: true } satisfies LocalRecord);
@@ -244,14 +273,18 @@ export async function deleteSlot(uid: string, slotId: SlotId): Promise<void> {
   const db = await idb();
   await db.delete('saves', `${uid}/${slotId}`);
   if (!cloudEnabled(uid)) return;
+  const key = `${uid}/${slotId}`;
+  setTombstones([...new Set([...tombstones(), key])]);
   try {
     const { db: fdb } = await cloudReady();
     const { doc, getDoc, deleteDoc } = await import('firebase/firestore');
     const metaRef = doc(fdb, 'users', uid, 'slots', slotId);
     const snap = await getDoc(metaRef);
     const n = snap.exists() ? Number((snap.data() as { chunkCount?: number }).chunkCount ?? 0) : 0;
-    for (let i = 0; i < Math.max(n, 1); i++) await deleteDoc(doc(fdb, 'users', uid, 'slots', slotId, 'chunks', `c${i}`)).catch(() => undefined);
+    const base = snap.exists() ? Number((snap.data() as { chunkBase?: number }).chunkBase ?? 0) : 0;
+    for (let i = 0; i < Math.max(n, 1); i++) await deleteDoc(doc(fdb, 'users', uid, 'slots', slotId, 'chunks', `c${base + i}`)).catch(() => undefined);
     await deleteDoc(metaRef);
+    setTombstones(tombstones().filter((t) => t !== key));
   } catch {
     /* offline: the cloud copy will be overwritten next time this slot is used */
   }

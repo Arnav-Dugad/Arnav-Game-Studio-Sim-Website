@@ -225,11 +225,7 @@ function progressGame(c: Ctx, p: GameProject): void {
     }
   }
   if (s.day % 7 === 0 || p.awaitingGate) p.qualityPreview = gameQuality(s, p, true);
-  // Publisher deadline penalty: missing a publisher deadline costs reputation once.
-  if (p.concept.deal && s.day === p.concept.deal.deadlineDay && p.phase < 3) {
-    addRep(s, -(3), 'Missed a publisher deadline');
-    pushNews(s, { category: 'studio', headline: `Publisher frustrated: ${p.concept.name} misses its deadline`, tone: 'bad' });
-  }
+
 }
 
 /** Cosine similarity between two 3-vectors. */

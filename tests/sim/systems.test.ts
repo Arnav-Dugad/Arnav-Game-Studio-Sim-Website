@@ -256,3 +256,43 @@ describe('post-launch support', () => {
     expect(port.units).toBeGreaterThan(0);
   });
 });
+
+describe('regressions from code review', () => {
+  it('IPO cash is equity, not revenue', () => {
+    const s = game(1990, 8);
+    s.company.reputation = 90;
+    s.finance.revenue12m = Array(12).fill(5_000_000);
+    const before = s.company.cash;
+    expect(dispatch(s, { type: 'ipo', pct: 0.3 }).ok).toBe(true);
+    expect(s.company.cash).toBeGreaterThan(before);
+    const led = s.finance.ledger[s.finance.ledger.length - 1]!;
+    expect(led.income.other_income ?? 0).toBe(0);
+  });
+  it('cancelling a published game repays the advance', () => {
+    const s = game(1984, 9);
+    const deal = s.offers.deals[0];
+    if (!deal) return;
+    const cash0 = s.company.cash;
+    const p = startSmall(s, { dealId: deal.id, platforms: ['c64'] });
+    expect(dispatch(s, { type: 'cancelProject', projectId: p.id }).ok).toBe(true);
+    expect(s.company.cash).toBeLessThanOrEqual(cash0);
+  });
+  it('rejects duplicate team members, platforms and engine features', () => {
+    const s = game(1984, 10);
+    expect(dispatch(s, { type: 'startGame', game: { name: 'x', genre: 'action', topic: 'scifi', platforms: ['c64'], audience: 'teen', size: 'small', monetization: 'premium', engineId: 'e0', team: ['founder', 'founder'] } }).ok).toBe(false);
+    expect(dispatch(s, { type: 'startGame', game: { name: 'x', genre: 'action', topic: 'scifi', platforms: ['c64', 'c64'], audience: 'teen', size: 'small', monetization: 'premium', engineId: 'e0', team: ['founder'] } }).ok).toBe(false);
+  });
+  it('queued research waits for its prerequisites', () => {
+    const s = game(1980, 11);
+    s.day = toDay(1990, 1, 1); // a 1980 studio that never researched save games
+    s.company.cash = 1e6;
+    dispatch(s, { type: 'assign', staffId: 'founder', to: 'research' });
+    expect(dispatch(s, { type: 'queueResearch', id: 'sys_dialogue' }).ok).toBe(true); // needs sys_save
+    advance(s, 300);
+    expect(s.research.done.includes('sys_dialogue')).toBe(false);
+  });
+  it('rejects non-finite numbers', () => {
+    const s = game();
+    expect(dispatch(s, { type: 'takeLoan', amount: NaN, months: 12 }).ok).toBe(false);
+  });
+});

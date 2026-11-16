@@ -24,11 +24,12 @@ service cloud.firestore {
 
     function validSlotMeta() {
       let d = request.resource.data;
-      return d.keys().hasOnly(['name', 'companyName', 'gameDay', 'gameDate', 'cash', 'reputation', 'status', 'schemaVersion', 'updatedAt', 'chunkCount', 'checksum', 'bytes', 'founderName', 'color', 'difficulty'])
+      return d.keys().hasOnly(['name', 'companyName', 'gameDay', 'gameDate', 'cash', 'reputation', 'status', 'schemaVersion', 'updatedAt', 'chunkCount', 'checksum', 'bytes', 'founderName', 'color', 'difficulty', 'chunkBase'])
         && d.name is string && d.name.size() <= 60
         && d.companyName is string && d.companyName.size() <= 60
         && d.schemaVersion is int && d.schemaVersion >= 1
-        && d.chunkCount is int && d.chunkCount >= 0 && d.chunkCount <= 20
+        && d.chunkCount is int && d.chunkCount >= 0 && d.chunkCount <= 10
+        && (!('chunkBase' in d) || (d.chunkBase is int && (d.chunkBase == 0 || d.chunkBase == 10)))
         && d.checksum is string && d.checksum.size() <= 64
         && d.updatedAt is timestamp;
     }

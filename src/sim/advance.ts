@@ -58,13 +58,17 @@ export function tick(c: Ctx): void {
   s.market.scheduleIndex = cursor.i;
 
   if (d.day === 1) {
+    financeMonthly(c); // closes the previous month first
+    if (s.status !== 'running') return;
     if (d.month === 1) {
       yearlyTaxes(c);
+      yearlyAwards(c, d.year - 1); // the ceremony covers every release of last year, December included
       updateFuturePlatforms(c);
       c.out.push({ type: 'year', year: d.year });
     }
-    financeMonthly(c);
-    if (s.status !== 'running') return;
+    // franchise fatigue fades over time
+    const fade = Math.exp(-1 / (BALANCE.FATIGUE_DECAY_YEARS * 12));
+    for (const f of Object.values(s.franchises)) f.fatigue *= fade;
     rivalsHistory(c);
     updateMarketMonthly(c);
     rivalsMonthly(c);
@@ -83,7 +87,6 @@ export function tick(c: Ctx): void {
     checkAchievements(c);
     c.out.push({ type: 'month', day: s.day });
   }
-  if (d.month === 12 && d.day === 15) yearlyAwards(c);
 
   updateStaffDaily(c);
   trainingDaily(s);
