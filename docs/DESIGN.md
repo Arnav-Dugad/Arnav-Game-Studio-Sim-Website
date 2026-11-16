@@ -666,7 +666,7 @@ This section records decisions made during the build that differ from, or add to
   - **Patches** (up to 3 per game, within 3 years): fewer bugs, a higher user score and extended sales.
   - **Outsourced ports** to other live platforms, each with its own fresh sales curve.
 - **Project teams are editable** mid-development (Develop → project → Team).
-- **Market-research uncertainty on trends** was not implemented. Trends are shown directly, alongside the player's own "design notes" journal, which records what worked.
+- **Uncertainty is about combinations, not trends.** Genre × topic fit is hidden until you ship that genre or topic, or pay for **market research** (focus groups) in the wizard. Trends are shown directly, alongside the player's own "design notes" journal, which records what worked.
 - **Staff animation** is presentational. The sim decides each person's activity (work, break, chat, burnout, sick), and the renderer animates it with its own timing, so visuals never affect determinism.
 
 ### Balance (see `npm run balance`)
