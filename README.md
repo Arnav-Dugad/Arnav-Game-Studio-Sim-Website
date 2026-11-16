@@ -104,6 +104,8 @@ tests/       sim, data, rules and bot playthrough tests
 - **Hall of Fame scope.** It is per player. Strict per-user security rules mean there is no global leaderboard.
 - **Rivals.** Rival AI is abstracted: monthly releases with strategy-driven scores and real franchises on their dates. Rivals don't manage offices or staff like the player does.
 - **Subsidiaries.** Acquired studios run on autopilot. You set their budget and genre focus only.
+- **Your hardware.** Third-party support for your console is modelled as licence fees that scale with its user base. Real rival franchises never appear on it, and rival studios' games on it are abstract.
+- **Publishing label and pass.** Indie games you publish are scored and sold by a compact model rather than a full development simulation. The subscription pass is one monthly price, with no tiers or regional pricing.
 - **Phones.** The game is playable on phones, but it's best on tablet or desktop screens.
 - **Accessibility.** Keyboard and screen-reader support covers menus, panels, modals and charts, and furniture can be placed with the arrow keys and Enter. Panning the office by drag needs a pointer (or use W A S D).
 

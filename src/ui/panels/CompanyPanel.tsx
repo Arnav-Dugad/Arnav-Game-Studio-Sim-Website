@@ -104,7 +104,7 @@ function Label() {
                     title={`${LABEL_TIERS[tier].label} budget: ${fmtMoney(dealAdvance(s, tier))} advance, ships in ${Math.round(LABEL_TIERS[tier].days[0] / 30)}–${Math.round(LABEL_TIERS[tier].days[1] / 30)} months`}
                     onClick={() => useGame.getState().actOrToast({ type: 'signIndie', rivalId: r.id, tier }, `${r.name} signed!`)}
                   >
-                    {fmtMoney(dealAdvance(s, tier))}
+                    <span className="text-ink3">{LABEL_TIERS[tier].label[0]}</span> {fmtMoney(dealAdvance(s, tier))}
                   </Button>
                 ))}
               </div>
