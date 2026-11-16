@@ -602,10 +602,17 @@ function NewGame({ onDone }: { onDone: () => void }) {
 
       <Section title="Summary">
         <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-          <div className="rounded-xl bg-bg2/70 p-2">
-            <div className="text-ink3">Duration</div>
-            <div className="num font-semibold">{cost.days} days</div>
-          </div>
+          <Tip content={<span>Boxed games sell far more in November–December and slump in January. Use “Polish +2w” to nudge a launch into a better month.</span>}>
+            <div className="w-full cursor-help rounded-xl bg-bg2/70 p-2 text-left">
+              <div className="text-ink3">Ships ~{formatDate(s.day + cost.days, false)}</div>
+              <div className="num font-semibold">
+                {cost.days} days ·{' '}
+                <span className={cx((BALANCE.SEASONALITY[fromDay(s.day + cost.days).month - 1] ?? 1) >= 1.05 ? 'text-good' : (BALANCE.SEASONALITY[fromDay(s.day + cost.days).month - 1] ?? 1) < 0.9 ? 'text-bad' : 'text-ink2')}>
+                  {(BALANCE.SEASONALITY[fromDay(s.day + cost.days).month - 1] ?? 1) >= 1.05 ? 'peak season' : (BALANCE.SEASONALITY[fromDay(s.day + cost.days).month - 1] ?? 1) < 0.9 ? 'quiet season' : 'normal season'}
+                </span>
+              </div>
+            </div>
+          </Tip>
           <div className="rounded-xl bg-bg2/70 p-2">
             <div className="text-ink3">Est. cost</div>
             <div className="num font-semibold">{fmtMoney(cost.total + kitCost)}</div>

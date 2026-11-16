@@ -70,6 +70,8 @@ export const BALANCE = {
   FATIGUE_DECAY_YEARS: 2.2,
   HYPE_DECAY_WEEKLY: 0.04,
   HYPE_MAX: 3,
+  /** Retail seasonality by month (Jan..Dec): holidays sell, January and summer are quiet. Mean ≈ 1. */
+  SEASONALITY: [0.78, 0.85, 0.95, 0.92, 0.9, 0.88, 0.86, 0.92, 1.02, 1.08, 1.32, 1.52] as const,
 
   // ── Monetization multipliers on lifetime revenue/units & user score ───────
   MONETIZATION: {

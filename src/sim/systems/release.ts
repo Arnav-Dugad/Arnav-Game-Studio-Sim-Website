@@ -339,6 +339,8 @@ export function updateSalesWeekly(c: Ctx): void {
   const onlineActive = Object.values(s.releases).filter((r) => r.active && r.serverLoad > 0).length;
   const servers = Math.max(0, countServers(L));
   const outage = onlineActive > 0 && servers < onlineActive ? clamp(servers / onlineActive, 0.4, 1) : 1;
+  // Digital-era sales are less seasonal than boxed retail.
+  const rawSeason = BALANCE.SEASONALITY[fromDay(s.day).month - 1] ?? 1;
   for (const rel of Object.values(s.releases)) {
     if (!rel.active) continue;
     const comp = competition(s, rel);
@@ -349,11 +351,12 @@ export function updateSalesWeekly(c: Ctx): void {
     for (const ps of rel.platforms) {
       const pl = platformInfo(s, ps.platform);
       if (!pl) continue;
+      const season = 1 + (rawSeason - 1) * (1 - 0.5 * digitalShare(s, pl));
       const decay = rel.decay * (rel.concept.monetization === 'premium' ? 1 : Math.min(0.985, 1 - (1 - rel.decay) / BALANCE.MONETIZATION[rel.concept.monetization].tailMul));
       const share = (1 - decay) * Math.pow(decay, Math.max(0, rel.week - (ps.startWeek ?? 0)));
       // platform decline after discontinuation scales sales down
       const life = pl.endDay !== null && s.day > pl.endDay ? Math.exp(-(s.day - pl.endDay) / 250) : 1;
-      let u = (ps.potential * share * life * demandMul(s, pl) * (rel.serverLoad > 0 ? outage : 1)) / comp;
+      let u = (ps.potential * share * life * demandMul(s, pl) * season * (rel.serverLoad > 0 ? outage : 1)) / comp;
       u = Math.floor(u + c.rng.next()); // stochastic rounding keeps integers without bias
       u = Math.min(u, Math.max(0, Math.floor(ps.potential * 1.5) - ps.units)); // can't exceed the addressable market
       if (u <= 0) continue;
