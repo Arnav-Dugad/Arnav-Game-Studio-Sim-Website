@@ -31,7 +31,7 @@
 - **Reviews.** Critic outlets with their own biases and generated blurbs, user scores, franchises, fans, fatigue and yearly awards.
 - **Post-launch.** Patch buggy games to win players back, or port hits to new platforms. Holiday seasons sell, January slumps.
 - **Rival poaching, both ways.** Rivals try to lure your stars; with Headhunters research you can poach theirs.
-- **31 choice events** with real trade-offs: crunch exposés, review bombs, exclusivity offers, crowdfunding, buyouts, hostile takeovers and more.
+- **32 choice events** with real trade-offs: crunch exposés, review bombs, exclusivity offers, crowdfunding, buyouts, hostile takeovers and more.
 - **Explainable numbers.** Every key number (productivity, morale, review score, sales, cash flow) has a "why" breakdown on hover.
 - **Accounts & saves.**
   - Email/password, Google sign-in or guest play, with five save slots.
