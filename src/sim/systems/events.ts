@@ -26,6 +26,15 @@ const activeGames = (s: GameState) => Object.values(s.projects).filter((p): p is
 const anyCrunch = (s: GameState) => activeGames(s).some((p) => p.crunch);
 const yr = (s: GameState) => fromDay(s.day).year;
 const liveHw = (s: GameState) => (s.hardware ?? []).filter((h) => h.status === 'live');
+const bigFranchise = (s: GameState) =>
+  Object.values(s.franchises)
+    .filter((f) => f.fans >= 1_000_000 && f.bestScore >= 80)
+    .sort((a, b) => b.fans - a.fans)[0];
+const retroClassics = (s: GameState) =>
+  s.releaseOrder
+    .map((id) => s.releases[id]!)
+    .filter((r) => r && s.day - r.day > 20 * 365 && r.score >= 75 && !r.concept.remasterOf)
+    .sort((a, b) => b.score - a.score);
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
 function staffById(s: GameState, id: string | number | undefined): Staff | undefined {
@@ -899,6 +908,88 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt !== 'yes' || !p || p.kind !== 'game') return;
       spend(s, 'marketing', money(6_000, s.day));
       p.hype = Math.min(3, p.hype + 0.35);
+    },
+  },
+  // ── Your legacy ───────────────────────────────────────────────────────────
+  {
+    id: 'movie_deal',
+    art: 'press',
+    cooldown: 1500,
+    weight: (s) => (yr(s) >= 1990 && bigFranchise(s) ? 0.3 : 0),
+    make: ({ s }) => {
+      const fr = bigFranchise(s);
+      if (!fr) return null;
+      const fee = Math.round(money(500_000, s.day) * Math.min(4, fr.fans / 1_000_000));
+      const coCost = money(800_000, s.day);
+      return {
+        title: `Hollywood wants ${fr.name}`,
+        body: `A film studio wants to turn ${fr.name} into a movie. Game adaptations have a… mixed record.`,
+        options: [
+          { id: 'license', label: `Sell the film rights (+${fmtMoney(fee)})`, preview: '50%: a hit, fans +15%. 50%: a stinker, fans −8%, reputation −2' },
+          { id: 'coproduce', label: `Co-produce and keep control (${fmtMoney(coCost)})`, preview: '75%: a hit, fans +25%, reputation +3. 25%: a flop, fans −5%' },
+          { id: 'decline', label: 'Decline', preview: 'No change' },
+        ],
+        ctx: { fr: fr.id, fee, coCost },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      const fr = s.franchises[String(e.ctx.fr)];
+      if (!fr || opt === 'decline') return;
+      if (opt === 'license') {
+        earn(s, 'licensing', Number(e.ctx.fee));
+        if (rng.chance(0.5)) {
+          fr.fans = Math.round(fr.fans * 1.15);
+          pushNews(s, { category: 'industry', headline: `The ${fr.name} movie is a surprise box-office hit`, tone: 'good' });
+        } else {
+          fr.fans = Math.round(fr.fans * 0.92);
+          addRep(s, -2, `The ${fr.name} movie flopped`);
+          pushNews(s, { category: 'industry', headline: `Critics savage the ${fr.name} movie`, tone: 'bad' });
+        }
+      } else {
+        spend(s, 'marketing', Number(e.ctx.coCost));
+        if (rng.chance(0.75)) {
+          fr.fans = Math.round(fr.fans * 1.25);
+          addRep(s, 3, `The ${fr.name} movie was a hit`);
+          pushNews(s, { category: 'industry', headline: `${fr.name} conquers cinemas — and sends fans back to the games`, tone: 'good' });
+        } else {
+          fr.fans = Math.round(fr.fans * 0.95);
+          pushNews(s, { category: 'industry', headline: `The ${fr.name} movie underwhelms at the box office`, tone: 'bad' });
+        }
+      }
+    },
+  },
+  {
+    id: 'retro_mini',
+    art: 'console',
+    cooldown: 2500,
+    weight: (s) => (yr(s) >= 2016 && retroClassics(s).length >= 3 ? 0.3 : 0),
+    make: ({ s }) => {
+      const games = retroClassics(s).slice(0, 8);
+      if (games.length < 3) return null;
+      const fee = money(60_000, s.day) * games.length;
+      return {
+        title: 'A mini console of your classics',
+        body: `A hardware maker wants to put ${games.length} of your old games — ${games
+          .slice(0, 3)
+          .map((g) => g.name)
+          .join(', ')}${games.length > 3 ? '…' : ''} — on a nostalgic plug-and-play mini console.`,
+        options: [
+          { id: 'yes', label: `License them (+${fmtMoney(fee)})`, preview: 'Cash, reputation +1, fans of those franchises +5%' },
+          { id: 'no', label: 'Keep the classics in the vault', preview: 'No change' },
+        ],
+        ctx: { fee, ids: games.map((g) => g.id).join(',') },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt !== 'yes') return;
+      earn(s, 'licensing', Number(e.ctx.fee));
+      addRep(s, 1, 'Classics re-released on a mini console');
+      for (const id of String(e.ctx.ids).split(',')) {
+        const fid = s.releases[id]?.concept.franchiseId;
+        const fr = fid ? s.franchises[fid] : undefined;
+        if (fr) fr.fans = Math.round(fr.fans * 1.05);
+      }
+      pushNews(s, { category: 'studio', headline: `${s.company.name} classics return on a retro mini console`, tone: 'good' });
     },
   },
   // ── Your own hardware ─────────────────────────────────────────────────────

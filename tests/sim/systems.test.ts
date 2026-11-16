@@ -589,3 +589,19 @@ describe('gala fairness (review regressions)', () => {
     expect(setup(60, 79, false, 'action').goty?.name).toBe('Theirs');
   });
 });
+
+describe('legacy events', () => {
+  it('a movie deal appears for a big franchise and changes its fans', () => {
+    const s = game(2000, 6);
+    const ev = EVENT_DEFS.find((e) => e.id === 'movie_deal')!;
+    expect(ev.weight(s)).toBe(0);
+    s.franchises.f1 = { id: 'f1', name: 'Star Hopper', genre: 'action', topic: 'scifi', fans: 3_000_000, entries: [], fatigue: 0, lastDay: s.day, bestScore: 90 };
+    expect(ev.weight(s)).toBeGreaterThan(0);
+    const rng = new Rng([5, 6, 7, 8]);
+    const made = ev.make({ s, rng, out: [] })!;
+    const cash = s.company.cash;
+    ev.resolve({ s, rng, out: [] }, { uid: 1, defId: 'movie_deal', title: made.title, body: made.body, art: 'press', options: made.options, ctx: made.ctx, day: s.day, expires: s.day + 30 } as never, 'license');
+    expect(s.company.cash).toBeGreaterThan(cash);
+    expect(s.franchises.f1!.fans).not.toBe(3_000_000);
+  });
+});
