@@ -9,6 +9,8 @@
 | ![New game wizard](docs/screenshots/new-game.png) | ![Review reveal](docs/screenshots/reviews.png) |
 | **Shape your office** | **Run the business** |
 | ![Build mode with heat-map overlay](docs/screenshots/build-mode.png) | ![Finance panel with charts](docs/screenshots/finance.png) |
+| **Launch your own console** | **Win the Golden Pixel Gala** |
+| ![Hardware division with a live console](docs/screenshots/hardware.png) | ![Yearly industry awards](docs/screenshots/awards.png) |
 
 ## Features
 
