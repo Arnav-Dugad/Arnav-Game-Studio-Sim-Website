@@ -636,6 +636,267 @@ export const EVENT_DEFS: EventDef[] = [
       } else spend(s, 'other_expense', money(8_000, s.day));
     },
   },
+  {
+    id: 'office_party',
+    art: 'heart',
+    cooldown: 330,
+    weight: (s) => (fromDay(s.day).month === 12 && staffList(s).length >= 3 ? 2 : 0),
+    make: ({ s }) => {
+      const cost = money(150, s.day) * Object.keys(s.staff).length;
+      return {
+        title: 'Holiday party?',
+        body: 'It’s December. The team is hoping for an end-of-year celebration.',
+        options: [
+          { id: 'party', label: `Throw a party (${fmtMoney(cost)})`, preview: 'Morale +8 for 2 months, loyalty +5' },
+          { id: 'bonus', label: `Small cash bonus instead (${fmtMoney(cost * 2)})`, preview: 'Morale +5, loyalty +10' },
+          { id: 'no', label: 'Skip it this year', preview: 'Morale −4 for a month' },
+        ],
+        ctx: { cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const cost = Number(e.ctx.cost);
+      if (opt === 'party') {
+        spend(s, 'other_expense', cost);
+        mod(s, 8, 60, 'Holiday party');
+        for (const st of Object.values(s.staff)) st.loyalty = clamp(st.loyalty + 5, 0, 100);
+      } else if (opt === 'bonus') {
+        spend(s, 'salaries', cost * 2);
+        mod(s, 5, 45, 'Year-end bonus');
+        for (const st of Object.values(s.staff)) st.loyalty = clamp(st.loyalty + 10, 0, 100);
+      } else mod(s, -4, 30, 'No holiday party');
+    },
+  },
+  {
+    id: 'review_bomb',
+    art: 'megaphone',
+    cooldown: 500,
+    weight: (s) => {
+      if (yr(s) < 2010) return 0;
+      const last = s.releaseOrder.length ? s.releases[s.releaseOrder[s.releaseOrder.length - 1]!]! : undefined;
+      if (!last || s.day - last.day > 90) return 0;
+      return last.concept.monetization !== 'premium' ? 0.8 : 0.2;
+    },
+    make: ({ s }) => {
+      const r = s.releases[s.releaseOrder[s.releaseOrder.length - 1]!]!;
+      return {
+        title: 'Review bomb!',
+        body: `Angry players are flooding stores with 1-star reviews of ${r.name}.`,
+        options: [
+          { id: 'listen', label: 'Listen and promise changes', preview: 'User score +4, fans +3%' },
+          { id: 'ignore', label: 'Ride it out', preview: 'User score −6' },
+        ],
+        ctx: { rel: r.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (!r) return;
+      if (opt === 'listen') {
+        r.userScore = clamp(r.userScore + 4, 1, 100);
+        s.company.fans *= 1.03;
+      } else r.userScore = clamp(r.userScore - 6, 1, 100);
+    },
+  },
+  {
+    id: 'piracy_drm',
+    art: 'leak',
+    cooldown: 900,
+    weight: (s) => (yr(s) >= 1995 && yr(s) <= 2015 && activeGames(s).some((p) => p.concept.platforms.includes('pc')) ? 0.5 : 0),
+    make: ({ s }) => {
+      const p = activeGames(s).find((x) => x.concept.platforms.includes('pc'));
+      if (!p) return null;
+      return {
+        title: 'Piracy worries',
+        body: `Sales and marketing want strict DRM on the PC version of ${p.concept.name}.`,
+        options: [
+          { id: 'drm', label: `License strict DRM (${fmtMoney(money(12_000, s.day))})`, preview: 'Hype −0.1 (players hate it)' },
+          { id: 'none', label: 'Ship DRM-free', preview: 'Reputation +2 with players' },
+        ],
+        ctx: { project: p.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (opt === 'drm') {
+        spend(s, 'other_expense', money(12_000, s.day));
+        if (p && p.kind === 'game') p.hype = Math.max(0, p.hype - 0.1);
+      } else addRep(s, 2, 'Shipped DRM-free');
+    },
+  },
+  {
+    id: 'sequel_demand',
+    art: 'letters',
+    cooldown: 720,
+    weight: (s) => (Object.values(s.franchises).some((f) => f.bestScore >= 80 && s.day - f.lastDay > 500 && f.fans > 20_000) ? 0.6 : 0),
+    make: ({ s }) => {
+      const f = Object.values(s.franchises)
+        .filter((x) => x.bestScore >= 80 && s.day - x.lastDay > 500)
+        .sort((a, b) => b.fans - a.fans)[0];
+      if (!f) return null;
+      return {
+        title: `Fans want more ${f.name}`,
+        body: `A petition with ${(Math.round(f.fans / 100) * 100).toLocaleString()} signatures asks for a new ${f.name} game.`,
+        options: [
+          { id: 'tease', label: 'Tease a sequel', preview: 'Franchise fans +15%; fatigue reset' },
+          { id: 'thank', label: 'Thank them, promise nothing', preview: 'Reputation +1' },
+        ],
+        ctx: { fr: f.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const f = s.franchises[String(e.ctx.fr)];
+      if (!f) return;
+      if (opt === 'tease') {
+        f.fans *= 1.15;
+        f.fatigue = 0;
+      } else addRep(s, 1, 'Grateful to the fans');
+    },
+  },
+  {
+    id: 'free_devkit',
+    art: 'contract',
+    cooldown: 720,
+    weight: (s) => (s.company.reputation >= 30 ? 0.4 : 0),
+    make: ({ s }) => {
+      const fresh = Object.keys(s.market.share).filter((id) => !s.devkits.includes(id) && (s.market.share[id] ?? 0) > 0.05);
+      if (!fresh.length) return null;
+      const pid = fresh[0]!;
+      return {
+        title: 'A platform holder comes calling',
+        body: 'A platform team offers you a free development kit if you support their system.',
+        options: [
+          { id: 'take', label: 'Accept the dev kit', preview: 'Free dev kit for a popular platform' },
+          { id: 'no', label: 'Not interested', preview: 'No change' },
+        ],
+        ctx: { platform: pid },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt === 'take' && !s.devkits.includes(String(e.ctx.platform))) {
+        s.devkits.push(String(e.ctx.platform));
+        pushNews(s, { category: 'studio', headline: `${s.company.name} receives a free dev kit`, tone: 'good' });
+      }
+    },
+  },
+  {
+    id: 'speedrunners',
+    art: 'trophy',
+    cooldown: 720,
+    weight: (s) => (yr(s) >= 2004 && s.releaseOrder.some((id) => ['platformer', 'action', 'racing', 'shooter'].includes(s.releases[id]!.concept.genre) && s.releases[id]!.score >= 75) ? 0.35 : 0),
+    make: ({ s }) => {
+      const r = s.releaseOrder
+        .map((id) => s.releases[id]!)
+        .filter((x) => x.score >= 75)
+        .pop();
+      if (!r) return null;
+      return {
+        title: 'Speedrunners adore your game',
+        body: `${r.name} is a hit at a charity speedrun marathon.`,
+        options: [
+          { id: 'support', label: `Sponsor the marathon (${fmtMoney(money(5_000, s.day))})`, preview: 'Fans +5%, reputation +1, sales bump' },
+          { id: 'enjoy', label: 'Just enjoy the moment', preview: 'Small sales bump' },
+        ],
+        ctx: { rel: r.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (r) {
+        for (const p of r.platforms) p.potential *= opt === 'support' ? 1.08 : 1.03;
+        r.active = true;
+      }
+      if (opt === 'support') {
+        spend(s, 'marketing', money(5_000, s.day));
+        s.company.fans *= 1.05;
+        addRep(s, 1, 'Sponsored a charity marathon');
+      }
+    },
+  },
+  {
+    id: 'mentorship',
+    art: 'student',
+    cooldown: 400,
+    weight: (s) => (staffList(s).some((x) => x.level === 'lead') && staffList(s).some((x) => x.level === 'junior') ? 0.5 : 0),
+    make: ({ s }) => {
+      const lead = staffList(s).find((x) => x.level === 'lead');
+      if (!lead) return null;
+      return {
+        title: 'Mentorship programme',
+        body: `${lead.name} offers to run weekly mentoring sessions for the juniors.`,
+        options: [
+          { id: 'yes', label: 'Great idea', preview: 'Juniors gain skill and loyalty; the mentor gets tired' },
+          { id: 'no', label: 'Keep focused on shipping', preview: 'No change' },
+        ],
+        ctx: { lead: lead.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt !== 'yes') return;
+      const lead = staffById(s, e.ctx.lead);
+      for (const st of staffList(s)) {
+        if (st.level !== 'junior') continue;
+        const best = (Object.keys(st.skills) as (keyof typeof st.skills)[]).reduce((a, b) => (st.skills[a] >= st.skills[b] ? a : b));
+        st.skills[best] = Math.min(st.potential, st.skills[best] + 4);
+        st.loyalty = clamp(st.loyalty + 5, 0, 100);
+      }
+      if (lead) lead.energy = clamp(lead.energy - 20, 0, 100);
+    },
+  },
+  {
+    id: 'patent_troll',
+    art: 'audit',
+    cooldown: 1200,
+    weight: (s) => (s.progress.stats.totalRevenue > money(2_000_000, s.day) ? 0.2 : 0),
+    make: ({ s }) => {
+      const fee = Math.round(Math.max(money(20_000, s.day), s.company.cash * 0.02));
+      return {
+        title: 'Patent claim',
+        body: 'A company you’ve never heard of claims your engine infringes a vague patent.',
+        options: [
+          { id: 'settle', label: `Settle quietly (${fmtMoney(fee)})`, preview: 'Pay and move on' },
+          { id: 'fight', label: `Fight it in court (${fmtMoney(fee / 2)} legal fees)`, preview: '65%: win and gain reputation. 35%: pay double' },
+        ],
+        ctx: { fee },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      const fee = Number(e.ctx.fee);
+      if (opt === 'settle') spend(s, 'other_expense', fee);
+      else {
+        spend(s, 'other_expense', fee / 2);
+        if (rng.chance(0.65)) {
+          addRep(s, 2, 'Beat a patent troll');
+          pushNews(s, { category: 'studio', headline: `${s.company.name} defeats patent claim`, tone: 'good' });
+        } else spend(s, 'other_expense', fee * 2);
+      }
+    },
+  },
+  {
+    id: 'magazine_cover',
+    art: 'press',
+    cooldown: 500,
+    weight: (s) => (yr(s) < 2012 && activeGames(s).some((p) => p.announcedDay !== undefined) && s.company.reputation > 20 ? 0.5 : 0),
+    make: ({ s }) => {
+      const p = activeGames(s).find((x) => x.announcedDay !== undefined);
+      if (!p) return null;
+      return {
+        title: 'Cover story offer',
+        body: `A leading magazine wants ${p.concept.name} on its cover — if you pay for an exclusive photo shoot.`,
+        options: [
+          { id: 'yes', label: `Do the shoot (${fmtMoney(money(6_000, s.day))})`, preview: 'Hype +0.35' },
+          { id: 'no', label: 'Pass', preview: 'No change' },
+        ],
+        ctx: { project: p.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (opt !== 'yes' || !p || p.kind !== 'game') return;
+      spend(s, 'marketing', money(6_000, s.day));
+      p.hype = Math.min(3, p.hype + 0.35);
+    },
+  },
 ];
 
 const DEF_BY_ID = Object.fromEntries(EVENT_DEFS.map((d) => [d.id, d]));
