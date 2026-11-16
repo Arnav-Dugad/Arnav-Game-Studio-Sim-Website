@@ -6,6 +6,8 @@ import { fromDay, formatDate } from '@/sim/calendar';
 import { fmtUnits } from '@/sim/util';
 import { genrePopularity, livePlatforms, platformName } from '@/sim/systems/market';
 import { upcomingReleases } from '@/sim/systems/rivals';
+import { FRANCHISES } from '@/data/franchises';
+import { parseYM } from '@/sim/calendar';
 import { StackedArea, LineChart } from '../charts';
 import { Pill, Section, Segmented, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
@@ -31,6 +33,7 @@ export default function MarketPanel() {
           { value: 'rivals', label: 'Rivals' },
           { value: 'releases', label: 'Rival releases' },
           { value: 'upcoming', label: 'Coming soon' },
+          { value: 'charts', label: 'All-time charts' },
         ]}
       />
       {tab === 'platforms' && <Platforms />}
@@ -38,6 +41,7 @@ export default function MarketPanel() {
       {tab === 'rivals' && <Rivals />}
       {tab === 'releases' && <RivalReleases />}
       {tab === 'upcoming' && <Upcoming />}
+      {tab === 'charts' && <Charts />}
     </div>
   );
 }
@@ -235,6 +239,58 @@ function Upcoming() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** Best-selling games so far: real history up to today plus your own releases. */
+function Charts() {
+  const s = useGame((g) => g.s)!;
+  const v = useGame((g) => g.v);
+  const rows = useMemo(() => {
+    const out: { name: string; company: string; year: number; units: number; score: number; mine: boolean; id?: string }[] = [];
+    for (const f of FRANCHISES)
+      for (const r of f.releases) {
+        const day = parseYM(r.date);
+        if (day > s.day) continue;
+        // Lifetime sales build up over the first few years on shelves.
+        const units = r.unitsM * 1e6 * Math.min(1, (s.day - day) / (365 * 3) + 0.15);
+        out.push({ name: r.title, company: COMPANY_BY_ID[f.company]?.name ?? f.company, year: fromDay(day).year, units, score: r.score, mine: false });
+      }
+    for (const id of s.releaseOrder) {
+      const r = s.releases[id];
+      if (r) out.push({ name: r.name, company: s.company.name, year: fromDay(r.day).year, units: r.units, score: Math.round(r.score), mine: true, id });
+    }
+    return out.sort((a, b) => b.units - a.units).slice(0, 30);
+    // v: recompute as sales tick
+  }, [s, v]); // eslint-disable-line react-hooks/exhaustive-deps
+  const myBest = rows.findIndex((r) => r.mine);
+  return (
+    <div>
+      <p className="mb-2 text-xs text-ink3">
+        The best-selling games released so far, real classics and yours together.{' '}
+        {myBest >= 0 ? <b className="text-gold">Your best is #{myBest + 1}.</b> : 'None of yours has cracked the top 30 yet.'}
+      </p>
+      <ol className="divide-y divide-line">
+        {rows.map((r, i) => (
+          <li key={`${r.name}-${r.year}-${i}`} className={cx('flex items-center gap-3 py-1.5 text-sm', r.mine && 'rounded-lg bg-gold/10 px-1.5')}>
+            <span className="num w-6 shrink-0 text-right text-xs font-semibold text-ink3">{i + 1}</span>
+            <div className="min-w-0 flex-1">
+              {r.mine && r.id ? (
+                <button type="button" className="truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().pushModal({ kind: 'release', releaseId: r.id! })}>
+                  {r.name}
+                </button>
+              ) : (
+                <div className="truncate font-semibold">{r.name}</div>
+              )}
+              <div className="truncate text-xs text-ink3">
+                {r.company} · {r.year} · {r.score}
+              </div>
+            </div>
+            <span className="num shrink-0 text-xs font-semibold">{fmtUnits(r.units)}</span>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
