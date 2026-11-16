@@ -646,3 +646,40 @@ describe('publishing label', () => {
     expect(s.rivalGames.some((g) => g.name === d.gameName)).toBe(true);
   });
 });
+
+describe('publishing label (review regressions)', () => {
+  const signed = () => {
+    const s = game(2000, 21);
+    s.company.cash = 1e8;
+    s.company.reputation = 60;
+    s.research.done.push('biz_self_publishing');
+    for (let i = 0; i < 6 && !signableIndies(s).length; i++) advance(s, 31);
+    const indie = signableIndies(s)[0]!;
+    s.offers.acquisitions.push({ id: indie.id, price: 1, expiresDay: s.day + 90 });
+    expect(dispatch(s, { type: 'signIndie', rivalId: indie.id, tier: 'small' }).ok).toBe(true);
+    return { s, indie };
+  };
+  it('a funded studio is not for sale', () => {
+    const { s, indie } = signed();
+    expect(s.offers.acquisitions.some((a) => a.id === indie.id)).toBe(false);
+  });
+  it('a studio that dies before shipping loses the game', () => {
+    const { s, indie } = signed();
+    indie.alive = false;
+    advance(s, 40);
+    const d = s.publishingDeals![0]!;
+    expect(d.status).toBe('done');
+    expect(d.earned).toBe(0);
+  });
+  it('published games carry platforms and are not award rivals', () => {
+    const { s } = signed();
+    for (let m = 0; m < 12; m++) {
+      advance(s, 31);
+      s.pendingEvents = [];
+    }
+    const d = s.publishingDeals![0]!;
+    const g = s.rivalGames.find((x) => x.name === d.gameName)!;
+    expect(g.publishedByPlayer).toBe(true);
+    expect(g.platforms.length).toBeGreaterThan(0);
+  });
+});

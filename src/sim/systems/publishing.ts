@@ -12,6 +12,7 @@ import type { Ctx } from '../ctx';
 import type { GameState, PublishedDeal, Rival } from '../types';
 import { addRep, earn, inflation, money, pushNews, spend } from '../util';
 import { addRivalGame, genTitle, spawnIndie } from './rivals';
+import { livePlatforms } from './market';
 import { TOPICS } from '../../data/topics';
 
 export type DealTier = PublishedDeal['tier'];
@@ -57,6 +58,8 @@ export function signIndie(c: Ctx, rival: Rival, tier: DealTier): void {
   const advance = dealAdvance(s, tier);
   spend(s, 'advances_paid', advance);
   rival.cash += advance;
+  // A studio you fund is no longer an acquisition target.
+  s.offers.acquisitions = s.offers.acquisitions.filter((a) => a.id !== rival.id);
   const genre = rival.genres.length ? rng.pick(rival.genres) : 'action';
   s.publishingDeals = [
     ...(s.publishingDeals ?? []),
@@ -86,6 +89,13 @@ export function publishingMonthly(c: Ctx): void {
   if (!s.publishingDeals?.length) return;
   const yr = fromDay(s.day).year;
   for (const d of s.publishingDeals) {
+    if (d.status === 'dev' && s.rivals[d.rivalId] && !s.rivals[d.rivalId]!.alive) {
+      // The studio went under before shipping: the game is lost with it.
+      d.status = 'done';
+      d.score = 0;
+      pushNews(s, { category: 'studio', headline: `${d.studio} closes before finishing its game — your advance is lost`, tone: 'bad' });
+      continue;
+    }
     if (d.status === 'dev' && s.day >= d.releaseDay) {
       const rv = s.rivals[d.rivalId];
       const t = LABEL_TIERS[d.tier];
@@ -103,7 +113,12 @@ export function publishingMonthly(c: Ctx): void {
       d.payoutsLeft = PAYOUT_MONTHS;
       d.monthlyPayout = (net * LABEL_SHARE) / PAYOUT_MONTHS;
       if (rv) {
-        addRivalGame(s, { name, company: rv.id, genre: d.genre, topic, platforms: [], day: s.day, score, units });
+        const plats = livePlatforms(s)
+          .filter((p) => !p.own)
+          .sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0))
+          .slice(0, 2)
+          .map((p) => p.id);
+        addRivalGame(s, { name, company: rv.id, genre: d.genre, topic, platforms: plats, day: s.day, score, units, publishedByPlayer: true });
         rv.cash += net * (1 - LABEL_SHARE);
         rv.reputation = clamp(rv.reputation + (score - 65) / 10, 0, 100);
         rv.lastRelease = s.day;

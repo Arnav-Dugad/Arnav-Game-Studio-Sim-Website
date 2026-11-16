@@ -486,7 +486,7 @@ export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
       .filter((r) => fromDay(r.day).year === yr && !r.concept.remasterOf)
       .map((r) => ({ name: r.name, company: s.company.name, score: Math.round(r.score), genre: r.concept.genre, mine: true, releaseId: r.id })),
     ...s.rivalGames
-      .filter((g) => fromDay(g.day).year === yr)
+      .filter((g) => fromDay(g.day).year === yr && !g.publishedByPlayer)
       .map((g) => ({ name: g.name, company: s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company, score: g.score, genre: g.genre, mine: false, classic: !!g.franchise })),
   ];
   if (!entries.length) return;

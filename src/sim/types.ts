@@ -299,6 +299,8 @@ export interface RivalGame {
   score: number;
   units: number;
   franchise?: string; // franchises.ts id
+  /** Indie game released under the player's publishing label (not a rival entry for awards). */
+  publishedByPlayer?: boolean;
 }
 
 export interface Rival {

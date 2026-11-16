@@ -78,7 +78,9 @@ export function refreshOffers(c: Ctx): void {
   }
   // Acquisition targets (once the company has some heft)
   if (s.company.reputation >= 35 && s.offers.acquisitions.length < 3) {
-    const cands = alive.filter((r) => (r.procedural || r.staff < 120) && r.reputation < s.company.reputation + 10 && !s.offers.acquisitions.some((a) => a.id === r.id));
+    // Studios mid-way through a game for your label aren't for sale (you'd be buying your own advance back).
+    const funded = new Set((s.publishingDeals ?? []).filter((d) => d.status === 'dev').map((d) => d.rivalId));
+    const cands = alive.filter((r) => (r.procedural || r.staff < 120) && r.reputation < s.company.reputation + 10 && !funded.has(r.id) && !s.offers.acquisitions.some((a) => a.id === r.id));
     if (cands.length) {
       const r = rng.pick(cands);
       s.offers.acquisitions.push({ id: r.id, price: acquisitionPrice(s, r), expiresDay: s.day + 90 });

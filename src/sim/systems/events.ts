@@ -981,7 +981,7 @@ export const EVENT_DEFS: EventDef[] = [
         body: `A film studio wants to turn ${fr.name} into a movie. Game adaptations have a… mixed record.`,
         options: [
           { id: 'license', label: `Sell the film rights (+${fmtMoney(fee)})`, preview: '50%: a hit, fans +15%. 50%: a stinker, fans −8%, reputation −2' },
-          { id: 'coproduce', label: `Co-produce and keep control (${fmtMoney(coCost)})`, preview: '75%: a hit, fans +25%, reputation +3. 25%: a flop, fans −5%' },
+          { id: 'coproduce', label: `Co-produce and keep control (${fmtMoney(coCost)})`, preview: '75%: a hit, fans +25%, reputation +3. 25%: a flop, fans −5%', disabled: s.company.cash < coCost },
           { id: 'decline', label: 'Decline', preview: 'No change' },
         ],
         ctx: { fr: fr.id, fee, coCost },
@@ -1039,9 +1039,9 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt !== 'yes') return;
       earn(s, 'licensing', Number(e.ctx.fee));
       addRep(s, 1, 'Classics re-released on a mini console');
-      for (const id of String(e.ctx.ids).split(',')) {
-        const fid = s.releases[id]?.concept.franchiseId;
-        const fr = fid ? s.franchises[fid] : undefined;
+      const fids = new Set(String(e.ctx.ids).split(',').map((id) => s.releases[id]?.concept.franchiseId).filter((x): x is string => !!x));
+      for (const fid of fids) {
+        const fr = s.franchises[fid];
         if (fr) fr.fans = Math.round(fr.fans * 1.05);
       }
       pushNews(s, { category: 'studio', headline: `${s.company.name} classics return on a retro mini console`, tone: 'good' });
