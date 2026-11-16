@@ -38,10 +38,12 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
     const saver = new AutoSaver(owner, slotId);
     saverRef.current = saver;
     const unsub = saver.subscribe(setSaveStatus);
-    useGame.setState({ onMonth: (st) => void saver.save(st) });
+    // Never write another slot's game into this slot (e.g. if a different save was loaded meanwhile).
+    const mine = () => useGame.getState().slotId === slotId;
+    useGame.setState({ onMonth: (st) => void (mine() && saver.save(st)) });
     return () => {
       const st = useGame.getState().s;
-      if (st) void saver.save(st, true);
+      if (st && mine()) void saver.save(st, true);
       unsub();
       saver.dispose();
       useGame.setState({ onMonth: null });
@@ -57,12 +59,12 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
 
   const saveNow = useCallback(async () => {
     const st = useGame.getState().s;
-    if (!st || !saverRef.current) return;
+    if (!st || !saverRef.current || useGame.getState().slotId !== slotId) return;
     await saverRef.current.save(st, true);
     const status = saverRef.current.status;
     if (status.state === 'error') useGame.getState().toast({ text: `Save failed: ${status.error ?? 'unknown error'}`, tone: 'bad' });
     else useGame.getState().toast({ text: status.state === 'offline' ? 'Saved on this device (offline)' : 'Game saved', tone: 'good', icon: 'save' });
-  }, []);
+  }, [slotId]);
 
   // Keyboard shortcuts
   useEffect(() => {

@@ -13,6 +13,7 @@ import { useGame } from '../store';
 import { navigate } from '../router';
 import { useSettings } from '../settings';
 import { sound } from '../sound';
+import { WhatsNew } from '../game/WhatsNew';
 
 const COLORS = ['#e07a5f', '#3d85c6', '#9b6bd3', '#2eb5a8', '#e3b23c', '#d1495b', '#5f9e6e', '#334155'];
 
@@ -105,6 +106,7 @@ export function SlotsScreen() {
       <main className="mx-auto max-w-5xl px-4 pb-16">
         <h1 className="font-display text-3xl font-bold">Your studios</h1>
         <p className="mt-1 text-sm text-ink2">{user.guest ? 'Guest saves live in this browser. Create an account to sync them to the cloud.' : 'Saves sync to the cloud and are kept on this device for offline play.'}</p>
+        <WhatsNew />
         {error && (
           <div role="alert" className="mt-4 rounded-xl bg-bad/10 p-3 text-sm text-bad">
             {error}
