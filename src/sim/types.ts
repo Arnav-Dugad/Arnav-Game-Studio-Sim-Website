@@ -472,6 +472,21 @@ export interface MarketState {
   futurePlatforms: FuturePlatform[];
 }
 
+/** One entry of the yearly Golden Pixel Gala (fictional awards show). */
+export interface AwardWinner {
+  category: string; // 'Game of the Year' | 'Best <Genre>'
+  name: string;
+  company: string; // display name
+  score: number;
+  mine: boolean;
+  releaseId?: Id;
+}
+
+export interface AwardYear {
+  year: number;
+  winners: AwardWinner[];
+}
+
 export interface SubscriptionState {
   name: string;
   /** Monthly price (nominal). */
@@ -620,6 +635,8 @@ export interface GameState {
   devkits: Id[]; // platforms licensed
   /** Player-made consoles (hardware division). */
   hardware: PlayerConsole[];
+  /** Golden Pixel Gala results by year (industry-wide). */
+  awardHistory?: AwardYear[];
   /** Your catalogue subscription service, once launched. */
   subscription?: SubscriptionState;
   news: NewsItem[];

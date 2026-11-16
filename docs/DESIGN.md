@@ -699,6 +699,11 @@ This section records decisions made during the build that differ from, or add to
   - Stores keep 30% of revenue, servers cost about $0.12 per subscriber in 1980 dollars, and games older than a year sell 15% fewer copies while the pass runs.
   - Closing the pass costs 2 reputation.
 - **Cross-play.** The research now gives a ×1.1 sales boost to online-leaning genres (or F2P/live-service games) released on two or more platforms.
+- **Golden Pixel Gala.** Every January, the gala judges the whole industry's releases from the year before, both yours and your rivals'. It names a Game of the Year (75+) and a Best of each genre (70+); results go into `awardHistory` and appear under News → Awards and on the Year in Review card.
+  - The jury gives real-history classics +3 and generic rival titles −3; ties go to the player.
+  - You still need 85+ for Game of the Year, and 80+ while strictly beating every rival in the genre for a genre award.
+  - Real winners come out plausibly, e.g. Super Mario Bros. in 1985, Grand Theft Auto V in 2013 and Breath of the Wild in 2017.
+- **New-player polish.** Develop opens on the new-game wizard when nothing is in development. An idle-team nudge offers New game or Contracts. Article grammar is now correct ("an RPG").
 - **Vacations.** Paid leave of one or two weeks: +10 energy and −4 burnout a day, morale up, loyalty +3 or +5. Each person waits 120 days between vacations. People on vacation don't work on projects or research.
 - **Studio history.** Company → History builds a timeline from data the sim already keeps: the founding, notable releases, achievements, console launches and the IPO.
 - **Second review pass (hardware/remasters):**

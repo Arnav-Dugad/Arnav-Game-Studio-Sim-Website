@@ -5,14 +5,15 @@
 import { exclusiveBuzz } from './hardware';
 import { catalogSalesMul } from './subscription';
 import { BALANCE } from '../../data/balance';
-import { GENRE_BY_ID } from '../../data/genres';
+import { GENRES, GENRE_BY_ID } from '../../data/genres';
+import { COMPANY_BY_ID } from '../../data/companies';
 import { OUTLETS, type OutletDef } from '../../data/outlets';
 import { TOPIC_BY_ID } from '../../data/topics';
 import { BD, clamp, type Breakdown } from '../breakdown';
 import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
-import type { CriticReview, GameProject, GameState, Release, Size } from '../types';
+import type { AwardWinner, CriticReview, GameProject, GameState, Release, Size } from '../types';
 import { addRep, earn, fmtMoney, fmtUnits, hasFlag, inflation, newId, pushNews, spend } from '../util';
 import { finishProject, qualityToScore } from './dev';
 import { demandMul, genreInterest, platformAudienceFit, platformGenreFit, platformInfo, topicPopularity, type PlatformInfo } from './market';
@@ -475,33 +476,57 @@ export function updateLiveMonthly(c: Ctx): void {
 /** Yearly awards ceremony (December). */
 export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
   const { s } = c;
-  const mine = Object.values(s.releases).filter((r) => fromDay(r.day).year === yr);
-  const rivals = s.rivalGames.filter((g) => fromDay(g.day).year === yr);
-  const bestRival = rivals.reduce((m, g) => Math.max(m, g.score), 0);
-  if (!mine.length) return;
-  const best = mine.reduce((a, b) => (b.score > a.score ? b : a));
+  type Entry = { name: string; company: string; score: number; genre: string; mine: boolean; classic?: boolean; releaseId?: string };
+  const entries: Entry[] = [
+    ...Object.values(s.releases)
+      .filter((r) => fromDay(r.day).year === yr && !r.concept.remasterOf)
+      .map((r) => ({ name: r.name, company: s.company.name, score: Math.round(r.score), genre: r.concept.genre, mine: true, releaseId: r.id })),
+    ...s.rivalGames
+      .filter((g) => fromDay(g.day).year === yr)
+      .map((g) => ({ name: g.name, company: s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company, score: g.score, genre: g.genre, mine: false, classic: !!g.franchise })),
+  ];
+  if (!entries.length) return;
+  // Real-history classics carry their legend with the jury; ties go to the player.
+  const weight = (e: Entry) => e.score + (e.classic ? 3 : e.mine ? 0 : -3);
+  const rank = (a: Entry, b: Entry) => weight(b) - weight(a) || Number(b.mine) - Number(a.mine);
+  const winners: AwardWinner[] = [];
+  const goty = [...entries].sort(rank)[0]!;
+  if (goty.score >= 75) winners.push({ category: 'Game of the Year', name: goty.name, company: goty.company, score: goty.score, mine: goty.mine && goty.score >= 85, releaseId: goty.releaseId });
+  for (const g of GENRES) {
+    const pool = entries.filter((e) => e.genre === g.id).sort(rank);
+    const top = pool[0];
+    if (!top || top.score < 70) continue;
+    // The player needs a clear win (80+ and strictly ahead) to take a genre award.
+    const rivalTop = pool.find((e) => !e.mine);
+    const mineWins = top.mine && top.score >= 80 && (!rivalTop || top.score > rivalTop.score);
+    const w = mineWins || !top.mine ? top : rivalTop;
+    if (w && w.score >= 70) winners.push({ category: `Best ${g.name}`, name: w.name, company: w.company, score: w.score, mine: mineWins, releaseId: mineWins ? w.releaseId : undefined });
+  }
+  // If the best game was ours but under 85, the jury gives GOTY to the best rival instead.
+  const gotyW = winners.find((w) => w.category === 'Game of the Year');
+  if (gotyW && goty.mine && !gotyW.mine) {
+    const r = [...entries].filter((e) => !e.mine).sort(rank)[0];
+    if (r && r.score >= 75) Object.assign(gotyW, { name: r.name, company: r.company, score: r.score, mine: false, releaseId: undefined });
+    else winners.splice(winners.indexOf(gotyW), 1);
+  }
+  s.awardHistory = [...(s.awardHistory ?? []), { year: yr, winners }].slice(-60);
   const awards: string[] = [];
-  if (best.score >= 85 && best.score >= bestRival) awards.push('Game of the Year');
-  // genre awards
-  for (const r of mine) {
-    const sameGenre = rivals.filter((g) => g.genre === r.concept.genre);
-    const topRival = sameGenre.reduce((m, g) => Math.max(m, g.score), 0);
-    if (r.score >= 80 && r.score > topRival) {
-      r.awards.push(`Best ${GENRE_BY_ID[r.concept.genre].name}`);
-      awards.push(`Best ${GENRE_BY_ID[r.concept.genre].name}`);
-      c.out.push({ type: 'award', releaseId: r.id, award: `Best ${GENRE_BY_ID[r.concept.genre].name}` });
-    }
+  for (const w of winners) {
+    if (!w.mine || !w.releaseId) continue;
+    const rel = s.releases[w.releaseId];
+    if (!rel) continue;
+    rel.awards.push(w.category);
+    awards.push(w.category);
+    c.out.push({ type: 'award', releaseId: rel.id, award: w.category });
   }
-  if (awards.includes('Game of the Year')) {
-    best.awards.push('Game of the Year');
-    c.out.push({ type: 'award', releaseId: best.id, award: 'Game of the Year' });
-    addRep(s, 4, 'Game of the Year');
-  }
+  if (awards.includes('Game of the Year')) addRep(s, 4, 'Game of the Year');
   if (awards.length) {
     s.progress.stats.awardsWon += awards.length;
     addRep(s, awards.length, 'Award wins');
     s.company.moraleMods.push({ v: 6, until: s.day + 120, label: 'Award win' });
     pushNews(s, { category: 'studio', headline: `${s.company.name} wins ${awards.length} award${awards.length > 1 ? 's' : ''} at the Golden Pixel Gala`, body: awards.join(', '), tone: 'good' });
+  } else if (gotyW) {
+    pushNews(s, { category: 'industry', headline: `${gotyW.name} wins Game of the Year at the Golden Pixel Gala`, body: `${gotyW.company} takes the top prize for ${yr}.`, tone: 'neutral' });
   }
 }
 

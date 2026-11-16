@@ -529,3 +529,25 @@ describe('cross-play research', () => {
     expect(p1).toBe(false);
   });
 });
+
+describe('Golden Pixel Gala', () => {
+  it('records industry winners every year and lets a great player game win', () => {
+    const s = game(1984, 12);
+    startSmall(s);
+    advance(s, 120);
+    const rel = s.releases[s.releaseOrder[0]!]!;
+    rel.score = 99;
+    s.company.cash = 1e7;
+    advance(s, 366);
+    const y = s.awardHistory!.find((h) => h.year === 1984)!;
+    expect(y).toBeDefined();
+    const goty = y.winners.find((w) => w.category === 'Game of the Year')!;
+    expect(goty.mine).toBe(true);
+    expect(rel.awards).toContain('Game of the Year');
+    s.company.cash = 1e7;
+    advance(s, 366);
+    const y2 = s.awardHistory!.find((h) => h.year === 1985)!;
+    expect(y2.winners.length).toBeGreaterThan(0);
+    expect(y2.winners.every((w) => !w.mine)).toBe(true);
+  });
+});

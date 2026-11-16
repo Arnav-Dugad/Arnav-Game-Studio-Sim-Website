@@ -77,6 +77,7 @@ interface YearSummary {
   games: { name: string; score: number }[];
   units: number;
   rivalHit?: { name: string; score: number };
+  goty?: { name: string; company: string; mine: boolean };
   staff: number;
 }
 
@@ -106,6 +107,7 @@ export function YearInReview() {
     const expense = sum(months.map((m) => sum(Object.values(m.expense).map((x) => x ?? 0))));
     const rels = s.releaseOrder.map((id) => s.releases[id]!).filter((r) => fromDay(r.day).year === prev);
     const rivalHit = s.rivalGames.filter((g) => fromDay(g.day).year === prev).sort((a, b) => b.score - a.score)[0];
+    const gala = s.awardHistory?.find((y) => y.year === prev)?.winners.find((w) => w.category === 'Game of the Year');
     return {
       year: prev,
       revenue,
@@ -113,6 +115,7 @@ export function YearInReview() {
       games: rels.map((r) => ({ name: r.name, score: r.score })),
       units: sum(rels.map((r) => r.units)),
       rivalHit: rivalHit ? { name: rivalHit.name, score: rivalHit.score } : undefined,
+      goty: gala ? { name: gala.name, company: gala.company, mine: gala.mine } : undefined,
       staff: Object.keys(s.staff).length,
     };
     // v: recompute when the sim ticks
@@ -158,7 +161,14 @@ export function YearInReview() {
           {summary.units > 0 && <li className="text-ink3">{fmtUnits(summary.units)} copies sold so far</li>}
         </ul>
       )}
-      {summary.rivalHit && (
+      {summary.goty ? (
+        <p className={cx('mt-2 flex items-center gap-1.5 text-[11px]', summary.goty.mine ? 'font-semibold text-gold' : 'text-ink3')}>
+          <Icon name="trophy" size={12} className="shrink-0" />
+          <span>
+            Game of the Year: <b className={summary.goty.mine ? '' : 'text-ink2'}>{summary.goty.name}</b> ({summary.goty.company})
+          </span>
+        </p>
+      ) : summary.rivalHit && (
         <p className="mt-2 text-[11px] text-ink3">
           Industry’s best: <b className="text-ink2">{summary.rivalHit.name}</b> ({summary.rivalHit.score})
         </p>
