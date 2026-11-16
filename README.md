@@ -16,7 +16,7 @@
 
 - **46 years of real history.** Start in 1980 and live through 143 real industry events: the 1983 crash, the NES revival, the 3D revolution, Steam, the App Store, free-to-play, the pandemic boom and Switch 2. Endless mode then generates future hardware.
 - **51 real platforms.** From the Atari 2600 to the Switch 2, each with an install-base curve, dev-kit costs, royalties, audiences and genre strengths.
-- **75 real rival companies and 452 real games.** Real games from 99 franchises launch on their real dates and compete with you in the release window. Industry figures appear by name only, shown as initials badges.
+- **75 real rival companies and 452 real games.** Real games from 99 franchises launch on their real dates and compete with you in the release window. Industry figures appear by name only, shown as initials badges. An all-time best-seller chart ranks your games against the real classics released so far.
 - **A living office.**
   - Staff are drawn as vector sprites in PixiJS. They walk to the coffee machine, chat, crunch and slump when burnt out.
   - The layout really changes the numbers: break-area distance, décor auras, crowding and noise.
