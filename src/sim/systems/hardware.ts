@@ -7,6 +7,8 @@
  * and your own exclusives are where the money is.
  */
 import { PLATFORMS } from '../../data/platforms';
+import { COMPANY_BY_ID } from '../../data/companies';
+import { livePlatforms } from './market';
 import { BD, clamp } from '../breakdown';
 import { fromDay, parseYM } from '../calendar';
 import type { Ctx } from '../ctx';
@@ -117,8 +119,13 @@ export function unitCost(c: PlayerConsole, day: number): number {
 /** Reference retail price (nominal) the market expects for this console today. */
 export function refPrice(c: PlayerConsole, day: number): number {
   const age = Math.max(0, (day - c.launchDay) / YEAR);
-  return money(TIERS[c.tier].refPrice * KIND_MUL[c.kind].price, day) * Math.pow(0.95, age);
+  const war = c.priceWarDay !== undefined && day >= c.priceWarDay ? PRICE_WAR_CUT : 1;
+  return money(TIERS[c.tier].refPrice * KIND_MUL[c.kind].price, day) * Math.pow(0.95, age) * war;
 }
+
+/** Market share at which the incumbents start a price war, and how much it cuts expected prices. */
+export const PRICE_WAR_SHARE = 0.12;
+export const PRICE_WAR_CUT = 0.88;
 
 /** Demand vs. the price the market expects: gentle below it, falling off a cliff above it. */
 export function priceFactor(c: PlayerConsole, day: number): number {
@@ -227,6 +234,23 @@ export function hardwareMonthly(c: Ctx): void {
     // Bundled players become fans of the pack-in's franchise.
     const pack = hw.packIn ? s.releases[hw.packIn] : undefined;
     if (pim > 1 && pack?.concept.franchiseId && s.franchises[pack.concept.franchiseId]) s.franchises[pack.concept.franchiseId]!.fans += Math.round(units * 1e6 * 0.08);
+    // The incumbents notice a real threat and slash their prices.
+    const share = s.market.share[hw.id] ?? 0;
+    if (hw.priceWarDay === undefined && share >= PRICE_WAR_SHARE && s.day - hw.launchDay > 365) {
+      hw.priceWarDay = s.day;
+      const rivals = livePlatforms(s)
+        .filter((p) => !p.own && (p.kind === 'console' || p.kind === 'handheld'))
+        .sort((a, b) => (s.market.share[b.id] ?? 0) - (s.market.share[a.id] ?? 0))
+        .slice(0, 2);
+      const names = [...new Set(rivals.map((p) => COMPANY_BY_ID[p.maker]?.name ?? p.maker))];
+      const n = pushNews(s, {
+        category: 'platform',
+        headline: `${names.length ? names.join(' and ') : 'Rival platform holders'} slash prices to fight the ${hw.name}`,
+        body: `Your console's ${Math.round(share * 100)}% market share has the incumbents worried. Players now expect a cheaper ${hw.name} — consider a price cut.`,
+        tone: 'bad',
+      });
+      c.out.push({ type: 'news', newsId: n.id, major: true });
+    }
     hw.boost *= 0.95;
     // End of life — but never strand a game that is still being made for it.
     if ((s.day - hw.launchDay) / YEAR >= AUTO_RETIRE_YEARS && projectsTargeting(s, hw.id) === 0) retireConsole(c, hw, 'reached the end of its life');

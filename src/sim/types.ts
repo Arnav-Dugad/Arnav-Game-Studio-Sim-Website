@@ -536,6 +536,8 @@ export interface PlayerConsole {
   monthly: number[];
   /** Your game bundled in the box, if any. */
   packIn?: Id;
+  /** Day the established platform holders answered this console with price cuts. */
+  priceWarDay?: number;
 }
 
 export interface FuturePlatform {

@@ -719,6 +719,7 @@ This section records decisions made during the build that differ from, or add to
   - Consoles can't be retired while games are still in development for them.
   - IP you have sold can't be remastered.
   - UI state now resyncs after events change a console.
+- **Price wars.** Once your console passes 12% market share (at least a year after launch), the leading platform holders cut their prices. Players then expect your console to cost 12% less, so hold your price and lose demand, or cut it and your margins.
 - **Hardware events.** Three random events apply only to a live console: a fault that needs a recall, a crack that brings piracy, and a retailer bundle deal.
 - **Hardware division (save schema v3).** After the Hardware Lab research and with 55+ reputation, design a console or handheld (Research → Hardware). You choose the type, a budget, standard or premium tier (tech relative to the current frontier), the retail price, the licence fee for other publishers, and launch marketing. R&D is paid monthly until launch. Lifetime demand is fixed at launch from:
   - typical sales for that kind of hardware in the era;

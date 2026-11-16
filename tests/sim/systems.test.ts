@@ -435,6 +435,19 @@ describe('hardware division', () => {
     expect(dispatch(s, { type: 'retireConsole', id: hw.id }).ok).toBe(false);
   });
 
+  it('a big enough console triggers a price war that lowers the expected price', () => {
+    const s = rich();
+    design(s);
+    advance(s, 700);
+    const hw = s.hardware[0]!;
+    const before = refPrice(hw, s.day);
+    advance(s, 400);
+    s.market.share[hw.id] = 0.2;
+    advance(s, 40);
+    expect(hw.priceWarDay).toBeDefined();
+    expect(refPrice(hw, s.day)).toBeLessThan(before);
+  });
+
   it('migrates v2 saves', () => {
     const s = game();
     const raw = JSON.parse(JSON.stringify(s));

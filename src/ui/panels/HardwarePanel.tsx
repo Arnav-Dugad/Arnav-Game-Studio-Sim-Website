@@ -113,6 +113,7 @@ function ConsoleCard({ c }: { c: PlayerConsole }) {
           </span>
           <div className="min-w-0 flex-1">
             {TIERS[c.tier].label} {c.kind} · tech {c.tech} · launched {formatDate(c.launchDay, false)}
+            {c.priceWarDay !== undefined && <span className="text-bad"> · price war since {formatDate(c.priceWarDay, false)}</span>}
             {c.potentialWhy && (
               <Tip content={<BreakdownList bd={c.potentialWhy} format={(v) => `${v.toFixed(1)}M`} title="Expected lifetime demand at launch" />}>
                 <div className="w-fit cursor-help underline decoration-dotted">Launch forecast {c.potentialM.toFixed(1)}M units</div>
