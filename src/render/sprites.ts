@@ -424,7 +424,7 @@ export function drawPerson(g: Graphics, look: Look, pose: 'stand' | 'sit' | 'slu
     g.roundRect(headX + 1, headY - 0.5, 4, 3, 1).stroke({ width: 1, color: 0x222222 });
   }
   if (look.headphones) {
-    g.arc(headX, headY - 1, 9, Math.PI, 0).stroke({ width: 2, color: 0x2a2a2a });
+    g.moveTo(headX - 9, headY - 1).arc(headX, headY - 1, 9, Math.PI, 0).stroke({ width: 2, color: 0x2a2a2a });
     g.roundRect(headX - 10, headY - 2, 3.5, 6, 1.5).fill(0x2a2a2a);
     g.roundRect(headX + 6.5, headY - 2, 3.5, 6, 1.5).fill(0x2a2a2a);
   }
