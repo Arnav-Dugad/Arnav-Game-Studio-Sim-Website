@@ -84,7 +84,8 @@ function Platforms() {
                   </div>
                   <div className="text-xs text-ink3">
                     {p.own ? s.company.name : COMPANY_BY_ID[p.maker]?.name ?? 'Open platform'} · {age < 1 ? 'new!' : `${age.toFixed(0)} yrs old`}
-                    {p.endDay && ` · discontinued ${fromDay(p.endDay).year}`}
+                    {/* no spoilers: only hint at a platform's end in its final year */}
+                    {p.endDay !== null && p.endDay - s.day < 365 && ' · being phased out'}
                   </div>
                 </div>
                 <div className="text-right text-xs">
