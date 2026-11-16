@@ -363,6 +363,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const cost = estimateCost(s, size, teamStaff);
   const kitCost = platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
   const deal = s.offers.deals.find((d) => d.id === dealId);
+  const liveDealId = deal ? dealId : ''; // the offer may have expired since it was picked
+  const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
   const conceptPreview = useMemo(
     () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined }),
     [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal],
@@ -379,7 +381,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: dealId || undefined, team: team.slice(0, cap), focus },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus },
     });
     if (r.ok) {
       sound.play('success');
@@ -455,7 +457,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           known ? (
             <Pill tone={fitLabel(fit).tone}>{`${fitLabel(fit).label} fit`}</Pill>
           ) : (
-            <Button size="sm" icon="search" onClick={() => act({ type: 'marketResearch', genre, topic })} title="Run focus groups to learn how well this genre and topic fit">
+            <Button size="sm" icon="search" onClick={() => useGame.getState().actOrToast({ type: 'marketResearch', genre, topic })} title="Run focus groups to learn how well this genre and topic fit">
               Research fit · {fmtMoney(marketResearchCost(s))}
             </Button>
           )
@@ -563,7 +565,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             </select>
           </Field>
           <Field label="Publishing" hint={selfPub ? 'Self-publish to keep all revenue, or take a deal for an advance and wider reach.' : 'Research Self-Publishing to ship consoles yourself.'}>
-            <select className={inputCls} value={dealId} onChange={(e) => setDealId(e.target.value)}>
+            <select className={inputCls} value={liveDealId} onChange={(e) => setDealId(e.target.value)}>
               <option value="">{selfPub ? 'Self-publish' : 'Self-publish (computers only)'}</option>
               {s.offers.deals.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -665,7 +667,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           </p>
         )}
         <div className="mt-3 flex justify-end">
-          <Button variant="primary" size="lg" icon="rocket" onClick={start} disabled={!platforms.length || !team.length} data-tutorial="start-dev">
+          <Button variant="primary" size="lg" icon="rocket" onClick={start} disabled={!platforms.length || !liveTeam.length} data-tutorial="start-dev">
             Start development
           </Button>
         </div>
@@ -682,7 +684,8 @@ function Contracts() {
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle');
-  const [team, setTeam] = useState<string[]>(idle.slice(0, 2).map((x) => x.id));
+  const [teamPick, setTeam] = useState<string[]>(idle.slice(0, 2).map((x) => x.id));
+  const team = teamPick.filter((id) => idle.some((x) => x.id === id));
   if (!s.offers.contracts.length) return <Empty icon="briefcase" title="No contract offers right now">New offers arrive every month.</Empty>;
   return (
     <div className="space-y-3">

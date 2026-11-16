@@ -31,7 +31,8 @@ export function AuthScreen({ mode }: { mode: Mode }) {
   const [info, setInfo] = useState('');
 
   useEffect(() => {
-    if (auth.user && mode !== 'reset') navigate('slots', true);
+    // Guests may come here to create a real account — only signed-in users are sent back.
+    if (auth.user && !auth.user.guest && mode !== 'reset') navigate('slots', true);
   }, [auth.user, mode]);
 
   const submit = async (e: FormEvent) => {

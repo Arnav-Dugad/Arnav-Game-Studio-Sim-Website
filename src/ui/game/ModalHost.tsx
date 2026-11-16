@@ -33,19 +33,34 @@ import { prefersReducedMotion, useSettings } from '../settings';
 export function ModalHost({ slotId }: { slotId: SlotId }) {
   const modal = useGame((g) => g.modals[0]);
   const pop = useGame((g) => g.popModal);
+  const s = useGame((g) => g.s);
   useGame((g) => g.v);
-  if (!modal) return null;
+  // A modal whose subject vanished (staff quit, project cancelled…) must close itself, or it would
+  // sit invisibly at the front of the queue and block everything behind it.
+  const stale =
+    !!modal &&
+    !!s &&
+    ((modal.kind === 'staff' && !s.staff[modal.staffId]) ||
+      ((modal.kind === 'reviews' || modal.kind === 'release') && !s.releases[modal.releaseId]) ||
+      (modal.kind === 'gate' && !(s.projects[modal.projectId]?.kind === 'game' && (s.projects[modal.projectId] as { awaitingGate?: boolean }).awaitingGate)) ||
+      (modal.kind === 'majorNews' && !s.news.some((n) => n.id === modal.newsId)) ||
+      (modal.kind === 'rival' && !s.rivals[modal.rivalId]) ||
+      (modal.kind === 'event' && !s.pendingEvents.some((e) => e.uid === modal.uid)));
+  useEffect(() => {
+    if (stale) pop();
+  }, [stale, pop]);
+  if (!modal || stale) return null;
   switch (modal.kind) {
     case 'event':
-      return <EventModal uid={modal.uid} onClose={pop} />;
+      return <EventModal key={modal.uid} uid={modal.uid} onClose={pop} />;
     case 'reviews':
-      return <ReviewsModal releaseId={modal.releaseId} onClose={pop} />;
+      return <ReviewsModal key={modal.releaseId} releaseId={modal.releaseId} onClose={pop} />;
     case 'release':
-      return <ReleaseModal releaseId={modal.releaseId} onClose={pop} />;
+      return <ReleaseModal key={modal.releaseId} releaseId={modal.releaseId} onClose={pop} />;
     case 'gate':
-      return <GateModal projectId={modal.projectId} onClose={pop} />;
+      return <GateModal key={modal.projectId} projectId={modal.projectId} onClose={pop} />;
     case 'staff':
-      return <StaffModal staffId={modal.staffId} onClose={pop} />;
+      return <StaffModal key={modal.staffId} staffId={modal.staffId} onClose={pop} />;
     case 'gameOver':
       return <GameOverModal onClose={pop} slotId={slotId} />;
     case 'insolvent':
@@ -465,7 +480,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
                   </option>
                 ))}
               </select>
-              <Button size="sm" onClick={() => run({ type: 'train', staffId, skill }, 'Training started')} disabled={!s.research.done.includes('biz_training')} title={s.research.done.includes('biz_training') ? '4 weeks off work, +~8 skill' : 'Research the Training Programme first'}>
+              <Button size="sm" onClick={() => run({ type: 'train', staffId, skill }, 'Training started')} disabled={!s.research.done.includes('biz_training') || st.assignment.kind === 'training'} title={s.research.done.includes('biz_training') ? '4 weeks off work, +~8 skill' : 'Research the Training Programme first'}>
                 Train
               </Button>
             </div>
@@ -605,7 +620,7 @@ function InsolventModal({ onClose }: { onClose: () => void }) {
         <Button
           onClick={() => {
             onClose();
-            openPanel('finance');
+            openPanel('finance', 'overview');
           }}
         >
           Finance
@@ -688,7 +703,8 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
   const toast = useGame((g) => g.toast);
   const r = s.releases[releaseId]!;
   const ports = availablePlatforms(s).filter((p) => !r.concept.platforms.includes(p.id));
-  const [port, setPort] = useState(ports[0]?.id ?? '');
+  const [portChoice, setPort] = useState(ports[0]?.id ?? '');
+  const port = ports.some((p) => p.id === portChoice) ? portChoice : (ports[0]?.id ?? '');
   const patchWhy = canPatch(s, r);
   const tooOld = s.day - r.day > 365 * 4;
   const run = (a: Parameters<typeof act>[0], ok: string) => {
@@ -710,8 +726,8 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
         <div className="rounded-xl border border-line p-3 text-xs">
           <div className="text-sm font-semibold">Port to another platform</div>
           <p className="mt-0.5 text-ink3">An outsourced port launches with a fresh (smaller) sales curve.</p>
-          {tooOld || !ports.length ? (
-            <p className="mt-2 text-ink3">{tooOld ? 'Too old to port profitably.' : 'No other platforms available.'}</p>
+          {tooOld || !ports.length || r.concept.monetization === 'subscription' ? (
+            <p className="mt-2 text-ink3">{r.concept.monetization === 'subscription' ? 'Subscription games can’t be ported.' : tooOld ? 'Too old to port profitably.' : 'No other platforms available.'}</p>
           ) : (
             <div className="mt-2 flex gap-2">
               <select className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-2" value={port} onChange={(e) => setPort(e.target.value)} aria-label="Port to">

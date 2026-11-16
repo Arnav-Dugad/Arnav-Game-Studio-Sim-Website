@@ -169,14 +169,14 @@ function Stock() {
           Sell 5% more shares for cash
           {own - 0.05 < 0.5 && <b className="ml-1 text-bad">· drops you below 50% — takeover risk</b>}
         </span>
-        <Button size="sm" disabled={own < 0.06} onClick={() => act({ type: 'secondaryOffering', pct: 0.05 })}>
+        <Button size="sm" disabled={own < 0.06} onClick={() => useGame.getState().actOrToast({ type: 'secondaryOffering', pct: 0.05 }, 'Shares sold')}>
           +{fmtMoney(st.shares * 0.05 * st.price * 0.92)}
         </Button>
       </div>
       {own < 0.6 && (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
           <span>Buy back 5% of shares to tighten control</span>
-          <Button size="sm" onClick={() => act({ type: 'buyback', shares: Math.round(st.shares * 0.05) })}>
+          <Button size="sm" onClick={() => useGame.getState().actOrToast({ type: 'buyback', shares: Math.round(st.shares * 0.05) }, 'Shares bought back')}>
             {fmtMoney(st.shares * 0.05 * st.price * 1.05)}
           </Button>
         </div>

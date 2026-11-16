@@ -23,7 +23,9 @@ const KEYS: Record<string, PanelId> = { n: 'develop', h: 'staff', b: 'office', r
 
 export function GameScreen({ slotId }: { slotId: SlotId }) {
   const s = useGame((g) => g.s);
+  const owner = useGame((g) => g.uid);
   const user = useAuth((a) => a.user);
+  const wrongUser = !!user && !!owner && user.uid !== owner;
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ state: 'idle' });
   const saverRef = useRef<AutoSaver | null>(null);
   const rendererRef = useRef<OfficeRenderer | null>(null);
@@ -31,8 +33,9 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
 
   // Autosave: local each in-game month, cloud throttled + on tab hide.
   useEffect(() => {
-    if (!user) return;
-    const saver = new AutoSaver(user.uid, slotId);
+    // Only ever save under the account that owns this game.
+    if (!owner) return;
+    const saver = new AutoSaver(owner, slotId);
     saverRef.current = saver;
     const unsub = saver.subscribe(setSaveStatus);
     useGame.setState({ onMonth: (st) => void saver.save(st) });
@@ -43,14 +46,22 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       saver.dispose();
       useGame.setState({ onMonth: null });
     };
-  }, [user, slotId]);
+  }, [owner, slotId]);
 
-  const saveNow = useCallback(() => {
+  // If the signed-in account changes underneath us (sign-out, auth restoring after guest play), leave.
+  useEffect(() => {
+    if (!wrongUser) return;
+    useGame.getState().unload();
+    navigate('slots', true);
+  }, [wrongUser]);
+
+  const saveNow = useCallback(async () => {
     const st = useGame.getState().s;
-    if (st && saverRef.current) {
-      void saverRef.current.save(st, true);
-      useGame.getState().toast({ text: 'Game saved', tone: 'good', icon: 'save' });
-    }
+    if (!st || !saverRef.current) return;
+    await saverRef.current.save(st, true);
+    const status = saverRef.current.status;
+    if (status.state === 'error') useGame.getState().toast({ text: `Save failed: ${status.error ?? 'unknown error'}`, tone: 'bad' });
+    else useGame.getState().toast({ text: status.state === 'offline' ? 'Saved on this device (offline)' : 'Game saved', tone: 'good', icon: 'save' });
   }, []);
 
   // Keyboard shortcuts
@@ -68,12 +79,11 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       } else if (k === '1') g.setSpeed(1);
       else if (k === '2') g.setSpeed(2);
       else if (k === '3' || k === '4') g.setSpeed(4);
-      else if (k === '0' && e.shiftKey) g.setSpeed(0);
       else if (k === 'escape') {
         if (g.build) g.setBuild(null);
         else g.openPanel(null);
       } else if (k === '?') g.pushModal({ kind: 'shortcuts' });
-      else if (k === 'p' && e.shiftKey) saveNow();
+      else if (k === 'p' && e.shiftKey) void saveNow();
       else if (KEYS[k] && !(k === 'r' && g.build)) g.openPanel(KEYS[k]!);
     };
     window.addEventListener('keydown', onKey);
@@ -97,7 +107,7 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
         getState={() => useGame.getState().s}
         getUI={() => {
           const g = useGame.getState();
-          return { floor: g.floor, build: g.build, heat: g.heat, selectedStaff: g.selectedStaff, speed: g.speed, reducedMotion: prefersReducedMotion(useSettings.getState()), leftInset: g.panel ? 640 : 80 };
+          return { floor: g.floor, build: g.build, heat: g.heat, selectedStaff: g.selectedStaff, speed: g.speed, reducedMotion: prefersReducedMotion(useSettings.getState()), leftInset: g.panel ? 640 : 80, modalOpen: g.modals.length > 0 };
         }}
         onReady={(r) => (rendererRef.current = r)}
         onStaffClick={(id) => {
@@ -134,10 +144,17 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
           if (g.build) g.setBuild({ ...g.build, rot: g.build.rot ? 0 : 1 });
         }}
       />
-      <HUD saveStatus={saveStatus} onSave={saveNow} onExit={() => {
-        saveNow();
-        navigate('slots');
-      }} onZoom={(f) => (f === 0 ? rendererRef.current?.fit() : rendererRef.current?.zoomBy(f))} />
+      <HUD
+        saveStatus={saveStatus}
+        onSave={() => void saveNow()}
+        onExit={async () => {
+          useGame.getState().setSpeed(0);
+          await saveNow();
+          navigate('slots');
+          useGame.getState().unload();
+        }}
+        onZoom={(f) => (f === 0 ? rendererRef.current?.fit() : rendererRef.current?.zoomBy(f))}
+      />
       <Rail />
       <BuildBar />
       <ProjectDock />

@@ -184,6 +184,10 @@ export function Modal({
   labelledBy?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  });
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
@@ -193,7 +197,7 @@ export function Modal({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && dismissable) {
         e.stopPropagation();
-        onClose?.();
+        closeRef.current?.();
       }
       if (e.key === 'Tab' && el) {
         const f = [...el.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.hasAttribute('disabled'));
@@ -214,7 +218,7 @@ export function Modal({
       window.removeEventListener('keydown', onKey, true);
       prev?.focus?.();
     };
-  }, [open, dismissable, onClose]);
+  }, [open, dismissable]);
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-[100] grid place-items-center p-4" role="presentation">

@@ -20,6 +20,8 @@ export interface RendererUI {
   reducedMotion: boolean;
   /** Screen-space px covered on the left by UI (rail + open panel); the camera keeps the office clear of it. */
   leftInset?: number;
+  /** A dialog is open: the office must not react to the keyboard. */
+  modalOpen?: boolean;
 }
 
 export interface RendererCallbacks {
@@ -265,6 +267,9 @@ export class OfficeRenderer {
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     const k = e.key.toLowerCase();
     const ui = this.cb.getUI();
+    if (ui.modalOpen) return;
+    const focusTag = (document.activeElement as HTMLElement | null)?.tagName;
+    if (k === 'enter' && (focusTag === 'BUTTON' || focusTag === 'A')) return; // let focused buttons work
     const placing = !!(ui.build?.item || ui.build?.moving);
     // Keyboard building: arrows move the placement cursor, Enter places.
     if (placing && e.type === 'keydown' && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'enter'].includes(k)) {

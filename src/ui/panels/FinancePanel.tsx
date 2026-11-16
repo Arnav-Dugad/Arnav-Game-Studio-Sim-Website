@@ -109,7 +109,7 @@ export default function FinancePanel() {
                     {(l.rate * 100).toFixed(1)}% · {fmtMoney(l.monthly)}/mo · {l.monthsLeft} months left · taken {formatDate(l.takenDay, false)}
                   </div>
                 </div>
-                <Button size="sm" disabled={s.company.cash < l.remaining} onClick={() => act({ type: 'repayLoan', loanId: l.id })}>
+                <Button size="sm" disabled={s.company.cash < l.remaining} onClick={() => useGame.getState().actOrToast({ type: 'repayLoan', loanId: l.id }, 'Loan repaid')}>
                   Repay
                 </Button>
               </li>

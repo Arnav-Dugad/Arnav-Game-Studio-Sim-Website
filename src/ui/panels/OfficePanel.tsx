@@ -25,6 +25,7 @@ export default function OfficePanel() {
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const [cat, setCat] = useState<ItemCategory | 'all'>('desk');
+  const [confirmDown, setConfirmDown] = useState(false);
   const yr = fromDay(s.day).year;
   const t = tierDef(s.office.tier);
   const next = OFFICE_TIERS.find((x) => x.tier === s.office.tier + 1);
@@ -71,11 +72,16 @@ export default function OfficePanel() {
               Move to {next.name} ({fmtMoney(money(next.moveCost, s.day))})
             </Button>
           )}
-          {prev && (
-            <Button variant="ghost" onClick={() => act({ type: 'moveOffice', tier: prev.tier })} title="Downsize to save rent">
-              Downsize
-            </Button>
-          )}
+          {prev &&
+            (confirmDown ? (
+              <Button variant="danger" onClick={() => { setConfirmDown(false); useGame.getState().actOrToast({ type: 'moveOffice', tier: prev.tier }, `Moved to a ${prev.name}`); }}>
+                Confirm downsize (furniture that doesn’t fit is sold at 40%)
+              </Button>
+            ) : (
+              <Button variant="ghost" onClick={() => setConfirmDown(true)} title="Downsize to save rent">
+                Downsize…
+              </Button>
+            ))}
         </div>
         {next && s.company.reputation < next.minReputation && <p className="mt-1 text-[11px] text-ink3">The {next.name} needs reputation {next.minReputation} (you have {Math.round(s.company.reputation)}).</p>}
       </Section>

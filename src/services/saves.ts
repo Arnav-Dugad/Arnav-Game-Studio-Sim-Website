@@ -437,3 +437,36 @@ export class AutoSaver {
     return this.latest ? this.save(this.latest, true) : this.pending;
   }
 }
+
+/**
+ * After a guest creates or signs into an account on this device, move their guest saves into any
+ * empty slots of that account (local copies; they sync to the cloud the next time they're saved).
+ * Each guest's saves are adopted only once.
+ */
+export async function adoptGuestSaves(uid: string): Promise<number> {
+  let guest: string | null;
+  try {
+    guest = localStorage.getItem('ase:guest');
+    if (!guest || localStorage.getItem('ase:guestAdopted') === guest) return 0;
+  } catch {
+    return 0;
+  }
+  const db = await idb();
+  const taken = new Set((await listSlots(uid)).filter((x) => x.local || x.cloud).map((x) => x.slotId));
+  let moved = 0;
+  for (const slotId of SLOT_IDS) {
+    const rec = (await db.get('saves', `${guest}/${slotId}`)) as LocalRecord | undefined;
+    if (!rec) continue;
+    const target = SLOT_IDS.find((id) => !taken.has(id));
+    if (!target) break;
+    taken.add(target);
+    await db.put('saves', { ...rec, key: `${uid}/${target}`, synced: false } satisfies LocalRecord);
+    moved++;
+  }
+  try {
+    localStorage.setItem('ase:guestAdopted', guest);
+  } catch {
+    /* ignore */
+  }
+  return moved;
+}

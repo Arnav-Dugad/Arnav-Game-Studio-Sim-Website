@@ -70,8 +70,8 @@ function Tree() {
             {team.length ? `${team.length} researcher${team.length > 1 ? 's' : ''} · ${rate.toFixed(2)} pts/day` : 'Assign staff to research in the Staff panel (click a person → Research).'}
           </span>
           {active && (
-            <Button size="sm" variant="ghost" onClick={() => act({ type: 'cancelResearch' })}>
-              Stop
+            <Button size="sm" variant="ghost" onClick={() => useGame.getState().actOrToast({ type: 'cancelResearch' }, 'Research stopped — half the budget refunded')} title="Stops this project and refunds half its cost">
+              Stop (50% refund)
             </Button>
           )}
         </div>
@@ -120,7 +120,7 @@ function Tree() {
                       {s.research.active ? 'Queue' : 'Research'}
                     </Button>
                   ) : prereqOnly ? (
-                    <Button size="sm" onClick={() => act({ type: 'queueResearch', id: r.id })}>
+                    <Button size="sm" onClick={() => useGame.getState().actOrToast({ type: 'queueResearch', id: r.id }, `${r.name} queued`)}>
                       Queue
                     </Button>
                   ) : null}
@@ -170,7 +170,7 @@ function Engines() {
                   </div>
                 </div>
                 {!e.licensedFrom && e.licensees === 0 && s.research.done.includes('biz_engine_licensing') && e.tech >= 4 && (
-                  <Button size="sm" onClick={() => act({ type: 'licenseOut', engineId: e.id })}>
+                  <Button size="sm" onClick={() => useGame.getState().actOrToast({ type: 'licenseOut', engineId: e.id })}>
                     License out
                   </Button>
                 )}
@@ -244,7 +244,7 @@ function Engines() {
                     {e.notes ? ` · ${e.notes}` : ''}
                   </div>
                 </div>
-                <Button size="sm" disabled={s.company.cash < e.fee} onClick={() => act({ type: 'licenseEngine', engineDef: e.id })}>
+                <Button size="sm" disabled={s.company.cash < e.fee} onClick={() => useGame.getState().actOrToast({ type: 'licenseEngine', engineDef: e.id }, `${e.name} licensed`)}>
                   {e.fee ? fmtMoney(e.fee) : 'Free'}
                   {e.royalty ? ` + ${Math.round(e.royalty * 100)}%` : ''}
                 </Button>

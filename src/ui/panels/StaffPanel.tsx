@@ -178,7 +178,7 @@ function Hire() {
         <span>
           Free desks: <b className={desks <= 0 ? 'text-bad' : ''}>{desks}</b> · Office capacity {Object.keys(s.staff).length}/{cap}
         </span>
-        <Button size="sm" icon="refresh" onClick={() => act({ type: 'refreshCandidates' })} title="Pay a recruiter for a fresh pool">
+        <Button size="sm" icon="refresh" onClick={() => useGame.getState().actOrToast({ type: 'refreshCandidates' }, 'Fresh candidates found')} title="Pay a recruiter for a fresh pool">
           New candidates ({fmtMoney(money(1_200, s.day))})
         </Button>
       </div>

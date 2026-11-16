@@ -58,6 +58,8 @@ interface GameStore {
   s: GameState | null;
   v: number;
   slotId: string | null;
+  /** Owner of the loaded save — a game is never saved under a different account. */
+  uid: string | null;
   speed: Speed;
   lastSpeed: Exclude<Speed, 0>;
   panel: PanelId | null;
@@ -73,7 +75,9 @@ interface GameStore {
   /** Pre-fill for the new-game wizard (e.g. planning a sequel). */
   wizardPreset: { franchiseId: string } | null;
   onMonth: ((s: GameState) => void) | null;
-  load: (s: GameState, slotId: string) => void;
+  load: (s: GameState, slotId: string, uid: string) => void;
+  /** Run an action and show its error as a toast (returns success). */
+  actOrToast: (a: Action, ok?: string) => boolean;
   unload: () => void;
   act: (a: Action) => ActionResult;
   setSpeed: (sp: Speed) => void;
@@ -97,6 +101,7 @@ export const useGame = create<GameStore>((set, get) => ({
   s: null,
   v: 0,
   slotId: null,
+  uid: null,
   speed: 0,
   lastSpeed: 1,
   panel: null,
@@ -111,8 +116,23 @@ export const useGame = create<GameStore>((set, get) => ({
   lastSavedDay: 0,
   wizardPreset: null,
   onMonth: null,
-  load: (s, slotId) => set({ s, slotId, v: get().v + 1, speed: 0, modals: s.status === 'running' ? [] : [{ kind: 'gameOver' }], toasts: [], pops: [], panel: null, build: null, floor: 0, lastSavedDay: s.day }),
-  unload: () => set({ s: null, slotId: null, speed: 0, modals: [], toasts: [], pops: [], panel: null, build: null }),
+  load: (s, slotId, uid) => {
+    // Re-surface anything that was waiting for the player when the game was saved.
+    const modals: Modal[] = [];
+    if (s.status !== 'running') modals.push({ kind: 'gameOver' });
+    else {
+      for (const e of s.pendingEvents) modals.push({ kind: 'event', uid: e.uid });
+      for (const p of Object.values(s.projects)) if (p.kind === 'game' && p.awaitingGate) modals.push({ kind: 'gate', projectId: p.id });
+    }
+    set({ s, slotId, uid, v: get().v + 1, speed: 0, modals, toasts: [], pops: [], panel: null, build: null, floor: 0, lastSavedDay: s.day });
+  },
+  unload: () => set({ s: null, slotId: null, uid: null, speed: 0, modals: [], toasts: [], pops: [], panel: null, build: null }),
+  actOrToast: (a, ok) => {
+    const r = get().act(a);
+    if (!r.ok) get().toast({ text: r.error, tone: 'bad' });
+    else if (ok) get().toast({ text: ok, tone: 'good' });
+    return r.ok;
+  },
   act: (a) => {
     const s = get().s;
     if (!s) return { ok: false, error: 'No game loaded' };

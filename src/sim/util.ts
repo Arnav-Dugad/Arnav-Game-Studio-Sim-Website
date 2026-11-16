@@ -71,6 +71,8 @@ export function avg(xs: readonly number[]): number {
 }
 
 export function fmtMoney(n: number): string {
+  if (!Number.isFinite(n)) return '$—';
+  if (Math.abs(n) < 0.5) return '$0';
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
   if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(a >= 1e10 ? 1 : 2)}B`;

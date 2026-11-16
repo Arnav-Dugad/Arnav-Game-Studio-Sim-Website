@@ -60,13 +60,13 @@ export function App() {
 }
 
 function PlayRoute({ slotId, uid }: { slotId: SlotId; uid: string }) {
-  const loaded = useGame((g) => g.s !== null && g.slotId === slotId);
+  const loaded = useGame((g) => g.s !== null && g.slotId === slotId && g.uid === uid);
   const [error, setError] = useState('');
   useEffect(() => {
     if (loaded) return;
     let alive = true;
     loadSlot(uid, slotId)
-      .then((s) => alive && useGame.getState().load(s, slotId))
+      .then((s) => alive && useGame.getState().load(s, slotId, uid))
       .catch((e) => alive && setError(e instanceof Error ? e.message : String(e)));
     return () => {
       alive = false;

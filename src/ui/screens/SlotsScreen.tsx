@@ -3,7 +3,7 @@ import { createGame } from '@/sim/create';
 import { fmtMoney } from '@/sim/util';
 import type { Difficulty } from '@/data/balance';
 import { useAuth } from '@/services/auth';
-import { deleteSlot, ensureProfile, getHallOfFame, listSlots, loadSlot, saveLocal, syncSlot, type HallEntry, type SlotId, type SlotInfo } from '@/services/saves';
+import { adoptGuestSaves, deleteSlot, ensureProfile, getHallOfFame, listSlots, loadSlot, saveLocal, syncSlot, type HallEntry, type SlotId, type SlotInfo } from '@/services/saves';
 import { Wordmark } from '../art/EventArt';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { Button, Field, Modal, Pill, Segmented, cx, inputCls } from '../components/ui';
@@ -41,6 +41,7 @@ export function SlotsScreen() {
     void ensureProfile(user.uid, user.email, user.displayName);
     (async () => {
       try {
+        if (!user.guest) await adoptGuestSaves(user.uid).catch(() => 0);
         const [sl, hf] = await Promise.all([listSlots(user.uid), getHallOfFame(user.uid)]);
         if (!alive) return;
         setSlots(sl);
@@ -61,7 +62,7 @@ export function SlotsScreen() {
     setError('');
     try {
       const s = await loadSlot(user.uid, slotId, prefer);
-      useGame.getState().load(s, slotId);
+      useGame.getState().load(s, slotId, user.uid);
       sound.unlock();
       navigate(`play/${slotId}`);
     } catch (e) {
@@ -92,6 +93,7 @@ export function SlotsScreen() {
             variant="ghost"
             icon="logout"
             onClick={async () => {
+              useGame.getState().unload();
               await signOut();
               navigate('');
             }}
@@ -166,6 +168,7 @@ export function SlotsScreen() {
                       icon="trash"
                       onClick={async () => {
                         await deleteSlot(user.uid, sl.slotId);
+                        if (useGame.getState().slotId === sl.slotId) useGame.getState().unload();
                         setConfirmDel(null);
                         void refresh();
                       }}
@@ -215,9 +218,15 @@ export function SlotsScreen() {
           onClose={() => setCreating(null)}
           onCreate={async (opts) => {
             const s = createGame({ seed: Math.floor(Math.random() * 2 ** 31), ...opts });
-            await saveLocal(user.uid, creating, s);
+            try {
+              await saveLocal(user.uid, creating, s);
+            } catch (e) {
+              setError(`Couldn’t create the save: ${e instanceof Error ? e.message : String(e)}`);
+              setCreating(null);
+              return;
+            }
             void syncSlot(user.uid, creating).catch(() => undefined);
-            useGame.getState().load(s, creating);
+            useGame.getState().load(s, creating, user.uid);
             sound.unlock();
             if (!opts.tutorial) useGame.getState().act({ type: 'tutorial', step: 99 });
             useSettings.getState().set({ showTutorial: opts.tutorial });
@@ -241,7 +250,8 @@ interface NewOpts {
   tutorial: boolean;
 }
 
-function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: (o: NewOpts) => void }) {
+function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: (o: NewOpts) => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
   const user = useAuth((a) => a.user);
   const [o, setO] = useState<NewOpts>({
     companyName: '',
@@ -264,7 +274,9 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
           e.preventDefault();
           if (!o.companyName.trim()) return setErr('Name your studio.');
           if (!o.founderName.trim()) return setErr('Who is the founder?');
-          onCreate({ ...o, companyName: o.companyName.trim().slice(0, 40), founderName: o.founderName.trim().slice(0, 40) });
+          if (busy) return;
+          setBusy(true);
+          void onCreate({ ...o, companyName: o.companyName.trim().slice(0, 40), founderName: o.founderName.trim().slice(0, 40) }).finally(() => setBusy(false));
         }}
       >
         <div className="grid gap-3 sm:grid-cols-2">
@@ -340,8 +352,8 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" icon="rocket">
-            Open the garage
+          <Button type="submit" variant="primary" icon="rocket" disabled={busy}>
+            {busy ? 'Opening…' : 'Open the garage'}
           </Button>
         </div>
       </form>

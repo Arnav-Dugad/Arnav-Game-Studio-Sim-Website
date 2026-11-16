@@ -456,6 +456,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!st) return 'No such staff';
       if (!s.research.done.includes('biz_training')) return 'Research the Training Programme first';
       if (st.assignment.kind === 'project') return 'Take them off their project first';
+      if (st.assignment.kind === 'training') return `${st.name} is already in training`;
       const cost = money(2_500, s.day);
       if (s.company.cash < cost) return 'Not enough cash';
       spend(s, 'training', cost);
@@ -566,6 +567,13 @@ function apply(c: Ctx, a: Action): string | null {
       return null;
     }
     case 'cancelResearch': {
+      const def = s.research.active ? RESEARCH_BY_ID[s.research.active] : undefined;
+      if (!def) return 'Nothing to stop';
+      // half the budget comes back (booked as reduced research spending, not as revenue)
+      const refund = Math.round(researchCost(s, def) * 0.5);
+      s.company.cash += refund;
+      const led = s.finance.ledger[s.finance.ledger.length - 1];
+      if (led) led.expense.research = Math.max(0, (led.expense.research ?? 0) - refund);
       s.research.active = null;
       s.research.progress = 0;
       return null;
