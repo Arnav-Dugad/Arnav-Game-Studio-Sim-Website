@@ -107,7 +107,7 @@ export const useGame = create<GameStore>((set, get) => ({
   selectedStaff: null,
   lastSavedDay: 0,
   onMonth: null,
-  load: (s, slotId) => set({ s, slotId, v: get().v + 1, speed: 0, modals: [], toasts: [], pops: [], panel: null, build: null, floor: 0, lastSavedDay: s.day }),
+  load: (s, slotId) => set({ s, slotId, v: get().v + 1, speed: 0, modals: s.status === 'running' ? [] : [{ kind: 'gameOver' }], toasts: [], pops: [], panel: null, build: null, floor: 0, lastSavedDay: s.day }),
   unload: () => set({ s: null, slotId: null, speed: 0, modals: [], toasts: [], pops: [], panel: null, build: null }),
   act: (a) => {
     const s = get().s;

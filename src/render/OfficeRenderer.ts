@@ -330,7 +330,8 @@ export class OfficeRenderer {
     const t = tierDef(s.office.tier);
     const floor = Math.min(ui.floor, t.floors - 1);
     // fit once per office tier / first frame
-    const fitKey = `${s.office.tier}|${this.el.clientWidth > 0}`;
+    // refit on tier change or when the canvas is resized (window resize, orientation change)
+    const fitKey = `${s.office.tier}|${Math.round(this.el.clientWidth / 40)}|${Math.round(this.el.clientHeight / 40)}`;
     if (fitKey !== this.fitted && this.el.clientWidth > 0) {
       this.fitted = fitKey;
       this.fit();

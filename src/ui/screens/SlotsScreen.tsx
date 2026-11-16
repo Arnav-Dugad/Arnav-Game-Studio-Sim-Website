@@ -180,7 +180,7 @@ export function SlotsScreen() {
                   )}
                   {!sl.conflict && (
                     <Button variant="primary" icon="play" onClick={() => open(sl.slotId)} disabled={loading !== null}>
-                      {loading === sl.slotId ? 'Loading…' : 'Continue'}
+                      {loading === sl.slotId ? 'Loading…' : meta.status === 'running' ? 'Continue' : 'View ending'}
                     </Button>
                   )}
                 </div>
