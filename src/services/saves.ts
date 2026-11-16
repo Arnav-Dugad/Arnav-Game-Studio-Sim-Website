@@ -120,6 +120,13 @@ async function markSynced(uid: string, slotId: SlotId): Promise<void> {
 
 // ── Firestore ───────────────────────────────────────────────────────────────
 
+/** Firebase handles once the signed-in user has been restored (avoids unauthenticated reads at startup). */
+async function cloudReady() {
+  const h = await getFirebase();
+  await h.auth.authStateReady();
+  return h;
+}
+
 function cloudEnabled(uid: string): boolean {
   return firebaseConfigured && !uid.startsWith('guest');
 }
@@ -129,7 +136,7 @@ export async function syncSlot(uid: string, slotId: SlotId): Promise<'synced' | 
   const rec = await getLocal(uid, slotId);
   if (!rec || rec.synced) return 'skipped';
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
-  const { db } = await getFirebase();
+  const { db } = await cloudReady();
   const { doc, setDoc, deleteDoc, serverTimestamp } = await import('firebase/firestore');
   const chunks: string[] = [];
   for (let i = 0; i < rec.data.length; i += CHUNK) chunks.push(rec.data.slice(i, i + CHUNK));
@@ -170,7 +177,7 @@ export async function syncSlot(uid: string, slotId: SlotId): Promise<'synced' | 
 async function cloudMetas(uid: string): Promise<Partial<Record<SlotId, SlotMeta & { chunkCount: number }>>> {
   if (!cloudEnabled(uid)) return {};
   try {
-    const { db } = await getFirebase();
+    const { db } = await cloudReady();
     const { collection, getDocs } = await import('firebase/firestore');
     const snap = await getDocs(collection(db, 'users', uid, 'slots'));
     const out: Partial<Record<SlotId, SlotMeta & { chunkCount: number }>> = {};
@@ -180,7 +187,8 @@ async function cloudMetas(uid: string): Promise<Partial<Record<SlotId, SlotMeta 
       out[d.id as SlotId] = { ...(v as unknown as SlotMeta & { chunkCount: number }), updatedAt: ts?.toMillis?.() ?? 0 };
     });
     return out;
-  } catch {
+  } catch (e) {
+    console.warn('[saves] could not list cloud saves', e);
     return {};
   }
 }
@@ -214,7 +222,7 @@ export async function loadSlot(uid: string, slotId: SlotId, prefer?: 'local' | '
     if (!prefer) source = !loc || (cloudMeta && cloudMeta.updatedAt > loc.meta.updatedAt && loc.synced) ? 'cloud' : 'local';
   }
   if (source === 'cloud' && cloudMeta) {
-    const { db } = await getFirebase();
+    const { db } = await cloudReady();
     const { doc, getDoc } = await import('firebase/firestore');
     let data = '';
     for (let i = 0; i < cloudMeta.chunkCount; i++) {
@@ -237,7 +245,7 @@ export async function deleteSlot(uid: string, slotId: SlotId): Promise<void> {
   await db.delete('saves', `${uid}/${slotId}`);
   if (!cloudEnabled(uid)) return;
   try {
-    const { db: fdb } = await getFirebase();
+    const { db: fdb } = await cloudReady();
     const { doc, getDoc, deleteDoc } = await import('firebase/firestore');
     const metaRef = doc(fdb, 'users', uid, 'slots', slotId);
     const snap = await getDoc(metaRef);
@@ -274,7 +282,7 @@ export async function getHallOfFame(uid: string): Promise<HallEntry[]> {
   }
   if (!cloudEnabled(uid)) return local;
   try {
-    const { db } = await getFirebase();
+    const { db } = await cloudReady();
     const { doc, getDoc } = await import('firebase/firestore');
     const snap = await getDoc(doc(db, 'users', uid));
     const cloud = (snap.exists() ? ((snap.data() as { hallOfFame?: HallEntry[] }).hallOfFame ?? []) : []) as HallEntry[];
@@ -295,7 +303,7 @@ export async function addHallOfFame(uid: string, entry: HallEntry): Promise<void
   }
   if (!cloudEnabled(uid)) return;
   try {
-    const { db } = await getFirebase();
+    const { db } = await cloudReady();
     const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
     await setDoc(doc(db, 'users', uid), { hallOfFame: all, updatedAt: serverTimestamp() }, { merge: true });
   } catch {
@@ -306,7 +314,7 @@ export async function addHallOfFame(uid: string, entry: HallEntry): Promise<void
 export async function ensureProfile(uid: string, email: string | null, displayName: string | null): Promise<void> {
   if (!cloudEnabled(uid)) return;
   try {
-    const { db } = await getFirebase();
+    const { db } = await cloudReady();
     const { doc, getDoc, setDoc, serverTimestamp } = await import('firebase/firestore');
     const ref = doc(db, 'users', uid);
     const snap = await getDoc(ref);

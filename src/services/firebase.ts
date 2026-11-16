@@ -28,15 +28,21 @@ let handles: Promise<FirebaseHandles> | null = null;
 export function getFirebase(): Promise<FirebaseHandles> {
   if (!firebaseConfigured) return Promise.reject(new Error('Firebase is not configured'));
   handles ??= (async () => {
-    const [{ initializeApp }, authMod, fsMod] = await Promise.all([import('firebase/app'), import('firebase/auth'), import('firebase/firestore')]);
-    const app = initializeApp(firebaseConfig as Required<typeof firebaseConfig>);
-    const auth = authMod.getAuth(app);
-    await authMod.setPersistence(auth, authMod.browserLocalPersistence);
-    const db = fsMod.getFirestore(app);
-    if (useEmulators) {
-      authMod.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-      fsMod.connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    const [appMod, authMod, fsMod] = await Promise.all([import('firebase/app'), import('firebase/auth'), import('firebase/firestore')]);
+    const existing = appMod.getApps()[0];
+    const app = existing ?? appMod.initializeApp(firebaseConfig as Required<typeof firebaseConfig>);
+    // initializeAuth lets us choose persistence up-front; the emulator must be connected before any auth call.
+    let auth: Auth;
+    if (existing) auth = authMod.getAuth(app);
+    else {
+      auth = authMod.initializeAuth(app, {
+        persistence: [authMod.indexedDBLocalPersistence, authMod.browserLocalPersistence],
+        popupRedirectResolver: authMod.browserPopupRedirectResolver,
+      });
+      if (useEmulators) authMod.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     }
+    const db = fsMod.getFirestore(app);
+    if (useEmulators && !existing) fsMod.connectFirestoreEmulator(db, '127.0.0.1', 8080);
     return { app, auth, db };
   })();
   return handles;

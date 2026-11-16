@@ -11,7 +11,7 @@ createRoot(document.getElementById('root')!).render(
 );
 
 if (import.meta.env.DEV) {
-  void import('./ui/store').then(({ useGame }) => {
-    (window as unknown as { __ase: unknown }).__ase = { useGame };
+  void Promise.all([import('./ui/store'), import('./services/auth'), import('./services/saves')]).then(([{ useGame }, { useAuth }, saves]) => {
+    (window as unknown as { __ase: unknown }).__ase = { useGame, useAuth, saves };
   });
 }

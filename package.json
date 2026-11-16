@@ -12,11 +12,13 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.sim.json",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "test": "vitest run --exclude tests/rules/**",
     "test:watch": "vitest",
     "test:bots": "vitest run tests/bots",
     "balance": "tsx scripts/balance-report.ts",
-    "atlas": "tsx scripts/build-atlas.ts"
+    "atlas": "tsx scripts/build-atlas.ts",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-ase-rules \"vitest run tests/rules\"",
+    "dev:emulators": "firebase emulators:start --only auth,firestore --project demo-ase"
   },
   "dependencies": {
     "firebase": "^13.3.0",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
