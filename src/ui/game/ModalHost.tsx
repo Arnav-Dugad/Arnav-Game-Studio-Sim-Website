@@ -23,6 +23,7 @@ import { Icon } from '../icons';
 import { useGame } from '../store';
 import { FocusSliders } from './FocusEditor';
 import { GuideModal } from './Guide';
+import { RivalModal } from './RivalModal';
 import { genreExperience, idealFocus, PHASE_NAMES } from './lib';
 import { Face, SkillBars, Traits } from '../panels/StaffPanel';
 import { sound } from '../sound';
@@ -55,6 +56,8 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       return <ShortcutsModal onClose={pop} />;
     case 'guide':
       return <GuideModal onClose={pop} />;
+    case 'rival':
+      return <RivalModal rivalId={modal.rivalId} onClose={pop} />;
     default:
       return null;
   }

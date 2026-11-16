@@ -29,7 +29,8 @@ export type Modal =
   | { kind: 'staff'; staffId: string }
   | { kind: 'release'; releaseId: string }
   | { kind: 'shortcuts' }
-  | { kind: 'guide' };
+  | { kind: 'guide' }
+  | { kind: 'rival'; rivalId: string };
 
 export interface Toast {
   id: number;

@@ -155,7 +155,8 @@ function Rivals() {
         const leader = def?.leader ? PERSON_BY_ID[def.leader] : undefined;
         const last = [...s.rivalGames].reverse().find((g) => g.company === r.id);
         return (
-          <li key={r.id} className="flex items-center gap-3 rounded-xl border border-line p-2.5">
+          <li key={r.id}>
+            <button type="button" onClick={() => useGame.getState().pushModal({ kind: 'rival', rivalId: r.id })} className="flex w-full items-center gap-3 rounded-xl border border-line p-2.5 text-left hover:bg-bg2">
             <CompanyBadge name={r.name} color={r.color} size={36} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 text-sm font-semibold">
@@ -177,6 +178,7 @@ function Rivals() {
               <div className="num text-sm font-semibold">{Math.round(r.reputation)}</div>
               <div className="text-[10px] text-ink3">rep</div>
             </div>
+            </button>
           </li>
         );
       })}
