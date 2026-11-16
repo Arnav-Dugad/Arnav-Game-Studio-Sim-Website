@@ -37,6 +37,7 @@ export function BuildBar() {
               </span>
             )}
             {build.moving && <span className="text-sm">Click a tile to move it</span>}
+            {(build.item || build.moving) && <span className="hidden text-xs text-ink3 lg:inline">Arrows + Enter to place by keyboard</span>}
             {sel && !build.moving && (
               <>
                 <span className="text-sm font-semibold">{ITEM_BY_ID[sel.item].name}</span>

@@ -264,6 +264,24 @@ export class OfficeRenderer {
     const tag = (e.target as HTMLElement | null)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     const k = e.key.toLowerCase();
+    const ui = this.cb.getUI();
+    const placing = !!(ui.build?.item || ui.build?.moving);
+    // Keyboard building: arrows move the placement cursor, Enter places.
+    if (placing && e.type === 'keydown' && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'enter'].includes(k)) {
+      const s = this.cb.getState();
+      if (!s) return;
+      const t = tierDef(s.office.tier);
+      const cur = this.hoverTile ?? [Math.floor(t.w / 2), Math.floor(t.h / 2)];
+      if (k === 'enter') {
+        this.cb.onTileClick?.(cur[0], cur[1], ui.floor);
+      } else {
+        const dx = k === 'arrowleft' ? -1 : k === 'arrowright' ? 1 : 0;
+        const dy = k === 'arrowup' ? -1 : k === 'arrowdown' ? 1 : 0;
+        this.hoverTile = [Math.max(0, Math.min(t.w - 1, cur[0] + dx)), Math.max(0, Math.min(t.h - 1, cur[1] + dy))];
+      }
+      e.preventDefault();
+      return;
+    }
     if (e.type === 'keydown') {
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) this.keys.add(k);
       if (k === 'r' && this.cb.getUI().build) this.cb.onRotate?.();

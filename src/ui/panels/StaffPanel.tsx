@@ -166,6 +166,7 @@ function Team() {
 
 function Hire() {
   const s = useGame((g) => g.s)!;
+  const [role, setRole] = useState<'all' | Candidate['role']>('all');
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const cap = tierDef(s.office.tier).staffCap;
@@ -192,8 +193,17 @@ function Hire() {
       )}
       {full && <p className="mb-2 text-xs text-warn">Your office is full. Move to a bigger office to grow the team.</p>}
       {!s.candidates.length && <Empty icon="people" title="No candidates">The pool refreshes monthly. Reputation and recruiting attract better people.</Empty>}
+      {s.candidates.length > 0 && (
+        <Segmented
+          ariaLabel="Filter by role"
+          value={role}
+          onChange={setRole}
+          className="mb-2"
+          options={[{ value: 'all' as const, label: 'All' }, ...[...new Set(s.candidates.map((c) => c.role))].map((r) => ({ value: r, label: ROLE_NAMES[r] }))]}
+        />
+      )}
       <div className="space-y-2">
-        {s.candidates.map((c) => (
+        {s.candidates.filter((c) => role === 'all' || c.role === role).map((c) => (
           <CandidateCard key={c.id} c={c} disabled={full || desks <= 0} onHire={() => {
             const r = act({ type: 'hire', candidateId: c.id });
             if (r.ok) toast({ text: `${c.name} joined the team!`, tone: 'good', icon: 'staff' });

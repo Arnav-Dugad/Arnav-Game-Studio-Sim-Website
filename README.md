@@ -100,7 +100,7 @@ tests/       sim, data, rules and bot playthrough tests
 - **Rivals.** Rival AI is abstracted: monthly releases with strategy-driven scores and real franchises on their dates. Rivals don't manage offices or staff like the player does.
 - **Subsidiaries.** Acquired studios run on autopilot. You set their budget and genre focus only.
 - **Phones.** The game is playable on phones, but it's best on tablet or desktop screens.
-- **Accessibility.** Keyboard and screen-reader support covers menus, panels, modals and charts. Placing furniture still needs a pointer (mouse, pen or touch).
+- **Accessibility.** Keyboard and screen-reader support covers menus, panels, modals and charts, and furniture can be placed with the arrow keys and Enter. Panning the office by drag needs a pointer (or use W A S D).
 
 ## Disclaimer
 
