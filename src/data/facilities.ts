@@ -19,6 +19,9 @@ export type ItemId =
   | 'rug'
   | 'aquarium'
   | 'bookshelf'
+  | 'game_library'
+  | 'console_museum'
+  | 'nap_pod'
   | 'trophy_shelf'
   | 'whiteboard'
   | 'meeting_table'
@@ -68,6 +71,7 @@ export const ITEMS: readonly ItemDef[] = [
   { id: 'coffee_machine', name: 'Coffee Machine', category: 'energy', w: 1, h: 1, cost: 350, upkeep: 20, year: 1980, energy: 30, aura: 1, radius: 1, desc: 'Breaks restore 30 energy. Coffee Fiends love it.' },
   { id: 'water_cooler', name: 'Water Cooler', category: 'energy', w: 1, h: 1, cost: 200, upkeep: 8, year: 1980, energy: 18, aura: 2, radius: 2, desc: 'Gossip hub. Small energy and morale boost.' },
   { id: 'vending_machine', name: 'Vending Machine', category: 'energy', w: 1, h: 1, cost: 900, upkeep: 15, year: 1982, energy: 22, desc: 'Snacks on demand.' },
+  { id: 'nap_pod', name: 'Nap Pod', category: 'energy', w: 1, h: 2, cost: 5_500, upkeep: 25, year: 2012, energy: 60, aura: 2, radius: 1, noise: -1, desc: 'Twenty minutes in the pod, full energy out. Breaks restore 60 energy.' },
   { id: 'kitchen', name: 'Kitchenette', category: 'energy', w: 2, h: 1, cost: 4_000, upkeep: 60, year: 1985, energy: 45, aura: 3, radius: 2, desc: 'Real food. Breaks restore 45 energy.' },
   { id: 'lounge_sofa', name: 'Lounge Sofa', category: 'energy', w: 2, h: 1, cost: 1_500, upkeep: 10, year: 1980, energy: 35, aura: 4, radius: 2, desc: 'Somewhere to collapse after a bug hunt.' },
   { id: 'bean_bag', name: 'Bean Bag', category: 'energy', w: 1, h: 1, cost: 250, upkeep: 0, year: 1995, energy: 20, aura: 2, radius: 1, desc: 'Peak 90s startup energy.' },
@@ -79,6 +83,8 @@ export const ITEMS: readonly ItemDef[] = [
   { id: 'poster', name: 'Game Poster', category: 'decor', w: 1, h: 1, cost: 40, upkeep: 0, year: 1980, aura: 1.5, radius: 2, desc: 'Framed art from the classics.' },
   { id: 'rug', name: 'Rug', category: 'decor', w: 2, h: 2, cost: 300, upkeep: 0, year: 1980, aura: 2, radius: 2, noise: -1, desc: 'Muffles footsteps. Feels homey.' },
   { id: 'aquarium', name: 'Aquarium', category: 'decor', w: 2, h: 1, cost: 2_800, upkeep: 30, year: 1982, aura: 9, radius: 3, noise: -2, desc: 'Fish are excellent listeners.' },
+  { id: 'game_library', name: 'Game Library', category: 'decor', w: 2, h: 1, cost: 1_200, upkeep: 0, year: 1985, aura: 4, radius: 2, effect: 'training', power: 0.06, desc: 'Every game worth playing, in its box. Inspiring — and a small learning boost nearby.' },
+  { id: 'console_museum', name: 'Console Museum', category: 'decor', w: 2, h: 1, cost: 6_000, upkeep: 20, year: 1996, aura: 10, radius: 3, desc: 'A lit glass case of classic hardware. Big morale aura; visitors love it.' },
   { id: 'bookshelf', name: 'Bookshelf', category: 'decor', w: 2, h: 1, cost: 500, upkeep: 0, year: 1980, aura: 3, radius: 2, noise: -1, effect: 'training', power: 0.1, desc: 'Reference books. Small learning boost nearby.' },
   { id: 'neon_sign', name: 'Neon Sign', category: 'decor', w: 1, h: 1, cost: 1_200, upkeep: 10, year: 1984, aura: 5, radius: 3, desc: 'Your studio name in glowing glass.' },
   { id: 'trophy_shelf', name: 'Trophy Shelf', category: 'decor', w: 2, h: 1, cost: 1_000, upkeep: 0, year: 1980, aura: 2, radius: 3, effect: 'trophies', power: 1, desc: 'Displays your awards. Each award adds morale.' },

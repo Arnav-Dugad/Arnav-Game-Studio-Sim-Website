@@ -202,6 +202,40 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       for (let row = 0; row < 3; row++)
         for (let i = 0; i < 8; i++) g.rect(8 + i * ((W - 16) / 8), -28 + row * 12, (W - 16) / 8 - 1.5, 9).fill([P.accentDesign, P.accentTech, P.accentArt, P.accentBiz, P.accentAudio][(i + row * 2) % 5]!);
       break;
+    case 'game_library': {
+      shadow(g, 3, 4, W - 6, H - 4);
+      box(g, { x: 4, y: 4, w: W - 8, h: H - 8, height: 36, top: P.woodDark, front: shade(P.woodDark, 0.8), r: 3 });
+      const boxes = [P.accentDesign, P.accentTech, P.accentArt, P.accentBiz, P.accentAudio, 0x2a2622];
+      for (let row = 0; row < 3; row++)
+        for (let i = 0; i < 6; i++) {
+          const bw = (W - 16) / 6;
+          const c = boxes[(i * 2 + row) % boxes.length]!;
+          g.roundRect(8 + i * bw, -28 + row * 12, bw - 2, 10, 1.5).fill(c);
+          g.rect(8 + i * bw + 2, -26 + row * 12, bw - 6, 2).fill({ color: 0xffffff, alpha: 0.55 });
+        }
+      break;
+    }
+    case 'console_museum':
+      shadow(g, 3, 4, W - 6, H - 4);
+      box(g, { x: 4, y: 8, w: W - 8, h: H - 12, height: 12, top: P.woodDark, front: shade(P.woodDark, 0.8), r: 3 });
+      g.roundRect(5, -22, W - 10, H + 4, 4).fill({ color: 0xdff1ff, alpha: 0.35 });
+      g.roundRect(5, -22, W - 10, H + 4, 4).stroke({ width: 1.5, color: 0xffffff, alpha: 0.7 });
+      // three little consoles on display
+      g.roundRect(10, 0, 16, 8, 2).fill(0x3a3442);
+      g.rect(12, 2, 6, 2).fill(P.accentDesign);
+      g.roundRect(W / 2 - 7, -2, 14, 10, 2).fill(0xe8e2d6);
+      g.circle(W / 2 + 3, 3, 1.6).fill(P.accentBiz);
+      g.roundRect(W - 26, 1, 16, 7, 3).fill(0x1c1830);
+      g.rect(W - 22, 3, 8, 1.5).fill(P.accentTech);
+      if (P.night) g.circle(W / 2, -4, 26).fill({ color: 0xbfe4ff, alpha: 0.1 });
+      break;
+    case 'nap_pod':
+      shadow(g, 3, 4, W - 6, H - 4);
+      g.roundRect(4, 2, W - 8, H - 6, (W - 8) / 2).fill(shade(P.metal, 0.85));
+      g.roundRect(7, 6, W - 14, H - 14, (W - 14) / 2).fill(0xf4f1ea);
+      g.roundRect(9, 8, W - 18, (H - 18) * 0.45, (W - 18) / 2).fill({ color: 0x8fb8d8, alpha: 0.7 });
+      g.circle(W / 2, H - 16, 2.5).fill(P.accentAudio);
+      break;
     case 'neon_sign':
       shadow(g, 10, 4, W - 20, H - 4, 0.12);
       g.roundRect(6, -10, W - 12, 22, 6).fill(0x1e1b26);
@@ -322,6 +356,8 @@ export function itemLift(id: ItemId): number {
     case 'sound_booth':
     case 'trophy_shelf':
     case 'marketing_board':
+    case 'game_library':
+    case 'console_museum':
     case 'mocap_rig':
       return 34;
     case 'rug':
