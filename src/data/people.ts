@@ -1,0 +1,123 @@
+import type { PersonDef } from './types';
+
+/**
+ * Real, well-known game-industry figures. Facts are kept neutral and public (credits and roles only).
+ * `hireable: false` marks executives / company leaders, who are used as rival leaders instead.
+ * `activeTo` is omitted for people still active; for those who have passed away or retired it marks the end
+ * of their professional activity in games.
+ */
+export const PEOPLE: readonly PersonDef[] = [
+  // ── Designers & directors ───────────────────────────────────────────────────────────────
+  { id: 'shigeru_miyamoto', name: 'Shigeru Miyamoto', role: 'designer', knownFor: 'Designer of Donkey Kong, Super Mario Bros. and The Legend of Zelda', company: 'nintendo', activeFrom: 1977, hireable: true, skills: { design: 100, art: 75, writing: 55, audio: 45, qa: 70, marketing: 55 } },
+  { id: 'hideo_kojima', name: 'Hideo Kojima', role: 'designer', knownFor: 'Creator of the Metal Gear series and Death Stranding', company: 'konami', activeFrom: 1986, hireable: true, skills: { design: 95, writing: 92, art: 60, marketing: 82, audio: 50 } },
+  { id: 'sid_meier', name: 'Sid Meier', role: 'designer', knownFor: "Designer of Civilization, Pirates! and Railroad Tycoon", company: 'firaxis', activeFrom: 1982, hireable: true, skills: { design: 97, programming: 85, writing: 45, qa: 65 } },
+  { id: 'will_wright', name: 'Will Wright', role: 'designer', knownFor: 'Designer of SimCity, The Sims and Spore', company: 'maxis', activeFrom: 1984, hireable: true, skills: { design: 97, programming: 75, writing: 45, art: 40 } },
+  { id: 'john_romero', name: 'John Romero', role: 'designer', knownFor: 'Co-founder of id Software; designer on Wolfenstein 3D, Doom and Quake', company: 'id_software', activeFrom: 1981, hireable: true, skills: { design: 90, programming: 85, art: 45, audio: 35 } },
+  { id: 'hironobu_sakaguchi', name: 'Hironobu Sakaguchi', role: 'designer', knownFor: 'Creator of the Final Fantasy series', company: 'square', activeFrom: 1983, hireable: true, skills: { design: 93, writing: 88, marketing: 55, art: 45 } },
+  { id: 'richard_garriott', name: 'Richard Garriott', role: 'designer', knownFor: 'Creator of the Ultima series and co-founder of Origin Systems', company: 'origin_systems', activeFrom: 1979, hireable: true, skills: { design: 90, programming: 70, writing: 78, marketing: 60 } },
+  { id: 'roberta_williams', name: 'Roberta Williams', role: 'designer', knownFor: "Designer of King's Quest and co-founder of Sierra On-Line", company: 'sierra', activeFrom: 1980, activeTo: 1999, hireable: true, skills: { design: 90, writing: 90, art: 50, qa: 50 } },
+  { id: 'tim_schafer', name: 'Tim Schafer', role: 'designer', knownFor: 'Designer of Grim Fandango and Psychonauts', company: 'lucasarts', activeFrom: 1989, hireable: true, skills: { design: 88, writing: 95, art: 45, marketing: 60 } },
+  { id: 'ron_gilbert', name: 'Ron Gilbert', role: 'designer', knownFor: 'Creator of Maniac Mansion and The Secret of Monkey Island; co-creator of the SCUMM engine', company: 'lucasarts', activeFrom: 1984, hireable: true, skills: { design: 90, writing: 88, programming: 75 } },
+  { id: 'peter_molyneux', name: 'Peter Molyneux', role: 'designer', knownFor: 'Designer of Populous, Dungeon Keeper and Black & White; co-founder of Bullfrog and Lionhead', company: 'bullfrog', activeFrom: 1984, hireable: true, skills: { design: 90, programming: 65, marketing: 80, writing: 50 } },
+  { id: 'hidetaka_miyazaki', name: 'Hidetaka Miyazaki', role: 'designer', knownFor: "Director of Demon's Souls, Dark Souls, Bloodborne and Elden Ring", company: 'fromsoftware', activeFrom: 2004, hireable: true, skills: { design: 96, writing: 82, art: 70, qa: 60 } },
+  { id: 'todd_howard', name: 'Todd Howard', role: 'designer', knownFor: 'Director of The Elder Scrolls IV & V and Fallout 3 & 4', company: 'bethesda', activeFrom: 1994, hireable: true, skills: { design: 88, writing: 65, marketing: 80, qa: 55 } },
+  { id: 'ed_boon', name: 'Ed Boon', role: 'designer', knownFor: 'Co-creator of Mortal Kombat', company: 'midway', activeFrom: 1986, hireable: true, skills: { design: 86, programming: 82, audio: 45 } },
+  { id: 'yu_suzuki', name: 'Yu Suzuki', role: 'designer', knownFor: 'Creator of Out Run, Virtua Fighter and Shenmue', company: 'sega', activeFrom: 1983, hireable: true, skills: { design: 92, programming: 85, art: 55 } },
+  { id: 'shinji_mikami', name: 'Shinji Mikami', role: 'designer', knownFor: 'Director of Resident Evil and Resident Evil 4', company: 'capcom', activeFrom: 1990, hireable: true, skills: { design: 92, writing: 60, qa: 60 } },
+  { id: 'tetsuya_mizuguchi', name: 'Tetsuya Mizuguchi', role: 'designer', knownFor: 'Creator of Rez, Lumines and Tetris Effect', company: 'sega', activeFrom: 1990, hireable: true, skills: { design: 86, audio: 85, art: 65 } },
+  { id: 'brenda_romero', name: 'Brenda Romero', role: 'designer', knownFor: 'Designer on the Wizardry series and creator of the analog series The Mechanic is the Message', activeFrom: 1981, hireable: true, skills: { design: 86, writing: 70, qa: 60 } },
+  { id: 'jordan_mechner', name: 'Jordan Mechner', role: 'designer', knownFor: 'Creator of Karateka and Prince of Persia', company: 'broderbund', activeFrom: 1984, hireable: true, skills: { design: 88, programming: 78, writing: 80, art: 60 } },
+  { id: 'eric_chahi', name: 'Eric Chahi', role: 'designer', knownFor: 'Creator of Another World (Out of This World)', activeFrom: 1983, hireable: true, skills: { design: 86, art: 82, programming: 78 } },
+  { id: 'michel_ancel', name: 'Michel Ancel', role: 'designer', knownFor: 'Creator of Rayman and Beyond Good & Evil', company: 'ubisoft', activeFrom: 1989, activeTo: 2020, hireable: true, skills: { design: 88, art: 85, writing: 60 } },
+  { id: 'yoko_taro', name: 'Yoko Taro', role: 'designer', knownFor: 'Director of the Drakengard and NieR series', company: 'square_enix', activeFrom: 2003, hireable: true, skills: { design: 84, writing: 92, art: 55 } },
+  { id: 'masahiro_sakurai', name: 'Masahiro Sakurai', role: 'designer', knownFor: 'Creator of Kirby and the Super Smash Bros. series', company: 'hal_laboratory', activeFrom: 1990, hireable: true, skills: { design: 95, qa: 80, art: 55, marketing: 60 } },
+  { id: 'gunpei_yokoi', name: 'Gunpei Yokoi', role: 'designer', knownFor: 'Creator of Game & Watch and the Game Boy; producer of Metroid', company: 'nintendo', activeFrom: 1965, activeTo: 1997, hireable: true, skills: { design: 92, programming: 70, art: 45, marketing: 55 } },
+  { id: 'hideki_kamiya', name: 'Hideki Kamiya', role: 'designer', knownFor: 'Director of Devil May Cry, Okami and Bayonetta', company: 'capcom', activeFrom: 1994, hireable: true, skills: { design: 92, writing: 60, art: 55 } },
+  { id: 'kazunori_yamauchi', name: 'Kazunori Yamauchi', role: 'designer', knownFor: 'Creator of the Gran Turismo series', company: 'sony', activeFrom: 1992, hireable: true, skills: { design: 88, programming: 70, art: 72, qa: 70 } },
+  { id: 'hideki_konno', name: 'Hideki Konno', role: 'designer', knownFor: 'Director of Super Mario Kart and producer of Nintendogs', company: 'nintendo', activeFrom: 1986, hireable: true, skills: { design: 85, qa: 70, art: 40 } },
+  { id: 'eiji_aonuma', name: 'Eiji Aonuma', role: 'designer', knownFor: 'Director and producer of The Legend of Zelda series since Majora\'s Mask', company: 'nintendo', activeFrom: 1988, hireable: true, skills: { design: 90, writing: 60, art: 55 } },
+  { id: 'fumito_ueda', name: 'Fumito Ueda', role: 'designer', knownFor: 'Director of Ico, Shadow of the Colossus and The Last Guardian', company: 'sony', activeFrom: 1997, hireable: true, skills: { design: 88, art: 90, writing: 55 } },
+  { id: 'yuji_naka', name: 'Yuji Naka', role: 'programmer', knownFor: 'Lead programmer of Sonic the Hedgehog', company: 'sega', activeFrom: 1984, hireable: true, skills: { programming: 95, design: 80 } },
+  { id: 'rieko_kodama', name: 'Rieko Kodama', role: 'artist', knownFor: 'Artist on Phantasy Star and director of Skies of Arcadia', company: 'sega', activeFrom: 1984, activeTo: 2022, hireable: true, skills: { art: 90, design: 80, writing: 55 } },
+  { id: 'danielle_bunten_berry', name: 'Danielle Bunten Berry', role: 'designer', knownFor: 'Designer of M.U.L.E. and pioneer of multiplayer games', company: 'ea', activeFrom: 1978, activeTo: 1998, hireable: true, skills: { design: 90, programming: 78 } },
+  { id: 'carol_shaw', name: 'Carol Shaw', role: 'programmer', knownFor: 'Designer and programmer of River Raid', company: 'activision', activeFrom: 1978, activeTo: 1990, hireable: true, skills: { programming: 88, design: 82 } },
+  { id: 'alexey_pajitnov', name: 'Alexey Pajitnov', role: 'designer', knownFor: 'Creator of Tetris', activeFrom: 1984, hireable: true, skills: { design: 92, programming: 70 } },
+  { id: 'warren_spector', name: 'Warren Spector', role: 'designer', knownFor: 'Producer of System Shock and director of Deus Ex', company: 'origin_systems', activeFrom: 1987, hireable: true, skills: { design: 90, writing: 82, qa: 55 } },
+  { id: 'cliff_bleszinski', name: 'Cliff Bleszinski', role: 'designer', knownFor: 'Lead designer of Unreal Tournament and Gears of War', company: 'epic', activeFrom: 1992, activeTo: 2018, hireable: true, skills: { design: 86, marketing: 70, art: 45 } },
+  { id: 'kim_swift', name: 'Kim Swift', role: 'designer', knownFor: 'Project lead on Portal', company: 'valve', activeFrom: 2005, hireable: true, skills: { design: 86, qa: 65, programming: 55 } },
+  { id: 'rand_miller', name: 'Rand Miller', role: 'designer', knownFor: 'Co-creator of Myst and Riven; co-founder of Cyan', company: 'cyan', activeFrom: 1988, hireable: true, skills: { design: 86, programming: 72, writing: 75 } },
+  { id: 'robyn_miller', name: 'Robyn Miller', role: 'artist', knownFor: 'Co-creator of Myst; artist and composer on Myst and Riven', company: 'cyan', activeFrom: 1988, hireable: true, skills: { art: 86, audio: 78, design: 75, writing: 60 } },
+  { id: 'jenova_chen', name: 'Jenova Chen', role: 'designer', knownFor: 'Designer of flOw, Flower and Journey', activeFrom: 2006, hireable: true, skills: { design: 88, art: 70, audio: 50 } },
+  { id: 'edmund_mcmillen', name: 'Edmund McMillen', role: 'designer', knownFor: 'Co-creator of Super Meat Boy and creator of The Binding of Isaac', activeFrom: 2001, hireable: true, skills: { design: 85, art: 82 } },
+  { id: 'lucas_pope', name: 'Lucas Pope', role: 'designer', knownFor: 'Creator of Papers, Please and Return of the Obra Dinn', activeFrom: 2007, hireable: true, skills: { design: 90, programming: 80, art: 75, writing: 70 } },
+  { id: 'eric_barone', name: 'Eric Barone', role: 'designer', knownFor: 'Solo creator of Stardew Valley', activeFrom: 2012, hireable: true, skills: { design: 85, programming: 75, art: 72, audio: 72, writing: 60 } },
+  { id: 'toby_fox', name: 'Toby Fox', role: 'designer', knownFor: 'Creator, writer and composer of Undertale and Deltarune', activeFrom: 2008, hireable: true, skills: { design: 85, audio: 92, writing: 88, programming: 50 } },
+  { id: 'brendan_greene', name: 'Brendan Greene', role: 'designer', knownFor: 'Creator of the battle royale format popularised by PlayerUnknown\'s Battlegrounds', company: 'krafton', activeFrom: 2013, hireable: true, skills: { design: 84, qa: 50 } },
+
+  // ── Programmers ─────────────────────────────────────────────────────────────────────────
+  { id: 'john_carmack', name: 'John Carmack', role: 'programmer', knownFor: 'Lead programmer and engine architect of Wolfenstein 3D, Doom and Quake', company: 'id_software', activeFrom: 1989, hireable: true, skills: { programming: 100, design: 60, qa: 55 } },
+  { id: 'markus_persson', name: 'Markus Persson', role: 'programmer', knownFor: 'Original creator of Minecraft', company: 'mojang', activeFrom: 2009, activeTo: 2014, hireable: true, skills: { programming: 85, design: 88, art: 45 } },
+
+  // ── Writers & producers ─────────────────────────────────────────────────────────────────
+  { id: 'amy_hennig', name: 'Amy Hennig', role: 'writer', knownFor: 'Writer and creative director of Legacy of Kain: Soul Reaver and Uncharted', company: 'naughty_dog', activeFrom: 1989, hireable: true, skills: { writing: 95, design: 82 } },
+  { id: 'neil_druckmann', name: 'Neil Druckmann', role: 'writer', knownFor: 'Creative director and writer of The Last of Us', company: 'naughty_dog', activeFrom: 2004, hireable: true, skills: { writing: 93, design: 85 } },
+  { id: 'dan_houser', name: 'Dan Houser', role: 'writer', knownFor: 'Co-writer of the Grand Theft Auto and Red Dead Redemption series', company: 'rockstar', activeFrom: 1998, hireable: true, skills: { writing: 93, design: 70, marketing: 60 } },
+  { id: 'chris_avellone', name: 'Chris Avellone', role: 'writer', knownFor: 'Writer and designer on Planescape: Torment and Fallout 2', company: 'interplay', activeFrom: 1995, hireable: true, skills: { writing: 93, design: 80 } },
+  { id: 'jade_raymond', name: 'Jade Raymond', role: 'producer', knownFor: "Producer of the original Assassin's Creed", company: 'ubisoft', activeFrom: 1998, hireable: true, skills: { design: 72, marketing: 82, qa: 70, programming: 50 } },
+  { id: 'keiji_inafune', name: 'Keiji Inafune', role: 'producer', knownFor: 'Character designer of Mega Man and producer of Dead Rising', company: 'capcom', activeFrom: 1987, hireable: true, skills: { art: 80, design: 78, marketing: 70 } },
+  { id: 'naoki_yoshida', name: 'Naoki Yoshida', role: 'producer', knownFor: 'Producer and director of Final Fantasy XIV: A Realm Reborn', company: 'square_enix', activeFrom: 1993, hireable: true, skills: { design: 85, marketing: 80, qa: 75, writing: 60 } },
+
+  // ── Artists ─────────────────────────────────────────────────────────────────────────────
+  { id: 'akira_toriyama', name: 'Akira Toriyama', role: 'artist', knownFor: 'Character designer of Dragon Quest and Chrono Trigger', company: 'enix', activeFrom: 1986, activeTo: 2024, hireable: true, skills: { art: 98, writing: 70, design: 55 } },
+  { id: 'yoshitaka_amano', name: 'Yoshitaka Amano', role: 'artist', knownFor: 'Image and character illustrator for the Final Fantasy series', company: 'square', activeFrom: 1987, hireable: true, skills: { art: 96, design: 40 } },
+  { id: 'tetsuya_nomura', name: 'Tetsuya Nomura', role: 'artist', knownFor: 'Character designer of Final Fantasy VII and director of Kingdom Hearts', company: 'square', activeFrom: 1991, hireable: true, skills: { art: 92, design: 78, writing: 60 } },
+
+  // ── Composers ───────────────────────────────────────────────────────────────────────────
+  { id: 'koji_kondo', name: 'Koji Kondo', role: 'composer', knownFor: 'Composer of the Super Mario Bros. and The Legend of Zelda themes', company: 'nintendo', activeFrom: 1984, hireable: true, skills: { audio: 99, design: 45 } },
+  { id: 'nobuo_uematsu', name: 'Nobuo Uematsu', role: 'composer', knownFor: 'Composer for the Final Fantasy series', company: 'square', activeFrom: 1986, hireable: true, skills: { audio: 98 } },
+  { id: 'yoko_shimomura', name: 'Yoko Shimomura', role: 'composer', knownFor: 'Composer for Street Fighter II and Kingdom Hearts', company: 'square', activeFrom: 1988, hireable: true, skills: { audio: 95 } },
+  { id: 'martin_odonnell', name: "Martin O'Donnell", role: 'composer', knownFor: 'Composer and audio director for Myth and Halo', company: 'bungie', activeFrom: 1997, hireable: true, skills: { audio: 94, design: 40 } },
+  { id: 'jesper_kyd', name: 'Jesper Kyd', role: 'composer', knownFor: "Composer for the Hitman and Assassin's Creed series", company: 'ubisoft', activeFrom: 1990, hireable: true, skills: { audio: 90 } },
+  { id: 'jeremy_soule', name: 'Jeremy Soule', role: 'composer', knownFor: 'Composer for Total Annihilation and The Elder Scrolls series', company: 'bethesda', activeFrom: 1994, hireable: true, skills: { audio: 91 } },
+  { id: 'mick_gordon', name: 'Mick Gordon', role: 'composer', knownFor: 'Composer for Doom (2016)', company: 'id_software', activeFrom: 2007, hireable: true, skills: { audio: 93 } },
+  { id: 'grant_kirkhope', name: 'Grant Kirkhope', role: 'composer', knownFor: 'Composer for Banjo-Kazooie and GoldenEye 007', company: 'rare', activeFrom: 1995, hireable: true, skills: { audio: 91 } },
+  { id: 'david_wise', name: 'David Wise', role: 'composer', knownFor: 'Composer for the Donkey Kong Country series', company: 'rare', activeFrom: 1985, hireable: true, skills: { audio: 93 } },
+
+  // ── Executives & company leaders (rival leaders; not hireable) ─────────────────────────
+  { id: 'nolan_bushnell', name: 'Nolan Bushnell', role: 'executive', knownFor: 'Co-founder of Atari', company: 'atari', activeFrom: 1972, hireable: false, skills: { marketing: 90, design: 65, programming: 55 } },
+  { id: 'hiroshi_yamauchi', name: 'Hiroshi Yamauchi', role: 'executive', knownFor: 'President of Nintendo from 1949 to 2002, who led its move into video games', company: 'nintendo', activeFrom: 1949, activeTo: 2002, hireable: false, skills: { marketing: 92, design: 40 } },
+  { id: 'satoru_iwata', name: 'Satoru Iwata', role: 'executive', knownFor: 'Programmer at HAL Laboratory and President of Nintendo (2002–2015), remembered for the DS and Wii', company: 'nintendo', activeFrom: 1982, activeTo: 2015, hireable: false, skills: { programming: 92, design: 78, marketing: 82 } },
+  { id: 'satoshi_tajiri', name: 'Satoshi Tajiri', role: 'designer', knownFor: 'Creator of Pokémon and founder of Game Freak', company: 'game_freak', activeFrom: 1989, hireable: false, skills: { design: 92, writing: 60, marketing: 60 } },
+  { id: 'ken_kutaragi', name: 'Ken Kutaragi', role: 'executive', knownFor: 'Engineer behind the original PlayStation; head of Sony Computer Entertainment', company: 'sony', activeFrom: 1988, activeTo: 2007, hireable: false, skills: { programming: 85, marketing: 80 } },
+  { id: 'trip_hawkins', name: 'Trip Hawkins', role: 'executive', knownFor: 'Founder of Electronic Arts and The 3DO Company', company: 'ea', activeFrom: 1982, hireable: false, skills: { marketing: 92, design: 60 } },
+  { id: 'phil_spencer', name: 'Phil Spencer', role: 'executive', knownFor: 'Head of Xbox and Microsoft Gaming', company: 'microsoft', activeFrom: 1988, hireable: false, skills: { marketing: 85, design: 50 } },
+  { id: 'bobby_kotick', name: 'Bobby Kotick', role: 'executive', knownFor: 'CEO of Activision and Activision Blizzard', company: 'activision', activeFrom: 1991, activeTo: 2023, hireable: false, skills: { marketing: 92 } },
+  { id: 'mike_morhaime', name: 'Mike Morhaime', role: 'executive', knownFor: 'Co-founder and longtime president of Blizzard Entertainment', company: 'blizzard', activeFrom: 1991, hireable: false, skills: { marketing: 82, programming: 60, qa: 60 } },
+  { id: 'tim_sweeney', name: 'Tim Sweeney', role: 'executive', knownFor: 'Founder of Epic Games and creator of the Unreal Engine', company: 'epic', activeFrom: 1991, hireable: false, skills: { programming: 95, marketing: 75, design: 60 } },
+  { id: 'gabe_newell', name: 'Gabe Newell', role: 'executive', knownFor: 'Co-founder of Valve and Steam', company: 'valve', activeFrom: 1996, hireable: false, skills: { marketing: 85, programming: 70, design: 65 } },
+  { id: 'sam_houser', name: 'Sam Houser', role: 'producer', knownFor: 'Co-founder of Rockstar Games and executive producer of Grand Theft Auto', company: 'rockstar', activeFrom: 1998, hireable: false, skills: { marketing: 92, design: 75, writing: 65 } },
+  { id: 'ken_williams', name: 'Ken Williams', role: 'executive', knownFor: 'Co-founder of Sierra On-Line', company: 'sierra', activeFrom: 1980, activeTo: 1998, hireable: false, skills: { programming: 75, marketing: 85 } },
+  { id: 'yves_guillemot', name: 'Yves Guillemot', role: 'executive', knownFor: 'Co-founder and CEO of Ubisoft', company: 'ubisoft', activeFrom: 1986, hireable: false, skills: { marketing: 88 } },
+  { id: 'strauss_zelnick', name: 'Strauss Zelnick', role: 'executive', knownFor: 'Chairman and CEO of Take-Two Interactive', company: 'take_two', activeFrom: 2007, hireable: false, skills: { marketing: 88 } },
+  { id: 'jack_tramiel', name: 'Jack Tramiel', role: 'executive', knownFor: 'Founder of Commodore, maker of the Commodore 64', company: 'commodore', activeFrom: 1954, activeTo: 1996, hireable: false, skills: { marketing: 85 } },
+  { id: 'clive_sinclair', name: 'Clive Sinclair', role: 'executive', knownFor: 'Inventor and founder of Sinclair Research, maker of the ZX Spectrum', company: 'sinclair', activeFrom: 1973, activeTo: 1986, hireable: false, skills: { programming: 70, marketing: 75 } },
+  { id: 'hayao_nakayama', name: 'Hayao Nakayama', role: 'executive', knownFor: 'President of Sega during the Mega Drive / Genesis era', company: 'sega', activeFrom: 1984, activeTo: 1999, hireable: false, skills: { marketing: 85 } },
+  { id: 'masaya_nakamura', name: 'Masaya Nakamura', role: 'executive', knownFor: 'Founder of Namco, publisher of Pac-Man', company: 'namco', activeFrom: 1955, activeTo: 2006, hireable: false, skills: { marketing: 85 } },
+  { id: 'kenzo_tsujimoto', name: 'Kenzo Tsujimoto', role: 'executive', knownFor: 'Founder of Capcom', company: 'capcom', activeFrom: 1979, hireable: false, skills: { marketing: 85 } },
+  { id: 'yoichi_wada', name: 'Yoichi Wada', role: 'executive', knownFor: 'President of Square Enix from its 2003 merger to 2013', company: 'square_enix', activeFrom: 2000, activeTo: 2013, hireable: false, skills: { marketing: 80 } },
+  { id: 'yoichi_erikawa', name: 'Yoichi Erikawa', role: 'executive', knownFor: "Co-founder of Koei; as 'Kou Shibusawa', designer of Nobunaga's Ambition", company: 'koei', activeFrom: 1978, hireable: false, skills: { design: 82, marketing: 75 } },
+  { id: 'ian_livingstone', name: 'Ian Livingstone', role: 'executive', knownFor: 'Co-founder of Games Workshop and executive at Eidos', company: 'eidos', activeFrom: 1984, hireable: false, skills: { marketing: 80, design: 70, writing: 70 } },
+  { id: 'brian_fargo', name: 'Brian Fargo', role: 'executive', knownFor: "Founder of Interplay and producer of The Bard's Tale and Wasteland", company: 'interplay', activeFrom: 1983, hireable: false, skills: { marketing: 82, design: 72 } },
+  { id: 'ray_muzyka', name: 'Ray Muzyka', role: 'executive', knownFor: 'Co-founder of BioWare', company: 'bioware', activeFrom: 1995, activeTo: 2012, hireable: false, skills: { marketing: 75, design: 65 } },
+  { id: 'tim_stamper', name: 'Tim Stamper', role: 'executive', knownFor: 'Co-founder of Ultimate Play the Game and Rare', company: 'rare', activeFrom: 1982, activeTo: 2007, hireable: false, skills: { design: 82, art: 78, marketing: 60 } },
+  { id: 'jason_rubin', name: 'Jason Rubin', role: 'executive', knownFor: 'Co-founder of Naughty Dog', company: 'naughty_dog', activeFrom: 1984, hireable: false, skills: { design: 75, art: 72, marketing: 75 } },
+  { id: 'ted_price', name: 'Ted Price', role: 'executive', knownFor: 'Founder of Insomniac Games', company: 'insomniac', activeFrom: 1994, hireable: false, skills: { design: 72, marketing: 75 } },
+  { id: 'randy_pitchford', name: 'Randy Pitchford', role: 'executive', knownFor: 'Co-founder of Gearbox Software', company: 'gearbox', activeFrom: 1996, hireable: false, skills: { marketing: 85, design: 70 } },
+  { id: 'marcin_iwinski', name: 'Marcin Iwiński', role: 'executive', knownFor: 'Co-founder of CD Projekt and GOG', company: 'cd_projekt', activeFrom: 1994, hireable: false, skills: { marketing: 82 } },
+  { id: 'ma_huateng', name: 'Ma Huateng', role: 'executive', knownFor: 'Co-founder and CEO of Tencent', company: 'tencent', activeFrom: 1998, hireable: false, skills: { marketing: 92, programming: 60 } },
+  { id: 'ilkka_paananen', name: 'Ilkka Paananen', role: 'executive', knownFor: 'Co-founder and CEO of Supercell', company: 'supercell', activeFrom: 2000, hireable: false, skills: { marketing: 85 } },
+  { id: 'kim_jung_ju', name: 'Kim Jung-ju', role: 'executive', knownFor: 'Founder of Nexon', company: 'nexon', activeFrom: 1994, activeTo: 2022, hireable: false, skills: { marketing: 82, programming: 60 } },
+  { id: 'kim_taek_jin', name: 'Kim Taek-jin', role: 'executive', knownFor: 'Founder and CEO of NCSoft', company: 'ncsoft', activeFrom: 1997, hireable: false, skills: { marketing: 80, programming: 70 } },
+];
+
+export const PERSON_BY_ID: Record<string, PersonDef> = Object.fromEntries(PEOPLE.map((p) => [p.id, p]));

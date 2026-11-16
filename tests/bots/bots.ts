@@ -1,0 +1,383 @@
+/**
+ * Headless bot players. They interact ONLY through dispatch(), exactly like the UI.
+ */
+import { BALANCE } from '../../src/data/balance';
+import { GENRES, GENRE_BY_ID } from '../../src/data/genres';
+import { TOPICS } from '../../src/data/topics';
+import { RESEARCH } from '../../src/data/research';
+import { ITEMS, OFFICE_TIERS } from '../../src/data/facilities';
+import { CHANNELS, TRADE_SHOWS } from '../../src/data/marketing';
+import { PHASE_AREAS, type GenreId } from '../../src/data/types';
+import { dispatch, type Action } from '../../src/sim/actions';
+import { fromDay } from '../../src/sim/calendar';
+import type { Rng } from '../../src/sim/rng';
+import { availablePlatforms, genrePopularity } from '../../src/sim/systems/market';
+import { canPlace, freeDesks, occupancy, tierDef } from '../../src/sim/systems/office';
+import { creditLimit, ipoEligible, monthlyBurn } from '../../src/sim/systems/finance';
+import { researchAvailable, researchCost } from '../../src/sim/systems/research';
+import { engineTechFor, sizeDailyCost } from '../../src/sim/systems/dev';
+import { estimateContractDays } from '../../src/sim/systems/offers';
+import type { Focus3, GameState, Size } from '../../src/sim/types';
+import { money } from '../../src/sim/util';
+
+export type BotName = 'idle' | 'steady' | 'aggressive' | 'trend' | 'random' | 'tycoon';
+
+export interface Bot {
+  name: BotName;
+  act(s: GameState, rng: Rng): void;
+}
+
+const yearOf = (s: GameState) => fromDay(s.day).year;
+
+function idealFocus(genre: GenreId): [Focus3, Focus3, Focus3] {
+  const g = GENRE_BY_ID[genre];
+  return PHASE_AREAS.map((areas) => {
+    const v = areas.map((a) => g.ideal[a]);
+    const t = v[0]! + v[1]! + v[2]!;
+    return v.map((x) => Math.round((x / t) * 100)) as Focus3;
+  }) as [Focus3, Focus3, Focus3];
+}
+
+function idleStaff(s: GameState): string[] {
+  return Object.values(s.staff)
+    .filter((x) => x.assignment.kind === 'idle' && x.sickDays <= 0)
+    .map((x) => x.id);
+}
+
+function bestCombo(s: GameState, rng: Rng, mode: 'fit' | 'trend' | 'random'): { genre: GenreId; topic: string } {
+  const yr = yearOf(s);
+  const genres = GENRES.filter((g) => g.year <= yr && (!g.research || s.research.done.includes(g.research)));
+  const topics = TOPICS.filter((t) => t.year <= yr && (!t.research || s.research.done.includes(t.research)));
+  if (mode === 'random') return { genre: rng.pick(genres).id, topic: rng.pick(topics).id };
+  let best = { genre: genres[0]!.id as GenreId, topic: topics[0]!.id, score: -1 };
+  const recent = s.releaseOrder.slice(-4).map((id) => s.releases[id]!.concept);
+  for (const g of genres)
+    for (const t of topics) {
+      const fit = t.genreFit[g.id] ?? 1;
+      if (fit < 2) continue;
+      if (recent.some((r) => r.genre === g.id && r.topic === t.id)) continue;
+      let sc = fit * 10 + rng.next() * 3;
+      if (mode === 'trend') sc += genrePopularity(s, g.id) * 12;
+      else sc += genrePopularity(s, g.id) * 4;
+      if (sc > best.score) best = { genre: g.id, topic: t.id, score: sc };
+    }
+  return best;
+}
+
+function bestPlatforms(s: GameState, genre: GenreId, n: number): string[] {
+  const av = availablePlatforms(s);
+  const scored = av
+    .map((p) => ({ id: p.id, sc: (s.market.users[p.id] ?? 0) * (GENRE_BY_ID[genre].kinds[p.kind] ?? 1) }))
+    .sort((a, b) => b.sc - a.sc);
+  return scored.slice(0, n).map((x) => x.id);
+}
+
+/** Projected cash cost of a project (team salaries + production costs). */
+export function projectCost(s: GameState, size: Size, team: string[]): number {
+  const days = BALANCE.SIZE[size].days;
+  const salaries = team.reduce((t, id) => t + (s.staff[id]?.salary ?? 0), 0) * (days / 365);
+  return salaries + sizeDailyCost(size, s.day) * days;
+}
+
+function chooseSize(s: GameState, team: string[], aggressive: boolean): Size {
+  const order: Size[] = ['aaa', 'large', 'medium', 'small'];
+  const bestScore = Math.max(0, ...s.releaseOrder.slice(-3).map((id) => s.releases[id]!.score));
+  for (const sz of order) {
+    if (sz === 'medium' && s.releaseOrder.length < 1) continue;
+    if (sz === 'large' && (s.office.tier < 2 || bestScore < 65)) continue;
+    if (sz === 'aaa' && (s.office.tier < 4 || yearOf(s) < 1995 || bestScore < 72)) continue;
+    const need = BALANCE.SIZE[sz].typicalTeam * (aggressive ? 0.7 : 1.1);
+    if (team.length < need) continue;
+    const cost = projectCost(s, sz, team.slice(0, BALANCE.SIZE[sz].teamCap));
+    if (cost > s.company.cash * (aggressive ? 1.5 : 0.8) + creditLimit(s) * (aggressive ? 0.6 : 0)) continue;
+    return sz;
+  }
+  return 'small';
+}
+
+function placeFirstFree(s: GameState, item: (typeof ITEMS)[number]['id']): boolean {
+  const t = tierDef(s.office.tier);
+  const def = ITEMS.find((i) => i.id === item)!;
+  for (let f = 0; f < t.floors; f++) {
+    const occ = occupancy(s, f);
+    for (let y = 1; y < t.h - 1; y++)
+      for (let x = 0; x < t.w; x++) {
+        if (!canPlace(s, def, f, x, y, 0, undefined, occ).ok) continue;
+        const r = dispatch(s, { type: 'placeItem', item, floor: f, x, y, rot: 0 });
+        return r.ok;
+      }
+  }
+  return false;
+}
+
+function bestDesk(s: GameState): (typeof ITEMS)[number]['id'] {
+  const yr = yearOf(s);
+  const desks = ITEMS.filter((i) => i.category === 'desk' && i.year <= yr && (!i.research || s.research.done.includes(i.research)));
+  return desks[desks.length - 1]!.id;
+}
+
+function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' | 'random'; aggressive: boolean; maxPlatforms: number }): void {
+  const hasGame = Object.values(s.projects).some((p) => p.kind === 'game');
+  if (hasGame) return;
+  const team = idleStaff(s);
+  if (!team.length) return;
+  const { genre, topic } = bestCombo(s, rng, opts.mode);
+  const size = chooseSize(s, team, opts.aggressive);
+  const cap = BALANCE.SIZE[size].teamCap;
+  const plats = bestPlatforms(s, genre, opts.maxPlatforms);
+  if (!plats.length) return;
+  const engine = Object.values(s.engines).reduce((a, b) => (b.tech > a.tech ? b : a));
+  const selfPub = s.research.done.includes('biz_self_publishing');
+  const thin = s.company.cash < projectCost(s, size, team.slice(0, cap)) * 1.2;
+  const deal = !selfPub || (thin && s.offers.deals.length) ? s.offers.deals[0] : undefined;
+  const monet = genre === 'mmo' && yearOf(s) >= 1997 ? 'subscription' : 'premium';
+  // sequel to best franchise sometimes
+  const fr = Object.values(s.franchises).filter((f) => f.genre === genre && f.bestScore >= 75 && s.day - f.lastDay > 700)[0];
+  const res = dispatch(s, {
+    type: 'startGame',
+    game: {
+      name: `${opts.mode}-${s.releaseOrder.length + 1}`,
+      genre,
+      topic: fr?.topic ?? topic,
+      platforms: plats,
+      audience: GENRE_BY_ID[genre].audience.teen >= GENRE_BY_ID[genre].audience.everyone ? 'teen' : 'everyone',
+      size,
+      monetization: monet,
+      engineId: engine.id,
+      franchiseId: fr?.id,
+      dealId: deal?.id,
+      team: team.slice(0, cap),
+      focus: idealFocus(genre),
+    },
+  });
+  if (!res.ok && process.env.BOT_DEBUG) console.log('startGame failed', fromDay(s.day).year, res.error, size, plats);
+  if (!res.ok && plats.length > 1) {
+    // fallback: single platform, publisher deal
+    dispatch(s, {
+      type: 'startGame',
+      game: { name: `${opts.mode}-${s.releaseOrder.length + 1}`, genre, topic, platforms: plats.slice(0, 1), audience: 'everyone', size: 'small', monetization: 'premium', engineId: engine.id, dealId: s.offers.deals[0]?.id, team: team.slice(0, 3), focus: idealFocus(genre) },
+    });
+  }
+}
+
+function manageGames(s: GameState, aggressive: boolean): void {
+  for (const p of Object.values(s.projects)) {
+    if (p.kind !== 'game') continue;
+    if (p.awaitingGate) dispatch(s, { type: 'continueGate', projectId: p.id });
+    if (p.announcedDay === undefined && p.phase >= 1) dispatch(s, { type: 'announce', projectId: p.id });
+    if (aggressive) dispatch(s, { type: 'setCrunch', projectId: p.id, on: p.phase >= 1 });
+    // marketing: spend up to ~8% of cash per campaign
+    if (p.announcedDay !== undefined && p.campaigns.length < (aggressive ? 4 : 2)) {
+      const yr = yearOf(s);
+      const ch = CHANNELS.filter((c) => c.from <= yr && (c.to ?? 9999) >= yr && (!c.research || s.research.done.includes(c.research)))
+        .filter((c) => money(c.cost, s.day) < s.company.cash * (aggressive ? 0.15 : 0.06))
+        .sort((a, b) => b.hype - a.hype)[0];
+      if (ch) dispatch(s, { type: 'marketing', projectId: p.id, channel: ch.id });
+    }
+    // polish if buggy
+    if (p.phase === 2 && p.phaseDay === p.phaseDays[2] - 2 && p.bugs > (p.design + p.tech) * 0.06 && !aggressive) dispatch(s, { type: 'delay', projectId: p.id, weeks: 2 });
+  }
+}
+
+function hireIfAffordable(s: GameState, rng: Rng, runwayMonths: number): void {
+  const cap = tierDef(s.office.tier).staffCap;
+  if (Object.keys(s.staff).length >= cap) return;
+  const burn = monthlyBurn(s);
+  if (s.company.cash < burn * runwayMonths + money(10_000, s.day)) return;
+  const rev12 = s.finance.revenue12m.reduce((a, b) => a + b, 0);
+  if (Object.keys(s.staff).length > 2 && rev12 < burn * 12 * 1.1 && s.company.cash < burn * 24) return;
+  if (freeDesks(s) <= 0) {
+    placeFirstFree(s, bestDesk(s));
+    if (freeDesks(s) <= 0) return;
+  }
+  const roles = Object.values(s.staff).map((x) => x.role);
+  const want = (['programmer', 'designer', 'artist', 'qa', 'audio', 'writer', 'programmer', 'artist', 'designer', 'producer'] as const).find(
+    (r, i) => roles.filter((x) => x === r).length < 1 + Math.floor(i / 5) + Math.floor(roles.length / 10),
+  );
+  const cand = s.candidates.filter((c) => !want || c.role === want).sort((a, b) => Math.max(...Object.values(b.skills)) / b.askSalary - Math.max(...Object.values(a.skills)) / a.askSalary)[0] ?? s.candidates[0];
+  if (cand) dispatch(s, { type: 'hire', candidateId: cand.id });
+  void rng;
+}
+
+function research(s: GameState): void {
+  if (s.research.active) return;
+  const yr = yearOf(s);
+  const opts = RESEARCH.filter((r) => researchAvailable(s, r).ok && r.year <= yr).sort((a, b) => a.points - b.points);
+  const pick = opts.find((r) => researchCost(s, r) < s.company.cash * 0.15);
+  if (pick) dispatch(s, { type: 'research', id: pick.id });
+  // keep one researcher assigned once there are 4+ staff
+  const staff = Object.values(s.staff);
+  const researchers = staff.filter((x) => x.assignment.kind === 'research').length;
+  if (staff.length >= 4 && researchers < Math.max(1, Math.floor(staff.length / 8))) {
+    const idle = staff.find((x) => x.assignment.kind === 'idle' && x.role !== 'founder');
+    if (idle) dispatch(s, { type: 'assign', staffId: idle.id, to: 'research' });
+  }
+}
+
+function engines(s: GameState): void {
+  if (Object.values(s.projects).some((p) => p.kind === 'engine')) return;
+  const best = Object.values(s.engines).reduce((a, b) => (b.tech > a.tech ? b : a));
+  const feats = s.research.done.filter((r) => RESEARCH.find((x) => x.id === r)?.engineTech);
+  const tech = engineTechFor(feats);
+  if (tech - best.tech < 0.9) return;
+  const progs = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' && x.skills.programming >= 30);
+  if (!progs.length || Object.keys(s.staff).length < 3) return;
+  dispatch(s, { type: 'buildEngine', name: `Engine ${Object.keys(s.engines).length + 1}`, features: feats, team: progs.slice(0, 2).map((x) => x.id) });
+}
+
+function contracts(s: GameState): void {
+  const hasGame = Object.values(s.projects).some((p) => p.kind === 'game');
+  const idle = idleStaff(s).filter((id) => hasGame || id !== s.founderId);
+  if (!idle.length || !s.offers.contracts.length) return;
+  const team = idle.slice(0, 3);
+  const o = s.offers.contracts.find((c) => estimateContractDays(s, c, team) <= c.days * 0.8);
+  if (o) dispatch(s, { type: 'acceptContract', offerId: o.id, team });
+}
+
+function office(s: GameState): void {
+  const prev = OFFICE_TIERS.find((t) => t.tier === s.office.tier - 1);
+  if (prev && Object.keys(s.staff).length <= prev.staffCap - 1 && s.company.cash < monthlyBurn(s) * 3) {
+    dispatch(s, { type: 'moveOffice', tier: prev.tier });
+    return;
+  }
+  const next = OFFICE_TIERS.find((t) => t.tier === s.office.tier + 1);
+  if (!next) return;
+  const staffN = Object.keys(s.staff).length;
+  const cur = tierDef(s.office.tier);
+  if (staffN >= cur.staffCap - 1 && s.company.reputation >= next.minReputation && s.company.cash > money(next.moveCost, s.day) * 2 + monthlyBurn(s) * 6) {
+    dispatch(s, { type: 'moveOffice', tier: next.tier });
+  }
+  // décor & energy (once a month is plenty)
+  if (fromDay(s.day).day > 7) return;
+  const items = s.office.items.map((i) => i.item);
+  if (!items.includes('kitchen') && s.company.cash > money(30_000, s.day) && yearOf(s) >= 1985) placeFirstFree(s, 'kitchen');
+  if (items.filter((i) => i === 'plant_large').length < s.office.tier * 2 && s.company.cash > money(10_000, s.day)) placeFirstFree(s, 'plant_large');
+  if (s.research.done.includes('biz_qa_lab') && !items.includes('qa_station') && s.company.cash > money(60_000, s.day)) placeFirstFree(s, 'qa_station');
+}
+
+function events(s: GameState, rng: Rng, pickFirst: boolean): void {
+  for (const e of [...s.pendingEvents]) {
+    const opts = e.options.filter((o) => !o.disabled);
+    const o = pickFirst ? opts.find((x) => !/sell|lose|take/i.test(x.id)) ?? opts[opts.length - 1]! : rng.pick(opts);
+    if (o) dispatch(s, { type: 'resolveEvent', uid: e.uid, option: o.id });
+  }
+}
+
+function survive(s: GameState): void {
+  const burn = monthlyBurn(s);
+  const rev12 = s.finance.revenue12m.reduce((a, b) => a + b, 0);
+  // Trim the team when revenue can't cover a shrinking runway
+  if (s.company.cash < burn * 3 && rev12 < burn * 12 * 0.8) {
+    const exp = Object.values(s.staff).filter((x) => x.role !== 'founder' && x.assignment.kind !== 'project').sort((a, b) => b.salary - a.salary)[0];
+    if (exp) dispatch(s, { type: 'fire', staffId: exp.id });
+  }
+  if (s.company.cash < 0) {
+    const lim = creditLimit(s);
+    if (lim > 1000) dispatch(s, { type: 'takeLoan', amount: Math.min(lim, -s.company.cash + monthlyBurn(s) * 3), months: 36 });
+    // lay off the most expensive non-founder if still negative
+    if (s.company.cash < -monthlyBurn(s) * 2) {
+      const exp = Object.values(s.staff).filter((x) => x.role !== 'founder').sort((a, b) => b.salary - a.salary)[0];
+      if (exp) dispatch(s, { type: 'fire', staffId: exp.id });
+    }
+  }
+}
+
+function tradeShows(s: GameState, big: boolean): void {
+  const d = fromDay(s.day);
+  const show = TRADE_SHOWS.find((t) => t.month === d.month && t.from <= d.year && (t.to ?? 9999) >= d.year);
+  if (!show) return;
+  if (!Object.values(s.projects).some((p) => p.kind === 'game' && p.announcedDay !== undefined)) return;
+  const booth = big ? 2 : 0;
+  if (money(show.booths[booth], s.day) < s.company.cash * 0.1) dispatch(s, { type: 'tradeShow', show: show.id, booth });
+}
+
+function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; aggressive: boolean; tycoon?: boolean }) {
+  events(s, rng, true);
+  manageGames(s, o.aggressive);
+  startGameIfIdle(s, rng, { mode: o.mode, aggressive: o.aggressive, maxPlatforms: o.aggressive ? 3 : 2 });
+  research(s);
+  engines(s);
+  hireIfAffordable(s, rng, o.aggressive ? 2 : 6);
+  contracts(s);
+  office(s);
+  tradeShows(s, o.aggressive);
+  survive(s);
+  if (o.aggressive && s.company.cash < monthlyBurn(s) * 2 && creditLimit(s) > money(20_000, s.day)) {
+    dispatch(s, { type: 'takeLoan', amount: Math.min(creditLimit(s), monthlyBurn(s) * 6), months: 48 });
+  }
+  if (o.tycoon) {
+    if (ipoEligible(s).ok) dispatch(s, { type: 'ipo', pct: 0.3 });
+    const t = s.offers.acquisitions[0];
+    if (t && s.company.cash > t.price * 3) dispatch(s, { type: 'acquire', targetId: t.id });
+  }
+}
+
+const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
+  (s, rng) => (s.candidates.length ? { type: 'hire', candidateId: rng.pick(s.candidates).id } : null),
+  (s, rng) => {
+    const st = Object.values(s.staff).filter((x) => x.role !== 'founder');
+    return st.length ? { type: 'fire', staffId: rng.pick(st).id } : null;
+  },
+  (s, rng) => {
+    const t = tierDef(s.office.tier);
+    return { type: 'placeItem', item: rng.pick(ITEMS).id, floor: rng.int(0, t.floors - 1), x: rng.int(0, t.w), y: rng.int(0, t.h), rot: rng.chance(0.5) ? 1 : 0 };
+  },
+  (s, rng) => (s.office.items.length ? { type: 'sellItem', id: rng.pick(s.office.items).id } : null),
+  (_s, rng) => ({ type: 'research', id: rng.pick(RESEARCH).id }),
+  (_s, rng) => ({ type: 'takeLoan', amount: rng.range(1000, 200000), months: rng.int(6, 60) }),
+  (s, rng) => (s.finance.loans.length ? { type: 'repayLoan', loanId: rng.pick(s.finance.loans).id } : null),
+  (s, rng) => ({ type: 'moveOffice', tier: s.office.tier + (rng.chance(0.7) ? 1 : -1) }),
+  (s, rng) => {
+    const ps = Object.values(s.projects);
+    return ps.length ? { type: 'setCrunch', projectId: rng.pick(ps).id, on: rng.chance(0.5) } : null;
+  },
+  (s, rng) => {
+    const ps = Object.values(s.projects);
+    return ps.length ? { type: 'delay', projectId: rng.pick(ps).id, weeks: rng.int(1, 8) } : null;
+  },
+  (s, rng) => {
+    const ps = Object.values(s.projects);
+    return ps.length ? { type: 'cutFeatures', projectId: rng.pick(ps).id } : null;
+  },
+  (_s, rng) => ({ type: 'setPolicy', salaryPolicy: rng.pick(['lean', 'market', 'generous'] as const), remote: rng.chance(0.5), fourDayWeek: rng.chance(0.3) }),
+  (_s, rng) => ({ type: 'setRecruiting', level: rng.int(0, 3) }),
+  (_s, rng) => ({ type: 'ipo', pct: rng.range(0.1, 0.5) }),
+  (s, rng) => (s.offers.acquisitions.length ? { type: 'acquire', targetId: rng.pick(s.offers.acquisitions).id } : null),
+  (s, rng) => {
+    const st = Object.values(s.staff);
+    return st.length ? { type: 'setSalary', staffId: rng.pick(st).id, salary: rng.range(5000, 200000) } : null;
+  },
+  (s, rng) => {
+    const fs = Object.values(s.franchises);
+    return fs.length && rng.chance(0.1) ? { type: 'sellFranchise', franchiseId: rng.pick(fs).id } : null;
+  },
+];
+
+export function makeBot(name: BotName): Bot {
+  return {
+    name,
+    act(s, rng) {
+      switch (name) {
+        case 'idle':
+          // Does nothing except acknowledge events (default options).
+          return;
+        case 'steady':
+          return common(s, rng, { mode: 'fit', aggressive: false });
+        case 'aggressive':
+          return common(s, rng, { mode: 'fit', aggressive: true });
+        case 'trend':
+          return common(s, rng, { mode: 'trend', aggressive: false });
+        case 'tycoon':
+          return common(s, rng, { mode: 'fit', aggressive: false, tycoon: true });
+        case 'random': {
+          common(s, rng, { mode: 'random', aggressive: rng.chance(0.3) });
+          for (let i = 0; i < 3; i++) {
+            const b = rng.pick(ALL_ACTION_BUILDERS)(s, rng);
+            if (b) dispatch(s, b);
+          }
+          return;
+        }
+      }
+    },
+  };
+}

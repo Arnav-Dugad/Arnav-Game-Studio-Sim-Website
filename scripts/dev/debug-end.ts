@@ -1,0 +1,11 @@
+import { runBot } from '../../tests/bots/run';
+import { fmtMoney } from '../../src/sim/util';
+import { creditLimit, valuation, monthlyBurn, trailingRevenue } from '../../src/sim/systems/finance';
+import { formatDate } from '../../src/sim/calendar';
+const r = runBot((process.argv[2] ?? 'steady') as never, Number(process.argv[3] ?? 16838), Number(process.argv[4] ?? 46));
+const s = r.state;
+console.log(s.status, s.endReason, formatDate(s.day));
+console.log('cash', fmtMoney(s.company.cash), 'credit', s.company.creditScore, 'limit', fmtMoney(creditLimit(s)), 'val', fmtMoney(valuation(s)), 'burn/mo', fmtMoney(monthlyBurn(s)), 'rev12', fmtMoney(trailingRevenue(s)));
+console.log('loans', s.finance.loans.map((l) => fmtMoney(l.remaining) + '@' + (l.rate * 100).toFixed(1) + '% ' + fmtMoney(l.monthly) + '/mo').join(', '));
+for (const m of s.finance.ledger.slice(-6)) console.log(formatDate(m.day,false), fmtMoney(m.cashEnd), JSON.stringify(Object.fromEntries(Object.entries(m.expense).map(([k,v])=>[k,fmtMoney(v!)]))), JSON.stringify(Object.fromEntries(Object.entries(m.income).map(([k,v])=>[k,fmtMoney(v!)]))));
+console.log('projects', Object.values(s.projects).map((p) => p.kind + (p.kind === 'game' ? ':' + p.concept.size + ' team' + p.team.length : '')).join(' '));
