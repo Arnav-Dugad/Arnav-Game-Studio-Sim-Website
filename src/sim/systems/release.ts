@@ -317,6 +317,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   if (sequel && gap > 8) ub.add(`Not as good as the series’ best (${ownBest})`, -Math.min(10, (gap - 8) * 0.6));
   else if (sequel && ownBest >= 70 && score >= ownBest + 3) ub.add('Raises the bar for the series', 2);
   if (fr) ub.add('Franchise fatigue', -fr.fatigue * 12);
+  const prevEntry = fr && !p.concept.expansionOf && !p.concept.remasterOf && fr.entries.length ? s.releases[fr.entries[fr.entries.length - 1]!] : undefined;
+  if (prevEntry && (prevEntry.concept.features ?? []).includes('cliffhanger') && s.day - prevEntry.day < 365 * 6) ub.add(`Pays off ${prevEntry.name}’s cliffhanger`, 3);
   if (s.research.done.includes('ai_genai') && fromDay(s.day).year >= 2023) ub.add('Gen-AI backlash', -1.5);
   if (hasValue(s, 'players')) ub.add('Culture: Player Obsessed', CULTURE_FX.playersUser);
   if (hasValue(s, 'profit')) ub.add('Culture: Profit Driven', CULTURE_FX.profitUser);

@@ -253,6 +253,13 @@ export function layoffMoraleHit(n: number): number {
   return Math.min(10, 2 + n);
 }
 
+/** The series' latest game ended on a cliffhanger (in the last six years) that no sequel has paid off yet. */
+export function cliffhangerPending(s: GameState, franchiseId: string): boolean {
+  const f = s.franchises[franchiseId];
+  const last = f?.entries.length ? s.releases[f.entries[f.entries.length - 1]!] : undefined;
+  return !!last && (last.concept.features ?? []).includes('cliffhanger') && s.day - last.day < 365 * 6;
+}
+
 /** Public betas (2005+): two extra weeks in polish, a quarter of the bugs found, some hype, and a score read. */
 export const BETA_DAYS = 14;
 export function betaCost(s: GameState, p: GameProject): number {
@@ -439,7 +446,7 @@ function apply(c: Ctx, a: Action): string | null {
         extraDays: 0,
         team: [...g.team],
         startDay: s.day,
-        hype: g.franchiseId ? Math.min(1, (s.franchises[g.franchiseId]!.fans / 200_000) * 0.5) : 0,
+        hype: (g.franchiseId ? Math.min(1, (s.franchises[g.franchiseId]!.fans / 200_000) * 0.5) : 0) + (g.franchiseId && !g.expansionOf && !g.remasterOf && cliffhangerPending(s, g.franchiseId) ? 0.6 : 0),
         campaigns: [],
         spent: kitCost,
         novelty: 0,

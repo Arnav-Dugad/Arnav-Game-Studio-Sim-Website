@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-19i';
+export const WHATS_NEW_VERSION = '2026-11-20a';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'sparkle', title: 'Cliffhanger endings', body: 'A new signature feature (1988+): end your game on a shock. Players grumble a little now, but the sequel starts with built-in hype — and paying the cliffhanger off delights them.' },
   { icon: 'trophy', title: 'Players’ Choice award & smarter tips', body: 'The Golden Pixel Gala now has a Players’ Choice award, voted by players (user scores) rather than critics. And the Overview now points out opportunities: Early Access, crowdfunding when cash is tight, licensing a popular series, an unused conference slot, interns and the Fan Art Wall.' },
   { icon: 'build', title: 'The office parrot', body: 'Build an Office Parrot (Decor): it sits on its perch and repeats what it overhears — “Ship it!”, “Who broke the build?”, your studio’s name, the game you’re making, last week’s review score…' },
   { icon: 'library', title: 'Four new topics', body: 'Samurai (1984, surging around 2020), Steampunk (1990), Ancient Egypt (1982) and Fishing (1985, a family favourite) — each with its own cover art and title ideas.' },

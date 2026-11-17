@@ -15,7 +15,7 @@ import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore, workShare } from '@/sim/systems/dev';
 import { expansionPlatforms, expansionSizeOk, launchTitleMul, salesPotential } from '@/sim/systems/release';
-import { betaBlocked, betaCost, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
+import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size, Staff } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
@@ -579,10 +579,11 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 <option value="">New IP</option>
                 {franchises.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.name} · {fmtUnits(f.fans)} fans{f.fatigue > 0.2 ? ' · fatigued' : ''}
+                    {f.name} · {fmtUnits(f.fans)} fans{f.fatigue > 0.2 ? ' · fatigued' : ''}{cliffhangerPending(s, f.id) ? ' · cliffhanger!' : ''}
                   </option>
                 ))}
               </select>
+              {franchiseId && !baseRel && cliffhangerPending(s, franchiseId) && <p className="mt-1 text-xs text-good">Fans are waiting to see how the last game’s cliffhanger resolves: this sequel starts with extra hype, and paying it off delights players.</p>}
             </Field>
           )}
         </div>
