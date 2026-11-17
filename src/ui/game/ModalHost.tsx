@@ -441,6 +441,11 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
               </span>
             )}
             {r.delisted && <Pill tone="bad">Delisted</Pill>}
+            {r.easterEgg?.found && (
+              <span title={`Hidden by ${r.easterEgg.name}: ${r.easterEgg.what}`}>
+                <Pill tone="tech">🥚 Secret found</Pill>
+              </span>
+            )}
             {!r.delisted && licenceDue(r) !== null && (
               <span title="Licensed content: renew or let it be delisted when the licence runs out">
                 <Pill>Licensed until {fromDay(licenceDue(r)!).year}</Pill>
