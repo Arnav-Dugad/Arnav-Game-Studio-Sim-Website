@@ -39,6 +39,12 @@ export function Tutorial() {
     if (cur.done(useGame.getState())) act({ type: 'tutorial', step: step + 1 });
   }, [cur, step, act, panel, speed, s?.day]);
 
+  // A studio that has already shipped a few games has clearly found its feet: retire the tutorial.
+  const veteran = (s?.releaseOrder.length ?? 0) >= 3;
+  useEffect(() => {
+    if (veteran && step < 99) act({ type: 'tutorial', step: 99 });
+  }, [veteran, step, act]);
+
   // Highlight the target element
   useEffect(() => {
     if (!cur?.target) return;
