@@ -27,14 +27,15 @@ export default function ReleasesPanel() {
   const pushModal = useGame((g) => g.pushModal);
   const [sort, setSort] = useState<Sort>('new');
   const [selling, setSelling] = useState(false);
-  const [view, setView] = useState<'list' | 'shelf'>(() => {
+  const [view, setView] = useState<'list' | 'shelf' | 'stats'>(() => {
     try {
-      return localStorage.getItem('ase:gamesView') === 'shelf' ? 'shelf' : 'list';
+      const v = localStorage.getItem('ase:gamesView');
+      return v === 'shelf' || v === 'stats' ? v : 'list';
     } catch {
       return 'list';
     }
   });
-  const pickView = (v: 'list' | 'shelf') => {
+  const pickView = (v: 'list' | 'shelf' | 'stats') => {
     setView(v);
     try {
       localStorage.setItem('ase:gamesView', v);
@@ -55,24 +56,27 @@ export default function ReleasesPanel() {
     <div className="space-y-3">
       {all.length > 1 && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Segmented<Sort>
-            ariaLabel="Sort games"
-            value={sort}
-            onChange={setSort}
-            options={[
-              { value: 'new', label: 'Newest' },
-              { value: 'score', label: 'Best' },
-              { value: 'units', label: 'Best-selling' },
-              { value: 'profit', label: 'Profit' },
-            ]}
-          />
-          <Segmented<'list' | 'shelf'>
+          {view !== 'stats' && (
+            <Segmented<Sort>
+              ariaLabel="Sort games"
+              value={sort}
+              onChange={setSort}
+              options={[
+                { value: 'new', label: 'Newest' },
+                { value: 'score', label: 'Best' },
+                { value: 'units', label: 'Best-selling' },
+                { value: 'profit', label: 'Profit' },
+              ]}
+            />
+          )}
+          <Segmented<'list' | 'shelf' | 'stats'>
             ariaLabel="View"
             value={view}
             onChange={pickView}
             options={[
               { value: 'list', label: 'List' },
               { value: 'shelf', label: 'Shelf' },
+              { value: 'stats', label: 'Stats' },
             ]}
           />
           <label className="flex cursor-pointer items-center gap-1.5 text-xs text-ink2">
@@ -93,7 +97,9 @@ export default function ReleasesPanel() {
         </p>
       )}
       {rels.length === 0 && <p className="text-xs text-ink3">Nothing is selling right now.</p>}
-      {view === 'shelf' ? (
+      {view === 'stats' ? (
+        <GenreStats rels={rels} />
+      ) : view === 'shelf' ? (
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4" aria-label="Your games shelf">
           {rels.map((r) => (
             <li key={r.id}>
@@ -183,6 +189,70 @@ export default function ReleasesPanel() {
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** Your track record by genre: what your studio is actually good at. */
+function GenreStats({ rels }: { rels: Release[] }) {
+  const pushModal = useGame((g) => g.pushModal);
+  const rows = Object.values(
+    rels.reduce<
+      Record<
+        string,
+        { genre: string; n: number; score: number; units: number; profit: number; best: Release }
+      >
+    >((acc, r) => {
+      const k = r.concept.genre;
+      const row = (acc[k] ??= { genre: k, n: 0, score: 0, units: 0, profit: 0, best: r });
+      row.n += 1;
+      row.score += r.score;
+      row.units += r.units;
+      row.profit += r.net - r.devCost;
+      if (r.score > row.best.score) row.best = r;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b.profit - a.profit);
+  if (!rows.length) return <p className="text-xs text-ink3">Nothing matches the filter.</p>;
+  const maxProfit = Math.max(1, ...rows.map((r) => Math.abs(r.profit)));
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs text-ink3">
+        Sorted by lifetime profit. Hover a bar for details; click a best game to open it.
+      </p>
+      {rows.map((r) => (
+        <div key={r.genre} className="rounded-xl border border-line p-2.5 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold">
+              {GENRE_BY_ID[r.genre as keyof typeof GENRE_BY_ID]?.name ?? r.genre}
+            </span>
+            <span className="num text-ink3">
+              {r.n} game{r.n === 1 ? '' : 's'} · avg {Math.round(r.score / r.n)} · {fmtUnits(r.units)} sold
+            </span>
+          </div>
+          <div
+            className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bg2"
+            title={`${fmtMoney(r.profit)} lifetime profit`}
+          >
+            <div
+              className={cx('h-full rounded-full', r.profit >= 0 ? 'bg-good' : 'bg-bad')}
+              style={{ width: `${Math.max(2, (Math.abs(r.profit) / maxProfit) * 100)}%` }}
+            />
+          </div>
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <span className={cx('num font-semibold', r.profit >= 0 ? 'text-good' : 'text-bad')}>
+              {fmtMoney(r.profit)} profit
+            </span>
+            <button
+              type="button"
+              className="truncate text-ink2 hover:underline"
+              onClick={() => pushModal({ kind: 'release', releaseId: r.best.id })}
+            >
+              Best: {r.best.name} ({r.best.score})
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
