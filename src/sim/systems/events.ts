@@ -53,6 +53,79 @@ function staffById(s: GameState, id: string | number | undefined): Staff | undef
 
 export const EVENT_DEFS: EventDef[] = [
   {
+    // Annual shareholder meeting (scheduled each May for public studios; never rolled at random).
+    id: 'agm',
+    art: 'bell',
+    cooldown: 300,
+    weight: () => 0,
+    make: ({ s }) => {
+      const st = s.finance.stock;
+      if (!st) return null;
+      const yearAgo = st.history.length > 52 ? st.history[st.history.length - 53]! : st.ipoPrice;
+      const change = yearAgo > 0 ? st.price / yearAgo - 1 : 0;
+      const profit = s.finance.ledger.slice(-12).reduce((t, m) => t + Object.values(m.income).reduce((a, v) => a + (v ?? 0), 0) - Object.values(m.expense).reduce((a, v) => a + (v ?? 0), 0), 0);
+      const dividend = Math.max(0, Math.round(profit * 0.25));
+      const pct = Math.round(change * 100);
+      const control = st.founderShares / st.shares;
+      const revolt = st.boardMood < 30 && control < 0.5;
+      const recap = `The share price is ${pct >= 0 ? 'up' : 'down'} ${Math.abs(pct)}% on the year, with ${fmtMoney(profit)} profit over the last twelve months. Board mood ${Math.round(st.boardMood)}%. You hold ${Math.round(control * 100)}% of the shares.`;
+      if (revolt)
+        return {
+          title: 'Shareholder revolt',
+          body: `${recap} Unhappy investors have tabled a vote of no confidence and want a cost-cutting mandate.`,
+          options: [
+            { id: 'fight', label: 'Fight the vote', preview: `Win chance about ${Math.round(Math.min(90, 25 + control * 80 + s.company.reputation / 4))}%. Win: board mood +15. Lose: share price −12%, reputation −4.` },
+            { id: 'concede', label: 'Accept the cost-cutting mandate', preview: 'Board mood +20; staff morale −8 for six months' },
+          ],
+          ctx: { profit, dividend, control, change, revolt: 1 },
+        };
+      return {
+        title: `Annual shareholder meeting`,
+        body: `${recap} How do you address the shareholders?`,
+        options: [
+          { id: 'dividend', label: `Declare a dividend (${fmtMoney(dividend)})`, preview: 'A quarter of last year’s profit. Board mood +10, share price +3%', disabled: dividend <= 0 || s.company.cash < dividend * 1.5 },
+          { id: 'bold', label: 'Promise bold growth', preview: 'Share price +6%, board mood +6 — but profit expectations rise 30%' },
+          { id: 'steady', label: 'Steady as she goes', preview: change >= 0 ? 'Board mood +2' : 'Board mood −6 (they wanted a plan)' },
+        ],
+        ctx: { profit, dividend, control, change, revolt: 0 },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      const st = s.finance.stock;
+      if (!st) return;
+      if (opt === 'dividend') {
+        const d = Number(e.ctx.dividend);
+        if (d > 0 && s.company.cash >= d) {
+          s.company.cash -= d;
+          st.dividendsPaid += d;
+          st.boardMood = clamp(st.boardMood + 10, 0, 100);
+          st.price *= 1.03;
+          pushNews(s, { category: 'studio', headline: `${s.company.name} pays a ${fmtMoney(d)} dividend`, tone: 'good' });
+        }
+      } else if (opt === 'bold') {
+        st.expectation *= 1.3;
+        st.price *= 1.06;
+        st.boardMood = clamp(st.boardMood + 6, 0, 100);
+        pushNews(s, { category: 'studio', headline: `${s.company.name} promises shareholders bold growth`, tone: 'neutral' });
+      } else if (opt === 'steady') {
+        st.boardMood = clamp(st.boardMood + (Number(e.ctx.change) >= 0 ? 2 : -6), 0, 100);
+      } else if (opt === 'fight') {
+        const win = rng.chance(Math.min(0.9, 0.25 + Number(e.ctx.control) * 0.8 + s.company.reputation / 400));
+        if (win) {
+          st.boardMood = clamp(st.boardMood + 15, 0, 100);
+          pushNews(s, { category: 'studio', headline: `${s.company.founderName} survives a no-confidence vote`, tone: 'good' });
+        } else {
+          st.price *= 0.88;
+          addRep(s, -4, 'Lost a shareholder vote');
+          pushNews(s, { category: 'studio', headline: `Shareholders rebuke ${s.company.name}’s leadership`, tone: 'bad' });
+        }
+      } else if (opt === 'concede') {
+        st.boardMood = clamp(st.boardMood + 20, 0, 100);
+        s.company.moraleMods.push({ v: -8, until: s.day + 180, label: 'Cost-cutting mandate' });
+      }
+    },
+  },
+  {
     id: 'poach_offer',
     art: 'handshake',
     cooldown: 120,
@@ -1351,6 +1424,21 @@ export const EVENT_DEFS: EventDef[] = [
 const DEF_BY_ID = Object.fromEntries(EVENT_DEFS.map((d) => [d.id, d]));
 
 /** Weekly roll for a random event. */
+/** Raise a specific event now (scheduled events such as the shareholder meeting). */
+export function fireEvent(c: Ctx, defId: string): boolean {
+  const { s } = c;
+  const def = DEF_BY_ID[defId];
+  if (!def || s.pendingEvents.some((e) => e.defId === defId)) return false;
+  const made = def.make(c);
+  if (!made) return false;
+  s.nextEventUid += 1;
+  const inst: EventInstance = { uid: s.nextEventUid, defId: def.id, day: s.day, title: made.title, body: made.body, options: made.options, ctx: made.ctx, expiresDay: s.day + 21, art: def.art };
+  s.pendingEvents.push(inst);
+  s.eventCooldowns[def.id] = s.day + def.cooldown;
+  c.out.push({ type: 'event', uid: inst.uid });
+  return true;
+}
+
 export function rollRandomEvent(c: Ctx): void {
   const { s, rng } = c;
   if (s.pendingEvents.length >= 2) return;

@@ -8,7 +8,7 @@ import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
 import { checkAchievements } from './systems/achievements';
 import { updateProjectsDaily } from './systems/dev';
-import { expireEvents, rollRandomEvent } from './systems/events';
+import { expireEvents, fireEvent, rollRandomEvent } from './systems/events';
 import { hardwareMonthly } from './systems/hardware';
 import { subscriptionMonthly } from './systems/subscription';
 import { cheatsDaily } from './cheats';
@@ -90,6 +90,7 @@ export function tick(c: Ctx): void {
     refreshCandidates(c);
     refreshOffers(c);
     if (d.month % 3 === 1) quarterlyEarnings(c);
+    if (d.month === 5 && s.finance.stock && s.day - s.finance.stock.ipoDay > 300) fireEvent(c, 'agm');
     s.progress.stats.peakCash = Math.max(s.progress.stats.peakCash, s.company.cash);
     const v = valuation(s);
     if (v > s.progress.stats.peakValuation) s.progress.stats.peakValuation = v;
