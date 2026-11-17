@@ -3,6 +3,8 @@ import { useMemo } from 'react';
  * Studio overview: everything that needs your attention right now, each with a one-click fix, plus your
  * projects at a glance, what's selling and how the year is going. The "home screen" for big studios.
  */
+import { knownFor } from '@/sim/systems/renown';
+import { GENRE_BY_ID } from '@/data/genres';
 import type { ReactNode } from 'react';
 import { fromDay, formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
@@ -134,6 +136,14 @@ export default function OverviewPanel() {
             <Stat label="Games shipped" value={String(shippedThisYear.length)} />
             <Stat label="Monthly burn" value={fmtMoney(monthlyBurn(s))} />
           </dl>
+          {knownFor(s).length > 0 && (
+            <p className="mt-2 text-xs text-ink2" title="Two or more great games (75+) in a genre: its players trust your name — and expect your usual standard">
+              <span className="text-gold">★</span> Known for{' '}
+              {knownFor(s)
+                .map((k) => `${GENRE_BY_ID[k.genre].name} (avg ${Math.round(k.avg)} over ${k.n})`)
+                .join(' and ')}
+            </p>
+          )}
         </Section>
       </div>
     </div>

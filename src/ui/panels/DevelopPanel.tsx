@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { knownFor } from '@/sim/systems/renown';
 import { PRICE_MUL, priceTierAllowed } from '@/sim/systems/pricing';
 import type { PriceTier } from '@/sim/types';
 import { CODEV_YEAR, codevPartners, codevTerms } from '@/sim/systems/codev';
@@ -458,6 +459,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const toast = useGame((g) => g.toast);
   const yr = fromDay(s.day).year;
   const genres = availableGenres(s);
+  const renowned = new Set(knownFor(s).map((k) => k.genre));
   // genre cards: where the market is heading and how your studio has done there
   const genreStats = useMemo(() => {
     const open = genres.filter((x) => x.ok).map((x) => x.g.id);
@@ -705,6 +707,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             >
               <div className="flex items-center gap-1">
                 <span className="min-w-0 truncate font-semibold">{g.name}</span>
+                {ok && renowned.has(g.id) && <span className="shrink-0 text-[11px] text-gold" title="Your studio is known for these — players trust the name (more sales), and expect your usual standard">★</span>}
                 {ok && genreStats[g.id]?.hot && <span className="ml-auto shrink-0 rounded-full bg-warn/15 px-1.5 text-[10px] font-bold text-warn" title="One of the three most popular genres right now">Hot</span>}
                 {ok && !genreStats[g.id]?.hot && Math.abs(genreStats[g.id]?.trend ?? 0) > 0.08 && (
                   <span className={cx('num ml-auto shrink-0 text-[10px] font-bold', (genreStats[g.id]?.trend ?? 0) > 0 ? 'text-good' : 'text-bad')} title={(genreStats[g.id]?.trend ?? 0) > 0 ? 'Rising: more popular than six months ago' : 'Cooling: less popular than six months ago'}>

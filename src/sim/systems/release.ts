@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { renownSalesMul, renownUserEffect } from './renown';
 import { PRICE_MUL, priceDemandMul, priceTierOf, priceUserEffect } from './pricing';
 import { docOnRelease } from './documentary';
 import { codevShareVoid } from './codev';
@@ -248,6 +249,9 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
       sb.mul(f.name, f.sales);
     }
   }
+  // a studio known for this genre: its players trust the name
+  const renown = concept.expansionOf || concept.remasterOf ? 1 : renownSalesMul(s, concept.genre);
+  if (renown > 1) sb.mul(`Known for ${GENRE_BY_ID[concept.genre].name} games`, renown);
   let totalUsers = 0;
   const launchTitles: { name: string; mul: number }[] = [];
   const g = GENRE_BY_ID[concept.genre];
@@ -265,7 +269,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
         Math.sqrt(topicPopularity(s, concept.topic));
       const launch = launchTitleMul(s, pl);
       if (launch > 1.005) launchTitles.push({ name: pl.name, mul: launch });
-      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales * priceMul;
+      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales * priceMul * renown;
       return { platform: pid, potential: Math.max(0, potential), units: 0, pl };
     });
   for (const lt of launchTitles) sb.mul(`Launch title on ${lt.name} (early adopters buy everything)`, lt.mul);
@@ -354,6 +358,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   if (ea && eaWeeks >= 78) ub.add('Took years to leave Early Access', -4);
   else if (ea && eaWeeks >= 8 && ea.rating >= 55) ub.add('Shaped by Early Access players', 2);
   const pu = priceUserEffect(priceTierOf(p.concept), score);
+  const ru = p.concept.expansionOf || p.concept.remasterOf ? 0 : renownUserEffect(s, p.concept.genre, score);
+  if (ru) ub.add('Below the studio’s usual standard', ru);
   if (pu) ub.add(pu > 0 ? 'Great value' : 'Feels overpriced', pu);
   const cmb = communityUserBonus(s);
   if (cmb) ub.add(cmb > 0 ? 'A healthy community' : 'A toxic community', cmb);
