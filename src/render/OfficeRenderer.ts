@@ -5,7 +5,7 @@
  */
 import { Application, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
 import { ITEM_BY_ID, type ItemId } from '@/data/facilities';
-import { fromDay } from '@/sim/calendar';
+import { fromDay, weekday } from '@/sim/calendar';
 import { canPlace, entrance, findPath, footprint, heatField, occupancy, tierDef } from '@/sim/systems/office';
 import type { GameState, PlacedItem, Staff } from '@/sim/types';
 import { DARK, LIGHT, hexToNum, mix, shade, type ScenePalette } from './palette';
@@ -1085,6 +1085,21 @@ export class OfficeRenderer {
       const anniversary = age > 0 && age % 5 === 0;
       for (const a of here.slice(0, 6)) this.say(a, anniversary && Math.random() < 0.6 ? pickOne([`Happy ${age}th, ${s.company.name.split(' ')[0]}! 🎂`, `${age} years! 🎉`, `To the next ${age}! 🥂`]) : pickOne(['Happy New Year! 🎆', `Here’s to ${fromDay(s.day).year}!`, 'New year, new games!', 'Cheers! 🥂']), 3);
       return;
+    }
+    // Monday morning: a few people arrive through the front door
+    if (!firstFrame && weekday(s.day) === 0 && !reducedMotion) {
+      const ent = entrance(s);
+      const [ex, ey] = this.tileCenter(ent.x, ent.y);
+      const arrivals = here.filter((a) => a.mode === 'desk' && a.seat && !a.talk).sort(() => Math.random() - 0.5).slice(0, 10);
+      arrivals.forEach((a, i) => {
+        a.x = ex + (i % 3) * 6 - 6;
+        a.y = ey + T * 0.6 + Math.floor(i / 3) * 8;
+        const [sx, sy] = this.tileCenter(a.seat![0], a.seat![1]);
+        a.path = this.route(s, floor, a, sx, sy);
+        a.mode = 'walk';
+        a.next = 'desk';
+        if (i < 3 && Math.random() < 0.6) this.say(a, pickOne(['Morning! ☕', 'Happy Monday…', 'Good weekend?', 'Morning, all!']), 2.4);
+      });
     }
     for (const a of here) {
       const st = s.staff[a.id];
