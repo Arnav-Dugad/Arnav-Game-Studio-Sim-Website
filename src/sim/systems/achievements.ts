@@ -48,6 +48,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'staff_10', name: 'Real Studio', desc: 'Employ 10 people.', icon: 'people', check: (s) => staffN(s) >= 10 },
   { id: 'staff_50', name: 'Big Team', desc: 'Employ 50 people.', icon: 'crowd', check: (s) => staffN(s) >= 50 },
   { id: 'staff_200', name: 'Small City', desc: 'Employ 200 people.', icon: 'city', check: (s) => staffN(s) >= 200 },
+  { id: 'pets_both', name: 'Raining Cats and Dogs', desc: 'Keep a studio cat and an office dog at the same time.', icon: 'heart', check: (s) => s.office.items.some((i) => i.item === 'pet_cat') && s.office.items.some((i) => i.item === 'pet_dog') },
   { id: 'office_2', name: 'Moving Out', desc: 'Move out of the garage.', icon: 'box', check: (s) => s.office.tier >= 2 },
   { id: 'office_4', name: 'Your Own Building', desc: 'Move into a Studio Building.', icon: 'building', check: (s) => s.office.tier >= 4 },
   { id: 'office_6', name: 'Skyline', desc: 'Build the Global HQ.', icon: 'tower', check: (s) => s.office.tier >= 6 },

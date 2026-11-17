@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17k';
+export const WHATS_NEW_VERSION = '2026-11-17l';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'heart', title: 'Office pets', body: 'Build menu → Decor: a Studio Cat or an Office Dog. They nap, roam, follow people, sit on keyboards and get fussed over — and lift morale across a wide area. Hover one to learn its name.' },
   { icon: 'people', title: 'Characters come alive', body: 'Everyone now blinks, breathes, smiles or frowns with their mood, talks with their hands, types, sips coffee, waves hello, stretches, yawns, checks their phone, facepalms at bugs, high-fives friends, lounges on sofas — and dances when a game hits.' },
   { icon: 'people', title: 'A living office', body: 'Staff chat about your games, reviews and rivals, play arcade games on breaks, visit teammates to help, think at whiteboards — and greet you on their first day.' },
   { icon: 'sliders', title: 'Signature features', body: 'Open world, online multiplayer, branching story, battle pass and more — up to three per game, each a bet on your genre.' },

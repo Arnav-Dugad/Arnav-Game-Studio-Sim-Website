@@ -10,6 +10,7 @@ import { canPlace, entrance, findPath, footprint, heatField, occupancy, tierDef 
 import type { GameState, PlacedItem, Staff } from '@/sim/types';
 import { DARK, LIGHT, hexToNum, mix, shade, type ScenePalette } from './palette';
 import { T, drawItem, drawPerson, itemLift, lookFor, type Look } from './sprites';
+import { PetSystem } from './pets';
 import { animate, createRig, newAnim, reskinRig, type Anim, type Rig } from './animation';
 import { LEISURE, RESEARCH_SPOTS, chatExchange, workExchange, workThought } from './officeLife';
 
@@ -131,6 +132,7 @@ export class OfficeRenderer {
   private inset = 0;
   private insetTarget = 0;
   private particles: { g: Graphics; vx: number; vy: number; life: number }[] = [];
+  private pets = new PetSystem(this.itemLayer);
   private themeObserver: MutationObserver | null = null;
 
   constructor(private cb: RendererCallbacks) {}
@@ -247,6 +249,7 @@ export class OfficeRenderer {
     }
     this.hoverTile = this.screenToTile(e.offsetX, e.offsetY);
     this.hoverStaff = this.pickStaff(e.offsetX, e.offsetY);
+    this.pets.hover(this.hoverStaff ? null : (e.offsetX - this.cam.x) / this.zoom, (e.offsetY - this.cam.y) / this.zoom, this.P.night);
     this.app.canvas.style.cursor = this.cb.getUI().build ? 'crosshair' : this.hoverStaff ? 'pointer' : this.drag?.moved ? 'grabbing' : 'grab';
     if (this.drag) {
       const dx = e.offsetX - this.drag.x;
@@ -452,6 +455,7 @@ export class OfficeRenderer {
     }
     this.updateGhost(s, ui, floor, era);
     this.syncAgents(s, floor, ui, dt);
+    this.pets.update(s, floor, dt * (ui.speed === 0 ? 0.6 : 1), this.petHost(s, floor), ui.reducedMotion);
     this.updateParticles(dt);
   }
 
@@ -929,6 +933,29 @@ export class OfficeRenderer {
   }
 
   // ── Office life: conversations and leisure (cosmetic) ──────────────────────
+
+  /** What the pets can see of the office. */
+  private petHost(s: GameState, floor: number) {
+    return {
+      people: () => {
+        const out: { id: string; x: number; y: number; mode: string; desk?: [number, number]; working: boolean }[] = [];
+        for (const a of this.agents.values()) {
+          if (!a.c.visible || a.floor !== floor) continue;
+          const st = s.staff[a.id];
+          const d = a.mode === 'desk' && a.deskId ? s.office.items.find((i) => i.id === a.deskId) : undefined;
+          const desk: [number, number] | undefined = d ? [d.x * T + T / 2, d.y * T + T * 0.72] : undefined;
+          out.push({ id: a.id, x: a.x, y: a.y, mode: a.mode, desk, working: !!st && st.activity === 'work' });
+        }
+        return out;
+      },
+      react: (id: string, text: string, gesture: 'laugh' | 'palm' | 'wave') => {
+        const a = this.agents.get(id);
+        if (!a || a.speechT > 0 || a.talk) return;
+        this.say(a, text, 2.2);
+        a.anim[gesture] = Math.max(a.anim[gesture], 1.2);
+      },
+    };
+  }
 
   /** What someone is up to, for the hover label. */
   private doing(s: GameState, a: Agent, st: Staff): string {

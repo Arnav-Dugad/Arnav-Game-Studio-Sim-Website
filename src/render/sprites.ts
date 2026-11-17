@@ -150,6 +150,25 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       }
       break;
     }
+    case 'pet_cat':
+    case 'pet_dog': {
+      const dog = id === 'pet_dog';
+      const c = dog ? P.accentTech : P.accentArt;
+      shadow(g, 5, 8, W - 10, H - 12);
+      if (dog) {
+        g.roundRect(6, H * 0.34, W - 12, H * 0.5, 8).fill(shade(c, 0.75));
+        g.roundRect(10, H * 0.4, W - 20, H * 0.36, 6).fill(shade(c, 1.15));
+        g.roundRect(W * 0.62, H * 0.82, 10, 3.5, 1.5).fill(0xf4efe7);
+        g.circle(W * 0.62, H * 0.82 + 1.7, 2.2).fill(0xf4efe7);
+        g.circle(W * 0.62 + 10, H * 0.82 + 1.7, 2.2).fill(0xf4efe7);
+      } else {
+        g.ellipse(W / 2, H * 0.62, W * 0.36, H * 0.26).fill(shade(c, 0.75));
+        g.ellipse(W / 2, H * 0.64, W * 0.27, H * 0.18).fill(shade(c, 1.2));
+        g.circle(W * 0.2, H * 0.86, 3).fill(0xf2c450);
+        g.moveTo(W * 0.2, H * 0.86).quadraticCurveTo(W * 0.1, H * 0.95, W * 0.06, H * 0.84).stroke({ width: 0.8, color: 0xf2c450 });
+      }
+      break;
+    }
     case 'arcade_cabinet':
       shadow(g, 5, 4, W - 10, H - 4);
       box(g, { x: 7, y: 4, w: W - 14, h: H - 8, height: 38, top: 0x2a2440, front: 0x1c1830, r: 4 });
@@ -378,6 +397,9 @@ export function itemLift(id: ItemId): number {
       return 34;
     case 'rug':
       return 0;
+    case 'pet_cat':
+    case 'pet_dog':
+      return 8;
     default:
       return 26;
   }
