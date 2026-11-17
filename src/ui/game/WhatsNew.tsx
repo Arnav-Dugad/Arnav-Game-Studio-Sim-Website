@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17e';
+export const WHATS_NEW_VERSION = '2026-11-17f';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
-  { icon: 'sparkle', title: 'Cheats & sandbox mode', body: 'Bend any rule from Menu → Cheats (press `), or tick Sandbox mode when founding a studio. Cheated runs are marked in the Hall of Fame.' },
-  { icon: 'layers', title: 'Expansion packs', body: 'Give a recent hit more content: less work than a sequel, and it brings players back to the original.' },
-  { icon: 'trophy', title: 'Esports & rivalries', body: 'Run leagues for competitive hits (Company → Esports), and win head-to-head showdowns against rival studios.' },
-  { icon: 'coin', title: 'Storefront sales', body: 'Put older games on sale in the digital era for a burst of copies (open a game → Post-launch).' },
-  { icon: 'music', title: 'A soundtrack that ages with you', body: 'Generated live: chiptune in the ’80s, FM in the ’90s, soft synths after (Settings → Sound).' },
-  { icon: 'library', title: 'Your games shelf & records', body: 'See every game as a wall of covers, and your all-time bests in Company → History.' },
+  { icon: 'sparkle', title: 'Cheats & sandbox mode', body: 'Bend any rule from Menu → Cheats (press `), with one-click presets, or tick Sandbox mode when founding a studio.' },
+  { icon: 'trophy', title: 'Gala ceremonies & rivalries', body: 'Win an award and the Golden Pixel Gala celebrates you. Beat rival studios in head-to-head showdowns.' },
+  { icon: 'people', title: 'Open betas & retirement', body: 'Test with real players during polish (2005+). Veterans now retire after long careers and join your alumni.' },
+  { icon: 'rocket', title: 'Launch titles & sequels', body: 'Ship in a platform’s first months for an early-adopter boost. Sequels are judged against the series’ best.' },
+  { icon: 'layers', title: 'Expansions, sales & esports', body: 'Expansion packs, storefront discounts and pro leagues give hits a long, profitable tail.' },
+  { icon: 'shield', title: 'Your studio’s identity', body: 'Click your badge in the top-left to rename the studio and choose its colour, shape and emblem.' },
 ];
 
 function seen(): boolean {

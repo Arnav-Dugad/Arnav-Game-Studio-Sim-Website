@@ -33,6 +33,10 @@
   - IPO, stock price and board, acquisitions and subsidiaries, and hostile takeovers.
   - Bankruptcy is a real fail state.
 - **Reviews.** Critic outlets with their own biases and generated blurbs, user scores, franchises, fans, fatigue and yearly awards.
+- **Launch titles and expectations.** Ship in a platform's first months to sell to starved early adopters. Sequels are judged against the series' best, so disappoint the fans and some drift away.
+- **Open betas.** From 2005, test with real players during polish: fewer bugs, more hype and an early read on the score.
+- **A studio that ages.** Veterans retire after 25–35 years with a farewell party and join your alumni. Each decade ends with a look back at its Games of the Year, and winning a Golden Pixel award gets you a proper ceremony.
+- **Your identity.** Click your badge to rename the studio and pick its colour, shape and emblem.
 - **Rivalries.** Launch near a rival's game in the same genre and the press calls a showdown. You build a win/loss record with every studio, and the one you clash with most becomes your nemesis.
 - **Esports leagues.** From 2009, run a regional circuit, pro league or world championship for a competitive hit. Viewers grow with prestige season after season; sponsors pay per viewer, prize pools cost money, and leagues follow your franchise to a strong sequel.
 - **Generative soundtrack.** Music is synthesized live with WebAudio (no audio files) and follows the era: square-wave chiptune in the 1980s, FM bells in the 1990s, soft synth pads after. It has its own toggle and volume in Settings.
