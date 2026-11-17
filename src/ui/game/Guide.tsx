@@ -32,6 +32,8 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Layout', 'Use build mode (B) and the heat-map overlays to place break areas, décor and desks. Seating a team together boosts synergy.'],
       ['Growth', 'Staff learn by doing. Training (after research) and specialisations (seniors+) push them further.'],
       ['One-on-ones', 'Open anyone’s card and Check in: they say what’s really on their mind (burnout, pay against the market, a cramped desk, a dream) and feel heard. Six a month, plus two per producer; the same person benefits again after 90 days.'],
+      ['Staff pitches', 'Senior designers, producers and writers sometimes pitch the game they’ve always wanted to make. Greenlight it and it waits in the new-game screen for six months; make it with them on the team and it’s their passion project — fresh ideas and a very happy developer (cancelling it breaks their heart).'],
+      ['Former colleagues', 'People who left on good terms (moved away, took a rival’s offer, finished an internship) may ask to come back one to eight years later — more skilled, asking today’s market rate, and starting out loyal.'],
       ['Studio Awards', 'Every December: MVP, Rookie of the Year, Mentor of the Year and Heart of the Studio. Winners keep the honour on their card.'],
       ['Favourite genres & hobbies', 'Everyone has a favourite genre (a ♥ in the team picker): on a game they love they work 5% faster and are happier. Hobbies change their chatter and breaks.'],
     ],
