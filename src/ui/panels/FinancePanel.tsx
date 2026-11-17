@@ -197,6 +197,7 @@ const STREAMS: { key: string; label: string; cats: LedgerCat[] }[] = [
   { key: 'pass', label: 'Subscription pass', cats: ['subscriptions'] },
   { key: 'label', label: 'Publishing label', cats: ['publishing'] },
   { key: 'subs', label: 'Subsidiaries', cats: ['subsidiaries'] },
+  { key: 'other', label: 'Interest & other', cats: ['interest_income', 'asset_sales', 'other_income'] },
 ];
 
 function RevenueMix({ months }: { months: number }) {

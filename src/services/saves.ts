@@ -195,6 +195,24 @@ export async function syncSlot(uid: string, slotId: SlotId): Promise<'synced' | 
   return 'synced';
 }
 
+/**
+ * Before writing a brand-new game into a slot that *looks* empty, make sure the cloud doesn't already hold a
+ * save there (the slot list may be stale, or the listing may have failed). 'unknown' means we couldn't check.
+ */
+export async function cloudSlotStatus(uid: string, slotId: SlotId): Promise<'free' | 'taken' | 'unknown'> {
+  if (!cloudEnabled(uid)) return 'free';
+  if (tombstones().includes(`${uid}/${slotId}`)) return 'free';
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'unknown';
+  try {
+    const { db } = await cloudReady();
+    const { doc, getDoc } = await import('firebase/firestore');
+    const snap = await Promise.race([getDoc(doc(db, 'users', uid, 'slots', slotId)), new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 8_000))]);
+    return snap.exists() ? 'taken' : 'free';
+  } catch {
+    return 'unknown';
+  }
+}
+
 async function cloudMetas(uid: string): Promise<Partial<Record<SlotId, SlotMeta & { chunkCount: number }>>> {
   if (!cloudEnabled(uid)) return {};
   try {

@@ -33,6 +33,29 @@ export async function readSaveFile(file: File): Promise<GameState> {
   const obj = raw as { format?: string; state?: unknown };
   const state = obj && typeof obj === 'object' && obj.format === FORMAT ? obj.state : raw;
   const s = migrate(state);
-  if (typeof s.company?.name !== 'string' || !s.finance || !s.market) throw new SaveError('That file is missing parts of a save');
+  const isObj = (x: unknown) => !!x && typeof x === 'object' && !Array.isArray(x);
+  const ok =
+    typeof s.company?.name === 'string' &&
+    typeof s.company.founderName === 'string' &&
+    Number.isFinite(s.company.cash) &&
+    isObj(s.settings) &&
+    isObj(s.staff) &&
+    isObj(s.projects) &&
+    isObj(s.releases) &&
+    Array.isArray(s.releaseOrder) &&
+    isObj(s.rivals) &&
+    isObj(s.franchises) &&
+    isObj(s.engines) &&
+    isObj(s.office) &&
+    Array.isArray(s.office.items) &&
+    isObj(s.finance) &&
+    Array.isArray(s.finance.ledger) &&
+    isObj(s.market) &&
+    isObj(s.offers) &&
+    isObj(s.progress) &&
+    isObj(s.progress.stats) &&
+    Array.isArray(s.news) &&
+    Array.isArray(s.candidates);
+  if (!ok) throw new SaveError('That file is missing parts of a save (it may be damaged or edited)');
   return s;
 }

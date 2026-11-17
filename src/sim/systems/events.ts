@@ -923,7 +923,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Computer club demo night',
         body: `The local computer club invites you to show ${last.name} at their monthly meeting. Mostly hobbyists — but one of them writes for a magazine.`,
         options: [
-          { id: 'go', label: 'Bring the floppies (a day off work)', preview: 'Reputation +3; your next game gets a little hype' },
+          { id: 'go', label: 'Bring the floppies (a day off work)', preview: 'Reputation +3; games in development get a little hype' },
           { id: 'skip', label: 'Too busy', preview: 'No change' },
         ],
         ctx: {},
@@ -945,7 +945,7 @@ export const EVENT_DEFS: EventDef[] = [
       body: 'A popular online game jam starts this weekend. Your team could enter — 48 hours, one theme, no sleep.',
       options: [
         { id: 'enter', label: 'Enter as a team', preview: 'Reputation +3, morale +5 for a month, everyone a bit tired' },
-        { id: 'host', label: `Sponsor the jam (${fmtMoney(money(4_000, s.day))})`, preview: 'Reputation +4, a talented candidate joins the hiring pool' },
+        { id: 'host', label: `Sponsor the jam (${fmtMoney(money(4_000, s.day))})`, preview: 'Reputation +4, a talented candidate joins the hiring pool', disabled: s.company.cash < money(4_000, s.day) },
         { id: 'skip', label: 'Rest instead', preview: 'No change' },
       ],
       ctx: {},
@@ -956,7 +956,7 @@ export const EVENT_DEFS: EventDef[] = [
         addRep(s, 3, 'Game jam entry went viral');
         mod(s, 5, 30, 'Game jam buzz');
         for (const st of Object.values(s.staff)) st.energy = Math.max(10, st.energy - 25);
-      } else if (opt === 'host') {
+      } else if (opt === 'host' && s.company.cash >= money(4_000, s.day)) {
         spend(s, 'marketing', money(4_000, s.day));
         addRep(s, 4, 'Sponsored a game jam');
         const cand = generateCandidate(s, c.rng, { quality: 25 });
@@ -1000,7 +1000,7 @@ export const EVENT_DEFS: EventDef[] = [
           addRep(s, -2, `The ${fr.name} movie flopped`);
           pushNews(s, { category: 'industry', headline: `Critics savage the ${fr.name} movie`, tone: 'bad' });
         }
-      } else {
+      } else if (s.company.cash >= Number(e.ctx.coCost)) {
         spend(s, 'marketing', Number(e.ctx.coCost));
         if (rng.chance(0.75)) {
           fr.fans = Math.round(fr.fans * 1.25);

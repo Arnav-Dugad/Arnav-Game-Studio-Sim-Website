@@ -67,6 +67,8 @@ function Label() {
               </span>
               {d.status === 'dev' ? (
                 <Pill tone="tech">ships ~{formatDate(d.releaseDay, false)}</Pill>
+              ) : d.gameName === undefined ? (
+                <Pill tone="bad">studio closed · {fmtMoney(d.advance)} lost</Pill>
               ) : (
                 <>
                   <Pill tone={(d.score ?? 0) >= 75 ? 'good' : (d.score ?? 0) < 55 ? 'bad' : 'neutral'}>{d.score}</Pill>

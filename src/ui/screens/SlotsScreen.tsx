@@ -3,7 +3,7 @@ import { createGame } from '@/sim/create';
 import { fmtMoney } from '@/sim/util';
 import type { Difficulty } from '@/data/balance';
 import { useAuth } from '@/services/auth';
-import { adoptGuestSaves, deleteSlot, ensureProfile, getHallOfFame, listSlots, loadSlot, saveLocal, syncSlot, type HallEntry, type SlotId, type SlotInfo } from '@/services/saves';
+import { adoptGuestSaves, cloudSlotStatus, deleteSlot, ensureProfile, getHallOfFame, listSlots, loadSlot, saveLocal, syncSlot, type HallEntry, type SlotId, type SlotInfo } from '@/services/saves';
 import { Wordmark } from '../art/EventArt';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { Button, Field, Modal, Pill, Segmented, cx, inputCls } from '../components/ui';
@@ -26,6 +26,7 @@ export function SlotsScreen() {
   const [creating, setCreating] = useState<SlotId | null>(null);
   const [loading, setLoading] = useState<SlotId | null>(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [confirmDel, setConfirmDel] = useState<SlotId | null>(null);
 
   const refresh = useCallback(async () => {
@@ -88,11 +89,23 @@ export function SlotsScreen() {
     input.value = ''; // allow picking the same file again
     if (!file) return;
     setError('');
+    setNotice('');
     try {
       const s = await readSaveFile(file);
+      // Never overwrite a save another device put in this slot after we listed it.
+      const cloud = await cloudSlotStatus(user.uid, slotId);
+      if (cloud === 'taken') {
+        setError('That slot already has a save in the cloud (maybe from another device). Refreshing the list — pick an empty slot.');
+        void refresh();
+        return;
+      }
+      if (cloud === 'unknown') {
+        setError('Couldn’t check your cloud saves right now, so the import was cancelled to keep them safe. Try again when you’re online.');
+        return;
+      }
       await saveLocal(user.uid, slotId, s);
-      if (!user.guest) await syncSlot(user.uid, slotId).catch(() => 'offline');
-      useGame.getState().toast({ text: `${s.company.name} imported`, tone: 'good', icon: 'save' });
+      if (!user.guest) void syncSlot(user.uid, slotId).catch(() => 'offline');
+      setNotice(`${s.company.name} imported into slot ${slotId.replace('slot', '')}.`);
       void refresh();
     } catch (e) {
       setError(`Couldn’t import that file: ${e instanceof Error ? e.message : String(e)}`);
@@ -133,6 +146,11 @@ export function SlotsScreen() {
         <h1 className="font-display text-3xl font-bold">Your studios</h1>
         <p className="mt-1 text-sm text-ink2">{user.guest ? 'Guest saves live in this browser. Create an account to sync them to the cloud.' : 'Saves sync to the cloud and are kept on this device for offline play.'}</p>
         <WhatsNew />
+        {notice && (
+          <div role="status" className="mt-4 rounded-xl bg-good/10 p-3 text-sm text-good">
+            {notice}
+          </div>
+        )}
         {error && (
           <div role="alert" className="mt-4 rounded-xl bg-bad/10 p-3 text-sm text-bad">
             {error}
@@ -213,9 +231,9 @@ export function SlotsScreen() {
                       Delete
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" icon="download" onClick={() => void exportSlot(sl.slotId)} aria-label={`Export ${meta.companyName} to a file`} title="Download this save as a file (backup or move it to another device)">
+                  {!sl.conflict && <Button size="sm" variant="ghost" icon="download" onClick={() => void exportSlot(sl.slotId)} aria-label={`Export ${meta.companyName} to a file`} title="Download this save as a file (backup or move it to another device)">
                     Export
-                  </Button>
+                  </Button>}
                   {!sl.conflict && (
                     <Button variant="primary" icon="play" onClick={() => open(sl.slotId)} disabled={loading !== null}>
                       {loading === sl.slotId ? 'Loading…' : meta.status === 'running' ? 'Continue' : 'View ending'}
@@ -253,6 +271,13 @@ export function SlotsScreen() {
           onClose={() => setCreating(null)}
           onCreate={async (opts) => {
             const s = createGame({ seed: Math.floor(Math.random() * 2 ** 31), ...opts });
+            // A stale list could show a slot as empty that another device has since filled.
+            if ((await cloudSlotStatus(user.uid, creating)) === 'taken') {
+              setError('That slot already has a save in the cloud (maybe from another device). Refreshing the list — pick an empty slot.');
+              setCreating(null);
+              void refresh();
+              return;
+            }
             try {
               await saveLocal(user.uid, creating, s);
             } catch (e) {

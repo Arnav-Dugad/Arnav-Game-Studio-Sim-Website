@@ -19,6 +19,9 @@ describe('save files', () => {
     s.schemaVersion = 2;
     expect((await readSaveFile(file(JSON.stringify(s)))).hardware).toEqual([]);
     await expect(readSaveFile(file('not json'))).rejects.toThrow(/not JSON/);
+    const broken = createGame({ seed: 4, companyName: 'Broken', founderName: 'B' }) as unknown as Record<string, unknown>;
+    delete broken.staff;
+    await expect(readSaveFile(file(JSON.stringify(broken)))).rejects.toThrow(/missing parts/);
     await expect(readSaveFile(file('{"hello":1}'))).rejects.toThrow();
     await expect(readSaveFile(file(JSON.stringify({ format: 'arnav-game-studio-save', state: { schemaVersion: 99 } })))).rejects.toThrow(/newer version/);
   });
