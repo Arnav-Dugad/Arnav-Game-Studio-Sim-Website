@@ -342,6 +342,8 @@ export interface GameProject {
   delayedWeeks?: number;
   /** Passed (or was fixed after failing) platform certification. */
   certified?: boolean;
+  /** A secret someone hid in it (systems/easterEggs.ts). */
+  easterEgg?: { by: string; name: string; what: string };
   /** A documentary crew is filming its making (systems/documentary.ts): since when, and crunch days caught on camera. */
   documentary?: { day: number; crunchDays: number };
   /** A co-development partner: their contribution and revenue share. */
@@ -463,6 +465,8 @@ export interface Release {
   passion?: string;
   /** Fans asked to translate it (the event happened, whatever you chose). */
   fanTranslated?: boolean;
+  /** A hidden secret, and whether players have found it yet. */
+  easterEgg?: { by: string; name: string; what: string; found: boolean };
   /** The team got a launch bonus for it (and when). */
   bonusPaid?: boolean;
   bonusDay?: number;

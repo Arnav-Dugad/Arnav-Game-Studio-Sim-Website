@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { EGGS } from './easterEggs';
 import { platformInfo } from './market';
 import { gameRegions } from '../../data/regions';
 import type { GenreId } from '../../data/types';
@@ -838,6 +839,40 @@ export const EVENT_DEFS: EventDef[] = [
       else p.extraDays += 7;
       const dev = s.staff[String(e.ctx.dev)];
       if (dev) dev.morale = clamp(dev.morale + 5, 0, 100);
+    },
+  },
+  {
+    id: 'easter_egg',
+    art: 'letters',
+    cooldown: 500,
+    weight: (s) => (activeGames(s).some((p) => p.phase >= 1 && !p.easterEgg && p.team.some((id) => s.staff[id] && s.staff[id]!.role !== 'founder')) ? 0.2 : 0),
+    make: ({ s, rng }) => {
+      const pool = activeGames(s).filter((p) => p.phase >= 1 && !p.easterEgg);
+      const p = pool.length ? rng.pick(pool) : undefined;
+      const people = p ? p.team.map((id) => s.staff[id]).filter((x): x is Staff => !!x && x.role !== 'founder') : [];
+      if (!p || !people.length) return null;
+      const st = rng.pick(people);
+      const what = rng.pick([...EGGS]);
+      const first = st.name.split(' ')[0];
+      return {
+        title: `${first} hid something in ${p.concept.name}`,
+        body: `During a late-night playtest you stumble on it: ${what}. ${first} looks sheepish. “Nobody will ever find it… right?”`,
+        options: [
+          { id: 'keep', label: 'Leave it in', preview: `A few months after launch players may find it: a little buzz for the game, and a proud ${first}` },
+          { id: 'cut', label: 'Take it out', preview: `Keeps things tidy — ${first} is a bit deflated` },
+        ],
+        ctx: { project: p.id, staff: st.id, what },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      const st = s.staff[String(e.ctx.staff)];
+      if (!p || p.kind !== 'game' || !st) return;
+      if (opt === 'keep') p.easterEgg = { by: st.id, name: st.name, what: String(e.ctx.what) };
+      else if (!st.mood || st.mood.until <= s.day || st.mood.v > -2) {
+        st.mood = { v: -2, until: s.day + 30, label: 'Easter egg cut' };
+        st.moraleWhy = undefined;
+      }
     },
   },
   {

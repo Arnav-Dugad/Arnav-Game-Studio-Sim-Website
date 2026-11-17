@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { eggOnRelease } from './easterEggs';
 import { campaignBoost } from './awardsCampaign';
 import { renownSalesMul, renownUserEffect } from './renown';
 import { PRICE_MUL, priceDemandMul, priceTierOf, priceUserEffect } from './pricing';
@@ -452,6 +453,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   rel.credits = p.team.map((sid) => s.staff[sid]).filter((x): x is NonNullable<typeof x> => !!x).map((x) => ({ id: x.id, name: x.name, role: x.role, level: x.level }));
   partnersOnRelease(s, rel);
   docOnRelease(s, p, rel);
+  eggOnRelease(p, rel);
   s.releases[id] = rel;
   s.releaseOrder.push(id);
   exclusiveBuzz(s, rel);
