@@ -207,6 +207,32 @@ export class VisitorSystem {
       this.list.push(v);
       if (i === 1 || i === 4) this.say(v, i === 1 ? `${game.slice(0, 18)}! 🎉` : pick(['Day one!', 'Been waiting all year!', 'Take my money!']), 3);
     }
+    // someone in the studio mascot costume comes out to greet the queue
+    const m = s.company.mascot;
+    if (m) {
+      const c = new Container();
+      const col = parseInt(m.color.slice(1), 16);
+      const body = new Graphics().ellipse(0, -14, 11, 13).fill(col);
+      const legL = new Graphics().roundRect(-6, -4, 5, 6, 2).fill(col);
+      const legR = new Graphics().roundRect(1, -4, 5, 6, 2).fill(col);
+      const head = new Graphics();
+      if (m.kind === 'robot') head.roundRect(-11, -46, 22, 20, 5).fill(col);
+      else head.circle(0, -36, 12).fill(col);
+      if (m.kind === 'bear') head.circle(-9, -46, 4).fill(col).circle(9, -46, 4).fill(col);
+      else if (m.kind === 'cat') head.poly([-10, -40, -8, -52, -2, -45]).fill(col).poly([10, -40, 8, -52, 2, -45]).fill(col);
+      else if (m.kind === 'dragon') head.poly([-7, -44, -11, -54, -3, -46]).fill(0xf2e2b8).poly([7, -44, 11, -54, 3, -46]).fill(0xf2e2b8);
+      else if (m.kind === 'robot') head.rect(-0.8, -54, 1.6, 8).fill(0x2a2622).circle(0, -54, 2).fill(0xf2c450);
+      else if (m.kind === 'bird') head.poly([-2, -26, 2, -26, 0, -21]).fill(0xf2c450);
+      head.circle(-4, -37, 2.4).fill(0xffffff).circle(4, -37, 2.4).fill(0xffffff).circle(-4, -36.5, 1.1).fill(0x2a2622).circle(4, -36.5, 1.1).fill(0x2a2622);
+      if (m.acc === 'crown') head.poly([-7, -46, -5, -53, -2, -49, 0, -55, 2, -49, 5, -53, 7, -46]).fill(0xe3b23c);
+      const rig = createRig(new Graphics(), lookFor(1, 'visitor'));
+      rig.root.visible = false;
+      c.addChild(legL, legR, body, head, rig.root);
+      this.layer.addChild(c);
+      const v: Visitor = { kind: 'fan', c, rig, anim: newAnim(), legL, legR, x: ex - ((n - 1) / 2) * 16 - 26, y: ey + T * 1.5, t: 0, face: 1, path: [], phase: 'visit', wait: 9, target: '', lines: ['', ''], replied: true, speech: null, speechT: 0, carry: 'none' };
+      this.list.push(v);
+      this.say(v, pick(['Welcome, everyone! 🎉', 'Thanks for coming!', 'Who wants a high five?']), 3.2);
+    }
   }
 
   /** Someone is leaving the studio: they pack a box, say goodbye and walk out. */
