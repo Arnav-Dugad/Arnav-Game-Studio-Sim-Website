@@ -64,6 +64,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'fan_con', name: 'Convention Season', desc: 'Host a fan convention for one of your series.', icon: 'people', check: (s) => Object.values(s.franchises).some((f) => f.lastCon !== undefined) },
   { id: 'copied', name: 'Sincerest Flattery', desc: 'Have a rival rush out a knock-off of your hit.', icon: 'sparkle', check: (s) => Object.values(s.releases).some((r) => (r.copycats ?? 0) > 0) },
   { id: 'mentor', name: 'Proud Mentor', desc: 'See a mentee graduate to senior.', icon: 'star', check: (s) => (s.progress.stats.graduates ?? 0) > 0 },
+  { id: 'union', name: 'Solidarity', desc: 'Recognise your workers’ union.', icon: 'people', check: (s) => !!s.company.union },
+  { id: 'gym', name: 'Healthy Studio', desc: 'Build a studio gym.', icon: 'heart', check: (s) => s.office.items.some((i) => i.item === 'gym') },
   { id: 'office_2', name: 'Moving Out', desc: 'Move out of the garage.', icon: 'box', check: (s) => s.office.tier >= 2 },
   { id: 'office_4', name: 'Your Own Building', desc: 'Move into a Studio Building.', icon: 'building', check: (s) => s.office.tier >= 4 },
   { id: 'office_6', name: 'Skyline', desc: 'Build the Global HQ.', icon: 'tower', check: (s) => s.office.tier >= 6 },
