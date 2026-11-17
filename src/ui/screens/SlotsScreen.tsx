@@ -304,6 +304,14 @@ export function SlotsScreen() {
   );
 }
 
+const NAME_A = ['Pixel', 'Neon', 'Crimson', 'Lucky', 'Tiny', 'Brave', 'Moonlit', 'Velvet', 'Rocket', 'Paper', 'Iron', 'Golden', 'Quiet', 'Wild', 'Clockwork', 'Cosmic', 'Little', 'Arcade', 'Bright', 'Hidden'];
+const NAME_B = ['Fox', 'Lantern', 'Comet', 'Otter', 'Forge', 'Owl', 'Harbor', 'Bear', 'Kite', 'Lighthouse', 'Garden', 'Dragon', 'Robot', 'Panda', 'Squid', 'Tortoise', 'Pigeon', 'Cactus', 'Meteor', 'Badger'];
+const NAME_C = ['Games', 'Studios', 'Interactive', 'Entertainment', 'Works', 'Collective', 'Softworks', 'Labs', 'Digital', 'Bros.'];
+function studioName(): string {
+  const p = <T,>(xs: readonly T[]) => xs[Math.floor(Math.random() * xs.length)]!;
+  return `${p(NAME_A)} ${p(NAME_B)} ${p(NAME_C)}`;
+}
+
 interface NewOpts {
   companyName: string;
   founderName: string;
@@ -352,7 +360,12 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Studio name">
-            <input className={inputCls} value={o.companyName} maxLength={40} onChange={(e) => set('companyName', e.target.value)} placeholder="Garage Dreams Interactive" autoFocus />
+            <div className="flex gap-1.5">
+              <input className={inputCls} value={o.companyName} maxLength={40} onChange={(e) => set('companyName', e.target.value)} placeholder="Garage Dreams Interactive" autoFocus />
+              <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line text-lg hover:bg-bg2" aria-label="Suggest a studio name" title="Suggest a name" onClick={() => set('companyName', studioName())}>
+                🎲
+              </button>
+            </div>
           </Field>
           <Field label="Founder (you)">
             <input className={inputCls} value={o.founderName} maxLength={40} onChange={(e) => set('founderName', e.target.value)} placeholder="Your name" />
