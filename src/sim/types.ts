@@ -168,6 +168,10 @@ export interface YearbookPhoto {
   games: string[];
   awards: number;
   faces: { look: number; name: string; role: string; mood: number; legend?: boolean }[];
+  /** The year in numbers (newer saves). */
+  reputation?: number;
+  fans?: number;
+  revenue?: number;
 }
 
 export interface FanMail {

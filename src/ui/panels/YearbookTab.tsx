@@ -1,4 +1,6 @@
 import { memo } from 'react';
+import { LineChart } from '../charts/LineChart';
+import { fmtMoney, fmtUnits } from '@/sim/util';
 import { tierDef } from '@/sim/systems/office';
 import { ROLE_NAMES } from '@/sim/systems/staff';
 import type { Role, YearbookPhoto } from '@/sim/types';
@@ -58,7 +60,7 @@ const Photo = memo(function Photo({ p, company }: { p: YearbookPhoto; company: s
         {(p.games.length > 0 || p.awards > 0) && (
           <div className="mt-0.5 text-xs text-ink2">
             {p.games.length > 0 && <>Shipped {p.games.join(', ')}</>}
-            {p.awards > 0 && <> · 🏆 {p.awards}</>}
+            {p.awards > 0 && <>{p.games.length > 0 ? ' · ' : ''}🏆 {p.awards}</>}
           </div>
         )}
       </figcaption>
@@ -72,10 +74,37 @@ export function YearbookTab() {
   if (!book.length) return <Empty icon="people" title="No photos yet">The first team photo is taken on New Year’s Day. Come back in January!</Empty>;
   return (
     <div>
+      <OverTheYears book={[...book].reverse()} />
       <p className="mb-3 text-xs text-ink3">Every New Year’s Day the team lines up for a photo — the founder in front, then whoever’s been here longest. Their faces show how the year went.</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {book.map((p) => (
           <Photo key={p.year} p={p} company={s.company.name} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** The studio's arc in four small charts, from the yearbook's numbers. */
+function OverTheYears({ book }: { book: YearbookPhoto[] }) {
+  const rows = book.filter((p) => p.revenue !== undefined);
+  if (rows.length < 2) return null;
+  const series = (name: string, get: (p: YearbookPhoto) => number) => [{ name, points: rows.map((p) => ({ x: p.year, y: get(p) })) }];
+  const charts: { title: string; data: ReturnType<typeof series>; fmt?: (v: number) => string }[] = [
+    { title: 'People', data: series('People', (p) => p.people) },
+    { title: 'Reputation', data: series('Reputation', (p) => p.reputation ?? 0) },
+    { title: 'Fans', data: series('Fans', (p) => p.fans ?? 0), fmt: (v) => fmtUnits(v) },
+    { title: 'Revenue', data: series('Revenue', (p) => p.revenue ?? 0), fmt: (v) => fmtMoney(v) },
+  ];
+  return (
+    <div className="mb-4">
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink3">Over the years</div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {charts.map((c) => (
+          <div key={c.title} className="rounded-xl border border-line p-2">
+            <div className="text-xs font-semibold">{c.title}</div>
+            <LineChart ariaLabel={`${c.title} by year`} height={110} area series={c.data} xFormat={(x) => String(Math.round(x))} {...(c.fmt ? { yFormat: c.fmt } : {})} />
+          </div>
         ))}
       </div>
     </div>

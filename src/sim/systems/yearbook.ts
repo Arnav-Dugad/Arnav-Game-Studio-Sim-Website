@@ -27,6 +27,9 @@ export function takeYearbookPhoto(s: GameState, year: number): void {
     tier: s.office.tier,
     games,
     awards,
+    reputation: Math.round(s.company.reputation),
+    fans: Math.round(s.company.fans),
+    revenue: Math.round(s.finance.revenue12m.reduce((t, v) => t + v, 0)),
     faces: ranked.slice(0, YEARBOOK_FACES).map((st) => ({ look: st.look, name: st.name, role: st.role, mood: Math.round(st.morale), ...(st.personId ? { legend: true } : {}) })),
   };
   const book = (s.yearbook ??= []);
