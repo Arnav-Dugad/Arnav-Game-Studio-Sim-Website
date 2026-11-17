@@ -449,6 +449,9 @@ export interface Release {
   liveMul?: number;
   /** Archived by a preservation society. */
   archived?: boolean;
+  /** Licensed content (systems/licences.ts): renewed until this day; once delisted it never sells again. */
+  licenceUntil?: number;
+  delisted?: boolean;
   /** Its making-of documentary: premiere day, crunch caught on camera, and how it was received once out. */
   documentary?: { premiere: number; crunchDays: number; outcome?: 'acclaimed' | 'warm' | 'mixed' | 'cautionary' };
   /** Released without ever being announced (2015+). */

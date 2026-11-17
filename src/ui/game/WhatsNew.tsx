@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20w';
+export const WHATS_NEW_VERSION = '2026-11-20x';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'calendar', title: 'Licences expire', body: 'Games with an official league licence or a licensed soundtrack can only be sold while the licence lasts — seven years at a time. When it runs out on a game that still sells, renew it (half the original fees) or let it be delisted for good. Expiries show on the Coming up calendar.' },
   { icon: 'star', title: 'Known for…', body: 'Make two or more great games (75+) in a genre and your studio becomes known for it (★ on the genre picker, and on the Overview): its players trust the name and more of them buy your next one — up to 12% — but they also expect your usual standard, and a weak entry disappoints.' },
   { icon: 'coin', title: 'Set your price', body: 'Self-published full-price games now pick a launch price: Budget (about 30% more buyers — and fans — and players love the value), Standard, or Premium (more per copy, fewer buyers, and players only forgive it on a great game). The sales forecast updates as you choose.' },
   { icon: 'people', title: 'One-on-ones', body: 'Open anyone’s card and Check in: they’ll tell you what’s really on their mind — burnout, pay against the market, a cramped desk, a dream they’re chasing — and feel heard (a better mood, more loyalty, some relief from burnout). Your calendar fits six a month, plus two for every producer.' },

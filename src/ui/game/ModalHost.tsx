@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { licenceDue } from '@/sim/systems/licences';
 import { checkInBlocked, checkInLimit, checkInsUsed } from '@/sim/systems/checkIns';
 import type { MascotAcc, MascotDesign, MascotKind } from '@/sim/types';
 import { Mascot } from '../art/Mascot';
@@ -430,6 +431,12 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             {r.numberOne && <Pill tone="gold">#1 chart-topper</Pill>}
             {r.classic && <Pill tone="gold">Hall of Classics {r.classic}</Pill>}
             {r.shadowDrop && <Pill tone="tech">Shadow drop</Pill>}
+            {r.delisted && <Pill tone="bad">Delisted</Pill>}
+            {!r.delisted && licenceDue(r) !== null && (
+              <span title="Licensed content: renew or let it be delisted when the licence runs out">
+                <Pill>Licensed until {fromDay(licenceDue(r)!).year}</Pill>
+              </span>
+            )}
             {r.concept.priceTier === 'budget' && <Pill tone="good">Budget price</Pill>}
             {r.concept.priceTier === 'premium' && <Pill tone="gold">Premium price</Pill>}
             {r.documentary && (

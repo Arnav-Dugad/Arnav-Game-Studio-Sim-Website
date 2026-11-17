@@ -585,7 +585,7 @@ export function updateSalesWeekly(c: Ctx): void {
   // Digital-era sales are less seasonal than boxed retail.
   const rawSeason = BALANCE.SEASONALITY[fromDay(s.day).month - 1] ?? 1;
   for (const rel of Object.values(s.releases)) {
-    if (!rel.active) continue;
+    if (!rel.active || rel.delisted) continue;
     const comp = competition(s, rel);
     let units = 0;
     let net = 0;
@@ -702,6 +702,7 @@ export function updateLiveMonthly(c: Ctx): void {
   const { s } = c;
   for (const rel of Object.values(s.releases)) {
     const m = rel.concept.monetization;
+    if (rel.delisted) continue;
     if (m === 'subscription' || m === 'f2p' || m === 'live_service' || m === 'premium_dlc') {
       const age = (s.day - rel.day) / 30.44;
       if (age < 1) continue;
@@ -906,6 +907,7 @@ function saleShare(s: GameState, ps: PlatformSales): number {
 }
 
 export function canRunSale(s: GameState, rel: Release): string | null {
+  if (rel.delisted) return 'Delisted — its licences expired';
   if (!SALE_MONET.has(rel.concept.monetization)) return 'Only one-off purchases go on sale';
   if (s.day - rel.day < SALE_MIN_AGE_DAYS) return `Too new — wait ${Math.ceil((SALE_MIN_AGE_DAYS - (s.day - rel.day)) / 7)} more weeks`;
   if (rel.lastSaleDay !== undefined && s.day - rel.lastSaleDay < SALE_COOLDOWN_DAYS) return `On sale recently — again in ${Math.ceil((SALE_COOLDOWN_DAYS - (s.day - rel.lastSaleDay)) / 7)} weeks`;
@@ -971,6 +973,7 @@ export function applyPatch(s: GameState, rel: Release): number {
 
 /** Why a classic can't get a digital re-release (or null). 2006+, 12+ years old, 70+ score, once. */
 export function rereleaseBlocked(s: GameState, rel: Release): string | null {
+  if (rel.delisted) return 'Delisted — its licences expired';
   if (fromDay(s.day).year < 2006) return 'Digital storefronts for classics arrive around 2006';
   if (s.day - rel.day < 365 * 12) return 'Only games 12+ years old count as classics';
   if (rel.score < 70) return 'Only well-loved games (70+) are worth re-releasing';

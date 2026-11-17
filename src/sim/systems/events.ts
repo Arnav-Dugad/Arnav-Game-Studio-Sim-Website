@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { LICENCE_YEARS, delist, licenceDecisionDue, licensedParts, renewalCost } from './licences';
 import { docEligible } from './documentary';
 import { communityNudge } from './community';
 import { hireIntern, starIntern } from './interns';
@@ -851,6 +852,40 @@ export const EVENT_DEFS: EventDef[] = [
         p.bugs *= 1.05;
       } else if (p.phase <= 2) p.phaseDays[Math.min(2, p.phase) as 0 | 1 | 2] += 14;
       else p.extraDays += 14;
+    },
+  },
+  {
+    id: 'licence_expiry',
+    art: 'letters',
+    cooldown: 0,
+    weight: () => 0, // scheduled by systems/licences.ts, never random
+    make: ({ s }) => {
+      const r = licenceDecisionDue(s);
+      if (!r) return null;
+      const cost = renewalCost(s, r);
+      const what = licensedParts(r).map((id) => (id === 'official_license' ? 'league licence' : 'soundtrack licence')).join(' and the ');
+      return {
+        title: `${r.name}’s licences are up`,
+        body: `The ${what} for ${r.name} expire this month. Renew for another seven years, or let the game be delisted from stores for good.`,
+        options: [
+          { id: 'renew', label: `Renew for seven years (${fmtMoney(cost)})`, preview: 'It stays on sale — storefront sales and re-releases still possible', disabled: s.company.cash < cost },
+          { id: 'lapse', label: 'Let it lapse', preview: 'Delisted for good: no more sales of any kind; fans grumble (reputation −0.5)' },
+        ],
+        ctx: { rel: r.id, cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (!r || r.delisted) return;
+      const cost = Number(e.ctx.cost);
+      if (opt === 'renew' && s.company.cash >= cost) {
+        spend(s, 'other_expense', cost);
+        r.licenceUntil = s.day + Math.round(LICENCE_YEARS * 365.25);
+        pushNews(s, { category: 'studio', headline: `${r.name}’s licences renewed`, body: 'It stays on store shelves for another seven years.', tone: 'neutral' });
+      } else {
+        delist(s, r, true);
+        addRep(s, -0.5, `${r.name} delisted`);
+      }
     },
   },
   {

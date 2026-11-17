@@ -1,4 +1,5 @@
 /** "Coming up": the next few months of dated events across the game's systems, for the Overview. */
+import { licenceDue } from '@/sim/systems/licences';
 import { TRADE_SHOWS } from '@/data/marketing';
 import { COMPANY_BY_ID } from '@/data/companies';
 import { fromDay, toDay } from '@/sim/calendar';
@@ -37,6 +38,11 @@ export function comingUp(s: GameState, days = 120, max = 10): CalendarEntry[] {
   for (const id of s.releaseOrder.slice(-12)) {
     const r = s.releases[id];
     if (r?.documentary && !r.documentary.outcome) add({ day: r.documentary.premiere, icon: 'camera', text: `“Making ${r.name}” premieres` });
+  }
+  for (const id of s.releaseOrder) {
+    const r = s.releases[id];
+    const due = r ? licenceDue(r) : null;
+    if (r && due !== null && r.active) add({ day: due, icon: 'calendar', text: `${r.name}’s licences expire`, tone: 'bad' });
   }
   for (const d of s.mediaDeals ?? []) if (d.outcome === undefined) add({ day: d.releaseDay, icon: 'sparkle', text: `The ${d.name} ${MEDIA[d.kind].noun} comes out` });
   // the industry
