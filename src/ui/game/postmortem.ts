@@ -81,11 +81,19 @@ export function postMortem(r: Release): PostMortem {
   for (const part of r.why.user?.parts ?? []) {
     if (part.kind !== 'add' || part.label === 'Players vary' || part.label === 'Bugs' || part.label.startsWith('Backers waited')) continue;
     const w = Math.abs(part.value) / 25;
-    if (part.label.startsWith('Didn’t live up')) push(false, { text: 'Players felt it didn’t live up to the hype', lesson: 'Only build big hype for games that can deliver', weight: w });
+    if (part.label === 'Feels overpriced') push(false, { text: 'Players felt it was overpriced', lesson: 'Save premium prices for games you know are great', weight: 0.1 });
+    else if (part.label === 'Great value') push(true, { text: 'Players loved the budget price', weight: 0.06 });
+    else if (part.label === 'Below the studio’s usual standard') push(false, { text: `Fans of your ${genre} games expected better`, lesson: 'Your speciality sets the bar — give it the time it needs', weight: 0.12 });
+    else if (part.label.startsWith('Didn’t live up')) push(false, { text: 'Players felt it didn’t live up to the hype', lesson: 'Only build big hype for games that can deliver', weight: w });
     else if (part.label === 'Franchise fatigue' && part.value <= -2) push(false, { text: 'The series is wearing thin', lesson: 'Rest the series, or reinvent it', weight: w });
     else if (part.label === 'Monetization' && part.value <= -3) push(false, { text: 'Players resented the monetization', lesson: 'Lighter monetization keeps players on side', weight: w });
     else if (part.value >= 2 && !part.label.startsWith('Culture:')) push(true, { text: part.label, weight: w });
     else if (part.value <= -3 && !part.label.startsWith('Culture:')) push(false, { text: part.label, weight: w });
+  }
+
+  for (const part of r.why.sales?.parts ?? []) {
+    if (part.label.startsWith('Known for')) push(true, { text: `Players who love your ${genre} games turned up`, weight: Math.log(part.value) + 0.05 });
+    else if (part.label.startsWith('Budget price')) push(true, { text: 'The budget price brought in extra buyers', weight: 0.08 });
   }
 
   // business
