@@ -18,7 +18,7 @@ const CAT_ICON: Record<NewsCategory, IconName> = {
 export default function NewsPanel() {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
-  const [cat, setCat] = useState<NewsCategory | 'all' | 'awards'>('all');
+  const [cat, setCat] = useState<NewsCategory | 'all' | 'awards'>(() => (useGame.getState().panelTab === 'awards' ? 'awards' : 'all'));
   const news = [...s.news].reverse().filter((n) => cat === 'all' || n.category === cat);
   return (
     <div>

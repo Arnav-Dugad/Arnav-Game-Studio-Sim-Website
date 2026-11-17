@@ -45,6 +45,7 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       (modal.kind === 'gate' && !(s.projects[modal.projectId]?.kind === 'game' && (s.projects[modal.projectId] as { awaitingGate?: boolean }).awaitingGate)) ||
       (modal.kind === 'majorNews' && !s.news.some((n) => n.id === modal.newsId)) ||
       (modal.kind === 'rival' && !s.rivals[modal.rivalId]) ||
+      (modal.kind === 'gala' && ![...(s.awardHistory ?? [])].reverse().find((y) => y.year === modal.year)?.winners.some((w) => w.mine)) ||
       (modal.kind === 'event' && !s.pendingEvents.some((e) => e.uid === modal.uid)));
   useEffect(() => {
     if (stale) pop();
@@ -67,6 +68,8 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       return <InsolventModal onClose={pop} />;
     case 'majorNews':
       return <MajorNewsModal newsId={modal.newsId} onClose={pop} />;
+    case 'gala':
+      return <GalaModal year={modal.year} onClose={pop} />;
     case 'shortcuts':
       return <ShortcutsModal onClose={pop} />;
     case 'guide':
@@ -191,6 +194,75 @@ function ReviewsModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         )}
         <Button variant="primary" onClick={onClose}>
           Continue
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+/** The Golden Pixel Gala, when you take home at least one award. */
+function GalaModal({ year, onClose }: { year: number; onClose: () => void }) {
+  const s = useGame((g) => g.s)!;
+  const reduce = prefersReducedMotion(useSettings.getState());
+  const y = [...(s.awardHistory ?? [])].reverse().find((a) => a.year === year);
+  const mine = y?.winners.filter((w) => w.mine) ?? [];
+  if (!y || !mine.length) return null;
+  const goty = y.winners.find((w) => w.category === 'Game of the Year');
+  const others = y.winners.filter((w) => !w.mine).slice(0, 6);
+  return (
+    <Modal open onClose={onClose} title={`Golden Pixel Gala ${year}`}>
+      {!reduce && <Confetti />}
+      <div className="text-center">
+        <div className="mx-auto grid size-16 place-items-center rounded-full bg-gold/15 text-gold">
+          <Icon name="trophy" size={32} />
+        </div>
+        <div className="mt-2 text-[11px] font-semibold uppercase tracking-widest text-gold">Golden Pixel Gala</div>
+        <h2 className="font-display text-2xl font-semibold">
+          {mine.length === 1 ? 'You won an award!' : `You won ${mine.length} awards!`}
+        </h2>
+        <p className="mt-1 text-sm text-ink2">
+          {goty?.mine ? `${goty.name} is the Game of the Year ${year}. The whole industry is talking about ${s.company.name}.` : `The industry celebrates the best games of ${year}, and ${s.company.name} is on stage.`}
+        </p>
+      </div>
+      <ul className="mt-4 space-y-1.5">
+        {mine.map((w) => (
+          <li key={w.category} className="flex items-center gap-3 rounded-xl border border-gold/50 bg-gold/10 p-2.5 text-sm">
+            <Icon name={w.category === 'Game of the Year' ? 'crown' : 'trophy'} size={18} className="shrink-0 text-gold" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{w.category}</span>
+              <span className="text-xs text-ink2">
+                {w.name} · {w.score}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {others.length > 0 && (
+        <Section title="Other winners" className="mt-4">
+          <ul className="text-xs text-ink2">
+            {others.map((w) => (
+              <li key={w.category} className="flex justify-between gap-2 border-b border-line py-1">
+                <span>{w.category}</span>
+                <span className="truncate text-right">
+                  {w.name} <span className="text-ink3">({w.company})</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            onClose();
+            useGame.getState().openPanel('news', 'awards');
+          }}
+        >
+          All results
+        </Button>
+        <Button variant="primary" onClick={onClose}>
+          Back to work
         </Button>
       </div>
     </Modal>

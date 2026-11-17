@@ -30,7 +30,8 @@ export type Modal =
   | { kind: 'release'; releaseId: string }
   | { kind: 'shortcuts' }
   | { kind: 'guide' }
-  | { kind: 'rival'; rivalId: string };
+  | { kind: 'rival'; rivalId: string }
+  | { kind: 'gala'; year: number };
 
 export interface Toast {
   id: number;
@@ -189,6 +190,7 @@ export function handleEvents(events: SimEvent[]): void {
   if (!s || !events.length) return;
   let pause = false;
   let income = 0;
+  let gala = false;
   for (const e of events) {
     switch (e.type) {
       case 'income':
@@ -240,8 +242,7 @@ export function handleEvents(events: SimEvent[]): void {
         pause = true;
         break;
       case 'award':
-        g.toast({ text: `🏆 ${e.award}!`, tone: 'gold', icon: 'trophy' });
-        sound.play('fanfare');
+        gala = true; // one ceremony for all of this year's wins
         break;
       case 'news':
         if (e.major) {
@@ -266,6 +267,14 @@ export function handleEvents(events: SimEvent[]): void {
         break;
       default:
         break;
+    }
+  }
+  if (gala) {
+    const year = g.s?.awardHistory?.[g.s.awardHistory.length - 1]?.year;
+    if (year !== undefined && !g.modals.some((m) => m.kind === 'gala')) {
+      g.pushModal({ kind: 'gala', year });
+      sound.play('fanfare');
+      pause = true;
     }
   }
   if (income > 0) {
