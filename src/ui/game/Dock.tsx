@@ -19,6 +19,8 @@ export function ProjectDock() {
   const research = s.research.active;
   const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' && x.sickDays <= 0 && !x.vacationDays).length;
   const nudge = !projects.length && idle > 0 && s.status === 'running';
+  // In a busy studio, point at idle people (they cost salary and do nothing).
+  const idleNudge = projects.length > 0 && idle >= 3 && s.status === 'running';
   if (!projects.length && !research && !nudge) return null;
   return (
     <div className="pointer-events-none absolute bottom-16 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap justify-center gap-2 sm:bottom-4">
@@ -37,6 +39,13 @@ export function ProjectDock() {
             </button>
           )}
         </div>
+      )}
+      {idleNudge && (
+        <button type="button" onClick={() => openPanel('staff', 'idle')} className="glass pointer-events-auto flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs hover:brightness-105" title="Open the Team tab filtered to idle people">
+          <Icon name="hourglass" size={14} className="shrink-0 text-warn" />
+          <span className="font-semibold">{idle} idle</span>
+          <span className="text-accent">Assign →</span>
+        </button>
       )}
       {projects.slice(0, 4).map((p) => {
         const pct =

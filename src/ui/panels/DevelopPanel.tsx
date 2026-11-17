@@ -13,7 +13,7 @@ import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore } from '@/sim/systems/dev';
 import { expansionPlatforms, expansionSizeOk, launchTitleMul, salesPotential } from '@/sim/systems/release';
 import { betaBlocked, betaCost, dealAdvanceFor, devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
-import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size } from '@/sim/types';
+import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size, Staff } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { Cover } from '../art/Cover';
 import { Avatar, InitialsBadge } from '../art/Avatar';
@@ -22,7 +22,9 @@ import { Icon } from '../icons';
 import { useGame } from '../store';
 import { isAway } from '@/sim/systems/staff';
 import { FocusSliders } from '../game/FocusEditor';
-import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, bestSkill, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, idealFocus, knowsCombo, suggestName } from '../game/lib';
+import { StaffPicker } from '../components/StaffPicker';
+import { autoPickTeam, freeStaff } from './staffTools';
+import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, idealFocus, knowsCombo, suggestName } from '../game/lib';
 import { sound } from '../sound';
 
 export default function DevelopPanel() {
@@ -238,57 +240,16 @@ function TeamEditor({ p }: { p: GameProject }) {
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const cap = BALANCE.SIZE[p.concept.size].teamCap;
-  const free = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' || x.assignment.kind === 'research');
+  const members = p.team.map((id) => s.staff[id]).filter((x): x is NonNullable<typeof x> => !!x);
+  const pool = [...members, ...freeStaff(s).filter((x) => !p.team.includes(x.id))];
   const set = (team: string[]) => {
+    if (!team.length) return toast({ text: 'Keep at least one person on the game', tone: 'bad' });
     const r = act({ type: 'setTeam', projectId: p.id, team });
     if (!r.ok) toast({ text: r.error, tone: 'bad' });
   };
   return (
-    <div className="mt-2 grid gap-2 rounded-xl bg-bg2/60 p-2 text-xs sm:grid-cols-2">
-      <div>
-        <div className="mb-1 font-semibold text-ink2">On this game</div>
-        <ul className="space-y-1">
-          {p.team.map((id) => {
-            const st = s.staff[id];
-            if (!st) return null;
-            const [k, v] = bestSkill(st);
-            return (
-              <li key={id} className="flex items-center justify-between gap-2">
-                <span className="truncate">
-                  {st.name} <span className="text-ink3">· {k} {v}</span>
-                </span>
-                {p.team.length > 1 && (
-                  <button type="button" className="rounded-md px-1.5 text-ink3 hover:bg-bg2 hover:text-bad" aria-label={`Remove ${st.name}`} onClick={() => set(p.team.filter((x) => x !== id))}>
-                    <Icon name="minus" size={14} />
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-      <div>
-        <div className="mb-1 font-semibold text-ink2">Available</div>
-        {free.length === 0 ? (
-          <p className="text-ink3">Everyone is busy.</p>
-        ) : (
-          <ul className="space-y-1">
-            {free.map((st) => {
-              const [k, v] = bestSkill(st);
-              return (
-                <li key={st.id} className="flex items-center justify-between gap-2">
-                  <span className="truncate">
-                    {st.name} <span className="text-ink3">· {k} {v}</span>
-                  </span>
-                  <button type="button" disabled={p.team.length >= cap} className="rounded-md px-1.5 text-ink3 hover:bg-bg2 hover:text-good disabled:opacity-30" aria-label={`Add ${st.name}`} onClick={() => set([...p.team, st.id])}>
-                    <Icon name="plus" size={14} />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+    <div className="mt-2 rounded-xl bg-bg2/60 p-2">
+      <StaffPicker pool={pool} selected={p.team} onChange={set} cap={cap} genre={p.concept.genre} minOne />
     </div>
   );
 }
@@ -405,7 +366,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
     sound.play('click');
   };
   const idle = Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
-  const [team, setTeam] = useState<string[]>(idle.slice(0, BALANCE.SIZE.small.teamCap).map((x) => x.id));
+  const [team, setTeam] = useState<string[]>(() => autoPickTeam(idle, baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre, BALANCE.SIZE.small.teamCap));
   const [franchiseId, setFranchiseId] = useState<string>(presetFr?.id ?? '');
   useEffect(() => {
     if (presetFr || baseRel) useGame.setState({ wizardPreset: null });
@@ -687,28 +648,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
       </Section>
 
       <Section title={`7 · Team (${Math.min(team.length, cap)}/${cap})`}>
-        {idle.length === 0 ? (
-          <p className="text-xs text-ink3">Everyone is busy. Free someone up in the Staff panel, or hire.</p>
-        ) : (
-          <div className="grid gap-1.5 sm:grid-cols-2">
-            {idle.map((st) => {
-              const on = team.includes(st.id);
-              const [k, v] = bestSkill(st);
-              return (
-                <label key={st.id} className={cx('flex cursor-pointer items-center gap-2 rounded-xl border px-2 py-1.5 text-xs', on ? 'border-accent bg-accent/10' : 'border-line')}>
-                  <input type="checkbox" checked={on} onChange={() => setTeam((t) => (on ? t.filter((x) => x !== st.id) : [...t, st.id]))} className="accent-[var(--accent)]" />
-                  {st.personId ? <InitialsBadge name={st.name} size={26} legendary /> : <Avatar seed={st.look} size={26} mood={st.morale} />}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{st.name}</span>
-                    <span className="text-ink3">
-                      {k} {v} · {st.assignment.kind === 'research' ? 'researching' : 'free'}
-                    </span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        )}
+        <StaffPicker pool={idle} selected={team.filter((id) => idle.some((x) => x.id === id))} onChange={setTeam} cap={cap} genre={genre} />
         {team.length > cap && <p className="mt-1 text-xs text-warn">Only the first {cap} will join a {SIZE_LABEL[size]} game.</p>}
       </Section>
 
@@ -780,12 +720,14 @@ function NewGame({ onDone }: { onDone: () => void }) {
 
 // ── Contracts ───────────────────────────────────────────────────────────────
 
+const contractSkill = (st: Staff) => Math.max(st.skills.design, st.skills.programming);
+
 function Contracts() {
   const s = useGame((g) => g.s)!;
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
-  const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle');
-  const [teamPick, setTeam] = useState<string[]>(idle.slice(0, 2).map((x) => x.id));
+  const idle = freeStaff(s);
+  const [teamPick, setTeam] = useState<string[]>(() => [...idle].sort((a, b) => contractSkill(b) - contractSkill(a)).slice(0, 2).map((x) => x.id));
   const team = teamPick.filter((id) => idle.some((x) => x.id === id));
   if (!s.offers.contracts.length) return <Empty icon="briefcase" title="No contract offers right now">New offers arrive every month.</Empty>;
   return (
@@ -793,20 +735,7 @@ function Contracts() {
       <p className="text-xs text-ink3">Contracts pay reliably — great for cash flow early on, or to keep idle staff busy. Missing a deadline costs reputation.</p>
       <div>
         <div className="mb-1 text-xs font-semibold text-ink2">Assign</div>
-        <div className="flex flex-wrap gap-1.5">
-          {idle.length === 0 && <span className="text-xs text-ink3">No one is free.</span>}
-          {idle.map((st) => (
-            <button
-              key={st.id}
-              type="button"
-              aria-pressed={team.includes(st.id)}
-              onClick={() => setTeam((t) => (t.includes(st.id) ? t.filter((x) => x !== st.id) : [...t, st.id]))}
-              className={cx('rounded-full border px-2.5 py-1 text-xs', team.includes(st.id) ? 'border-accent bg-accent/10' : 'border-line')}
-            >
-              {st.name}
-            </button>
-          ))}
-        </div>
+        <StaffPicker pool={idle} selected={team} onChange={setTeam} cap={12} score={contractSkill} scoreLabel="skill" />
       </div>
       {s.offers.contracts.map((o) => {
         const est = estimateContractDays(s, o, team);

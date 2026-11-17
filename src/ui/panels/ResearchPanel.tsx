@@ -9,6 +9,8 @@ import { Button, Empty, Field, Meter, Pill, Section, Segmented, cx, inputCls } f
 import { Icon } from '../icons';
 import { useGame } from '../store';
 import HardwarePanel from './HardwarePanel';
+import { StaffPicker } from '../components/StaffPicker';
+import { freeStaff } from './staffTools';
 
 const BRANCHES: { id: ResearchBranch; label: string }[] = [
   { id: 'graphics', label: 'Graphics' },
@@ -69,7 +71,7 @@ function Tree() {
         )}
         <div className="mt-2 flex items-center justify-between text-xs">
           <span className={cx(team.length ? 'text-ink3' : 'text-warn')}>
-            {team.length ? `${team.length} researcher${team.length > 1 ? 's' : ''} · ${rate.toFixed(2)} pts/day` : 'Assign staff to research in the Staff panel (click a person → Research).'}
+            {team.length ? `${team.length} researcher${team.length > 1 ? 's' : ''} · ${rate.toFixed(2)} pts/day` : 'Assign staff to research in the Staff panel (select people → Research).'}
           </span>
           {active && (
             <Button size="sm" variant="ghost" onClick={() => useGame.getState().actOrToast({ type: 'cancelResearch' }, 'Research stopped — half the budget refunded')} title="Stops this project and refunds half its cost">
@@ -144,7 +146,7 @@ function Engines() {
   const feats = s.research.done.filter((r) => RESEARCH_BY_ID[r]?.engineTech);
   const [sel, setSel] = useState<string[]>(feats);
   const [name, setName] = useState(`${s.company.name.split(' ')[0]} Engine ${Object.keys(s.engines).length}`);
-  const progs = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' || x.assignment.kind === 'research');
+  const progs = freeStaff(s);
   const [team, setTeam] = useState<string[]>(progs.sort((a, b) => b.skills.programming - a.skills.programming).slice(0, 2).map((x) => x.id));
   const tech = engineTechFor(sel);
   const pts = engineBuildPoints(sel, s.day);
@@ -205,13 +207,7 @@ function Engines() {
               ))}
             </div>
             <div className="text-xs font-semibold text-ink2">Programmers</div>
-            <div className="flex flex-wrap gap-1.5">
-              {progs.map((p) => (
-                <button key={p.id} type="button" aria-pressed={team.includes(p.id)} onClick={() => setTeam((t) => (t.includes(p.id) ? t.filter((x) => x !== p.id) : [...t, p.id]))} className={cx('rounded-full border px-2.5 py-1 text-xs', team.includes(p.id) ? 'border-accent bg-accent/10' : 'border-line')}>
-                  {p.name} · prog {Math.round(p.skills.programming)}
-                </button>
-              ))}
-            </div>
+            <StaffPicker pool={progs} selected={team} onChange={setTeam} cap={12} score={(st) => st.skills.programming} scoreLabel="prog" />
             <div className="flex items-center justify-between rounded-xl bg-bg2/60 p-2 text-xs">
               <span>
                 Tech <b>{tech}</b> · {pts} points · {fmtMoney(cost)}

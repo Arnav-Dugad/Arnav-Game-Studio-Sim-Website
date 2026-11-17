@@ -3,17 +3,19 @@ import { PERSON_BY_ID } from '@/data/people';
 import { fmtMoney, money } from '@/sim/util';
 import { tierDef, freeDesks } from '@/sim/systems/office';
 import { ROLE_NAMES, marketSalary } from '@/sim/systems/staff';
-import type { Candidate, Staff } from '@/sim/types';
-import { Button, Empty, Meter, Pill, Section, Segmented, cx } from '../components/ui';
+import type { Candidate } from '@/sim/types';
+import { Button, Empty, Pill, Section, Segmented, cx } from '../components/ui';
 import { useGame } from '../store';
 import { Face, SkillBars, Traits } from './staffBits';
+import { TeamTab } from './TeamTab';
 
 export { Face, SkillBars, Traits };
 
 export default function StaffPanel() {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
-  const tab = useGame((g) => g.panelTab) ?? 'team';
+  const raw = useGame((g) => g.panelTab) ?? 'team';
+  const tab = raw === 'idle' ? 'team' : raw;
   const setTab = (t: string) => useGame.setState({ panelTab: t });
   return (
     <div>
@@ -28,103 +30,9 @@ export default function StaffPanel() {
           { value: 'policies', label: 'Policies' },
         ]}
       />
-      {tab === 'team' && <Team />}
+      {tab === 'team' && <TeamTab />}
       {tab === 'hire' && <Hire />}
       {tab === 'policies' && <Policies />}
-    </div>
-  );
-}
-
-function assignmentLabel(s: NonNullable<ReturnType<typeof useGame.getState>['s']>, st: Staff): string {
-  if (st.sickDays > 0) return `Sick (${st.sickDays}d)`;
-  if ((st.vacationDays ?? 0) > 0) return `On vacation (${st.vacationDays}d)`;
-  switch (st.assignment.kind) {
-    case 'idle':
-      return 'Idle';
-    case 'research':
-      return 'Research';
-    case 'training':
-      return `Training ${st.trainingSkill ?? ''}`;
-    case 'project': {
-      const p = s.projects[st.assignment.id];
-      return p ? (p.kind === 'game' ? p.concept.name : p.kind === 'contract' ? 'Contract' : 'Engine') : 'Idle';
-    }
-  }
-}
-
-function Team() {
-  const s = useGame((g) => g.s)!;
-  const pushModal = useGame((g) => g.pushModal);
-  const [sort, setSort] = useState<'name' | 'morale' | 'skill' | 'salary'>('skill');
-  const list = Object.values(s.staff).sort((a, b) =>
-    sort === 'name' ? a.name.localeCompare(b.name) : sort === 'morale' ? a.morale - b.morale : sort === 'salary' ? b.salary - a.salary : Math.max(...Object.values(b.skills)) - Math.max(...Object.values(a.skills)),
-  );
-  const payroll = Object.values(s.staff).reduce((t, x) => t + x.salary, 0);
-  const avgMorale = list.reduce((t, x) => t + x.morale, 0) / Math.max(1, list.length);
-  return (
-    <div>
-      <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
-        <div className="rounded-xl bg-bg2/70 p-2">
-          <div className="text-ink3">Payroll</div>
-          <div className="num font-semibold">{fmtMoney(payroll)}/yr</div>
-        </div>
-        <div className="rounded-xl bg-bg2/70 p-2">
-          <div className="text-ink3">Avg morale</div>
-          <div className={cx('num font-semibold', avgMorale < 40 ? 'text-bad' : avgMorale > 70 ? 'text-good' : '')}>{Math.round(avgMorale)}%</div>
-        </div>
-        <div className="rounded-xl bg-bg2/70 p-2">
-          <div className="text-ink3">Capacity</div>
-          <div className="num font-semibold">
-            {list.length}/{tierDef(s.office.tier).staffCap}
-          </div>
-        </div>
-      </div>
-      <Segmented
-        ariaLabel="Sort staff"
-        value={sort}
-        onChange={setSort}
-        className="mb-2"
-        options={[
-          { value: 'skill', label: 'Skill' },
-          { value: 'morale', label: 'Morale' },
-          { value: 'salary', label: 'Salary' },
-          { value: 'name', label: 'Name' },
-        ]}
-      />
-      <ul className="space-y-1.5">
-        {list.map((st) => (
-          <li key={st.id}>
-            <button type="button" onClick={() => pushModal({ kind: 'staff', staffId: st.id })} className="flex w-full items-center gap-3 rounded-xl border border-line bg-panel2/50 p-2 text-left hover:bg-bg2">
-              <Face p={st} size={38} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-semibold">{st.name}</span>
-                  {st.personId && <Pill tone="gold">Legend</Pill>}
-                </div>
-                <div className="truncate text-xs text-ink3">
-                  {st.level} {ROLE_NAMES[st.role]} · {assignmentLabel(s, st)}
-                </div>
-              </div>
-              <div className="w-24 space-y-1 text-[10px]">
-                <div className="flex items-center gap-1">
-                  <span className="w-10 text-ink3">Morale</span>
-                  <Meter value={st.morale} label="Morale" />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-10 text-ink3">Energy</span>
-                  <Meter value={st.energy} label="Energy" />
-                </div>
-                {st.burnout > 30 && (
-                  <div className="flex items-center gap-1">
-                    <span className="w-10 text-bad">Burnout</span>
-                    <Meter value={100 - st.burnout} label="Burnout" />
-                  </div>
-                )}
-              </div>
-            </button>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
