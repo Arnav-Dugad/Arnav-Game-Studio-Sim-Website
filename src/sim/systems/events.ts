@@ -2,6 +2,8 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { TOPIC_BY_ID } from '../../data/topics';
+import { GENRE_BY_ID } from '../../data/genres';
 import { EGGS } from './easterEggs';
 import { platformInfo } from './market';
 import { gameRegions } from '../../data/regions';
@@ -78,7 +80,10 @@ const accessibilityCandidate = (s: GameState) =>
   Object.values(s.releases).find((r) => !r.delisted && !r.accessibilityAsked && r.score >= 70 && s.day - r.day < 365 * 2 && !(r.concept.features ?? []).includes('accessibility'));
 const isAwayStaff = (x: Staff) => x.sickDays > 0 || (x.vacationDays ?? 0) > 0;
 /** Series with at least two games, most-loved first. */
-const votableSeries = (s: GameState) => Object.values(s.franchises).filter((f) => f.entries.length >= 2 && f.fans > 1000).sort((a, b) => b.fans - a.fans);
+const votableSeries = (s: GameState) =>
+  Object.values(s.franchises)
+    .filter((f) => f.entries.length >= 2 && f.fans > 1000 && !Object.values(s.projects).some((p) => p.kind === 'game' && p.concept.franchiseId === f.id))
+    .sort((a, b) => b.fans - a.fans);
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
@@ -950,28 +955,32 @@ export const EVENT_DEFS: EventDef[] = [
       if (!a || !b) return;
       const win = rng.chance(a.fans / Math.max(1, a.fans + b.fans)) ? a : b;
       const lose = win === a ? b : a;
+      const fanShare = win.fans / Math.max(1, win.fans + lose.fans); // before the winner's boost
       win.fans = Math.round(win.fans * 1.05);
       win.votedUntil = s.day + 365;
-      const share = Math.round((win.fans / Math.max(1, win.fans + lose.fans)) * 100);
-      pushNews(s, { category: 'studio', headline: `Fans vote for a new ${win.name}`, body: `${win.name} beat ${lose.name} with about ${Math.min(95, Math.max(51, share))}% of the vote. Start the sequel within a year and the fans will be waiting.`, tone: 'good' });
+      const how = fanShare >= 0.5 ? `with about ${Math.min(95, Math.round(fanShare * 100))}% of the vote` : 'in a narrow upset — its fans turned out in force';
+      pushNews(s, { category: 'studio', headline: `Fans vote for a new ${win.name}`, body: `${win.name} beat ${lose.name} ${how}. Start the sequel within a year and the fans will be waiting.`, tone: 'good' });
     },
   },
   {
     id: 'april_fools',
     art: 'megaphone',
-    cooldown: 700,
+    cooldown: 300,
     weight: (s) => {
       const d = fromDay(s.day);
       return d.year >= 1995 && d.month === 3 && d.day >= 25 && s.releaseOrder.length >= 2 ? 1.2 : 0;
     },
-    make: ({ rng }) => {
-      const idea = rng.pick([
+    make: ({ s, rng }) => {
+      const year = fromDay(s.day).year;
+      const jokes = ([
         { name: 'Office Simulator: Printer Edition', genre: 'simulation', topic: 'business' },
         { name: 'Cat Kart Deluxe', genre: 'racing', topic: 'animals' },
         { name: 'Goat Tactics', genre: 'strategy', topic: 'farming' },
         { name: 'Dungeon Café', genre: 'casual', topic: 'cooking' },
         { name: 'Haunted Bowling', genre: 'sports', topic: 'horror' },
-      ] as const);
+      ] as const).filter((j) => year >= GENRE_BY_ID[j.genre].year && year >= (TOPIC_BY_ID[j.topic]?.year ?? 9999) && !GENRE_BY_ID[j.genre].research && !TOPIC_BY_ID[j.topic]?.research);
+      if (!jokes.length) return null;
+      const idea = rng.pick(jokes);
       return {
         title: 'April Fools’ Day is coming',
         body: `The team has a joke announcement ready for April 1st: “${idea.name}”, complete with a fake trailer.`,
@@ -983,7 +992,8 @@ export const EVENT_DEFS: EventDef[] = [
       };
     },
     resolve: ({ s, rng }, e, opt) => {
-      if (opt !== 'go') return;
+      const today = fromDay(s.day);
+      if (opt !== 'go' || today.month > 4 || (today.month === 4 && today.day > 1)) return; // the joke only works on the day
       s.company.fans = Math.round(s.company.fans * 1.02);
       addRep(s, 0.3, 'An April Fools’ joke');
       const name = String(e.ctx.name);
@@ -1210,7 +1220,9 @@ export const EVENT_DEFS: EventDef[] = [
     resolve: ({ s }, e, opt) => {
       const st = s.staff[String(e.ctx.staff)];
       if (!st) return;
-      if (opt === 'yes') {
+      if (opt === 'yes' && s.company.pitch && s.company.pitch.until >= s.day && s.staff[s.company.pitch.staffId]) {
+        pushNews(s, { category: 'staff', headline: `${st.name}’s pitch will have to wait`, body: 'Another pitch is already greenlit — one dream project at a time.', tone: 'neutral' });
+      } else if (opt === 'yes') {
         s.company.pitch = { staffId: st.id, genre: String(e.ctx.genre) as GenreId, topic: String(e.ctx.topic), until: s.day + PITCH_DAYS };
         if (!st.mood || st.mood.until <= s.day || (st.mood.v >= 0 && st.mood.v < 3)) st.mood = { v: 3, until: s.day + 60, label: 'Pitch greenlit' };
       } else if (!st.mood || st.mood.until <= s.day || (st.mood.v > -2)) st.mood = { v: -2, until: s.day + 30, label: 'Pitch turned down' };
