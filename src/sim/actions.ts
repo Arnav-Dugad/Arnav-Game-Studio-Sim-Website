@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { giveTalk } from './systems/talks';
 import { pinFanArt } from './systems/fanMail';
 import type { CampaignTier } from './systems/crowdfunding';
 import { startCrowdfund } from './systems/crowdfunding';
@@ -149,6 +150,7 @@ export type Action =
   | { type: 'raiseFunding' }
   | { type: 'earlyAccess'; projectId: string }
   | { type: 'pinFanArt'; id: string; on: boolean }
+  | { type: 'giveTalk'; staffId: string; releaseId: string }
   | { type: 'readFanMail' }
   | { type: 'crowdfund'; projectId: string; tier: CampaignTier }
   | { type: 'negotiateDeal'; dealId: string; ask: 'advance' | 'royalty' }
@@ -953,6 +955,8 @@ function apply(c: Ctx, a: Action): string | null {
       if (!p || p.kind !== 'game') return 'No such game';
       return startCrowdfund(c, p, a.tier);
     }
+    case 'giveTalk':
+      return giveTalk(c, a.staffId, a.releaseId);
     case 'pinFanArt':
       return pinFanArt(s, a.id, a.on);
     case 'readFanMail':

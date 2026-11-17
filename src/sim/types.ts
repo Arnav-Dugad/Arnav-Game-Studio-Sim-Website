@@ -106,7 +106,9 @@ export interface Staff {
   /** Life outside work (systems/lifeEvents.ts): partner (a colleague), marriage, kids, a move; and the latest event. */
   life?: { partnerId?: Id; married?: number; kids?: number; remote?: boolean; event?: { kind: 'romance' | 'wedding' | 'baby' | 'moved'; day: number } };
   /** Why they're away, when it isn't an ordinary vacation. */
-  leave?: 'honeymoon' | 'parental';
+  leave?: 'honeymoon' | 'parental' | 'conference';
+  /** After a standing ovation, rival recruiters are watching until this day. */
+  spotlightUntil?: number;
 }
 
 export type Assignment =
@@ -762,6 +764,8 @@ export interface LifetimeStats {
   babies?: number;
   crowdfunded?: number;
   fanMail?: number;
+  talks?: number;
+  ovations?: number;
   /** Games that topped the weekly chart. */
   numberOnes?: number;
   /** Best bug-bash result, and mentees who graduated. */
@@ -781,6 +785,9 @@ export interface Company {
   lastRetreatDay?: number;
   /** Last crowdfunding campaign launched (backer fatigue). */
   lastCampaignDay?: number;
+  /** Conference talks: the year of the studio's last talk, and job-seeker buzz from a good one. */
+  lastTalkYear?: number;
+  talkBuzzUntil?: number;
   /** Venture funding before the IPO: rounds raised, investors' share of the company, and when the last round closed. */
   fundingRounds?: number;
   investorStake?: number;

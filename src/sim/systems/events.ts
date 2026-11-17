@@ -54,6 +54,9 @@ function staffById(s: GameState, id: string | number | undefined): Staff | undef
   return id === undefined ? undefined : s.staff[String(id)];
 }
 
+/** Loyalty below which a rival's offer tempts someone (higher right after a standing ovation). */
+const poachLoyalty = (s: GameState, x: Staff) => (x.spotlightUntil !== undefined && s.day < x.spotlightUntil ? 80 : 60);
+
 export const EVENT_DEFS: EventDef[] = [
   {
     id: 'union_drive',
@@ -477,9 +480,9 @@ export const EVENT_DEFS: EventDef[] = [
     id: 'poach_offer',
     art: 'handshake',
     cooldown: 120,
-    weight: (s) => (staffList(s).some((x) => x.loyalty < 60 && x.poachCooldown <= 0 && Math.max(...Object.values(x.skills)) > 55) ? 0.9 : 0),
+    weight: (s) => (staffList(s).some((x) => x.loyalty < poachLoyalty(s, x) && x.poachCooldown <= 0 && Math.max(...Object.values(x.skills)) > 55) ? 0.9 : 0),
     make: ({ s, rng }) => {
-      const cands = staffList(s).filter((x) => x.loyalty < 60 && x.poachCooldown <= 0);
+      const cands = staffList(s).filter((x) => x.loyalty < poachLoyalty(s, x) && x.poachCooldown <= 0);
       if (!cands.length) return null;
       const st = cands.reduce((a, b) => (Math.max(...Object.values(b.skills)) > Math.max(...Object.values(a.skills)) ? b : a));
       const rivals = Object.values(s.rivals).filter((r) => r.alive && !r.ownedByPlayer && r.staff > 10);

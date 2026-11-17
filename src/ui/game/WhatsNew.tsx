@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18s';
+export const WHATS_NEW_VERSION = '2026-11-18t';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'megaphone', title: 'Conference talks', body: 'From 1988 the studio gets one speaking slot a year at the Developers Summit (open a senior’s or lead’s card). They talk about a game they made — or give an honest post-mortem of a flop. A great talk builds reputation and brings better applicants for three months… and puts your star in front of rival recruiters.' },
   { icon: 'people', title: 'Studio yearbook', body: 'Every New Year’s Day your team lines up for a class photo (Company → Yearbook) — the founder in front, the old guard behind, with the year’s games and awards in the caption. Their faces show how the year went. Watch the garage crew grow into an empire.' },
   { icon: 'palette', title: 'Fan mail & fan art', body: 'Players now write in about the games they love — thank-yous, funny stories, sequel requests — and kids send crayon drawings of your games (News → Fan mail). Every letter cheers up the people who made that game. Build a Fan Art Wall and pin your favourite drawings up in the office.' },
   { icon: 'crowd', title: 'Crowdfunding campaigns', body: 'From 2012, pitch a self-published game to your fans (Develop → the project → Crowdfund): 30 days, all or nothing, with a live pledge bar. Pick a modest, ambitious or moonshot goal; stretch goals add content. Backers become fans — and they remember whether you delivered on time.' },

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { TALK_AWAY_DAYS, TALK_YEAR, talkBlocked, talkCost, talkTitle, talkableGames } from '@/sim/systems/talks';
 import { lifeLine } from '@/sim/systems/lifeEvents';
 import { BugBashModal } from './BugBash';
 import { liveEventBlocked, liveEventBoost, liveEventCost, liveEventName } from '@/sim/systems/liveEvents';
@@ -635,6 +636,37 @@ function Mentorship({ staffId }: { staffId: string }) {
   );
 }
 
+/** Book this person's conference talk (one per studio per year). */
+function TalkSection({ staffId }: { staffId: string }) {
+  const s = useGame((g) => g.s)!;
+  const st = s.staff[staffId];
+  const games = st ? talkableGames(s, st) : [];
+  const [pick, setPick] = useState('');
+  if (!st || fromDay(s.day).year < TALK_YEAR || (st.role !== 'founder' && st.level !== 'senior' && st.level !== 'lead') || !games.length) return null;
+  const rel = games.find((r) => r.id === pick) ?? games[0]!;
+  const why = talkBlocked(s, st);
+  return (
+    <Section title="Conference talk">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <select className={inputCls + ' max-w-[13rem] py-1 text-xs'} value={rel.id} onChange={(e) => setPick(e.target.value)} aria-label="Game to talk about">
+          {games.slice(0, 12).map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name} ({Math.round(r.score)})
+            </option>
+          ))}
+        </select>
+        <Button size="sm" icon="megaphone" disabled={!!why} title={why ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'giveTalk', staffId, releaseId: rel.id }, `${st.name} is off to the Developers Summit 🎤`)}>
+          Give the talk
+        </Button>
+      </div>
+      <p className="mt-1 text-[11px] text-ink3">
+        “{talkTitle(st, rel)}” — one speaking slot per studio each year ({fmtMoney(talkCost(s))}, {TALK_AWAY_DAYS} days away). A good talk builds reputation and brings better job applicants for three months; a standing ovation also puts {st.name.split(' ')[0]} in front of rival recruiters. Flops make great post-mortems.
+      </p>
+      {why && s.company.lastTalkYear === fromDay(s.day).year && <p className="mt-0.5 text-[11px] text-ink3">This year’s slot is used — next year’s opens in January.</p>}
+    </Section>
+  );
+}
+
 function Relationships({ staffId }: { staffId: string }) {
   const s = useGame((g) => g.s)!;
   const list = relationsOf(s, staffId).filter((r) => Math.abs(r.v) >= 15).slice(0, 5);
@@ -890,10 +922,11 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
               </Button>
             </div>
           </Section>
+          <TalkSection staffId={staffId} />
           <Section title="Time off">
             {(st.vacationDays ?? 0) > 0 ? (
               <p className="text-xs text-ink2">
-                {st.leave === 'parental' ? 'On parental leave 👶' : st.leave === 'honeymoon' ? 'On honeymoon 💍' : st.sabbatical ? 'On sabbatical' : 'On vacation'} — back in {st.vacationDays} day{st.vacationDays === 1 ? '' : 's'}.
+                {st.leave === 'parental' ? 'On parental leave 👶' : st.leave === 'honeymoon' ? 'On honeymoon 💍' : st.leave === 'conference' ? 'At the Developers Summit 🎤' : st.sabbatical ? 'On sabbatical' : 'On vacation'} — back in {st.vacationDays} day{st.vacationDays === 1 ? '' : 's'}.
               </p>
             ) : (
               <>

@@ -99,7 +99,7 @@ interface Agent {
   /** Last seen level, to celebrate promotions. */
   level?: string;
   /** Why they were away last time we looked (to welcome them back). */
-  awayWas?: 'sick' | 'vacation' | 'parental' | 'honeymoon';
+  awayWas?: 'sick' | 'vacation' | 'parental' | 'honeymoon' | 'conference';
 }
 
 const pickOne = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
@@ -819,7 +819,7 @@ export class OfficeRenderer {
         const sabbatical = st.lastSabbaticalDay !== undefined && s.day - st.lastSabbaticalDay < 70;
         const ev = st.life?.event;
         const lifeBack = ev && ev.kind === 'baby' && a.awayWas === 'parental' ? pickOne(['Back from parental leave! 👶', 'Who knew babies were this loud?', 'I have 400 baby photos. Want to see?']) : ev && ev.kind === 'wedding' && a.awayWas === 'honeymoon' ? pickOne(['Back from the honeymoon! 💍', 'Married life is great!', 'Thanks for the wedding gift!']) : null;
-        this.say(a, lifeBack ?? (sabbatical ? pickOne(['Back from my sabbatical! 🌍', 'I have SO many ideas.', 'Two months off — I’m a new person!']) : a.awayWas !== 'sick' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?'])), 2.6);
+        this.say(a, lifeBack ?? (a.awayWas === 'conference' ? pickOne(['Back from the Summit! 🎤', 'My talk went great!', 'I met so many people!']) : null) ?? (sabbatical ? pickOne(['Back from my sabbatical! 🌍', 'I have SO many ideas.', 'Two months off — I’m a new person!']) : a.awayWas !== 'sick' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?'])), 2.6);
         if (lifeBack) {
           const near = [...this.agents.values()].filter((b) => b !== a && b.c.visible && b.floor === floor && !b.talk && Math.hypot(b.x - a.x, b.y - a.y) < 160).slice(0, 2);
           for (const b of near) this.say(b, ev!.kind === 'baby' ? pickOne(['Congratulations! 🍼', 'How’s the little one?', 'Are you getting any sleep?']) : pickOne(['Congrats, newlyweds! 🎉', 'How was the honeymoon?', 'Welcome back! 💐']), 2.4);

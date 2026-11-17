@@ -34,7 +34,7 @@ function projectCap(p: Project): number {
 
 function assignmentLabel(s: GameState, st: Staff): string {
   if (st.sickDays > 0) return `Sick (${st.sickDays}d)`;
-  if ((st.vacationDays ?? 0) > 0) return `${st.leave === 'parental' ? 'Parental leave' : st.leave === 'honeymoon' ? 'Honeymoon' : st.sabbatical ? 'Sabbatical' : 'On vacation'} (${st.vacationDays}d)`;
+  if ((st.vacationDays ?? 0) > 0) return `${st.leave === 'parental' ? 'Parental leave' : st.leave === 'honeymoon' ? 'Honeymoon' : st.leave === 'conference' ? 'At a conference' : st.sabbatical ? 'Sabbatical' : 'On vacation'} (${st.vacationDays}d)`;
   switch (st.assignment.kind) {
     case 'idle':
       return 'Idle';
