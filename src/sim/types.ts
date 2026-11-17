@@ -677,6 +677,9 @@ export interface LifetimeStats {
   noCrunchSince: number; // day of last crunch (or start)
   /** Staff ambitions fulfilled. */
   dreamsMet?: number;
+  /** Best bug-bash result, and mentees who graduated. */
+  bestBash?: number;
+  graduates?: number;
 }
 
 export interface Company {

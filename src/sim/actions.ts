@@ -850,6 +850,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (p.bugBashed) return 'Already bashed this one';
       if (!finite(a.hits) || a.hits < 0) return 'Invalid result';
       p.bugBashed = true;
+      s.progress.stats.bestBash = Math.max(s.progress.stats.bestBash ?? 0, Math.min(40, Math.floor(a.hits)));
       p.bugs *= 1 - Math.min(0.25, Math.floor(a.hits) * 0.01);
       s.company.moraleMods.push({ v: 2, until: s.day + 21, label: 'Bug bash' });
       return null;

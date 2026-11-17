@@ -493,7 +493,10 @@ export function updateStaffMonthly(c: Ctx): void {
         if ((lv === 'senior' || lv === 'lead') && st.mentorId) {
           const m = s.staff[st.mentorId];
           st.mentorId = undefined;
-          if (m) pushNews(s, { category: 'staff', headline: `${st.name} graduates from ${m.name}’s mentorship`, tone: 'good' });
+          if (m) {
+            pushNews(s, { category: 'staff', headline: `${st.name} graduates from ${m.name}’s mentorship`, tone: 'good' });
+            s.progress.stats.graduates = (s.progress.stats.graduates ?? 0) + 1;
+          }
         }
       }
     }
