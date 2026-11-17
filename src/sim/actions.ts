@@ -29,6 +29,7 @@ import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacatio
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { Focus3, GameProject, GameState, Size, Specialisation } from './types';
+import { applyCheat, markCheated, type CheatOp } from './cheats';
 import { addRep, aOrAn, earn, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
 
 export interface StartGamePayload {
@@ -95,6 +96,7 @@ export type Action =
   | { type: 'tutorial'; step: number }
   | { type: 'refreshCandidates' }
   | { type: 'patchGame'; releaseId: string }
+  | { type: 'cheat'; cheat: CheatOp }
   | { type: 'runSale'; releaseId: string; discount: SaleDiscount }
   | { type: 'portGame'; releaseId: string; platform: string }
   | { type: 'secondaryOffering'; pct: number }
@@ -523,7 +525,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!def) return 'Unknown item';
       if (fromDay(s.day).year < def.year) return `Available from ${def.year}`;
       if (def.research && !s.research.done.includes(def.research)) return `Research ${RESEARCH_BY_ID[def.research]?.name} first`;
-      const cost = money(def.cost, s.day);
+      const cost = s.cheats?.freeBuild ? 0 : money(def.cost, s.day);
       if (s.company.cash < cost) return 'Not enough cash';
       const ok = canPlace(s, def, a.floor, a.x, a.y, a.rot);
       if (!ok.ok) return ok.reason ?? 'Can’t place there';
@@ -560,8 +562,9 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.tier !== s.office.tier + 1 && a.tier !== s.office.tier - 1) return 'Move one tier at a time';
       const t = tierDef(a.tier);
       if (t.tier !== a.tier) return 'No such office';
-      if (s.company.reputation < t.minReputation && a.tier > s.office.tier) return `Needs reputation ${t.minReputation}`;
-      const cost = money(t.moveCost, s.day);
+      const free = !!s.cheats?.freeBuild;
+      if (!free && s.company.reputation < t.minReputation && a.tier > s.office.tier) return `Needs reputation ${t.minReputation}`;
+      const cost = free ? 0 : money(t.moveCost, s.day);
       if (a.tier > s.office.tier && s.company.cash < cost) return 'Not enough cash';
       if (a.tier < s.office.tier && Object.keys(s.staff).length > t.staffCap) return 'Too many staff for a smaller office';
       if (a.tier > s.office.tier) spend(s, 'office', cost);
@@ -810,6 +813,24 @@ function apply(c: Ctx, a: Action): string | null {
       spend(s, 'other_expense', cost);
       const gain = applyPatch(s, rel);
       pushNews(s, { category: 'studio', headline: `Patch for ${rel.name} fixes bugs (user score +${gain})`, tone: 'good' });
+      return null;
+    }
+    case 'cheat': {
+      if (!a.cheat || typeof a.cheat !== 'object') return 'Unknown cheat';
+      if (a.cheat.op !== 'officeTier') return applyCheat(c, a.cheat);
+      const target = a.cheat.tier;
+      if (!finite(target) || tierDef(target).tier !== target) return 'No such office';
+      const prev = s.cheats?.freeBuild;
+      s.cheats = { ...s.cheats, freeBuild: true };
+      try {
+        while (s.office.tier !== target) {
+          const e = apply(c, { type: 'moveOffice', tier: s.office.tier + (target > s.office.tier ? 1 : -1) });
+          if (e) return e;
+        }
+      } finally {
+        s.cheats = { ...s.cheats, freeBuild: prev };
+      }
+      markCheated(s);
       return null;
     }
     case 'runSale': {

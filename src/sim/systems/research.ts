@@ -28,7 +28,7 @@ export function researchRate(s: GameState): number {
   for (const st of researchers(s)) {
     pts += ((st.skills.programming + st.skills.design) / 200) * productivity(s, st).total;
   }
-  return pts * (1 + L.research);
+  return pts * (1 + L.research) * (s.cheats?.researchMul ?? 1);
 }
 
 export function updateResearchDaily(c: Ctx): void {

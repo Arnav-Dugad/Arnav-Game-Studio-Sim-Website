@@ -45,7 +45,7 @@ export function checkInvariants(s: GameState): string[] {
     if (r.units < 0 || !Number.isInteger(r.units)) errs.push(`release ${r.name} units=${r.units}`);
     for (const p of r.platforms) {
       if (p.units < 0 || !Number.isInteger(p.units)) errs.push(`release ${r.name} ${p.platform} units=${p.units}`);
-      if (p.units > Math.max(1, p.potential) * 1.5 + (p.extraPotential ?? 0) + 50) errs.push(`release ${r.name} ${p.platform} units ${p.units} > potential ${p.potential}`);
+      if (!s.cheatsUsed && p.units > Math.max(1, p.potential) * 1.5 + (p.extraPotential ?? 0) + 50) errs.push(`release ${r.name} ${p.platform} units ${p.units} > potential ${p.potential}`);
     }
     if (r.score < 1 || r.score > 100 || r.userScore < 1 || r.userScore > 100) errs.push(`release ${r.name} score out of range`);
   }
@@ -56,7 +56,7 @@ export function checkInvariants(s: GameState): string[] {
   // Runaway money: era-scaled ceiling
   const yr = fromDay(s.day).year;
   const ceiling = yr < 1990 ? 2e8 : yr < 2000 ? 3e9 : yr < 2010 ? 3e10 : 2e11;
-  if (s.company.cash > ceiling) errs.push(`runaway cash ${s.company.cash} in ${yr}`);
+  if (!s.cheatsUsed && s.company.cash > ceiling) errs.push(`runaway cash ${s.company.cash} in ${yr}`);
   if (s.finance.loans.some((l) => l.remaining < 0 || !Number.isFinite(l.monthly))) errs.push('bad loan');
   const alive = Object.values(s.rivals).filter((r) => r.alive && !r.ownedByPlayer).length;
   if (alive < 5) errs.push(`only ${alive} rivals alive`);

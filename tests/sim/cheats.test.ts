@@ -1,0 +1,160 @@
+import { describe, expect, it } from 'vitest';
+import { createGame } from '../../src/sim/create';
+import { advance } from '../../src/sim/advance';
+import { dispatch } from '../../src/sim/actions';
+import { Rng } from '../../src/sim/rng';
+import { RESEARCH } from '../../src/data/research';
+import { OFFICE_TIERS } from '../../src/data/facilities';
+import { availablePlatforms } from '../../src/sim/systems/market';
+import type { CheatOp } from '../../src/sim/cheats';
+import type { GameProject, GameState } from '../../src/sim/types';
+import { checkInvariants } from '../bots/invariants';
+
+const game = (year = 1990, seed = 3): GameState => createGame({ seed, companyName: 'Cheat Co', founderName: 'C', startYear: year, autopause: false });
+const cheat = (s: GameState, c: CheatOp) => dispatch(s, { type: 'cheat', cheat: c });
+
+function startGame(s: GameState): GameProject {
+  const plat = availablePlatforms(s).find((p) => p.kind === 'computer')!.id;
+  const r = dispatch(s, { type: 'startGame', game: { name: 'G', genre: 'rpg', topic: 'fantasy', platforms: [plat], audience: 'teen', size: 'small', monetization: 'premium', engineId: 'e0', team: ['founder'] } });
+  if (!r.ok) throw new Error(r.error);
+  return Object.values(s.projects).find((p) => p.kind === 'game') as GameProject;
+}
+
+describe('cheats', () => {
+  it('edit money, reputation, fans and loans, and mark the run', () => {
+    const s = game();
+    expect(s.cheatsUsed).toBeFalsy();
+    expect(cheat(s, { op: 'setCash', amount: 5e6 }).ok).toBe(true);
+    expect(s.company.cash).toBe(5e6);
+    expect(s.cheatsUsed).toBe(true);
+    cheat(s, { op: 'addCash', amount: -1e6 });
+    expect(s.company.cash).toBe(4e6);
+    cheat(s, { op: 'setReputation', value: 250 });
+    expect(s.company.reputation).toBe(100);
+    cheat(s, { op: 'setFans', value: 1234 });
+    expect(s.company.fans).toBe(1234);
+    s.finance.loans.push({ id: 'l', principal: 1, balance: 1, rate: 0.1, monthly: 1, monthsLeft: 1 } as never);
+    cheat(s, { op: 'clearLoans' });
+    expect(s.finance.loans).toEqual([]);
+    expect(cheat(s, { op: 'setCash', amount: NaN }).ok).toBe(false);
+    expect(cheat(s, { op: 'setCash', amount: 1e20 }).ok).toBe(false);
+    expect(cheat(s, { op: 'nope' } as never).ok).toBe(false);
+  });
+
+  it('edit staff and summon hires', () => {
+    const s = game();
+    cheat(s, { op: 'staff', skills: 100, morale: 10 });
+    expect(Object.values(s.staff.founder!.skills).every((v) => v === 100)).toBe(true);
+    expect(s.staff.founder!.morale).toBe(10);
+    const n = Object.keys(s.staff).length;
+    expect(cheat(s, { op: 'spawnStaff', role: 'artist', skill: 77, salary: 50_000, name: 'Ada' }).ok).toBe(true);
+    const hire = Object.values(s.staff).find((x) => x.name === 'Ada')!;
+    expect(Object.keys(s.staff).length).toBe(n + 1);
+    expect(hire.role).toBe('artist');
+    expect(hire.skills.art).toBe(77);
+    expect(cheat(s, { op: 'spawnStaff', role: 'founder', skill: 50, salary: 1 }).ok).toBe(false);
+    expect(cheat(s, { op: 'staff', staffId: 'ghost', skills: 5 }).ok).toBe(false);
+  });
+
+  it('finish games now, with a polished option that beats the plain one', () => {
+    const plain = game(1995, 4);
+    const polished = game(1995, 4);
+    for (const s of [plain, polished]) {
+      startGame(s);
+      expect(cheat(s, { op: 'finishProjects', polish: false }).ok).toBe(false); // nobody has worked yet
+      advance(s, 5);
+    }
+    expect(cheat(plain, { op: 'finishProjects', polish: false }).ok).toBe(true);
+    expect(cheat(polished, { op: 'finishProjects', polish: true }).ok).toBe(true);
+    advance(plain, 2);
+    advance(polished, 2);
+    expect(plain.releaseOrder.length).toBe(1);
+    expect(polished.releaseOrder.length).toBe(1);
+    expect(polished.releases[polished.releaseOrder[0]!]!.score).toBeGreaterThanOrEqual(plain.releases[plain.releaseOrder[0]!]!.score);
+  });
+
+  it('persistent switches change how the world runs', () => {
+    const s = game(1990, 9);
+    s.company.cash = -5e6;
+    cheat(s, { op: 'settings', settings: { noBankruptcy: true, noBurnout: true, alwaysHappy: true, noEvents: true, scoreBonus: 40, salesMul: 5 } });
+    advance(s, 400);
+    expect(s.status).toBe('running');
+    expect(s.staff.founder!.morale).toBe(100);
+    expect(s.staff.founder!.burnout).toBe(0);
+    expect(s.pendingEvents.length).toBe(0);
+    cheat(s, { op: 'settings', settings: { noBankruptcy: false, infiniteMoney: true, moneyFloor: 2e6 } });
+    advance(s, 1);
+    expect(s.company.cash).toBeGreaterThanOrEqual(2e6);
+    // review bonus applies at release
+    startGame(s);
+    advance(s, 5);
+    cheat(s, { op: 'finishProjects', polish: true });
+    advance(s, 2);
+    expect(s.releases[s.releaseOrder[0]!]!.score).toBeGreaterThanOrEqual(80);
+    expect(cheat(s, { op: 'settings', settings: { salesMul: 999 } }).ok).toBe(false);
+    expect(cheat(s, { op: 'settings', settings: { scoreBonus: -99 } }).ok).toBe(false);
+  });
+
+  it('unlock research, move offices for free and edit releases', () => {
+    const s = game(1985, 2);
+    cheat(s, { op: 'unlockResearch', scope: 'now' });
+    expect(RESEARCH.filter((r) => r.year <= 1985).every((r) => s.research.done.includes(r.id))).toBe(true);
+    expect(s.research.done.length).toBeLessThan(RESEARCH.length);
+    cheat(s, { op: 'unlockResearch', scope: 'all' });
+    expect(s.research.done.length).toBe(RESEARCH.length);
+    const cash = s.company.cash;
+    const top = OFFICE_TIERS[OFFICE_TIERS.length - 1]!.tier;
+    expect(cheat(s, { op: 'officeTier', tier: top }).ok).toBe(true);
+    expect(s.office.tier).toBe(top);
+    expect(s.company.cash).toBe(cash);
+    expect(s.cheats?.freeBuild).toBeFalsy(); // the move doesn't leave free building on
+    startGame(s);
+    advance(s, 5);
+    cheat(s, { op: 'finishProjects', polish: false });
+    advance(s, 2);
+    const r = s.releases[s.releaseOrder[0]!]!;
+    const units = r.units;
+    expect(cheat(s, { op: 'editRelease', releaseId: r.id, score: 99, userScore: 98, addUnits: 1e6 }).ok).toBe(true);
+    expect(r.score).toBe(99);
+    expect(r.units).toBe(units + 1e6);
+    expect(s.progress.stats.bestScore).toBe(99);
+    expect(checkInvariants(s)).toEqual([]);
+  });
+
+  it('random cheating never breaks the simulation', () => {
+    const s = game(1985, 77);
+    const rng = new Rng([9, 8, 7, 6]);
+    const num = () => (rng.chance(0.1) ? rng.pick([NaN, Infinity, -1e30, 1e30]) : rng.range(-50, 200));
+    const ops: (() => CheatOp)[] = [
+      () => ({ op: 'setCash', amount: rng.range(-1e7, 1e9) }),
+      () => ({ op: 'addCash', amount: num() * 1e5 }),
+      () => ({ op: 'setReputation', value: num() }),
+      () => ({ op: 'setFans', value: num() * 1e4 }),
+      () => ({ op: 'clearLoans' }),
+      () => ({ op: 'staff', skills: num(), morale: num(), energy: num(), burnout: num(), potential: num() }),
+      () => ({ op: 'spawnStaff', role: rng.pick(['designer', 'programmer', 'artist', 'qa', 'founder'] as const), skill: num(), salary: num() * 1000 }),
+      () => ({ op: 'finishProjects', polish: rng.chance(0.5) }),
+      () => ({ op: 'setHype', value: num() }),
+      () => ({ op: 'unlockResearch', scope: rng.chance(0.5) ? 'now' : 'all' }),
+      () => ({ op: 'franchiseFans', fans: num() * 1e4 }),
+      () => ({ op: 'editRelease', releaseId: rng.pick(Object.keys(s.releases).concat('none')), score: num(), userScore: num(), addUnits: num() * 1e3 }),
+      () => ({ op: 'officeTier', tier: rng.int(0, 8) }),
+      () => ({ op: 'settings', settings: { infiniteMoney: rng.chance(0.5), noBankruptcy: rng.chance(0.5), noBugs: rng.chance(0.5), noEvents: rng.chance(0.5), freeBuild: rng.chance(0.5), salesMul: rng.range(0.1, 20), workMul: rng.range(0.25, 10), researchMul: rng.range(0.25, 50), scoreBonus: rng.int(-40, 40) } }),
+    ];
+    for (let d = 0; d < 365 * 30 && s.status === 'running'; d += 7) {
+      for (let i = 0; i < 2; i++) dispatch(s, { type: 'cheat', cheat: rng.pick(ops)() });
+      if (!Object.keys(s.projects).length) {
+        try {
+          startGame(s);
+        } catch {
+          /* no free team or platform this week */
+        }
+      }
+      for (const p of Object.values(s.projects)) if (p.kind === 'game' && p.awaitingGate) dispatch(s, { type: 'continueGate', projectId: p.id });
+      s.pendingEvents = [];
+      advance(s, 7);
+      const errs = checkInvariants(s);
+      if (errs.length) throw new Error(`day ${s.day}: ${errs.slice(0, 3).join('; ')}`);
+    }
+  });
+});

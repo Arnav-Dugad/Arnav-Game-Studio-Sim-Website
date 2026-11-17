@@ -590,6 +590,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
       bestScore: s.progress.stats.bestScore,
       peakValuation: s.progress.stats.peakValuation,
       day: Date.now(),
+      ...(s.cheatsUsed ? { cheats: true } : {}),
     });
   }, [user, s, ending, score]);
   const storyEnd = s.status === 'retired' && s.endReason?.startsWith('The story');

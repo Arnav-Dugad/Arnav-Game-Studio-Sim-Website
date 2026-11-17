@@ -675,6 +675,10 @@ export interface GameState {
   publishingDeals?: PublishedDeal[];
   /** Your catalogue subscription service, once launched. */
   subscription?: SubscriptionState;
+  /** Persistent cheat switches (see sim/cheats.ts). */
+  cheats?: CheatSettings;
+  /** Set once any cheat is used; the Hall of Fame marks the run. */
+  cheatsUsed?: boolean;
   news: NewsItem[];
   pendingEvents: EventInstance[];
   eventCooldowns: Record<string, number>;
@@ -692,4 +696,25 @@ export interface GameState {
   nextId: number;
   nextNewsId: number;
   nextEventUid: number;
+}
+
+/** Persistent cheats the simulation honours every day. Undefined means off / ×1. */
+export interface CheatSettings {
+  /** Cash never drops below `moneyFloor`. */
+  infiniteMoney?: boolean;
+  moneyFloor?: number;
+  /** Never go bankrupt (insolvency is ignored). */
+  noBankruptcy?: boolean;
+  noBurnout?: boolean;
+  alwaysHappy?: boolean;
+  noBugs?: boolean;
+  noEvents?: boolean;
+  /** Office items and moves cost nothing and ignore reputation requirements. */
+  freeBuild?: boolean;
+  /** Multipliers. */
+  salesMul?: number;
+  workMul?: number;
+  researchMul?: number;
+  /** Review points added to every new release. */
+  scoreBonus?: number;
 }

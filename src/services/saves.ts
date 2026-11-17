@@ -320,6 +320,8 @@ export interface HallEntry {
   bestScore: number;
   peakValuation: number;
   day: number; // real ms
+  /** The run used cheats. */
+  cheats?: boolean;
 }
 
 const HALL_KEY = (uid: string) => `ase:hall:${uid}`;

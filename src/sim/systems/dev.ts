@@ -154,7 +154,7 @@ function progressGame(c: Ctx, p: GameProject): void {
         const a = areas[i]!;
         const w = focus[i]! / fsum;
         if (w <= 0) continue;
-        let pts = w * (areaSkill(st, a) / 100) * prod.total * BALANCE.POINTS_PER_DAY * syn * portPenalty;
+        let pts = w * (areaSkill(st, a) / 100) * prod.total * BALANCE.POINTS_PER_DAY * syn * portPenalty * (s.cheats?.workMul ?? 1);
         const sb = st.spec ? SPEC_AREA_BONUS[st.spec]?.[a] : undefined;
         if (sb) pts *= 1 + sb;
         if (a === 'sound' && L.audio > 0) pts *= 1 + L.audio;

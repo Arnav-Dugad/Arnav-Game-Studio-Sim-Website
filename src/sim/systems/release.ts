@@ -240,7 +240,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const density = total > 0 ? p.bugs / total : 0;
   const base = qualityToScore(quality.total);
   const { reviews, aggregate } = generateReviews(rng, s, quality, base, density, p.concept.genre, p.concept.name);
-  const score = clamp(Math.round(aggregate), 1, 100);
+  const score = clamp(Math.round(aggregate + (s.cheats?.scoreBonus ?? 0)), 1, 100);
   const fr = p.concept.franchiseId ? s.franchises[p.concept.franchiseId] : undefined;
   // User score
   const ub = new BD('Critics', score);
@@ -403,8 +403,9 @@ export function updateSalesWeekly(c: Ctx): void {
       // platform decline after discontinuation scales sales down
       const life = pl.endDay !== null && s.day > pl.endDay ? Math.exp(-(s.day - pl.endDay) / 250) : 1;
       let u = (ps.potential * share * life * demandMul(s, pl) * season * (rel.serverLoad > 0 ? outage : 1) * catalogSalesMul(s, rel.day)) / comp;
-      u = Math.floor(u + c.rng.next()); // stochastic rounding keeps integers without bias
-      u = Math.min(u, Math.max(0, Math.floor(ps.potential * 1.5 + (ps.extraPotential ?? 0)) - ps.units)); // can't exceed the addressable market
+      const cheatMul = s.cheats?.salesMul ?? 1;
+      u = Math.floor(u * cheatMul + c.rng.next()); // stochastic rounding keeps integers without bias
+      u = Math.min(u, Math.max(0, Math.floor(ps.potential * 1.5 * Math.max(1, cheatMul) + (ps.extraPotential ?? 0)) - ps.units)); // can't exceed the addressable market
       const price = rel.price;
       if (u > 0) {
         gross += u * price;

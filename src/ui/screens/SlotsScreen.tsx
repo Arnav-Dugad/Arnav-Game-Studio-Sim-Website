@@ -256,6 +256,7 @@ export function SlotsScreen() {
                     <div className="truncate font-semibold">{h.company}</div>
                     <div className="truncate text-xs text-ink3">
                       {h.ending} · {h.years}
+                      {h.cheats ? ' · cheats used' : ''}
                       {h.bestGame ? ` · best: ${h.bestGame} (${h.bestScore})` : ''}
                     </div>
                   </div>

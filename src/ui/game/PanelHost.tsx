@@ -14,6 +14,7 @@ const NewsPanel = lazy(() => import('../panels/NewsPanel'));
 const GoalsPanel = lazy(() => import('../panels/GoalsPanel'));
 const SettingsPanel = lazy(() => import('../panels/SettingsPanel'));
 const ReleasesPanel = lazy(() => import('../panels/ReleasesPanel'));
+const CheatsPanel = lazy(() => import('../panels/CheatsPanel'));
 
 const TITLES: Record<PanelId, string> = {
   develop: 'Develop',
@@ -27,6 +28,7 @@ const TITLES: Record<PanelId, string> = {
   goals: 'Goals',
   settings: 'Settings',
   releases: 'Your Games',
+  cheats: 'Cheats',
 };
 
 const PANELS: Record<PanelId, () => ReactNode> = {
@@ -41,6 +43,7 @@ const PANELS: Record<PanelId, () => ReactNode> = {
   goals: () => <GoalsPanel />,
   settings: () => <SettingsPanel />,
   releases: () => <ReleasesPanel />,
+  cheats: () => <CheatsPanel />,
 };
 
 export function PanelHost() {

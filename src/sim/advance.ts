@@ -10,6 +10,7 @@ import { updateProjectsDaily } from './systems/dev';
 import { expireEvents, rollRandomEvent } from './systems/events';
 import { hardwareMonthly } from './systems/hardware';
 import { subscriptionMonthly } from './systems/subscription';
+import { cheatsDaily } from './cheats';
 import { publishingMonthly } from './systems/publishing';
 import { financeMonthly, quarterlyEarnings, solvencyCheck, stockWeekly, valuation, yearlyTaxes } from './systems/finance';
 import { processHistory, updateFuturePlatforms, updateMarketMonthly } from './systems/market';
@@ -98,15 +99,16 @@ export function tick(c: Ctx): void {
   trainingDaily(s);
   updateProjectsDaily(c);
   updateResearchDaily(c);
+  cheatsDaily(s);
 
   if (weekday(s.day) === 0) {
     updateSalesWeekly(c);
     stockWeekly(c);
     hypeWeekly(s);
     expireEvents(c);
-    rollRandomEvent(c);
+    if (!s.cheats?.noEvents) rollRandomEvent(c);
   }
-  if (s.company.cash < 0 || s.company.insolventSince !== undefined) solvencyCheck(c);
+  if ((s.company.cash < 0 || s.company.insolventSince !== undefined) && !s.cheats?.noBankruptcy && !s.cheats?.infiniteMoney) solvencyCheck(c);
 
   if (!s.settings.endless && s.day >= STORY_END_DAY && s.status === 'running') {
     s.status = 'retired';

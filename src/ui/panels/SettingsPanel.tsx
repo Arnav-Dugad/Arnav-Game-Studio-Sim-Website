@@ -111,6 +111,14 @@ export default function SettingsPanel() {
           </Button>
         </div>
       </Section>
+      {s && (
+        <Section title="Sandbox">
+          <p className="mb-2 text-xs text-ink3">Money, staff, games, research and time — bend any rule. Runs that use cheats are marked in the Hall of Fame.</p>
+          <Button icon="sparkle" onClick={() => useGame.getState().openPanel('cheats')}>
+            Open cheats
+          </Button>
+        </Section>
+      )}
     </div>
   );
 }
