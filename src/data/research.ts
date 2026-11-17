@@ -25,6 +25,7 @@ export const RESEARCH: readonly ResearchDef[] = [
   // Graphics
   { id: 'gfx_2d_1', name: '2D Graphics I', branch: 'graphics', year: 1980, points: 0, cost: 0, requires: [], engineTech: 0.5, starter: true, desc: 'Blocky sprites and solid colours.' },
   { id: 'gfx_2d_2', name: '2D Graphics II', branch: 'graphics', year: 1982, points: 18, cost: 3_000, requires: ['gfx_2d_1'], engineTech: 0.5, desc: 'More colours, smoother animation.' },
+  { id: 'gfx_vn_scenes', name: 'Illustrated Scenes', branch: 'graphics', year: 1992, points: 45, cost: 12_000, requires: ['gfx_2d_2'], engineTech: 0.2, genreBonus: { visual_novel: 0.07, adventure: 0.02 }, desc: 'Full-screen character art with expressions and layered backgrounds.' },
   { id: 'gfx_sprites', name: 'Hardware Sprites', branch: 'graphics', year: 1985, points: 35, cost: 8_000, requires: ['gfx_2d_2'], engineTech: 0.6, genreBonus: { platformer: 0.04, action: 0.03 }, desc: 'Dozens of moving objects without flicker.' },
   { id: 'gfx_parallax', name: 'Parallax Scrolling', branch: 'graphics', year: 1988, points: 55, cost: 14_000, requires: ['gfx_sprites'], engineTech: 0.6, genreBonus: { platformer: 0.05, shooter: 0.03 }, desc: 'Layered backgrounds that give depth.' },
   { id: 'gfx_2_5d', name: 'Pseudo-3D', branch: 'graphics', year: 1991, points: 80, cost: 22_000, requires: ['gfx_parallax'], engineTech: 0.7, genreBonus: { racing: 0.05, shooter: 0.04 }, desc: 'Mode-7 style rotation and raycasting.' },
@@ -46,7 +47,8 @@ export const RESEARCH: readonly ResearchDef[] = [
   { id: 'audio_spatial', name: 'Spatial Audio', branch: 'audio', year: 2016, points: 280, cost: 95_000, requires: ['audio_dynamic'], engineTech: 0.4, desc: 'Object-based 3D sound.' },
   // Systems
   { id: 'sys_save', name: 'Save Games', branch: 'systems', year: 1983, points: 22, cost: 4_000, requires: [], engineTech: 0.3, genreBonus: { rpg: 0.06, adventure: 0.05 }, desc: 'Progress that survives power-off.' },
-  { id: 'sys_dialogue', name: 'Dialogue Trees', branch: 'systems', year: 1985, points: 40, cost: 9_000, requires: ['sys_save'], engineTech: 0.2, genreBonus: { rpg: 0.05, adventure: 0.06 }, desc: 'Branching conversations.' },
+  { id: 'sys_dialogue', name: 'Dialogue Trees', branch: 'systems', year: 1985, points: 40, cost: 9_000, requires: ['sys_save'], engineTech: 0.2, genreBonus: { rpg: 0.05, adventure: 0.06, visual_novel: 0.06 }, desc: 'Branching conversations.' },
+  { id: 'sys_card_ai', name: 'Card-Game AI', branch: 'systems', year: 1986, points: 35, cost: 8_000, requires: [], engineTech: 0.2, genreBonus: { cards: 0.07, puzzle: 0.02 }, desc: 'Opponents that bluff, count cards and know when to fold.' },
   { id: 'sys_ai_basic', name: 'Pathfinding AI', branch: 'systems', year: 1989, points: 60, cost: 15_000, requires: [], engineTech: 0.4, genreBonus: { strategy: 0.06, simulation: 0.04 }, desc: 'Units that find their way.' },
   { id: 'sys_physics', name: 'Physics Engine', branch: 'systems', year: 1997, points: 150, cost: 50_000, requires: ['gfx_3d_1'], engineTech: 0.6, genreBonus: { racing: 0.06, sandbox: 0.05 }, desc: 'Rigid bodies, ragdolls, things that fall over.' },
   { id: 'sys_ai_adv', name: 'Advanced AI', branch: 'systems', year: 2000, points: 190, cost: 65_000, requires: ['sys_ai_basic'], engineTech: 0.5, genreBonus: { shooter: 0.04, strategy: 0.05, sports: 0.05 }, desc: 'Squad tactics and believable opponents.' },
