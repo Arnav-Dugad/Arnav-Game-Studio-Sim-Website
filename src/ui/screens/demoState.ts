@@ -37,6 +37,9 @@ export function buildDemoState(): GameState {
   place('whiteboard', 4, 0);
   place('aquarium', 11, 8);
   place('neon_sign', 8, 8);
+  place('pet_cat', 7, 7);
+  place('pet_dog', 1, 4);
+  place('ping_pong', 12, 5);
   const rng = new Rng([7, 8, 9, 10]);
   for (let i = 0; i < 7; i++) {
     const c = generateCandidate(s, rng, { quality: 30 });
