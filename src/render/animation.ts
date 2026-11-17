@@ -6,12 +6,14 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Look } from './sprites';
 
-export type Prop = 'none' | 'cup' | 'phone' | 'book' | 'paddle';
+export type Prop = 'none' | 'cup' | 'phone' | 'book' | 'paddle' | 'box' | 'pizza' | 'briefcase' | 'notepad';
 
 export interface Rig {
   root: Container;
-  armL: Graphics;
-  armR: Graphics;
+  armL: Container;
+  armR: Container;
+  sleeveL: Graphics;
+  sleeveR: Graphics;
   eyesOpen: Graphics;
   eyesClosed: Graphics;
   mouth: Graphics;
@@ -55,10 +57,14 @@ function drawArm(g: Graphics, look: Look): void {
 
 export function createRig(fig: Graphics, look: Look): Rig {
   const root = new Container();
-  const armL = new Graphics();
-  const armR = new Graphics();
-  drawArm(armL, look);
-  drawArm(armR, look);
+  const armL = new Container();
+  const armR = new Container();
+  const sleeveL = new Graphics();
+  const sleeveR = new Graphics();
+  drawArm(sleeveL, look);
+  drawArm(sleeveR, look);
+  armL.addChild(sleeveL);
+  armR.addChild(sleeveR);
   const eyesOpen = new Graphics();
   eyesOpen.ellipse(-2.7, 0, 1.05, 1.35).fill(0x2a2018);
   eyesOpen.ellipse(2.7, 0, 1.05, 1.35).fill(0x2a2018);
@@ -74,11 +80,11 @@ export function createRig(fig: Graphics, look: Look): Rig {
   prop.position.set(0, 9);
   const hat = new Graphics();
   root.addChild(fig, eyesOpen, eyesClosed, mouth, hat, armL, armR);
-  return { root, armL, armR, eyesOpen, eyesClosed, mouth, prop, propKind: 'none', mouthKey: '', hat, hatKey: 'none' };
+  return { root, armL, armR, sleeveL, sleeveR, eyesOpen, eyesClosed, mouth, prop, propKind: 'none', mouthKey: '', hat, hatKey: 'none' };
 }
 
 /** Seasonal and party headwear. */
-export function setHat(r: Rig, kind: 'none' | 'santa' | 'witch' | 'party', color = 0xe07a5f): void {
+export function setHat(r: Rig, kind: 'none' | 'santa' | 'witch' | 'party' | 'cap', color = 0xe07a5f): void {
   const key = `${kind}|${color}`;
   if (r.hatKey === key) return;
   r.hatKey = key;
@@ -92,6 +98,10 @@ export function setHat(r: Rig, kind: 'none' | 'santa' | 'witch' | 'party', color
     g.ellipse(0, -5.2, 11.5, 2.6).fill(0x2e2240);
     g.poly([-5.6, -5.6, 5.6, -5.6, 3, -14, 6.5, -19]).fill(0x3a2a52);
     g.rect(-5.2, -8.2, 10.4, 2).fill(0x9b6bd3);
+  } else if (kind === 'cap') {
+    g.ellipse(0, -4.5, 7.8, 4.6).fill(color);
+    g.roundRect(-1, -5.5, 11, 2.4, 1.2).fill(color);
+    g.circle(0, -8.8, 1).fill({ color: 0x000000, alpha: 0.25 });
   } else if (kind === 'party') {
     g.poly([-4.8, -5.8, 4.8, -5.8, 0, -18.5]).fill(color);
     g.poly([-3.2, -9.8, 3.2, -9.8, 2.2, -12.4, -2.2, -12.4]).fill({ color: 0xffffff, alpha: 0.6 });
@@ -101,8 +111,8 @@ export function setHat(r: Rig, kind: 'none' | 'santa' | 'witch' | 'party', color
 
 /** Redraw arms in a new outfit colour (identity editor). */
 export function reskinRig(r: Rig, look: Look): void {
-  drawArm(r.armL, look);
-  drawArm(r.armR, look);
+  drawArm(r.sleeveL, look);
+  drawArm(r.sleeveR, look);
 }
 
 function setProp(r: Rig, kind: Prop): void {
@@ -120,6 +130,21 @@ function setProp(r: Rig, kind: Prop): void {
   } else if (kind === 'book') {
     g.roundRect(-3.2, -1.5, 6.4, 4.6, 0.8).fill(0xc2563a);
     g.rect(-0.2, -1.5, 0.4, 4.6).fill(0xf4efe7);
+  } else if (kind === 'box') {
+    g.roundRect(-5, -4, 10, 8, 1).fill(0xc49a6c);
+    g.rect(-5, -1, 10, 1.4).fill(0xa87d52);
+    g.rect(-0.7, -4, 1.4, 8).fill(0xe8d2a8);
+  } else if (kind === 'pizza') {
+    g.roundRect(-7, -2, 14, 3.4, 0.8).fill(0xf4efe7);
+    g.roundRect(-7, -4.4, 14, 3.4, 0.8).fill(0xece4d6);
+    g.circle(0, -2.7, 1.3).fill(0xd8323c);
+  } else if (kind === 'briefcase') {
+    g.roundRect(-4.5, 1, 9, 6.5, 1).fill(0x4a3426);
+    g.roundRect(-1.8, -0.6, 3.6, 2, 0.8).stroke({ width: 0.9, color: 0x2a1e16 });
+    g.rect(-4.5, 3.6, 9, 0.8).fill(0x6b4a2e);
+  } else if (kind === 'notepad') {
+    g.roundRect(-2.8, -2, 5.6, 7, 0.6).fill(0xfaf6ee);
+    for (let y = 0; y < 3; y++) g.rect(-1.8, -0.4 + y * 1.6, 3.6, 0.4).fill(0x9ab0c8);
   } else if (kind === 'paddle') {
     g.circle(0, 3.6, 2.8).fill(0xd1495b);
     g.rect(-0.6, 0, 1.2, 2).fill(0x8a5a3b);
@@ -157,6 +182,8 @@ export interface AnimInput {
   sleepy: boolean;
   /** Sitting at a desk with nothing to do. */
   idle: boolean;
+  /** Something carried in both hands or by the side (visitors). */
+  carry?: Prop;
   /** Leisure glyph or station: what they're doing on a break. */
   leisure?: string;
   era: number;
@@ -254,6 +281,20 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
     rr = -2.8;
   } else if (a.yawn > 0) {
     l = -2.3;
+  } else if (i.carry && i.carry !== 'none') {
+    prop = i.carry;
+    if (i.carry === 'briefcase') {
+      rr = walking ? Math.sin(t * 12) * 0.25 : 0.05;
+      l = walking ? Math.sin(t * 12) * 0.5 : 0.08;
+    } else if (i.carry === 'notepad') {
+      rr = 0.95;
+      l = i.speaking ? -0.6 - Math.abs(Math.sin(t * 9)) * 0.3 : 0.1;
+    } else {
+      // carried in front with both hands
+      l = -0.75;
+      rr = 0.75;
+    }
+    if (walking) lean = i.face * 0.04;
   } else if (walking) {
     const sw = Math.sin(t * 12);
     l = sw * 0.5;
@@ -310,7 +351,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   r.armR.rotation = rr;
   setProp(r, prop);
   // keep held things roughly upright (a cup tips a little when sipping)
-  r.prop.rotation = prop === 'paddle' ? 0 : -rr * 0.85;
+  r.prop.rotation = prop === 'paddle' || prop === 'briefcase' ? -rr : -rr * 0.85;
 
   // whole-body: breathing, leaning, nodding while listening, sulking droop, desk head-turns
   const breathe = i.reducedMotion ? 0 : Math.sin(t * 2.4 + ph) * 0.018;

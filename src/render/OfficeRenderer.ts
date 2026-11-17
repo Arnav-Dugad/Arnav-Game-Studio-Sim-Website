@@ -11,6 +11,7 @@ import type { GameState, PlacedItem, Staff } from '@/sim/types';
 import { DARK, LIGHT, hexToNum, mix, shade, type ScenePalette } from './palette';
 import { T, drawItem, drawPerson, itemLift, lookFor, type Look } from './sprites';
 import { PetSystem } from './pets';
+import { VisitorSystem } from './visitors';
 import { SeasonDecor, birthdayOf, dayOfYear, seasonOf, type Season } from './seasons';
 import { animate, createRig, newAnim, reskinRig, setHat, type Anim, type Rig } from './animation';
 import { LEISURE, RESEARCH_SPOTS, chatExchange, workExchange, workThought } from './officeLife';
@@ -135,6 +136,7 @@ export class OfficeRenderer {
   private particles: { g: Graphics; vx: number; vy: number; life: number }[] = [];
   private pets = new PetSystem(this.itemLayer);
   private seasonDecor = new SeasonDecor(this.itemLayer);
+  private visitors = new VisitorSystem(this.itemLayer);
   private season: Season | null = null;
   private lastDay = -1;
   private bdayGreeted = new Set<string>();
@@ -463,6 +465,7 @@ export class OfficeRenderer {
     this.seasonDecor.update(s, floor, dt, this.season, this.P, ui.reducedMotion);
     this.syncAgents(s, floor, ui, dt);
     this.pets.update(s, floor, dt * (ui.speed === 0 ? 0.6 : 1), this.petHost(s, floor), ui.reducedMotion);
+    this.visitors.update(s, floor, dt * (ui.speed === 0 ? 0.6 : 1), this.visitorHost(s, floor), ui.reducedMotion, this.P);
     this.updateParticles(dt);
   }
 
@@ -973,6 +976,29 @@ export class OfficeRenderer {
         b.anim.wave = 1.4;
       }
     }
+  }
+
+  /** Who visitors can call on (people at work on this floor), and how staff answer them. */
+  private visitorHost(s: GameState, floor: number) {
+    return {
+      people: () => {
+        const out: { id: string; name: string; x: number; y: number; role: string; level: string; project?: string; crunching: boolean }[] = [];
+        for (const a of this.agents.values()) {
+          if (!a.c.visible || a.floor !== floor || a.mode !== 'desk' || a.talk) continue;
+          const st = s.staff[a.id];
+          if (!st) continue;
+          const p = st.assignment.kind === 'project' ? s.projects[st.assignment.id] : undefined;
+          out.push({ id: a.id, name: st.name, x: a.x, y: a.y, role: st.role, level: st.level, project: p?.id, crunching: !!p && p.kind === 'game' && p.crunch });
+        }
+        return out;
+      },
+      reply: (id: string, text: string, gesture?: 'wave' | 'laugh' | 'joy') => {
+        const a = this.agents.get(id);
+        if (!a) return;
+        this.say(a, text, 2.4);
+        if (gesture) a.anim[gesture] = Math.max(a.anim[gesture], 1.3);
+      },
+    };
   }
 
   /** What the pets can see of the office. */
