@@ -675,11 +675,11 @@ export function updateLiveMonthly(c: Ctx): void {
 /** Yearly awards ceremony (December). */
 export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
   const { s } = c;
-  type Entry = { name: string; company: string; score: number; genre: string; mine: boolean; classic?: boolean; releaseId?: string };
+  type Entry = { name: string; company: string; score: number; genre: string; mine: boolean; classic?: boolean; releaseId?: string; user?: number };
   const entries: Entry[] = [
     ...Object.values(s.releases)
       .filter((r) => fromDay(r.day).year === yr && !r.concept.remasterOf && !r.concept.expansionOf)
-      .map((r) => ({ name: r.name, company: s.company.name, score: Math.round(r.score), genre: r.concept.genre, mine: true, releaseId: r.id })),
+      .map((r) => ({ name: r.name, company: s.company.name, score: Math.round(r.score), genre: r.concept.genre, mine: true, releaseId: r.id, user: Math.round(r.userScore) })),
     ...s.rivalGames
       .filter((g) => fromDay(g.day).year === yr && !g.publishedByPlayer)
       .map((g) => ({ name: g.name, company: s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company, score: g.score, genre: g.genre, mine: false, classic: !!g.franchise })),
@@ -704,6 +704,14 @@ export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
     if (r) winners.push({ category, name: r.name, company: r.company, score: r.score, mine: false });
   };
   pick('Game of the Year', entries, 75, 85, false);
+  // Players' Choice: what players loved most (user scores; rival games are judged by their reputation)
+  {
+    const mine = entries.filter((e) => e.mine).sort((a, b) => (b.user ?? 0) - (a.user ?? 0))[0];
+    const rivalBest = entries.filter((e) => !e.mine).sort(byWeight)[0];
+    const rivalVote = rivalBest ? weight(rivalBest) : 0;
+    if (mine && (mine.user ?? 0) >= 85 && (mine.user ?? 0) >= rivalVote) winners.push({ category: "Players' Choice", name: mine.name, company: mine.company, score: mine.user ?? mine.score, mine: true, releaseId: mine.releaseId });
+    else if (rivalBest && rivalBest.score >= 75) winners.push({ category: "Players' Choice", name: rivalBest.name, company: rivalBest.company, score: rivalBest.score, mine: false });
+  }
   for (const g of GENRES) pick(`Best ${g.name}`, entries.filter((e) => e.genre === g.id), 70, 80, true);
   const gotyW = winners.find((w) => w.category === 'Game of the Year');
   s.awardHistory = [...(s.awardHistory ?? []), { year: yr, winners }].slice(-60);
