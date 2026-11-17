@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21f';
+export const WHATS_NEW_VERSION = '2026-11-21g';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'warning', title: 'Console certification', body: 'From 1986, a buggy console or handheld game in polish can fail the platform holder’s certification: pay for an expedited re-test (a week) or fix it properly (two weeks, more bugs gone). Good QA keeps you out of trouble. Plus new rival series: Yu-Gi-Oh!, Legends of Runeterra and Tokimeki Memorial.' },
   { icon: 'coin', title: 'Launch bonuses & public delays', body: 'After a launch, open the game and thank the team: a launch bonus for everyone who made it buys three months of better mood and more loyalty (once, within two months). And players now remember a public delay — forgiven if the game is great, held against it if it isn’t.' },
   { icon: 'sparkle', title: 'Stories for the new genres', body: 'Fans may run a tournament for your card game (sponsor it for fans and a burst of sales), or ask to translate your visual novel for players abroad — bless it, hire them to make it official, or send a takedown. Plus new research: Card-Game AI and Illustrated Scenes.' },
   { icon: 'people', title: 'Former colleagues come home', body: 'People who left on good terms — they moved away, a rival made them an offer, their internship ended — may ask to come back one to eight years later: a little more skilled, and starting out loyal. Look for “Former colleague” in the hiring pool.' },

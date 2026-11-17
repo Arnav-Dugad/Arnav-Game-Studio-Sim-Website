@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { platformInfo } from './market';
 import { gameRegions } from '../../data/regions';
 import type { GenreId } from '../../data/types';
 import { PITCH_DAYS, makePitch, pitchers, pitchText } from './pitches';
@@ -68,6 +69,9 @@ const untranslatedNovel = (s: GameState) =>
     const reached = new Set([s.company.homeRegion ?? 'na', ...gameRegions(r.concept, s.company.branches ?? [])]);
     return !reached.has('na') && !reached.has('eu');
   });
+/** A buggy console game in polish that hasn't been through certification yet. */
+const certRisk = (s: GameState) =>
+  activeGames(s).find((p) => p.phase >= 2 && !p.certified && p.bugs > 0.08 * (p.design + p.tech) && p.concept.platforms.some((id) => { const k = platformInfo(s, id)?.kind; return k === 'console' || k === 'handheld'; }));
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
@@ -834,6 +838,41 @@ export const EVENT_DEFS: EventDef[] = [
       else p.extraDays += 7;
       const dev = s.staff[String(e.ctx.dev)];
       if (dev) dev.morale = clamp(dev.morale + 5, 0, 100);
+    },
+  },
+  {
+    id: 'cert_fail',
+    art: 'smoke',
+    cooldown: 400,
+    weight: (s) => (yr(s) >= 1986 && certRisk(s) ? 0.35 : 0),
+    make: ({ s }) => {
+      const p = certRisk(s);
+      if (!p) return null;
+      const cost = money(8_000, s.day);
+      const holder = p.concept.platforms.map((id) => platformInfo(s, id)).find((pl) => pl && (pl.kind === 'console' || pl.kind === 'handheld'));
+      return {
+        title: `${p.concept.name} failed certification`,
+        body: `${holder ? `${holder.name}’s` : 'The platform holder’s'} testers sent ${p.concept.name} back with a list of crash bugs. It can’t ship on their console until they’re fixed.`,
+        options: [
+          { id: 'rush', label: `Pay for an expedited re-test (${fmtMoney(cost)})`, preview: `One more week; fixes the worst of it (bugs −10%)${lateNote(p)}`, disabled: s.company.cash < cost },
+          { id: 'fix', label: 'Fix it properly and resubmit', preview: `Two more weeks; bugs −25%${lateNote(p)}` },
+        ],
+        ctx: { project: p.id, cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (!p || p.kind !== 'game') return;
+      const cost = Number(e.ctx.cost);
+      if (opt === 'rush' && s.company.cash >= cost) {
+        spend(s, 'other_expense', cost);
+        p.extraDays += 7;
+        p.bugs *= 0.9;
+      } else {
+        p.extraDays += 14;
+        p.bugs *= 0.75;
+      }
+      p.certified = true;
     },
   },
   {
