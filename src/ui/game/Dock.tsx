@@ -90,6 +90,8 @@ interface YearSummary {
   staff: number;
   joined: number;
   friends: number;
+  awards: number;
+  mvp?: string;
 }
 
 /** Shows a dismissible recap card each January (does not pause the game). */
@@ -118,7 +120,9 @@ export function YearInReview() {
     const expense = sum(months.map((m) => sum(Object.values(m.expense).map((x) => x ?? 0))));
     const rels = s.releaseOrder.map((id) => s.releases[id]!).filter((r) => fromDay(r.day).year === prev);
     const rivalHit = s.rivalGames.filter((g) => fromDay(g.day).year === prev).sort((a, b) => b.score - a.score)[0];
-    const gala = s.awardHistory?.find((y) => y.year === prev)?.winners.find((w) => w.category === 'Game of the Year');
+    const galaYear = s.awardHistory?.find((y) => y.year === prev);
+    const gala = galaYear?.winners.find((w) => w.category === 'Game of the Year');
+    const studio = (s.studioAwards ?? []).find((a) => fromDay(a.day).year === prev);
     return {
       year: prev,
       revenue,
@@ -130,6 +134,8 @@ export function YearInReview() {
       staff: Object.keys(s.staff).length,
       joined: Object.values(s.staff).filter((x) => x.role !== 'founder' && fromDay(x.hiredDay).year === prev).length,
       friends: Object.values(s.relations ?? {}).filter((x) => x >= 60).length,
+      awards: galaYear?.winners.filter((w) => w.mine).length ?? 0,
+      mvp: studio?.winners.find((w) => w.category === 'MVP')?.name,
     };
     // v: recompute when the sim ticks
   }, [s, shown, v]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -173,6 +179,13 @@ export function YearInReview() {
           ))}
           {summary.units > 0 && <li className="text-ink3">{fmtUnits(summary.units)} copies sold so far</li>}
         </ul>
+      )}
+      {(summary.awards > 0 || summary.mvp) && (
+        <p className="mt-2 text-[11px] text-ink2">
+          {summary.awards > 0 && <>🏆 {summary.awards} Golden Pixel award{summary.awards === 1 ? '' : 's'}</>}
+          {summary.awards > 0 && summary.mvp && ' · '}
+          {summary.mvp && <>Studio MVP: <b>{summary.mvp}</b></>}
+        </p>
       )}
       {(summary.joined > 0 || summary.friends > 0) && (
         <p className="mt-2 text-[11px] text-ink3">
