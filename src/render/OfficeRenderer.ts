@@ -520,6 +520,8 @@ export class OfficeRenderer {
     this.trophies = Math.min(8, s.progress.stats.awardsWon ?? 0);
     this.fanArt = pinnedArt(s).slice(0, 8).map((m) => ({ seed: m.seed, color: FAN_COLORS[m.seed % FAN_COLORS.length]! }));
     const fanKey = this.fanArt.map((a) => a.seed).join(',');
+    const mc = s.company.mascot;
+    this.mascot = mc ? { kind: mc.kind, color: parseInt(mc.color.slice(1), 16), acc: mc.acc } : undefined;
     if (fanKey !== this.lastFanKey) {
       this.lastFanKey = fanKey;
       for (const [k, tex] of this.textures) if (k.startsWith('fan_wall|')) {
@@ -527,7 +529,7 @@ export class OfficeRenderer {
         this.textures.delete(k);
       }
     }
-    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}`;
+    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}|${mc ? mc.kind + mc.color + mc.acc : ''}`;
     if (iKey !== this.itemsKey) {
       this.itemsKey = iKey;
       this.syncItems(s, floor, era);
@@ -645,6 +647,7 @@ export class OfficeRenderer {
 
   private trophies = 0;
   private fanArt: { seed: number; color: number }[] = [];
+  private mascot?: { kind: string; color: number; acc: string };
   private lastFanKey = '';
   private agentColor: number | undefined;
 
@@ -652,14 +655,14 @@ export class OfficeRenderer {
     const def = ITEM_BY_ID[id];
     const w = rot ? def.h : def.w;
     const h = rot ? def.w : def.h;
-    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}`;
+    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}${id === 'mascot_statue' && this.mascot ? `|m${this.mascot.kind}${this.mascot.color}${this.mascot.acc}` : ''}`;
     const lift = itemLift(id) + 12;
     let tex = this.textures.get(key);
     if (!tex) {
       const g = new Graphics();
       // pad region so generateTexture includes lift and overhangs
       g.rect(-6, -lift, w * T + 12, h * T + lift + 10).fill({ color: 0x000000, alpha: 0.001 });
-      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies, fanArt: this.fanArt });
+      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies, fanArt: this.fanArt, mascot: this.mascot });
       tex = this.app.renderer.generateTexture({ target: g, resolution: 2, antialias: true });
       g.destroy();
       this.textures.set(key, tex);

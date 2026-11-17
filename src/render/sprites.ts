@@ -78,6 +78,8 @@ export interface DrawOpts {
   P: ScenePalette;
   /** Awards to show on a trophy shelf (capped at 8). */
   trophies?: number;
+  /** The studio mascot for the statue. */
+  mascot?: { kind: string; color: number; acc: string };
   /** Pinned fan drawings: a seed and a crayon colour each. */
   fanArt?: { seed: number; color: number }[];
 }
@@ -302,15 +304,38 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
     case 'mascot_statue': {
       shadow(g, 6, 4, W - 12, H - 4);
       box(g, { x: 8, y: 10, w: W - 16, h: H - 14, height: 12, top: 0xe9e4dc, front: 0xb8b0a4, r: 3 });
-      const c = P.accentDesign;
-      g.ellipse(W / 2, -2, 9, 11).fill(c);
-      g.circle(W / 2, -16, 7).fill(c);
-      g.circle(W / 2 - 6, -22, 3).fill(c);
-      g.circle(W / 2 + 6, -22, 3).fill(c);
-      g.circle(W / 2 - 2.5, -17, 1.4).fill(0xffffff);
-      g.circle(W / 2 + 2.5, -17, 1.4).fill(0xffffff);
-      g.moveTo(W / 2 - 9, -4).lineTo(W / 2 - 15, -14).stroke({ width: 3, color: c, cap: 'round' });
-      g.star(W / 2 - 15, -16, 5, 3, 1.4).fill(0xe3b23c);
+      const m = o.mascot ?? { kind: 'bear', color: P.accentDesign, acc: 'star' };
+      const c = m.color;
+      const cx = W / 2;
+      g.ellipse(cx, -2, 9, 11).fill(c);
+      // ears / horns / antenna by species
+      if (m.kind === 'bear') {
+        g.circle(cx - 6, -22, 3).fill(c);
+        g.circle(cx + 6, -22, 3).fill(c);
+      } else if (m.kind === 'cat') {
+        g.poly([cx - 7, -19, cx - 6, -27, cx - 2, -22]).fill(c);
+        g.poly([cx + 7, -19, cx + 6, -27, cx + 2, -22]).fill(c);
+      } else if (m.kind === 'dragon') {
+        g.poly([cx - 5, -21, cx - 8, -28, cx - 2, -23]).fill(0xf2e2b8);
+        g.poly([cx + 5, -21, cx + 8, -28, cx + 2, -23]).fill(0xf2e2b8);
+      } else if (m.kind === 'robot') {
+        g.rect(cx - 0.6, -29, 1.2, 6).fill(0x2a2622);
+        g.circle(cx, -29, 1.6).fill(0xf2c450);
+      } else if (m.kind === 'bird') g.poly([cx - 2, -22, cx, -28, cx + 2, -22]).fill(c);
+      if (m.kind === 'robot') g.roundRect(cx - 7, -23, 14, 13, 3).fill(c);
+      else g.circle(cx, -16, 7).fill(c);
+      g.circle(cx - 2.5, -17, 1.4).fill(0xffffff);
+      g.circle(cx + 2.5, -17, 1.4).fill(0xffffff);
+      if (m.kind === 'bird') g.poly([cx - 1.5, -14, cx + 1.5, -14, cx, -11]).fill(0xf2c450);
+      if (m.acc === 'star') {
+        g.moveTo(cx - 9, -4).lineTo(cx - 15, -14).stroke({ width: 3, color: c, cap: 'round' });
+        g.star(cx - 15, -16, 5, 3, 1.4).fill(0xe3b23c);
+      } else if (m.acc === 'crown') g.poly([cx - 5, -22, cx - 4, -27, cx - 1.5, -24, cx, -28, cx + 1.5, -24, cx + 4, -27, cx + 5, -22]).fill(0xe3b23c);
+      else if (m.acc === 'cap') g.ellipse(cx, -22, 7, 2.6).fill(0x3d85c6);
+      else if (m.acc === 'headphones') {
+        g.rect(cx - 9, -19, 3, 5).fill(0xd8323c);
+        g.rect(cx + 6, -19, 3, 5).fill(0xd8323c);
+      }
       break;
     }
     case 'pet_cat':

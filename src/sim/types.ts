@@ -163,6 +163,14 @@ export interface MediaDeal {
   bonus?: number;
 }
 
+export type MascotKind = 'bear' | 'cat' | 'robot' | 'dragon' | 'blob' | 'bird';
+export type MascotAcc = 'none' | 'cap' | 'headphones' | 'star' | 'crown';
+export interface MascotDesign {
+  kind: MascotKind;
+  color: string;
+  acc: MascotAcc;
+}
+
 export interface YearbookPhoto {
   year: number;
   people: number;
@@ -856,6 +864,8 @@ export interface Company {
   color: string;
   /** Studio emblem (an icon id) and badge shape; the monogram is used without one. */
   logo?: { emblem?: string; shape?: BadgeShape };
+  /** The studio mascot (identity editor; shown on the office statue and the studio card). */
+  mascot?: MascotDesign;
   reputation: number; // 0..100
   fans: number;
   cash: number;

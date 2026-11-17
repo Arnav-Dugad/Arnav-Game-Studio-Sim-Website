@@ -3,6 +3,7 @@ import { fromDay } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import { Avatar } from '../art/Avatar';
 import { Cover } from '../art/Cover';
+import { Mascot } from '../art/Mascot';
 import { Button, Modal } from '../components/ui';
 import { useGame } from '../store';
 
@@ -157,6 +158,11 @@ export function StudioCardModal({ onClose }: { onClose: () => void }) {
             <text x={910} y={330} textAnchor="middle" fill="#d9c3b0" fontFamily={SANS} fontSize={22}>
               Your best games will appear here
             </text>
+          )}
+          {s.company.mascot && (
+            <g transform="translate(520 470)">
+              <Mascot m={s.company.mascot} size={120} />
+            </g>
           )}
           <text x={W - 48} y={H - 36} textAnchor="end" fill="#d9c3b0" fontFamily={SANS} fontSize={16} opacity={0.8}>
             Arnav Game Studio Empire

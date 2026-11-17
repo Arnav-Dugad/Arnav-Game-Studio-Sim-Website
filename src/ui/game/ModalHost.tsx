@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import type { MascotAcc, MascotDesign, MascotKind } from '@/sim/types';
+import { Mascot } from '../art/Mascot';
 import { StudioStory } from './StudioStory';
 import { TrailerCutModal } from './TrailerCut';
 import { hobbyOf } from '@/data/hobbies';
@@ -239,10 +241,14 @@ function IdentityModal({ onClose }: { onClose: () => void }) {
   const act = useGame((g) => g.actOrToast);
   const [name, setName] = useState(s.company.name);
   const [color, setColor] = useState(s.company.color);
+  const [mascot, setMascot] = useState<MascotDesign>(() => s.company.mascot ?? { kind: 'bear', color: s.company.color, acc: 'none' });
   const [emblem, setEmblem] = useState<string | null>(s.company.logo?.emblem ?? null);
   const [shape, setShape] = useState<BadgeShape>(s.company.logo?.shape ?? 'rounded');
   const save = () => {
-    if (act({ type: 'setIdentity', name, color, emblem, shape }, 'Studio identity updated')) onClose();
+    if (act({ type: 'setIdentity', name, color, emblem, shape }, 'Studio identity updated')) {
+      act({ type: 'setMascot', mascot: { ...mascot, color } });
+      onClose();
+    }
   };
   return (
     <Modal open onClose={onClose} title="Studio identity">
@@ -262,6 +268,16 @@ function IdentityModal({ onClose }: { onClose: () => void }) {
       </Section>
       <Section title="Shape" className="mt-3">
         <Segmented<BadgeShape> ariaLabel="Badge shape" value={shape} onChange={setShape} options={SHAPE_OPTS} />
+      </Section>
+      <Section title="Mascot" className="mt-3">
+        <div className="flex items-start gap-3">
+          <Mascot m={{ ...mascot, color }} size={84} />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Segmented<MascotKind> ariaLabel="Mascot species" value={mascot.kind} onChange={(kind) => setMascot((m) => ({ ...m, kind }))} options={(['bear', 'cat', 'robot', 'dragon', 'blob', 'bird'] as const).map((k) => ({ value: k, label: k[0]!.toUpperCase() + k.slice(1) }))} />
+            <Segmented<MascotAcc> ariaLabel="Mascot accessory" value={mascot.acc} onChange={(acc) => setMascot((m) => ({ ...m, acc }))} options={(['none', 'cap', 'headphones', 'star', 'crown'] as const).map((k) => ({ value: k, label: k === 'none' ? 'Nothing' : k[0]!.toUpperCase() + k.slice(1) }))} />
+            <p className="text-[11px] text-ink3">Your mascot wears the studio colour. It stars on the Mascot Statue in the office and on your studio card.</p>
+          </div>
+        </div>
       </Section>
       <Section title="Emblem" className="mt-3">
         <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-10">

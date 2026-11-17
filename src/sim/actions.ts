@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import type { MascotDesign } from './types';
 import { signCodev } from './systems/codev';
 import { communityNudge, foundCommunity, setModeration } from './systems/community';
 import { openSourceEngine } from './systems/giving';
@@ -158,6 +159,7 @@ export type Action =
   | { type: 'pinFanArt'; id: string; on: boolean }
   | { type: 'trailerCut'; projectId: string; points: number }
   | { type: 'foundCommunity' }
+  | { type: 'setMascot'; mascot: MascotDesign }
   | { type: 'coDevelop'; projectId: string; rivalId: string }
   | { type: 'setModeration'; level: 0 | 1 | 2 }
   | { type: 'openSourceEngine'; engineId: string }
@@ -947,6 +949,12 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'coDevelop':
       return signCodev(s, a.projectId, a.rivalId);
+    case 'setMascot': {
+      const m = a.mascot;
+      if (!m || !['bear', 'cat', 'robot', 'dragon', 'blob', 'bird'].includes(m.kind) || !['none', 'cap', 'headphones', 'star', 'crown'].includes(m.acc) || !/^#[0-9a-f]{6}$/i.test(m.color)) return 'Pick a mascot';
+      s.company.mascot = { kind: m.kind, color: m.color, acc: m.acc };
+      return null;
+    }
     case 'foundCommunity':
       return foundCommunity(s);
     case 'setModeration':
