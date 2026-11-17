@@ -46,6 +46,9 @@
 - **Friendships, feuds and studio life.** Teammates grow close (better chemistry, happier) or clash into feuds you have to handle. Employee of the Month, yearly team retreats, birthdays, farewells when people leave, and credits on every game.
 - **Live events and branch offices.** Run seasonal events in live games; open studios abroad for free localisation and local know-how.
 - **Cinematic mode and office style.** Press V to hide the interface and let the camera wander the office; choose your floor and wall colours; build foosball, a claw machine, a guitar corner and a statue of your series' mascot. Desk monitors show each person's work.
+- **Mentors, unions and conventions.** Pair juniors with seniors to grow them faster; heavy crunch can spark a union drive; big series host their own fan conventions; rivals rush out knock-offs of your hits; indie studios that close send their developers your way.
+- **A bug bash mini-game.** During polish, squash bugs for 20 seconds to fix up to a quarter of them.
+- **More to build and make.** A gym that slows burnout, hammocks, a karaoke machine, foosball and more; four extra topics (Trains, Witches & Wizards, Giant Monsters, Cozy Village) with their own cover art.
 - **Runs a big studio without busywork.**
   - **Studio Overview (O):** lists everything that needs attention, each with a one-click fix.
   - **Team tab:** filters, search, grouping and compact rows for hundreds of people, plus bulk actions (assign, research, vacation, training, raises).
