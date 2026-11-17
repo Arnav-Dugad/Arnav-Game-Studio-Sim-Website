@@ -32,6 +32,7 @@ export function RivalModal({ rivalId, onClose }: { rivalId: string; onClose: () 
         <CompanyBadge name={r.name} color={r.color} size={64} />
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-2xl font-semibold">{r.name}</h2>
+          {r.founder && <div className="text-xs text-gold">Founded by your former colleague {r.founder}</div>}
           <div className="text-sm text-ink2">
             {def ? `Founded ${def.founded} · ${def.country} · ${def.kind.replace('_', ' ')}` : 'Independent studio'} · ~{Math.round(r.staff)} staff · reputation {Math.round(r.reputation)}
           </div>

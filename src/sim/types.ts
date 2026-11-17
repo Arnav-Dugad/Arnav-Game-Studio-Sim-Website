@@ -393,6 +393,8 @@ export interface RivalGame {
 export interface Rival {
   id: Id; // company id (or procedural 'proc_*')
   name: string;
+  /** Founded by someone who used to work for you. */
+  founder?: string;
   color: string;
   procedural: boolean;
   alive: boolean;

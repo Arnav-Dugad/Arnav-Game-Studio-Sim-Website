@@ -549,6 +549,7 @@ export function updateStaffMonthly(c: Ctx): void {
         s.rivals[id] = {
           id,
           name: `${last} ${rng.pick(['Games', 'Studios', 'Interactive', 'Works'])}`,
+          founder: st.name,
           color: `#${Math.floor(rng.range(0x303030, 0xd0d0d0)).toString(16).padStart(6, '0')}`,
           procedural: true,
           alive: true,
