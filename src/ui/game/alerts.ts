@@ -61,6 +61,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   const cap = tierDef(s.office.tier).staffCap;
   if (staff.length >= cap) out.push({ id: 'office', tone: 'info', icon: 'build', text: `Your office is full (${staff.length}/${cap}). Move to grow the team.`, action: { label: 'Office', run: () => open('office') } });
   // Projects at risk
+  for (const p of projects) if (p.team.length === 0) out.push({ id: `empty-${p.id}`, tone: 'bad', icon: 'staff', text: `Nobody is working on ${projectName(p)} — it still costs money every day.`, action: { label: 'Develop', run: () => open('develop') } });
   for (const p of projects) {
     if (p.kind !== 'game') continue;
     for (const pid of p.concept.platforms) {

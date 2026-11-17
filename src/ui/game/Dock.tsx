@@ -17,7 +17,7 @@ export function ProjectDock() {
   if (!s || panel || build) return null;
   const projects = Object.values(s.projects);
   const research = s.research.active;
-  const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' && x.sickDays <= 0 && !x.vacationDays).length;
+  const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' && x.sickDays <= 0 && !x.vacationDays && (x.role !== 'founder' || Object.keys(s.staff).length === 1)).length;
   const nudge = !projects.length && idle > 0 && s.status === 'running';
   // In a busy studio, point at idle people (they cost salary and do nothing).
   const idleNudge = projects.length > 0 && idle >= 3 && s.status === 'running';

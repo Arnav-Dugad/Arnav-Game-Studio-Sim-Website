@@ -30,7 +30,7 @@ export default function StaffPanel() {
           { value: 'policies', label: 'Policies' },
         ]}
       />
-      {tab === 'team' && <TeamTab />}
+      {tab === 'team' && <TeamTab key={raw} />}
       {tab === 'hire' && <Hire />}
       {tab === 'policies' && <Policies />}
     </div>

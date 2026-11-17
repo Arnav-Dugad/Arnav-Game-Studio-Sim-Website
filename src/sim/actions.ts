@@ -65,6 +65,8 @@ export type Action =
   | { type: 'tradeShow'; show: string; booth: 0 | 1 | 2 }
   | { type: 'hire'; candidateId: string; salary?: number }
   | { type: 'fire'; staffId: string }
+  /** Let several people go at once (one combined, capped morale hit). */
+  | { type: 'fireMany'; staffIds: string[] }
   | { type: 'setSalary'; staffId: string; salary: number }
   | { type: 'assign'; staffId: string; to: 'idle' | 'research' }
   | { type: 'train'; staffId: string; skill: Skill }
@@ -162,6 +164,11 @@ function assignTeam(s: GameState, projectId: string, team: string[]): void {
     const st = s.staff[id];
     if (st) st.assignment = { kind: 'project', id: projectId };
   }
+}
+
+/** Morale cost of letting n people go together (capped: one bad week, not a collapse). */
+export function layoffMoraleHit(n: number): number {
+  return Math.min(10, 2 + n);
 }
 
 /** Public betas (2005+): two extra weeks in polish, a quarter of the bugs found, some hype, and a score read. */
@@ -496,6 +503,20 @@ function apply(c: Ctx, a: Action): string | null {
       s.eventCooldowns.__fireCount = recent;
       if (recent >= 3) s.company.lastLayoffDay = s.day;
       for (const o of Object.values(s.staff)) o.morale = clamp(o.morale - 2, 0, 100);
+      assignDesks(s);
+      return null;
+    }
+    case 'fireMany': {
+      if (!Array.isArray(a.staffIds)) return 'Pick people first';
+      const gone = [...new Set(a.staffIds)].map((id) => s.staff[id]).filter((st): st is NonNullable<typeof st> => !!st && st.role !== 'founder');
+      if (!gone.length) return 'Nobody to let go';
+      for (const st of gone) {
+        spend(s, 'salaries', st.salary / 12); // severance: one month each
+        removeStaff(s, st.id);
+      }
+      s.company.lastLayoffDay = s.day;
+      const hit = layoffMoraleHit(gone.length);
+      for (const o of Object.values(s.staff)) o.morale = clamp(o.morale - hit, 0, 100);
       assignDesks(s);
       return null;
     }
@@ -912,20 +933,51 @@ function apply(c: Ctx, a: Action): string | null {
       const extra = Math.max(0, Math.min(200, Math.round(Number(a.extra) || 0)));
       let need = Object.values(s.staff).filter((st) => !st.deskId).length + Math.max(0, extra - freeDesks(s));
       if (need <= 0) return extra ? 'You already have enough free desks' : 'Everyone already has a desk';
-      const cost = money(def.cost, s.day);
+      const cost = s.cheats?.freeBuild ? 0 : money(def.cost, s.day);
       const t = tierDef(s.office.tier);
       let placed = 0;
-      // Rows of desks with an aisle between them, floor by floor.
-      outer: for (let f = 0; f < t.floors; f++)
-        for (let y = 1; y < t.h - 1; y += def.h + 1)
-          for (let x = 0; x < t.w; x += def.w) {
-            if (need <= 0 || s.company.cash < cost) break outer;
-            if (!canPlace(s, def, f, x, y, 0).ok) continue;
-            spend(s, 'office', cost);
-            s.office.items.push({ id: `i${s.office.nextItemId++}`, item: def.id, floor: f, x, y, rot: 0 });
-            placed += 1;
-            need -= 1;
+      // Crowding is the number of other desks within two tiles of a desk (penalties start above 3).
+      // Place in passes of increasing allowed crowding so desks spread over every floor before any area
+      // gets dense, and never push an existing desk past the pass's limit.
+      const W = t.w;
+      const anchors = Array.from({ length: t.floors }, () => new Uint8Array(t.w * t.h));
+      const crowd = Array.from({ length: t.floors }, () => new Uint8Array(t.w * t.h));
+      const bump = (f: number, x: number, y: number) => {
+        for (let dy = -2; dy <= 2; dy++)
+          for (let dx = -2; dx <= 2; dx++) {
+            const xx = x + dx;
+            const yy = y + dy;
+            if ((dx || dy) && xx >= 0 && yy >= 0 && xx < t.w && yy < t.h) crowd[f]![yy * W + xx]! += 1;
           }
+      };
+      for (const it of s.office.items)
+        if (ITEM_BY_ID[it.item].category === 'desk' && it.floor < t.floors) {
+          anchors[it.floor]![it.y * W + it.x] = 1;
+          bump(it.floor, it.x, it.y);
+        }
+      const fits = (f: number, x: number, y: number, limit: number) => {
+        if (crowd[f]![y * W + x]! > limit) return false;
+        for (let dy = -2; dy <= 2; dy++)
+          for (let dx = -2; dx <= 2; dx++) {
+            const xx = x + dx;
+            const yy = y + dy;
+            if ((dx || dy) && xx >= 0 && yy >= 0 && xx < t.w && yy < t.h && anchors[f]![yy * W + xx] && crowd[f]![yy * W + xx]! + 1 > Math.max(limit, 3)) return false;
+          }
+        return true;
+      };
+      outer: for (let limit = 0; limit <= 6; limit++)
+        for (let y = 1; y < t.h - 1; y++)
+          for (let x = 0; x < t.w; x++)
+            for (let f = 0; f < t.floors; f++) {
+              if (need <= 0 || s.company.cash < cost) break outer;
+              if (!fits(f, x, y, limit) || !canPlace(s, def, f, x, y, 0).ok) continue;
+              if (cost) spend(s, 'office', cost);
+              s.office.items.push({ id: `i${s.office.nextItemId++}`, item: def.id, floor: f, x, y, rot: 0 });
+              anchors[f]![y * W + x] = 1;
+              bump(f, x, y);
+              placed += 1;
+              need -= 1;
+            }
       if (!placed) return s.company.cash < cost ? 'Not enough cash for a desk' : 'No room for more desks — move to a bigger office or clear some space';
       touchOffice(s);
       assignDesks(s);

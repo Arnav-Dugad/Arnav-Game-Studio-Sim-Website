@@ -7,9 +7,10 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { SKILLS, type Skill } from '@/data/types';
 import { BALANCE } from '@/data/balance';
 import { fromDay } from '@/sim/calendar';
-import { fmtMoney } from '@/sim/util';
+import { fmtMoney, money } from '@/sim/util';
 import { tierDef } from '@/sim/systems/office';
-import { ROLE_NAMES } from '@/sim/systems/staff';
+import { isAway, ROLE_NAMES } from '@/sim/systems/staff';
+import { layoffMoraleHit } from '@/sim/actions';
 import type { GameState, Project, Role, Staff } from '@/sim/types';
 import { Button, Meter, Pill, cx, inputCls } from '../components/ui';
 import { Icon } from '../icons';
@@ -108,7 +109,9 @@ export function TeamTab() {
       }
     });
   // keep the selection to people who still exist
-  const selected = [...sel].filter((id) => s.staff[id]);
+  // Bulk actions only touch people the current filters show.
+  const visible = new Set(list.map((x) => x.id));
+  const selected = [...sel].filter((id) => s.staff[id] && visible.has(id));
   const shownIds = list.map((x) => x.id);
   const allShownSelected = shownIds.length > 0 && shownIds.every((id) => sel.has(id));
   const toggle = (id: string) =>
@@ -124,7 +127,7 @@ export function TeamTab() {
   if (group === 'none') groups.push({ key: 'all', label: '', items: list.slice(0, limit) });
   else {
     const m = new Map<string, Staff[]>();
-    for (const st of list) {
+    for (const st of list.slice(0, limit)) {
       const k = group === 'role' ? ROLE_NAMES[st.role] : assignmentLabel(s, st);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(st);
@@ -456,7 +459,7 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
   const training = s.research.done.includes('biz_training');
   const people = ids.map((id) => s.staff[id]!).filter(Boolean);
 
-  const runEach = (label: string, fn: (st: Staff) => { ok: boolean; error?: string } | null) => {
+  const runEach = (label: string, fn: (st: Staff) => { ok: boolean; error?: string } | null, note = '') => {
     let ok = 0;
     let firstErr = '';
     for (const st of people) {
@@ -469,14 +472,22 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
     toast(
       failed
         ? {
-            text: `${label}: ${ok} done, ${failed} skipped${firstErr ? ` (${firstErr})` : ''}`,
+            text: `${label}: ${ok} done, ${failed} skipped${firstErr ? ` (${firstErr})` : ''}${note}`,
             tone: ok ? 'neutral' : 'bad',
           }
-        : { text: `${label}: ${ok} done`, tone: 'good', icon: 'staff' },
+        : { text: `${label}: ${ok} done${note}`, tone: 'good', icon: 'staff' },
     );
   };
   const res = (r: { ok: true } | { ok: false; error: string }) =>
     r.ok ? { ok: true } : { ok: false, error: r.error };
+  // Never empty a project: if everyone on it is selected, the first of them stays on.
+  const keepers = new Set<string>();
+  for (const p of Object.values(s.projects)) {
+    if (p.team.length && p.team.every((id) => ids.includes(id))) keepers.add(p.team[0]!);
+  }
+  const leaving = (st: Staff) => st.assignment.kind === 'project' && keepers.has(st.id);
+  const kept = () => (keepers.size ? ` · kept ${keepers.size} on ${keepers.size === 1 ? 'a project' : 'projects'} so ${keepers.size === 1 ? 'it keeps' : 'they keep'} moving` : '');
+  const trainCost = money(2_500, s.day);
 
   const assignTo = (pid: string) => {
     const p = s.projects[pid];
@@ -487,6 +498,7 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
       .filter(
         (st) =>
           !p.team.includes(st.id) &&
+          !leaving(st) &&
           st.assignment.kind !== 'training' &&
           (st.sickDays ?? 0) === 0 &&
           !(st.vacationDays ?? 0),
@@ -550,7 +562,7 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
         size="sm"
         icon="research"
         onClick={() =>
-          runEach('Research', (st) => res(act({ type: 'assign', staffId: st.id, to: 'research' })))
+          runEach('Research', (st) => (leaving(st) || st.assignment.kind === 'training' || st.assignment.kind === 'research' ? null : res(act({ type: 'assign', staffId: st.id, to: 'research' }))), kept())
         }
       >
         Research
@@ -558,8 +570,10 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
       <Button
         size="sm"
         onClick={() =>
-          runEach('Made idle', (st) =>
-            st.assignment.kind === 'idle' ? null : res(act({ type: 'assign', staffId: st.id, to: 'idle' })),
+          runEach(
+            'Made idle',
+            (st) => (st.assignment.kind === 'idle' || leaving(st) || st.assignment.kind === 'training' ? null : res(act({ type: 'assign', staffId: st.id, to: 'idle' }))),
+            kept(),
           )
         }
       >
@@ -580,10 +594,19 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
           onChange={(e) => {
             const skill = e.target.value as Skill;
             if (!skill) return;
-            runEach(`Training ${skill}`, (st) => {
-              if (st.assignment.kind === 'project') act({ type: 'assign', staffId: st.id, to: 'idle' });
-              return res(act({ type: 'train', staffId: st.id, skill }));
-            });
+            runEach(
+              `Training ${skill}`,
+              (st) => {
+                if (leaving(st)) return null;
+                // Check first, so nobody is pulled off a project for a course that won't start.
+                if (st.assignment.kind === 'training') return { ok: false, error: 'already training' };
+                if (isAway(st)) return { ok: false, error: 'away' };
+                if (useGame.getState().s!.company.cash < trainCost) return { ok: false, error: 'not enough cash' };
+                if (st.assignment.kind === 'project') act({ type: 'assign', staffId: st.id, to: 'idle' });
+                return res(act({ type: 'train', staffId: st.id, skill }));
+              },
+              kept(),
+            );
           }}
           aria-label="Train a skill"
           title="Send them to a four-week course (takes them off their projects)"
@@ -614,16 +637,16 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
           variant="danger"
           icon="trash"
           onClick={() => {
-            runEach('Let go', (st) =>
-              st.role === 'founder' ? null : res(act({ type: 'fire', staffId: st.id })),
-            );
+            const n = people.filter((p) => p.role !== 'founder').length;
+            const r = act({ type: 'fireMany', staffIds: people.map((p) => p.id) });
+            toast(r.ok ? { text: `Let ${n} go · morale −${layoffMoraleHit(n)} for everyone`, tone: 'neutral', icon: 'staff' } : { text: r.error, tone: 'bad' });
             setConfirmFire(false);
             clear();
           }}
           onBlur={() => setConfirmFire(false)}
           autoFocus
         >
-          Really let {people.filter((p) => p.role !== 'founder').length} go?
+          Really let {people.filter((p) => p.role !== 'founder').length} go? (morale −{layoffMoraleHit(people.filter((p) => p.role !== 'founder').length)})
         </Button>
       ) : (
         <Button

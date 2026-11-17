@@ -92,7 +92,7 @@ export class OfficeRenderer {
   private el: HTMLElement | null = null;
   private hoverTile: [number, number] | null = null;
   private hoverStaff: string | null = null;
-  private drag: { x: number; y: number; camX: number; camY: number; moved: boolean; button: number } | null = null;
+  private drag: { x: number; y: number; camX: number; camY: number; moved: boolean; button: number; mouse: boolean; t: number } | null = null;
   private painted: string | null = null;
   private pointers = new Map<number, { x: number; y: number }>();
   private pinch: { d: number; zoom: number } | null = null;
@@ -202,7 +202,7 @@ export class OfficeRenderer {
       this.drag = null;
       return;
     }
-    this.drag = { x: e.offsetX, y: e.offsetY, camX: this.cam.x, camY: this.cam.y, moved: false, button: e.button };
+    this.drag = { x: e.offsetX, y: e.offsetY, camX: this.cam.x, camY: this.cam.y, moved: false, button: e.button, mouse: e.pointerType === 'mouse', t: performance.now() };
     this.app.canvas.setPointerCapture?.(e.pointerId);
   };
 
@@ -225,18 +225,20 @@ export class OfficeRenderer {
       const ui = this.cb.getUI();
       const panButton = this.drag.button === 1 || this.drag.button === 2 || !ui.build?.item;
       // Drag-to-paint: with an item in hand, a left-button drag places one on every tile it crosses.
-      if (this.drag.moved && !panButton && ui.build?.item && this.cb.onPaint) {
-        if (this.painted === null) {
-          const [sx, sy] = this.screenToTile(this.drag.x, this.drag.y);
-          this.painted = `${sx},${sy}`;
-          this.cb.onPaint(sx, sy, ui.floor);
-        }
+      // Mouse only (a finger drag pans), and not in the first moments (a second finger may be landing).
+      if (this.drag.moved && !panButton && ui.build?.item && this.cb.onPaint && this.drag.mouse && performance.now() - this.drag.t > 80) {
+        let [px, py] = this.painted === null ? this.screenToTile(this.drag.x, this.drag.y) : (this.painted.split(',').map(Number) as [number, number]);
+        if (this.painted === null) this.cb.onPaint(px, py, ui.floor);
         const [tx, ty] = this.hoverTile;
-        const key = `${tx},${ty}`;
-        if (key !== this.painted) {
-          this.painted = key;
-          this.cb.onPaint(tx, ty, ui.floor);
+        // Walk tile by tile so fast drags leave no holes.
+        while (px !== tx || py !== ty) {
+          const dx = tx - px;
+          const dy = ty - py;
+          if (Math.abs(dx) >= Math.abs(dy)) px += Math.sign(dx);
+          else py += Math.sign(dy);
+          this.cb.onPaint(px, py, ui.floor);
         }
+        this.painted = `${tx},${ty}`;
       }
       if (this.drag.moved && panButton) {
         this.cam.x = this.drag.camX + dx;

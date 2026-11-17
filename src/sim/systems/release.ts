@@ -311,7 +311,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization) * (p.concept.expansionOf ? BALANCE.EXPANSION_PRICE : 1);
   const baseDecay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
   // Mod communities keep PC games selling for years.
-  const decay = modded ? 1 - (1 - baseDecay) * 0.8 : baseDecay;
+  const pcOnly = p.concept.platforms.every((pid) => platformInfo(s, pid)?.kind === 'computer');
+  const decay = modded && pcOnly ? 1 - (1 - baseDecay) * 0.8 : baseDecay;
   if (modded) for (const pp of plats) if (pp.pl.kind === 'computer') pp.potential *= 1.1;
   const id = newId(s, 'r');
   const rel: Release = {

@@ -831,6 +831,41 @@ describe('furnish desks', () => {
   });
 });
 
+describe('management review fixes', () => {
+  it('furnished desks are spread out: no desk is crowded past the morale limit when there is room', async () => {
+    const { candidateToStaff } = await import('../../src/sim/systems/staff');
+    const { ITEM_BY_ID } = await import('../../src/data/facilities');
+    const s = game(2000, 7);
+    s.company.cash = 1e9;
+    dispatch(s, { type: 'cheat', cheat: { op: 'officeTier', tier: 5 } });
+    for (let i = 0; i < 40; i++) s.staff[`d${i}`] = candidateToStaff(s, generateCandidate(s, new Rng([i + 9, 1, 2, 3]), {}), `d${i}`, 20_000);
+    expect(dispatch(s, { type: 'furnishDesks' }).ok).toBe(true);
+    const desks = s.office.items.filter((i) => ITEM_BY_ID[i.item].category === 'desk');
+    const crowd = (d: (typeof desks)[number]) => desks.filter((o) => o !== d && o.floor === d.floor && Math.abs(o.x - d.x) <= 2 && Math.abs(o.y - d.y) <= 2).length;
+    expect(Math.max(...desks.map(crowd))).toBeLessThanOrEqual(3);
+  });
+  it('bulk layoffs apply one capped morale hit; the founder stays', () => {
+    const s = game(1995, 2);
+    for (let i = 0; i < 12; i++) dispatch(s, { type: 'cheat', cheat: { op: 'spawnStaff', role: 'artist', skill: 40, salary: 20_000 } });
+    for (const st of Object.values(s.staff)) st.morale = 80;
+    const ids = Object.keys(s.staff);
+    const keep = ids.slice(0, 3).filter((id) => id !== 'founder');
+    expect(dispatch(s, { type: 'fireMany', staffIds: ids.filter((id) => !keep.includes(id)) }).ok).toBe(true);
+    expect(s.staff.founder).toBeDefined();
+    for (const id of keep) expect(s.staff[id]!.morale).toBeGreaterThanOrEqual(70);
+  });
+  it('auto-vacation leaves a crunching team alone', () => {
+    const s = game(1995, 3);
+    s.company.cash = 1e8;
+    const p = startSmall(s);
+    p.crunch = true;
+    s.staff.founder!.burnout = 90;
+    dispatch(s, { type: 'setPolicy', autoVacation: true });
+    advance(s, 8);
+    expect(s.staff.founder!.vacationDays ?? 0).toBe(0);
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

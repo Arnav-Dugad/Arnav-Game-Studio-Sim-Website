@@ -319,11 +319,26 @@ export const AUTO_VACATION_BURNOUT = 70;
  * Studio automation (weekly, opt-in policies): idle people join research instead of drawing salary for
  * nothing, and burnt-out people take two weeks off (cooldown permitting).
  */
+/** Can this person leave their project for two weeks without sinking it? (not mid-crunch, not near a deadline, a third of a team at most) */
+function canSpare(s: GameState, st: Staff, sentFrom: Map<string, number>): boolean {
+  if (st.assignment.kind !== 'project') return true;
+  const p = s.projects[st.assignment.id];
+  if (!p) return true;
+  if (p.kind === 'game' && p.crunch) return false;
+  const deadline = p.kind === 'contract' ? p.deadlineDay : p.kind === 'game' ? p.concept.deal?.deadlineDay : undefined;
+  if (deadline !== undefined && deadline - s.day < 30) return false;
+  const n = sentFrom.get(p.id) ?? 0;
+  if (n + 1 > Math.max(1, Math.floor(p.team.length / 3))) return false;
+  sentFrom.set(p.id, n + 1);
+  return true;
+}
+
 export function staffAutomationWeekly(s: GameState): void {
   const pol = s.company.policies;
   if (!pol.autoResearch && !pol.autoVacation) return;
+  const sentFrom = new Map<string, number>();
   for (const st of Object.values(s.staff)) {
-    if (pol.autoVacation && st.burnout >= AUTO_VACATION_BURNOUT && !vacationBlocked(s, st)) {
+    if (pol.autoVacation && st.burnout >= AUTO_VACATION_BURNOUT && !vacationBlocked(s, st) && canSpare(s, st, sentFrom)) {
       st.vacationDays = 14;
       st.lastVacationDay = s.day;
       st.loyalty = clamp(st.loyalty + 5, 0, 100);
@@ -478,7 +493,7 @@ function retirements(c: Ctx): void {
     const [craft] = ROLE_SKILLS[st.role];
     const heirs = Object.values(s.staff).filter((o) => o.role === st.role && o.skills[craft] < st.skills[craft]);
     const lesson = Math.min(6, 1 + years / 10);
-    for (const o of heirs) o.skills[craft] = Math.min(o.potential, st.skills[craft], o.skills[craft] + lesson);
+    for (const o of heirs) o.skills[craft] = Math.max(o.skills[craft], Math.min(o.potential, st.skills[craft], o.skills[craft] + lesson));
     // One shared farewell boost (several retirements don't stack into a morale spike).
     const party = s.company.moraleMods.find((m) => m.label === 'Farewell parties');
     if (party) {

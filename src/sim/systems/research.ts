@@ -18,10 +18,13 @@ export function researchCost(s: GameState, r: ResearchDef): number {
   return money(r.cost, s.day);
 }
 
+/** Research with real downsides is always the player's call. */
+const NO_AUTO = new Set(['ai_genai']);
+
 /** "Keep research going" policy: when nothing is active or queued, start the cheapest available project. */
 export function autoQueueResearch(s: GameState): void {
   if (!s.company.policies.autoQueue || s.research.active || s.research.queue.length || !researchers(s).length) return;
-  const pick = RESEARCH.filter((r) => researchAvailable(s, r).ok)
+  const pick = RESEARCH.filter((r) => researchAvailable(s, r).ok && !NO_AUTO.has(r.id))
     .map((r) => ({ r, cost: researchCost(s, r) }))
     .filter((x) => x.cost <= s.company.cash * 0.1)
     .sort((a, b) => a.r.points - b.r.points || a.cost - b.cost)[0];

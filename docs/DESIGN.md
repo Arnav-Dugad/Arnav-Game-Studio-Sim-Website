@@ -801,4 +801,22 @@ This section records decisions made during the build that differ from, or add to
     - A badge with an unknown shape falls back to rounded instead of crashing.
     - The founder's shirt follows the studio colour.
     - "Same setup" checks the business model against the genre actually applied.
+- **Eighth review pass (big-studio management):**
+  - **Desks for everyone:** it now places in passes of increasing allowed crowding (crowding counts other desks within two tiles, with penalties above 3). Desks spread over every floor before any area gets dense. Before, full-width rows averaged a −23 crowding morale penalty, worse than having no desk. It also honours free building, and places 120 desks in a 400-person office in about 30 ms.
+  - **Bulk actions:**
+    - They never empty a project; one person stays on it, and the toast says so.
+    - Training checks first, so nobody is pulled off a project for a course that won't start.
+    - Research and Idle skip people in training.
+    - Layoffs are one action with a single capped morale hit (−(2+n), at most −10), shown on the confirm button.
+    - The selection only covers people the filters show, and grouped views are paged.
+  - **Automation:**
+    - Auto-vacation never sends people from a crunching project or one within 30 days of a deadline, and sends at most a third of a team per week.
+    - "Keep research going" never auto-picks research with downsides (Gen-AI).
+  - **Retirement:** heirs can never lose skill when a veteran passes knowledge on.
+  - **Mod tools:** the slower decay only applies to PC-only games.
+  - **Drag-to-paint:** mouse only (a finger drag pans), starts after 80 ms so a pinch can't place items, and interpolates so fast drags leave no holes.
+  - **Alerts and links:**
+    - A new alert flags projects nobody is working on.
+    - Deep links to filtered staff views work while the panel is open.
+    - The dock idle count excludes the founder.
 
