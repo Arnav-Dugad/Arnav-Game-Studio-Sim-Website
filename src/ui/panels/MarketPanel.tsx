@@ -19,6 +19,7 @@ import { Icon } from '../icons';
 import { useGame } from '../store';
 import { nemesis } from '@/sim/systems/rivalry';
 import { dayAxis } from '../game/format';
+import { genreMomentum } from '../game/lib';
 
 export default function MarketPanel() {
   useGame((g) => g.v);
@@ -194,7 +195,7 @@ function Trends() {
   const s = useGame((g) => g.s)!;
   const yr = fromDay(s.day).year;
   const genres = GENRES.filter((g) => g.year <= yr);
-  const ranked = genres.map((g) => ({ g, pop: genrePopularity(s, g.id), trend: s.market.genreTrend[g.id] ?? 0 })).sort((a, b) => b.pop - a.pop);
+  const ranked = genres.map((g) => ({ g, pop: genrePopularity(s, g.id), trend: genreMomentum(s, g.id) })).sort((a, b) => b.pop - a.pop);
   const hist = s.market.trendHistory.slice(-180);
   const top = ranked.slice(0, 5).map((r) => r.g.id);
   return (
@@ -207,8 +208,8 @@ function Trends() {
               <span className="h-2 overflow-hidden rounded-full bg-bg2">
                 <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.min(100, (pop / ranked[0]!.pop) * 100)}%` }} />
               </span>
-              <span className={cx('num text-right font-semibold', trend > 0.05 ? 'text-good' : trend < -0.05 ? 'text-bad' : 'text-ink3')}>
-                {trend > 0.05 ? '▲' : trend < -0.05 ? '▼' : '–'} {Math.round(trend * 100)}%
+              <span className={cx('num text-right font-semibold', trend > 0.05 ? 'text-good' : trend < -0.05 ? 'text-bad' : 'text-ink3')} title="Change over the last six months">
+                {trend > 0.05 ? '▲' : trend < -0.05 ? '▼' : '–'} {Math.abs(Math.round(trend * 100))}%
               </span>
             </li>
           ))}

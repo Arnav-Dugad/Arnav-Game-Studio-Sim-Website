@@ -73,6 +73,15 @@ export function idealFocus(genre: GenreId): [Focus3, Focus3, Focus3] {
   }) as [Focus3, Focus3, Focus3];
 }
 
+/** How a genre's popularity moved over the last ~6 months (e.g. +0.12 = 12% more popular). 0 without history. */
+export function genreMomentum(s: GameState, genre: GenreId): number {
+  const h = s.market.trendHistory;
+  if (h.length < 2) return 0;
+  const now = genrePopularity(s, genre);
+  const then = h[Math.max(0, h.length - 7)]!.trend[genre];
+  return then ? now / then - 1 : 0;
+}
+
 export function genreExperience(s: GameState, genre: GenreId): number {
   return Object.values(s.releases).filter((r) => r.concept.genre === genre).length;
 }

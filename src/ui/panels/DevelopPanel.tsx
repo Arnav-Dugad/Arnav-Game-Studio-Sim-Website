@@ -11,7 +11,7 @@ import { COMPANY_BY_ID } from '@/data/companies';
 import { AUDIENCES, type Audience, type GenreId, type Monetization } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
 import { aOrAn, fmtMoney, fmtUnits, hasFlag, money } from '@/sim/util';
-import { availablePlatforms } from '@/sim/systems/market';
+import { availablePlatforms, genrePopularity } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore, workShare } from '@/sim/systems/dev';
@@ -29,7 +29,7 @@ import { isAway } from '@/sim/systems/staff';
 import { FocusSliders } from '../game/FocusEditor';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
-import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, idealFocus, knowsCombo, suggestConcept, suggestName } from '../game/lib';
+import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, idealFocus, knowsCombo, suggestConcept, suggestName } from '../game/lib';
 import { sound } from '../sound';
 
 export default function DevelopPanel() {
@@ -455,6 +455,23 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const toast = useGame((g) => g.toast);
   const yr = fromDay(s.day).year;
   const genres = availableGenres(s);
+  // genre cards: where the market is heading and how your studio has done there
+  const genreStats = useMemo(() => {
+    const open = genres.filter((x) => x.ok).map((x) => x.g.id);
+    const pops = open.map((id) => ({ id, pop: genrePopularity(s, id) })).sort((a, b) => b.pop - a.pop);
+    const hot = new Set(pops.slice(0, 3).map((x) => x.id));
+    const out: Record<string, { n: number; best: number; trend: number; hot: boolean }> = {};
+    for (const x of genres) out[x.g.id] = { n: 0, best: 0, trend: genreMomentum(s, x.g.id), hot: hot.has(x.g.id) };
+    for (const r of Object.values(s.releases)) {
+      const o = out[r.concept.genre];
+      if (!o) continue;
+      o.n++;
+      o.best = Math.max(o.best, Math.round(r.score));
+    }
+    return out;
+    // the market moves monthly; releases change the counts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.market, s.releases, genres.length]);
   const topics = availableTopics(s);
   const firstGenre = (genres.find((g) => g.ok)?.g.id ?? 'action') as GenreId;
   // Planning a sequel pre-fills the wizard from the franchise
@@ -682,8 +699,16 @@ function NewGame({ onDone }: { onDone: () => void }) {
               aria-pressed={genre === g.id}
               className={cx('rounded-xl border px-2.5 py-2 text-left text-xs transition disabled:opacity-40', genre === g.id ? 'border-accent bg-accent/10' : 'border-line hover:bg-bg2')}
             >
-              <div className="font-semibold">{g.name}</div>
-              <div className="truncate text-ink3">{ok ? `${genreExperience(s, g.id)} shipped` : why}</div>
+              <div className="flex items-center gap-1">
+                <span className="min-w-0 truncate font-semibold">{g.name}</span>
+                {ok && genreStats[g.id]?.hot && <span className="ml-auto shrink-0 rounded-full bg-warn/15 px-1.5 text-[10px] font-bold text-warn" title="One of the three most popular genres right now">Hot</span>}
+                {ok && !genreStats[g.id]?.hot && Math.abs(genreStats[g.id]?.trend ?? 0) > 0.08 && (
+                  <span className={cx('num ml-auto shrink-0 text-[10px] font-bold', (genreStats[g.id]?.trend ?? 0) > 0 ? 'text-good' : 'text-bad')} title={(genreStats[g.id]?.trend ?? 0) > 0 ? 'Rising: more popular than six months ago' : 'Cooling: less popular than six months ago'}>
+                    {(genreStats[g.id]?.trend ?? 0) > 0 ? '▲' : '▼'}
+                  </span>
+                )}
+              </div>
+              <div className="truncate text-ink3">{ok ? (genreStats[g.id]?.n ? `${genreStats[g.id]!.n} shipped · best ${genreStats[g.id]!.best}` : 'New to your studio') : why}</div>
             </button>
           ))}
         </div>
