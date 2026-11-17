@@ -9,7 +9,7 @@ import { TOPICS, TOPIC_BY_ID } from '../../data/topics';
 import { fromDay } from '../calendar';
 import type { Rng } from '../rng';
 import type { GameProject, GameState, Staff } from '../types';
-import { pushNews } from '../util';
+import { aOrAn, pushNews } from '../util';
 import { favouriteGenre, isAway } from './staff';
 
 export const PITCH_DAYS = 180;
@@ -40,9 +40,14 @@ export function makePitch(s: GameState, rng: Rng, st: Staff): { genre: GenreId; 
 }
 
 /** "an Insects strategy game" (with `article`), or "Insects strategy game". */
+/** A genre name for running text: "strategy", but "RPG" and "MMO" stay as they are. */
+export function genreWord(name: string): string {
+  return /^[A-Z]{2,}$/.test(name) ? name : name.toLowerCase();
+}
+
 export function pitchText(p: { genre: GenreId; topic: string }, article = false): string {
-  const text = `${TOPIC_BY_ID[p.topic]?.name ?? p.topic} ${GENRE_BY_ID[p.genre].name.toLowerCase()} game`;
-  return article ? `${/^[aeiou]/i.test(text) ? 'an' : 'a'} ${text}` : text;
+  const text = `${TOPIC_BY_ID[p.topic]?.name ?? p.topic} ${genreWord(GENRE_BY_ID[p.genre].name)} game`;
+  return article ? aOrAn(text) : text;
 }
 
 /** At the start of a game: if it's the greenlit pitch and the pitcher is on the team, it's their passion project. */
@@ -59,7 +64,7 @@ export function claimPitch(s: GameState, p: GameProject): void {
   if (!st) return;
   p.passion = st.id;
   p.novelty += PASSION_NOVELTY;
-  st.mood = { v: 6, until: s.day + 240, label: 'Making my dream game' };
+  if (!st.mood || st.mood.until <= s.day || st.mood.v < 6) st.mood = { v: 6, until: s.day + 240, label: 'Making my dream game' };
   st.moraleWhy = undefined;
   pushNews(s, { category: 'staff', headline: `${st.name}’s passion project begins`, body: `${p.concept.name} — the ${pitchText(pitch)} ${st.name.split(' ')[0]} has pitched for years — is finally in development.`, tone: 'good' });
 }

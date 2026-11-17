@@ -53,4 +53,18 @@ describe('staff pitches', () => {
     const q = Object.values(s.projects).find((x) => x.kind === 'game') as GameProject;
     expect(q.passion).toBeUndefined();
   });
+
+  it('cancelling the passion project hurts instead of keeping the dream', () => {
+    const s = studio();
+    fireEvent(ctx(s), 'staff_pitch');
+    const ev = s.pendingEvents.find((e) => e.defId === 'staff_pitch')!;
+    dispatch(s, { type: 'resolveEvent', uid: ev.uid, option: 'yes' });
+    const pitch = s.company.pitch!;
+    const pl = availablePlatforms(s)[0]!;
+    dispatch(s, { type: 'startGame', game: { name: 'Dream', genre: pitch.genre, topic: pitch.topic, platforms: [pl.id], audience: 'everyone', size: 'small', monetization: 'premium', engineId: 'e0', team: ['founder', 'd1'] } });
+    const p = Object.values(s.projects).find((x) => x.kind === 'game')!;
+    dispatch(s, { type: 'cancelProject', projectId: p.id });
+    expect(s.staff['d1']!.mood?.v).toBeLessThan(0);
+    expect(s.staff['d1']!.mood?.label).toBe('Dream project cancelled');
+  });
 });

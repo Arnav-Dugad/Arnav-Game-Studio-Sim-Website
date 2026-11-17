@@ -148,11 +148,12 @@ export function genTitle(rng: Rng, topic: string): string {
   const nouns = TITLE_NOUN[topic] ?? TITLE_NOUN.default!;
   const n = rng.pick(rng.chance(0.6) ? nouns : TITLE_NOUN.default!);
   const r = rng.next();
-  if (r < 0.35) return `${rng.pick(TITLE_ADJ)} ${n}`;
   const other = TITLE_NOUN.default!.filter((x) => x !== n); // never "Legends of the Broken Legends"
-  if (r < 0.6) return `${n} of the ${rng.pick(TITLE_ADJ)} ${rng.pick(other)}`;
-  if (r < 0.8) return `${rng.pick(TITLE_ADJ)} ${n}${rng.chance(0.3) ? ' II' : ''}`;
-  return `${n}: ${rng.pick(TITLE_ADJ)} ${rng.pick(other)}`;
+  const adj = TITLE_ADJ.filter((x) => x !== n); // nor "Eternal Eternal"
+  if (r < 0.35) return `${rng.pick(adj)} ${n}`;
+  if (r < 0.6) return `${n} of the ${rng.pick(adj)} ${rng.pick(other)}`;
+  if (r < 0.8) return `${rng.pick(adj)} ${n}${rng.chance(0.3) ? ' II' : ''}`;
+  return `${n}: ${rng.pick(adj)} ${rng.pick(other)}`;
 }
 
 /** Monthly procedural releases + finances. */

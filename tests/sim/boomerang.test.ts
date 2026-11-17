@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGame } from '../../src/sim/create';
 import { dispatch } from '../../src/sim/actions';
 import { Rng } from '../../src/sim/rng';
-import { refreshCandidates, rememberLeaver, removeStaff } from '../../src/sim/systems/staff';
+import { marketSalary, refreshCandidates, rememberLeaver, removeStaff } from '../../src/sim/systems/staff';
 import type { GameState } from '../../src/sim/types';
 
 function studio() {
@@ -51,5 +51,25 @@ describe('former colleagues', () => {
       refreshCandidates(c as never);
     }
     expect(s.candidates.some((x) => x.returning)).toBe(false);
+  });
+
+  it('returners ask what they are worth today, and former interns come back grown', () => {
+    const s = studio();
+    const intern = s.staff['p1']!;
+    intern.intern = true as never;
+    intern.skills = { ...intern.skills, programming: 14 };
+    intern.potential = 70;
+    rememberLeaver(s, intern, 'their internship ended');
+    removeStaff(s, 'p1');
+    s.day += 365 * 5;
+    const c = { s, rng: new Rng(s.rng), out: [] };
+    for (let i = 0; i < 80 && !s.candidates.some((x) => x.returning); i++) {
+      s.candidates = [];
+      refreshCandidates(c as never);
+    }
+    const back = s.candidates.find((x) => x.returning)!;
+    expect(back.skills.programming).toBeGreaterThan(40);
+    expect(back.askSalary).toBeGreaterThanOrEqual(marketSalary(s, back.skills));
+    expect(s.news.some((n) => n.body?.includes('Your former intern left'))).toBe(true);
   });
 });

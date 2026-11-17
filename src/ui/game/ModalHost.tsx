@@ -1,4 +1,5 @@
 import { COMPANY_BY_ID } from '@/data/companies';
+import { genreWord } from '@/sim/systems/pitches';
 import { useEffect, useRef, useState } from 'react';
 import { CAMPAIGN_BOOST, CAMPAIGN_MIN_SCORE, campaignBlocked, campaignCost, campaignFor } from '@/sim/systems/awardsCampaign';
 import { licenceDue } from '@/sim/systems/licences';
@@ -592,7 +593,7 @@ function AwardsSeason({ releaseId }: { releaseId: string }) {
       <p className="text-xs text-ink2">
         The Golden Pixel Gala is on New Year’s Day. Game of the Year needs 85+ and to beat every rival; Best {GENRE_BY_ID[r.concept.genre].name} needs 80+ and to beat the genre.
         {top && <> Front-runner so far: <b>{name(top)}</b>.</>}
-        {genreTop && genreTop !== top && <> Best {GENRE_BY_ID[r.concept.genre].name.toLowerCase()} rival: <b>{name(genreTop)}</b>.</>}
+        {genreTop && genreTop !== top && <> Best {genreWord(GENRE_BY_ID[r.concept.genre].name)} rival: <b>{name(genreTop)}</b>.</>}
         {!rivals.length && ' No rival has released anything notable yet this year.'}
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">

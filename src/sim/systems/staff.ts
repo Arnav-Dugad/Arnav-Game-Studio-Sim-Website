@@ -689,20 +689,32 @@ export function rememberLeaver(s: GameState, st: Staff, reason: string): void {
 function boomerang(c: Ctx): void {
   const { s, rng } = c;
   if (s.candidates.some((x) => x.returning) || !rng.chance(0.15)) return;
+  const yr = year(s);
+  const here = new Set([...Object.values(s.staff).map((x) => x.personId), ...s.candidates.map((x) => x.personId)].filter(Boolean));
+  for (const x of s.formerStaff ?? []) {
+    // a legend who's back already (or retired from the industry) won't return twice
+    const person = x.personId ? PEOPLE.find((p) => p.id === x.personId) : undefined;
+    if (!x.offered && x.personId && (here.has(x.personId) || (person && (person.activeTo ?? 9999) < yr))) x.offered = true;
+  }
   const f = (s.formerStaff ?? []).find((x) => !x.offered && s.day - x.leftDay >= 365 && s.day - x.leftDay < 365 * 8);
   if (!f) return;
   f.offered = true;
   const years = (s.day - f.leftDay) / 365;
   const cand = generateCandidate(s, rng, { role: f.role });
   const skills = { ...f.skills };
-  for (const k of Object.keys(skills) as (keyof typeof skills)[]) skills[k] = Math.min(Math.max(f.potential, skills[k]), Math.round(skills[k] + (skills[k] > 20 ? Math.min(12, years * 2.5) : 0)));
+  for (const k of Object.keys(skills) as (keyof typeof skills)[]) {
+    // they kept growing elsewhere — an intern most of all (toward their potential)
+    const grow = f.wasIntern ? (f.potential - skills[k]) * Math.min(1, years / 4) * (skills[k] >= 10 ? 1 : 0.3) : skills[k] > 20 ? Math.min(12, years * 2.5) : 0;
+    skills[k] = Math.min(Math.max(f.potential, skills[k]), Math.round(skills[k] + Math.max(0, grow)));
+  }
   Object.assign(cand, { name: f.name, look: f.look, role: f.role, skills, potential: f.potential, traits: [...f.traits], personId: f.personId, level: levelFor(topSkill(skills)) });
-  cand.askSalary = Math.max(cand.askSalary, Math.round((f.salary * 1.05) / 100) * 100);
+  // what they're worth now (and at least what they earned, in today's money)
+  cand.askSalary = Math.round((Math.max(marketSalary(s, skills), (f.salary * inflation(s.day)) / inflation(f.leftDay)) * 1.05) / 100) * 100;
   cand.salary = cand.askSalary;
   cand.expiresDay = s.day + 60;
   cand.returning = { leftDay: f.leftDay, reason: f.reason };
   s.candidates.unshift(cand);
-  pushNews(s, { category: 'staff', headline: `${f.name} would like to come back`, body: `${f.wasIntern ? 'Your former intern' : 'They left'} ${Math.round(years)} year${Math.round(years) === 1 ? '' : 's'} ago (${f.reason}) and ${f.wasIntern ? 'is a real developer now' : 'have missed the place'}. They’re in your hiring pool for two months.`, tone: 'good' });
+  pushNews(s, { category: 'staff', headline: `${f.name} would like to come back`, body: `${f.wasIntern ? 'Your former intern left' : 'They left'} ${Math.round(years)} year${Math.round(years) === 1 ? '' : 's'} ago (${f.reason}) and ${f.wasIntern ? 'is a real developer now' : 'have missed the place'}. They’re in your hiring pool for two months.`, tone: 'good' });
 }
 
 export function removeStaff(s: GameState, id: string): void {

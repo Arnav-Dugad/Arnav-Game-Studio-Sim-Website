@@ -130,11 +130,12 @@ export function suggestName(seed: number, topic: string): string {
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   };
   const noun = pool[Math.floor(r(2) * pool.length)]!;
+  const adj = A.filter((x) => x !== noun); // never "Shadow Shadow"
   if (r(3) < 0.25) {
     const others = TITLE_NOUN.default!.filter((x) => x !== noun);
-    return `${noun} of the ${A[Math.floor(r(1) * A.length)]} ${others[Math.floor(r(4) * others.length)]}`;
+    return `${noun} of the ${adj[Math.floor(r(1) * adj.length)]} ${others[Math.floor(r(4) * others.length)]}`;
   }
-  return `${A[Math.floor(r(1) * A.length)]} ${noun}`;
+  return `${adj[Math.floor(r(1) * adj.length)]} ${noun}`;
 }
 
 /**

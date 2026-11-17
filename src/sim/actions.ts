@@ -557,6 +557,13 @@ function apply(c: Ctx, a: Action): string | null {
     case 'cancelProject': {
       const p = s.projects[a.projectId];
       if (!p) return 'No such project';
+      if (p.kind === 'game' && p.passion) {
+        const dreamer = s.staff[p.passion];
+        if (dreamer) {
+          dreamer.mood = { v: -6, until: s.day + 120, label: 'Dream project cancelled' };
+          dreamer.moraleWhy = undefined;
+        }
+      }
       for (const id of p.team) {
         const st = s.staff[id];
         if (st) {

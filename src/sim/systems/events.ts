@@ -887,8 +887,8 @@ export const EVENT_DEFS: EventDef[] = [
       if (!st) return;
       if (opt === 'yes') {
         s.company.pitch = { staffId: st.id, genre: String(e.ctx.genre) as GenreId, topic: String(e.ctx.topic), until: s.day + PITCH_DAYS };
-        st.mood = { v: 3, until: s.day + 60, label: 'Pitch greenlit' };
-      } else if (!st.mood || st.mood.until <= s.day) st.mood = { v: -2, until: s.day + 30, label: 'Pitch turned down' };
+        if (!st.mood || st.mood.until <= s.day || (st.mood.v >= 0 && st.mood.v < 3)) st.mood = { v: 3, until: s.day + 60, label: 'Pitch greenlit' };
+      } else if (!st.mood || st.mood.until <= s.day || (st.mood.v > -2)) st.mood = { v: -2, until: s.day + 30, label: 'Pitch turned down' };
       st.moraleWhy = undefined;
     },
   },
