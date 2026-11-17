@@ -2,6 +2,8 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { CULTURE_FX } from '../../data/culture';
+import { hasValue } from './culture';
 import { REGION_BY_ID, regionMix } from '../../data/regions';
 import { ambitionOnShip } from './ambitions';
 import { exclusiveBuzz } from './hardware';
@@ -312,6 +314,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   else if (sequel && ownBest >= 70 && score >= ownBest + 3) ub.add('Raises the bar for the series', 2);
   if (fr) ub.add('Franchise fatigue', -fr.fatigue * 12);
   if (s.research.done.includes('ai_genai') && fromDay(s.day).year >= 2023) ub.add('Gen-AI backlash', -1.5);
+  if (hasValue(s, 'players')) ub.add('Culture: Player Obsessed', CULTURE_FX.playersUser);
+  if (hasValue(s, 'profit')) ub.add('Culture: Profit Driven', CULTURE_FX.profitUser);
   for (const id of p.concept.features ?? []) {
     const f = FEATURE_BY_ID[id];
     if (f?.user) ub.add(f.name, f.user);
@@ -329,7 +333,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
-  const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization) * (p.concept.expansionOf ? BALANCE.EXPANSION_PRICE : 1);
+  const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization) * (p.concept.expansionOf ? BALANCE.EXPANSION_PRICE : 1) * (hasValue(s, 'players') ? CULTURE_FX.playersPrice : 1) * (hasValue(s, 'profit') ? CULTURE_FX.profitPrice : 1);
   const baseDecay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
   // Mod communities keep PC games selling for years.
   const pcOnly = p.concept.platforms.every((pid) => platformInfo(s, pid)?.kind === 'computer');
@@ -535,7 +539,7 @@ export function updateSalesWeekly(c: Ctx): void {
       const f = s.franchises[rel.concept.franchiseId];
       const liked = clamp((rel.userScore - 55) / 40, 0, 1);
       const fresh = rel.concept.expansionOf ? 0.25 : 1; // expansion buyers are mostly existing fans
-      if (f) f.fans += units * fresh * BALANCE.FAN_CONVERSION * liked * (s.research.done.includes('biz_community') ? 1.25 : 1);
+      if (f) f.fans += units * fresh * BALANCE.FAN_CONVERSION * liked * (s.research.done.includes('biz_community') ? 1.25 : 1) * (hasValue(s, 'players') ? CULTURE_FX.playersFans : 1);
       s.company.fans += units * fresh * 0.04 * liked;
     }
     s.progress.stats.totalUnits += units;

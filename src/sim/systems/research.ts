@@ -1,4 +1,6 @@
 import { RESEARCH, RESEARCH_BY_ID, type ResearchDef } from '../../data/research';
+import { CULTURE_FX } from '../../data/culture';
+import { hasValue } from './culture';
 import { fromDay, weekday } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState } from '../types';
@@ -45,7 +47,7 @@ export function researchRate(s: GameState): number {
   for (const st of researchers(s)) {
     pts += ((st.skills.programming + st.skills.design) / 200) * productivity(s, st).total;
   }
-  return pts * (1 + L.research) * (s.cheats?.researchMul ?? 1);
+  return pts * (1 + L.research) * (s.cheats?.researchMul ?? 1) * (hasValue(s, 'innovation') ? CULTURE_FX.innovationResearch : 1);
 }
 
 export function updateResearchDaily(c: Ctx): void {

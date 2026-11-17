@@ -16,6 +16,7 @@ import { SHOWCASE_MIN_REP, SHOWCASE_MIN_YEAR, showcaseBlocked, showcaseCost, sho
 import { HistoryTab } from './HistoryTab';
 import { SubscriptionTab } from './SubscriptionTab';
 import { EsportsTab } from './EsportsTab';
+import { CultureTab } from './CultureTab';
 
 export default function CompanyPanel() {
   const tab = useGame((g) => g.panelTab) ?? 'publishing';
@@ -29,6 +30,7 @@ export default function CompanyPanel() {
         onChange={setTab}
         className="mb-4"
         options={[
+          { value: 'culture', label: 'Culture' },
           { value: 'publishing', label: 'Publishing' },
           { value: 'stock', label: 'Stock' },
           { value: 'acquire', label: 'Acquisitions' },
@@ -38,6 +40,7 @@ export default function CompanyPanel() {
           { value: 'history', label: 'History' },
         ]}
       />
+      {tab === 'culture' && <CultureTab />}
       {tab === 'publishing' && <Publishing />}
       {tab === 'stock' && <Stock />}
       {tab === 'acquire' && <Acquire />}

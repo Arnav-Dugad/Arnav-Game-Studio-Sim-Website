@@ -49,6 +49,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   if (risk) out.push({ id: 'risk', tone: risk >= 5 ? 'bad' : 'warn', icon: 'heart', text: `${risk} ${risk === 1 ? 'person needs' : 'people need'} attention (burnout, low morale or exhausted).`, action: { label: 'See who', run: () => open('staff', 'risk') } });
   const idle = staff.filter((x) => x.assignment.kind === 'idle' && !isAway(x) && x.role !== 'founder').length;
   if (idle) out.push({ id: 'idle', tone: idle >= 5 ? 'warn' : 'info', icon: 'hourglass', text: `${idle} ${idle === 1 ? 'person is' : 'people are'} idle — paid, but not working.`, action: { label: 'Assign', run: () => open('staff', 'idle') } });
+  if (staff.length >= 6 && !(s.company.values ?? []).length) out.push({ id: 'culture', tone: 'info', icon: 'sparkle', text: 'Your studio has no stated values yet. Pick a culture — quality, speed, players, profit, innovation or balance.', action: { label: 'Culture', run: () => open('company', 'culture') } });
   const dreams = staff.filter((x) => x.ambition && x.ambition.until - s.day < 45);
   if (dreams.length) out.push({ id: 'ambitions', tone: 'warn', icon: 'star', text: `${dreams.length} ${dreams.length === 1 ? 'ambition runs' : 'ambitions run'} out soon — help them and they’ll be far more loyal.`, action: { label: 'See who', run: () => open('staff', 'ambition') } });
   const avgMorale = staff.reduce((t, x) => t + x.morale, 0) / Math.max(1, staff.length);

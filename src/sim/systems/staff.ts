@@ -1,6 +1,8 @@
 /**
  * Staff: generation, salary, productivity, morale, energy, burnout, loyalty, growth, quitting.
  */
+import { CULTURE_FX } from '../../data/culture';
+import { hasValue } from './culture';
 import { BALANCE } from '../../data/balance';
 import { FIRST_NAMES, LAST_NAMES } from '../../data/names';
 import { PEOPLE } from '../../data/people';
@@ -254,7 +256,13 @@ export function productivity(s: GameState, st: Staff): ReturnType<BD['done']> {
   }
   if (hasTrait(st, 'workaholic')) bd.mul('Workaholic', 1.1);
   if (hasTrait(st, 'perfectionist')) bd.mul('Perfectionist', 0.9);
-  if (isCrunching(s, st)) bd.mul('Crunch', BALANCE.CRUNCH_OUTPUT * (hasTrait(st, 'night_owl') ? 1.08 : 1));
+  if (isCrunching(s, st)) {
+    const boost = BALANCE.CRUNCH_OUTPUT * (hasTrait(st, 'night_owl') ? 1.08 : 1);
+    bd.mul('Crunch', hasValue(s, 'balance') ? 1 + (boost - 1) * CULTURE_FX.balanceCrunch : boost);
+  }
+  if (hasValue(s, 'craft')) bd.mul('Culture: Quality First', CULTURE_FX.craftOutput);
+  if (hasValue(s, 'speed')) bd.mul('Culture: Ship Fast', CULTURE_FX.speedOutput);
+  if (hasValue(s, 'balance')) bd.mul('Culture: Work-Life Balance', CULTURE_FX.balanceOutput);
   if (s.research.done.includes('ai_genai')) bd.mul('Gen-AI tools', 1.12);
   if (st.burnout > 60) bd.mul('Burnout', 1 - (st.burnout - 60) / 90);
   if (s.company.policies.fourDayWeek) bd.mul('Four-day week', 0.88);
@@ -293,6 +301,8 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
   for (const m of s.company.moraleMods) if (m.until > s.day) bd.add(m.label, m.v);
   if (hasTrait(st, 'ambitious') && st.level !== 'junior' && st.salary < market) bd.add('Wants a raise', -6);
   if (st.mood && st.mood.until > s.day) bd.add(st.mood.label, st.mood.v);
+  if (hasValue(s, 'balance')) bd.add('Culture: Work-Life Balance', CULTURE_FX.balanceMorale);
+  if (hasValue(s, 'profit')) bd.add('Culture: Profit Driven', CULTURE_FX.profitMorale);
   bd.clamp(0, 100);
   return bd.done();
 }
@@ -398,6 +408,7 @@ export function updateStaffDaily(c: Ctx): void {
     if (crunch) bGain += BALANCE.BURNOUT_GAIN_CRUNCH;
     if (hasTrait(st, 'burnout_prone')) bGain *= 1.5;
     if (hasTrait(st, 'chill')) bGain *= 0.7;
+    if (hasValue(s, 'balance')) bGain *= CULTURE_FX.balanceBurnout;
     if (bGain > 0) st.burnout += bGain;
     else if (st.energy > 55) st.burnout -= BALANCE.BURNOUT_DECAY * (s.company.policies.fourDayWeek ? 1.4 : 1);
     st.burnout = clamp(st.burnout, 0, 100);

@@ -2,6 +2,8 @@
  * Development pipeline: daily progress for game / contract / engine projects, bug creation and QA,
  * phase gates, and the quality model (with full breakdown).
  */
+import { CULTURE_FX } from '../../data/culture';
+import { hasValue } from './culture';
 import { LOC_WORK } from '../../data/regions';
 import { FEATURE_BY_ID } from '../../data/gameFeatures';
 import { BALANCE } from '../../data/balance';
@@ -169,6 +171,7 @@ function progressGame(c: Ctx, p: GameProject): void {
           // bugs
           let br = BALANCE.BUG_RATE * (1.35 - avgProg / 140);
           if (crunch) br *= BALANCE.CRUNCH_BUGS;
+          if (hasValue(s, 'speed')) br *= CULTURE_FX.speedBugs;
           if (engine) br *= 1 - engine.maturity * 0.35;
           if (hasTrait(st, 'bug_magnet')) br *= 1.35;
           if (hasTrait(st, 'meticulous')) br *= 0.7;
@@ -347,6 +350,11 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
     else if (!ever && s.releaseOrder.length > 0) bd.mul('Fresh idea', 1.03);
   }
   if (p.novelty > 0) bd.mul('Visionary ideas', 1 + Math.min(0.08, p.novelty));
+  if (hasValue(s, 'craft')) bd.mul('Culture: Quality First', CULTURE_FX.craftQuality);
+  if (hasValue(s, 'innovation')) {
+    if (c.franchiseId || orig || base) bd.mul('Culture: Innovation (a sequel, not something new)', CULTURE_FX.innovationSequel);
+    else bd.mul('Culture: Innovation (new IP)', CULTURE_FX.innovationNewIp);
+  }
   if (p.cut) bd.mul('Cut features', BALANCE.CUT_FEATURES_PENALTY);
   // bugs
   const density = total > 0 ? (p.bugs * scale) / total : 0;

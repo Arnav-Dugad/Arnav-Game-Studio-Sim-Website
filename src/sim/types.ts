@@ -1,4 +1,5 @@
 import type { Area, Audience, GenreId, IndustryFlag, Monetization, NewsCategory, Skill } from '../data/types';
+import type { CultureId } from '../data/culture';
 import type { RegionId } from '../data/regions';
 import type { TraitId } from '../data/traits';
 import type { ItemId } from '../data/facilities';
@@ -655,6 +656,9 @@ export interface Company {
   name: string;
   /** Where the studio is based (its own language is always supported). Defaults to North America. */
   homeRegion?: RegionId;
+  /** Studio culture (data/culture.ts) and when it last changed. */
+  values?: CultureId[];
+  valuesDay?: number;
   founderName: string;
   color: string;
   /** Studio emblem (an icon id) and badge shape; the monogram is used without one. */
