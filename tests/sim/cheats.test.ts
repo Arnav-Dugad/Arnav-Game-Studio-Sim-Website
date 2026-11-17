@@ -21,6 +21,18 @@ function startGame(s: GameState): GameProject {
 }
 
 describe('cheats', () => {
+  it('sandbox mode starts with infinite money, free building and the run marked', () => {
+    const s = createGame({ seed: 1, companyName: 'Sand', founderName: 'S', sandbox: true, autopause: false });
+    expect(s.cheatsUsed).toBe(true);
+    expect(s.cheats?.infiniteMoney && s.cheats.noBankruptcy && s.cheats.freeBuild).toBe(true);
+    s.company.cash = -1e6;
+    advance(s, 2);
+    expect(s.company.cash).toBeGreaterThanOrEqual(s.cheats!.moneyFloor!);
+    const plain = createGame({ seed: 1, companyName: 'Plain', founderName: 'P', autopause: false });
+    expect(plain.cheatsUsed).toBeFalsy();
+    expect(plain.cheats).toBeUndefined();
+  });
+
   it('edit money, reputation, fans and loans, and mark the run', () => {
     const s = game();
     expect(s.cheatsUsed).toBeFalsy();

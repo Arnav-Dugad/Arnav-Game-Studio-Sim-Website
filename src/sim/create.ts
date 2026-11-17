@@ -29,6 +29,8 @@ export interface NewGameOptions {
   /** Founder strengths. */
   founderFocus?: 'design' | 'programming' | 'balanced';
   autopause?: boolean;
+  /** Creative sandbox: infinite money, no bankruptcy, free building; the run is marked as cheated. */
+  sandbox?: boolean;
 }
 
 export function createGame(o: NewGameOptions): GameState {
@@ -189,6 +191,12 @@ export function createGame(o: NewGameOptions): GameState {
     body: `${o.founderName} sets up shop in a garage with a couple of desks and big dreams.`,
     tone: 'good',
   });
+  if (o.sandbox) {
+    s.cheatsUsed = true;
+    s.cheats = { infiniteMoney: true, moneyFloor: money(1_000_000, day), noBankruptcy: true, freeBuild: true };
+    s.company.cash = Math.max(s.company.cash, money(1_000_000, day));
+    pushNews(s, { category: 'studio', headline: 'Sandbox mode', body: 'Money is no object: cash never drops below the floor, building is free and you can’t go bankrupt. Open Menu → Cheats (`) to bend any other rule.', tone: 'neutral' });
+  }
   // ensure historicalIndex points past events before the start day
   while (s.market.historicalIndex < HISTORICAL_EVENTS.length && parseYM(HISTORICAL_EVENTS[s.market.historicalIndex]!.date) <= day) s.market.historicalIndex++;
   s.rng = rng.state;

@@ -309,6 +309,7 @@ interface NewOpts {
   founderFocus: 'design' | 'programming' | 'balanced';
   endless: boolean;
   tutorial: boolean;
+  sandbox: boolean;
 }
 
 function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: (o: NewOpts) => Promise<void> }) {
@@ -323,6 +324,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
     founderFocus: 'balanced',
     endless: false,
     tutorial: true,
+    sandbox: false,
   });
   const [err, setErr] = useState('');
   const set = <K extends keyof NewOpts>(k: K, v: NewOpts[K]) => setO((x) => ({ ...x, [k]: v }));
@@ -398,6 +400,12 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
               Endless mode <span className="block text-xs text-ink3">Keep going past 2026 with procedural future hardware.</span>
             </span>
             <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={o.endless} onChange={(e) => set('endless', e.target.checked)} />
+          </label>
+          <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 px-3 py-2">
+            <span>
+              Sandbox mode <span className="block text-xs text-ink3">Infinite money, free building, no bankruptcy — plus every cheat. Marked as cheated in the Hall of Fame.</span>
+            </span>
+            <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={o.sandbox} onChange={(e) => set('sandbox', e.target.checked)} />
           </label>
           <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 px-3 py-2">
             <span>Show the tutorial</span>
