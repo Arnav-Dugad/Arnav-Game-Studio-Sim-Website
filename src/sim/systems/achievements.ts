@@ -123,6 +123,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'open_door', name: 'Open Door', desc: 'Hold 25 one-on-ones with your staff.', icon: 'user', check: (s) => (s.progress.stats.checkIns ?? 0) >= 25 },
   { id: 'value_king', name: 'Value for Money', desc: 'Sell a million copies of a budget-priced game.', icon: 'coin', check: (s) => rels(s).some((r) => r.concept.priceTier === 'budget' && r.units >= 1_000_000) },
   { id: 'page_turner', name: 'Page Turner', desc: 'Release a visual novel scoring 85+.', icon: 'book', check: (s) => rels(s).some((r) => r.concept.genre === 'visual_novel' && r.score >= 85) },
+  { id: 'dream_maker', name: 'Dream Maker', desc: 'Ship three of your staff’s passion projects.', icon: 'sparkle', check: (s) => rels(s).filter((r) => !!r.passion).length >= 3 },
+  { id: 'welcome_back', name: 'Welcome Back', desc: 'Rehire a former colleague.', icon: 'people', check: (s) => Object.values(s.staff).some((x) => x.rejoined !== undefined) },
+  { id: 'awards_campaign_win', name: 'For Your Consideration', desc: 'Win Game of the Year with a game you campaigned for.', icon: 'trophy', check: (s) => (s.awardHistory ?? []).some((y) => y.winners.some((w) => w.mine && w.category === 'Game of the Year' && w.releaseId !== undefined && s.company.awardsCampaign?.releaseId === w.releaseId)) },
   { id: 'garage_hit', name: 'Garage Miracle', desc: 'Score 85+ while still in the garage.', icon: 'wrench', check: (s) => s.office.tier === 1 && s.progress.stats.bestScore >= 85 },
 ];
 
