@@ -18,7 +18,8 @@ describe('trailer cut', () => {
     dispatch(s, { type: 'announce', projectId: p.id });
     const hype = p.hype;
     expect(dispatch(s, { type: 'trailerCut', projectId: p.id, points: 99 }).ok).toBe(true);
-    expect(p.hype).toBeCloseTo(hype + 0.4, 5);
+    expect(p.hype).toBeGreaterThan(hype); // scaled by the projected score
+    expect(p.hype).toBeLessThanOrEqual(hype + 0.48);
     expect(dispatch(s, { type: 'trailerCut', projectId: p.id, points: 8 }).ok).toBe(false);
   });
 });

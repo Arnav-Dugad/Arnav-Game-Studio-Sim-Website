@@ -1465,7 +1465,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (!last || s.day - last.day > 90) return 0;
       const base = last.concept.monetization !== 'premium' ? 0.8 : 0.2;
       // a healthy community talks people down; a toxic one piles on
-      return s.community ? base * (s.community.health < 35 ? 2.5 : s.community.health > 70 ? 0.4 : 1) : base;
+      return s.community ? base * (s.community.health < 35 ? 1.5 : s.community.health > 70 ? 0.4 : 1) : base;
     },
     make: ({ s }) => {
       const r = s.releases[s.releaseOrder[s.releaseOrder.length - 1]!]!;
@@ -1473,8 +1473,8 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Review bomb!',
         body: `Angry players are flooding stores with 1-star reviews of ${r.name}.`,
         options: [
-          { id: 'listen', label: 'Listen and promise changes', preview: 'User score +4, fans +3%' },
-          { id: 'ignore', label: 'Ride it out', preview: 'User score −6' },
+          { id: 'listen', label: `Listen and promise changes (${fmtMoney(money(8_000, s.day))})`, preview: s.community && s.community.health < 35 ? 'A toxic community barely believes you: user score +2' : 'User score +4, fans +3%', disabled: s.company.cash < money(8_000, s.day) },
+          { id: 'ignore', label: 'Ride it out', preview: s.community && s.community.health < 35 ? 'User score −10 (your community piles on)' : 'User score −6' },
         ],
         ctx: { rel: r.id },
       };
@@ -1482,12 +1482,14 @@ export const EVENT_DEFS: EventDef[] = [
     resolve: ({ s }, e, opt) => {
       const r = s.releases[String(e.ctx.rel)];
       if (!r) return;
-      if (opt === 'listen') {
-        r.userScore = clamp(r.userScore + 4, 1, 100);
-        s.company.fans *= 1.03;
+      const toxic = !!s.community && s.community.health < 35;
+      if (opt === 'listen' && s.company.cash >= money(8_000, s.day)) {
+        spend(s, 'other_expense', money(8_000, s.day)); // the work you promised
+        r.userScore = clamp(r.userScore + (toxic ? 2 : 4), 1, 100);
+        if (!toxic) s.company.fans *= 1.03;
         communityNudge(s, 6);
       } else {
-        r.userScore = clamp(r.userScore - 6, 1, 100);
+        r.userScore = clamp(r.userScore - (toxic ? 10 : 6), 1, 100);
         communityNudge(s, -8);
       }
     },

@@ -194,7 +194,8 @@ function progressGame(c: Ctx, p: GameProject): void {
       if (hasTrait(st, 'visionary')) p.novelty += 0.0015;
     }
     // a co-development partner's team works alongside yours
-    if (p.coDev) {
+    const partner = p.coDev ? s.rivals[p.coDev.rivalId] : undefined;
+    if (p.coDev && partner && partner.alive && !partner.ownedByPlayer) {
       for (let i = 0; i < 3; i++) {
         const a = areas[i]!;
         const w = focus[i]! / fsum;

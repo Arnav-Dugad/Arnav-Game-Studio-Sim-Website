@@ -307,6 +307,8 @@ export interface GameProject {
   focusTest?: { phase: number; predicted: number; wantMore?: string };
   /** A bug bash has been run (once per game). */
   bugBashed?: boolean;
+  /** This sequel resolves the series' cliffhanger. */
+  paysCliffhanger?: boolean;
   /** A co-development partner: their contribution and revenue share. */
   coDev?: { rivalId: string; name: string; power: number; share: number };
   /** The trailer's score (0..8) once cut (once per game). */
@@ -423,7 +425,7 @@ export interface Release {
   /** Crowdfunded: what backers pledged, and how many days late it shipped against the promise (0 = on time). */
   crowdfund?: { raised: number; backers: number; late: number };
   /** Co-developed: the partner's name and share of net revenue. */
-  coDev?: { name: string; share: number };
+  coDev?: { name: string; share: number; rivalId?: string };
   /** Platform holders who featured it on their storefront at launch. */
   featuredBy?: string[];
   /** Favour granted for launching as an exclusive (taken back if ported within a year). */
@@ -468,6 +470,8 @@ export interface Franchise {
   origin?: string;
   /** Last fan convention for this series. */
   lastCon?: number;
+  /** A cliffhanger left open by the series' latest game (the day it shipped), until a sequel starts. */
+  openCliffhanger?: number;
 }
 
 export interface RivalGame {

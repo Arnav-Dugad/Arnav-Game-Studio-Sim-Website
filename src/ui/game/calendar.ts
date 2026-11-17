@@ -43,15 +43,11 @@ export function comingUp(s: GameState, days = 120, max = 10): CalendarEntry[] {
   // the calendar
   for (const y of [year, year + 1]) {
     add({ day: toDay(y, 1, 1), icon: 'trophy', text: 'Golden Pixel Gala — the year’s awards', tone: 'gold' });
-    if (y >= 2004) {
-      add({ day: toDay(y, 6, 1), icon: 'coin', text: 'Summer sale season' });
-      add({ day: toDay(y, 12, 1), icon: 'coin', text: 'Winter sale season' });
-    }
     if (s.company.policies.interns) {
       add({ day: toDay(y, 6, 1), icon: 'people', text: 'Summer interns arrive' });
       add({ day: toDay(y, 9, 1), icon: 'people', text: 'Interns head back to school' });
     }
-    if (s.finance.stock) add({ day: toDay(y, 5, 1), icon: 'bell', text: 'Annual shareholder meeting' });
+    if (s.finance.stock && toDay(y, 5, 1) - s.finance.stock.ipoDay > 300) add({ day: toDay(y, 5, 1), icon: 'bell', text: 'Annual shareholder meeting' });
     for (const m of [1, 4, 7, 10]) add({ day: toDay(y, m, 1), icon: 'target', text: 'New quarterly objectives' });
   }
   return out.sort((a, b) => a.day - b.day).slice(0, max);

@@ -1,4 +1,5 @@
 /** "The story of your studio": a short biography written from what actually happened in the run. */
+import { SCENARIO_BY_ID } from '@/sim/systems/scenarios';
 import { REGION_BY_ID } from '@/data/regions';
 import { fromDay } from '@/sim/calendar';
 import { MEDIA } from '@/sim/systems/media';
@@ -15,7 +16,8 @@ export function biography(s: GameState): string[] {
   const founder = s.staff['founder']?.name ?? (s.alumni ?? []).find((a) => a.role === 'founder')?.name;
   const home = REGION_BY_ID[s.company.homeRegion ?? 'na']?.name;
   const rels: Release[] = s.releaseOrder.map((id) => s.releases[id]!).filter(Boolean);
-  out.push(`${name} was founded in ${s.settings.startYear}${founder ? ` by ${founder}` : ''}${home ? `, in ${home}` : ''}, with ${tierDef(1).name.toLowerCase() === 'garage' ? 'little more than a garage and a dream' : 'a small team and a big idea'}.`);
+  const startTier = s.scenario ? (SCENARIO_BY_ID[s.scenario.id]?.tier ?? 1) : 1;
+  out.push(`${name} was founded in ${s.settings.startYear}${founder ? ` by ${founder}` : ''}${home ? `, in ${home}` : ''}, with ${startTier <= 1 ? 'little more than a garage and a dream' : `a ${tierDef(startTier).name} and big ambitions`}.`);
   if (!rels.length) {
     out.push('Its first game was still to come.');
     return out;
@@ -39,7 +41,7 @@ export function biography(s: GameState): string[] {
   }
   const photos = s.yearbook ?? [];
   const peak = photos.reduce((m, p) => Math.max(m, p.people), Object.keys(s.staff).length);
-  if (peak > 5) out.push(`The team grew to ${peak} people${s.office.tier > 1 ? `, and the studio moved into a ${tierDef(s.office.tier).name}` : ''}.`);
+  if (peak > 5) out.push(`The team grew to ${peak} people${s.office.tier > startTier ? `, and the studio moved into a ${tierDef(s.office.tier).name}` : ''}.`);
   const series = Object.values(s.franchises).filter((f) => f.entries.length >= 2).sort((a, b) => b.fans - a.fans)[0];
   if (series) out.push(`${series.name} became its signature series: ${series.entries.length} games and ${fmtUnits(series.fans)} fans.`);
   const hits = (s.mediaDeals ?? []).filter((d) => d.outcome === 'hit');

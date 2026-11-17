@@ -4,6 +4,7 @@
  * a strong rating spreads the word. The catch: the 1.0 launch sells to fewer new buyers on PC (many already own
  * it), a weak build hurts hype, and a game that lingers in Early Access for years wears out its welcome.
  */
+import { codevShareVoid } from './codev';
 import { BALANCE } from '../../data/balance';
 import { clamp } from '../breakdown';
 import { fromDay } from '../calendar';
@@ -94,6 +95,7 @@ export function earlyAccessWeekly(c: Ctx): void {
           gross += u * price;
           net += u * netPerUnit(s, x.pl, price, true);
         }
+        if (p.coDev && !codevShareVoid(s, p.coDev.rivalId)) net *= 1 - p.coDev.share; // the partner's cut
         earn(s, 'sales', net);
         const eng = s.engines[p.concept.engineId];
         if (eng && eng.royalty > 0) spend(s, 'royalties', net * eng.royalty);

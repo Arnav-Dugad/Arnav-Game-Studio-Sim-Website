@@ -267,8 +267,16 @@ export function rivalSummary(s: GameState) {
 /** Real franchise releases expected between `from` and `to` (industry release calendar). */
 export function upcomingReleases(s: GameState, from: number, to: number) {
   const out: { day: number; title: string; company: string; genre: GenreId; platforms: string[]; franchise: string }[] = [];
-  for (const ev of SCHEDULE) {
-    if (ev.day < from) continue;
+  // binary search to the first scheduled release on or after `from`
+  let lo = 0;
+  let hi = SCHEDULE.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (SCHEDULE[mid]!.day < from) lo = mid + 1;
+    else hi = mid;
+  }
+  for (let i = lo; i < SCHEDULE.length; i++) {
+    const ev = SCHEDULE[i]!;
     if (ev.day > to) break;
     if (franchiseOwner(s, ev.franchise) === '__player') continue;
     const r = s.rivals[ev.company];

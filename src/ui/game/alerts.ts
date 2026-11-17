@@ -36,7 +36,7 @@ export function projectName(p: Project): string {
   return p.kind === 'game' ? p.concept.name : p.kind === 'contract' ? p.title : `Engine: ${p.name}`;
 }
 
-export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => void, pushGate: (id: string) => void, furnishDesks: () => void = () => undefined): Alert[] {
+export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => void, pushGate: (id: string) => void, furnishDesks: () => void = () => undefined, urgentOnly = false): Alert[] {
   const out: Alert[] = [];
   const staff = Object.values(s.staff);
   const projects = Object.values(s.projects);
@@ -85,6 +85,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   }
   for (const p of projects) if (p.kind === 'contract' && s.day > p.deadlineDay - 14) out.push({ id: `contract-${p.id}`, tone: 'warn', icon: 'contract', text: `Contract "${p.title}" is due ${p.deadlineDay < s.day ? 'already' : 'within two weeks'}.`, action: { label: 'Develop', run: () => open('develop') } });
   // Opportunities (only when they're real and actionable)
+  if (urgentOnly) return out.filter((x) => x.tone === 'bad');
   const yr = fromDay(s.day).year;
   for (const p of projects) {
     if (p.kind !== 'game') continue;

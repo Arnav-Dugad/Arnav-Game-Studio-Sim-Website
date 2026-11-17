@@ -262,8 +262,7 @@ export function layoffMoraleHit(n: number): number {
 /** The series' latest game ended on a cliffhanger (in the last six years) that no sequel has paid off yet. */
 export function cliffhangerPending(s: GameState, franchiseId: string): boolean {
   const f = s.franchises[franchiseId];
-  const last = f?.entries.length ? s.releases[f.entries[f.entries.length - 1]!] : undefined;
-  return !!last && (last.concept.features ?? []).includes('cliffhanger') && s.day - last.day < 365 * 6;
+  return f?.openCliffhanger !== undefined && s.day - f.openCliffhanger < 365 * 6;
 }
 
 /** Public betas (2005+): two extra weeks in polish, a quarter of the bugs found, some hype, and a score read. */
@@ -394,6 +393,7 @@ function apply(c: Ctx, a: Action): string | null {
       const feats = [...new Set(g.features ?? [])];
       const featErr = featuresBlocked(s, feats, g.monetization);
       if (featErr) return featErr;
+      if (feats.includes('cliffhanger') && (g.remasterOf || g.expansionOf)) return 'Cliffhangers are for new games and sequels';
       const featCost0 = feats.reduce((t, id) => t + money(FEATURE_BY_ID[id]!.cost ?? 0, s.day), 0);
       const home = s.company.homeRegion ?? 'na';
       const locs = [...new Set(g.localized ?? [])].filter((r) => r !== home && !(s.company.branches ?? []).includes(r));
@@ -459,6 +459,11 @@ function apply(c: Ctx, a: Action): string | null {
         awaitingGate: false,
       };
       s.projects[id] = proj;
+      // this sequel claims the series' open cliffhanger
+      if (g.franchiseId && !g.expansionOf && !g.remasterOf && cliffhangerPending(s, g.franchiseId)) {
+        proj.paysCliffhanger = true;
+        s.franchises[g.franchiseId]!.openCliffhanger = undefined;
+      }
       assignTeam(s, id, g.team);
       if (deal) {
         earn(s, 'advances', proj.concept.deal!.advance);
@@ -953,7 +958,9 @@ function apply(c: Ctx, a: Action): string | null {
       if (!finite(a.points) || a.points < 0) return 'Invalid result';
       const pts = Math.min(8, Math.floor(a.points));
       p.trailerCut = pts;
-      p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + pts * 0.05);
+      // a trailer can only show what's there: hype scales with the game's projected score
+      const est = qualityToScore(gameQuality(s, p, true).total);
+      p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + pts * 0.05 * clamp(est / 70, 0.4, 1.2));
       if (pts >= 7) pushNews(s, { category: 'studio', headline: `The ${p.concept.name} trailer goes viral`, body: 'Millions of views overnight. People can’t stop talking about it.', tone: 'good' });
       return null;
     }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../components/ui';
 import { Icon } from '../icons';
 import { useGame } from '../store';
@@ -32,6 +32,7 @@ export function Tutorial() {
   const show = useSettings((x) => x.showTutorial);
   const step = s?.progress.tutorialStep ?? 99;
   const cur = STEPS[step];
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (!cur?.done) return;
@@ -63,14 +64,14 @@ export function Tutorial() {
       {panel && (
         <div className="glass absolute bottom-[5.25rem] left-1/2 z-40 flex w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-2 rounded-xl px-3 py-2 animate-fade-up sm:hidden" role="region" aria-label="Tutorial">
           <Icon name="lightbulb" size={16} className="shrink-0 text-gold" />
-          <div className="min-w-0 flex-1">
+          <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setExpanded((x) => !x)} aria-expanded={expanded}>
             <div className="truncate text-xs font-semibold">
               {step + 1}/{STEPS.length} · {cur.title}
             </div>
-            <div className="truncate text-[11px] text-ink3">{cur.body}</div>
-          </div>
+            <div className={expanded ? 'text-[11px] text-ink3' : 'truncate text-[11px] text-ink3'}>{cur.body}</div>
+          </button>
           {nextBtn}
-          <button type="button" className="shrink-0 text-[11px] text-ink3 underline" onClick={() => act({ type: 'tutorial', step: 99 })}>
+          <button type="button" className="shrink-0 px-2 py-2 text-xs text-ink3 underline" onClick={() => act({ type: 'tutorial', step: 99 })}>
             Skip
           </button>
         </div>

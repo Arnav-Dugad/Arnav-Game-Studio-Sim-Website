@@ -36,12 +36,19 @@ export function codevBlocked(s: GameState, p: GameProject): string | null {
 
 export function codevTerms(s: GameState, p: GameProject, rival: Rival): CodevTerms | string {
   if (s.company.reputation < rival.reputation * 0.5) return `${rival.name} doesn’t think you’re big enough yet`;
-  const cap = BALANCE.SIZE[p.concept.size].teamCap;
-  const people = clamp(rival.staff * 0.08, 2, cap * 0.6);
-  const power = Math.round(clamp(rival.quality, 0.4, 0.95) * people * 10) / 10;
-  // the share follows what they bring, measured against a typical team for a game this size
-  const share = Math.round(clamp((power / BALANCE.SIZE[p.concept.size].typicalTeam) * 0.7, 0.15, 0.5) * 20) / 20;
+  const sz = BALANCE.SIZE[p.concept.size];
+  const people = clamp(rival.staff * 0.05, 1.5, sz.teamCap * 0.4);
+  // what their people actually produce (skill × productivity, like your own staff)
+  const power = Math.round(clamp(rival.quality, 0.4, 0.95) * people * 0.6 * 100) / 100;
+  // the share follows what they bring, against a typical team for a game this size (in the same units)
+  const share = Math.round(clamp((power / (sz.typicalTeam * BALANCE.BENCHMARK_SKILL * BALANCE.BENCHMARK_PROD)) * 0.5, 0.15, 0.55) * 20) / 20;
   return { power, share };
+}
+
+/** The partner's share lapses if you bought them (it's your money now) or they closed down. */
+export function codevShareVoid(s: GameState, rivalId: string | undefined): boolean {
+  const r = rivalId ? s.rivals[rivalId] : undefined;
+  return !!r && (r.ownedByPlayer || !r.alive);
 }
 
 export function signCodev(s: GameState, projectId: string, rivalId: string): string | null {

@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { codevShareVoid } from './codev';
 import { communityNudge, communityUserBonus } from './community';
 import { partnersOnRelease } from './partners';
 import { CULTURE_FX } from '../../data/culture';
@@ -318,8 +319,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   if (sequel && gap > 8) ub.add(`Not as good as the series’ best (${ownBest})`, -Math.min(10, (gap - 8) * 0.6));
   else if (sequel && ownBest >= 70 && score >= ownBest + 3) ub.add('Raises the bar for the series', 2);
   if (fr) ub.add('Franchise fatigue', -fr.fatigue * 12);
-  const prevEntry = fr && !p.concept.expansionOf && !p.concept.remasterOf && fr.entries.length ? s.releases[fr.entries[fr.entries.length - 1]!] : undefined;
-  if (prevEntry && (prevEntry.concept.features ?? []).includes('cliffhanger') && s.day - prevEntry.day < 365 * 6) ub.add(`Pays off ${prevEntry.name}’s cliffhanger`, 3);
+  if (p.paysCliffhanger) ub.add('Pays off the last game’s cliffhanger', 3);
   if (s.research.done.includes('ai_genai') && fromDay(s.day).year >= 2023) ub.add('Gen-AI backlash', -1.5);
   if (hasValue(s, 'players')) ub.add('Culture: Player Obsessed', CULTURE_FX.playersUser);
   if (hasValue(s, 'profit')) ub.add('Culture: Profit Driven', CULTURE_FX.profitUser);
@@ -397,7 +397,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     serverLoad: ['mmo'].includes(p.concept.genre) || ['subscription', 'f2p', 'live_service'].includes(p.concept.monetization) ? 1 : 0,
     why: { sales: salesWhy, user: ub.done() },
     ...(p.beta ? { betaTested: true } : {}),
-    ...(p.coDev ? { coDev: { name: p.coDev.name, share: p.coDev.share } } : {}),
+    ...(p.coDev ? { coDev: { name: p.coDev.name, share: p.coDev.share, rivalId: p.coDev.rivalId } } : {}),
     ...(ea ? { earlyAccess: { weeks: eaWeeks, units: ea.units, net: Math.round(ea.net) } } : {}),
     ...(cf ? { crowdfund: { raised: cf.raised, backers: cf.backers, late: cfLate } } : {}),
     ...(modded ? { modded: true } : {}),
@@ -445,6 +445,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     f.entries.push(id);
     f.lastDay = s.day;
     f.bestScore = Math.max(f.bestScore, score);
+    if ((p.concept.features ?? []).includes('cliffhanger') && !p.concept.remasterOf) f.openCliffhanger = s.day;
   }
   // Reputation
   const rd = ((score - 60) / 7) * SIZE_REP[p.concept.size] * (baseRel ? 0.5 : 1);
@@ -476,7 +477,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     tone: score >= 70 ? 'good' : score >= 50 ? 'neutral' : 'bad',
   });
   // Journal: teach the player what worked
-  communityNudge(s, (userScore - 70) / 2);
+  communityNudge(s, (userScore - 70) / 4);
   learnFromRelease(s, p, quality);
   finishProject(s, p.id);
   c.out.push({ type: 'release', releaseId: id });
@@ -589,7 +590,7 @@ export function updateSalesWeekly(c: Ctx): void {
     // royalties & splits
     let toPlayer = net;
     if (rel.concept.deal) toPlayer = net * rel.concept.deal.royalty;
-    if (rel.coDev) toPlayer *= 1 - rel.coDev.share;
+    if (rel.coDev && !codevShareVoid(s, rel.coDev.rivalId)) toPlayer *= 1 - rel.coDev.share;
     const eng = s.engines[rel.concept.engineId];
     if (eng && eng.royalty > 0) {
       const roy = toPlayer * eng.royalty;

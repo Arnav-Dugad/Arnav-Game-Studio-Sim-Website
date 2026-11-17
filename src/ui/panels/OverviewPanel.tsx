@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 /**
  * Studio overview: everything that needs your attention right now, each with a one-click fix, plus your
  * projects at a glance, what's selling and how the year is going. The "home screen" for big studios.
@@ -20,7 +21,8 @@ export default function OverviewPanel() {
   const openPanel = useGame((g) => g.openPanel);
   const pushModal = useGame((g) => g.pushModal);
   const open = (p: PanelId, tab?: string) => openPanel(p, tab ?? null);
-  const upcoming = comingUp(s);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const upcoming = useMemo(() => comingUp(s), [s.day, s.office.rev]);
   const alerts = studioAlerts(s, open, (id) => pushModal({ kind: 'gate', projectId: id }), furnish);
   const projects = Object.values(s.projects);
   const selling = Object.values(s.releases)

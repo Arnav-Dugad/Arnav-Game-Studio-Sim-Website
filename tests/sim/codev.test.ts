@@ -3,7 +3,7 @@ import { createGame } from '../../src/sim/create';
 import { advance } from '../../src/sim/advance';
 import { dispatch } from '../../src/sim/actions';
 import { availablePlatforms } from '../../src/sim/systems/market';
-import { codevBlocked, codevPartners } from '../../src/sim/systems/codev';
+import { codevBlocked, codevPartners, codevShareVoid } from '../../src/sim/systems/codev';
 import type { GameProject, GameState } from '../../src/sim/types';
 
 function setup(withPartner: boolean): { s: GameState; p: GameProject } {
@@ -35,5 +35,19 @@ describe('co-development', () => {
     for (let i = 0; i < 20 && Object.keys(b.s.projects).length; i++) advance(b.s, 30);
     const rel = Object.values(b.s.releases)[0]!;
     expect(rel.coDev?.share).toBe(b.p.coDev!.share);
+  });
+
+  it('buying the partner (or its closing) ends their cut and their work', () => {
+    const b = setup(true);
+    const rival = b.s.rivals[b.p.coDev!.rivalId]!;
+    rival.ownedByPlayer = true;
+    expect(codevShareVoid(b.s, rival.id)).toBe(true);
+    const before = b.p.design + b.p.tech;
+    const solo = setup(false);
+    const soloBefore = solo.p.design + solo.p.tech;
+    advance(b.s, 30);
+    advance(solo.s, 30);
+    // no faster than going it alone once the partner is yours
+    expect(b.p.design + b.p.tech - before).toBeLessThanOrEqual((solo.p.design + solo.p.tech - soloBefore) * 1.05);
   });
 });

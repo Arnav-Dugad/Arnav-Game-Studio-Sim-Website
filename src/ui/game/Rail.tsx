@@ -27,7 +27,7 @@ export function Rail() {
     develop: s ? Object.values(s.projects).filter((p) => p.kind === 'game' && p.awaitingGate).length : 0,
     staff: s ? Object.values(s.staff).filter((x) => x.burnout > 70 || x.morale < 30 || (x.assignment.kind === 'idle' && x.role !== 'founder' && !x.vacationDays)).length : 0,
     research: s && !s.research.active && Object.values(s.staff).some((x) => x.assignment.kind === 'research') ? 1 : 0,
-    overview: s ? studioAlerts(s, () => undefined, () => undefined).filter((x) => x.tone === 'bad').length : 0,
+    overview: s ? studioAlerts(s, () => undefined, () => undefined, undefined, true).filter((x) => x.tone === 'bad').length : 0,
   };
   return (
     <nav
