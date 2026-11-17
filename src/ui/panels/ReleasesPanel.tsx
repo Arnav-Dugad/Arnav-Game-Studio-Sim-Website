@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { GENRE_BY_ID } from '@/data/genres';
-import { formatDate } from '@/sim/calendar';
+import { formatDate, fromDay } from '@/sim/calendar';
+import { canRunSale } from '@/sim/systems/release';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import type { Release } from '@/sim/types';
-import { Empty, Pill, Segmented, cx } from '../components/ui';
+import { Button, Empty, Pill, Segmented, cx } from '../components/ui';
 import { Cover } from '../art/Cover';
 import { Sparkline } from '../charts';
 import { useGame } from '../store';
@@ -54,8 +55,30 @@ export default function ReleasesPanel() {
   // The remembered view is global; with fewer than two games the toggle is hidden, so show the list.
   const shown = all.length > 1 ? view : 'list';
   const total = all.reduce((t, r) => t + r.units, 0);
+  const { month, year } = fromDay(s.day);
+  const seasonal = year >= 2004 && (month === 6 || month === 12);
+  const saleable = seasonal ? all.filter((r) => !canRunSale(s, r)) : [];
   return (
     <div className="space-y-3">
+      {saleable.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/40 bg-gold/10 p-2.5 text-xs">
+          <span>
+            <b>{month === 6 ? 'Summer' : 'Winter'} sale season!</b> Storefronts are full of shoppers. {saleable.length} of your games can go on sale.
+          </span>
+          <Button
+            size="sm"
+            icon="coin"
+            onClick={() => {
+              const g = useGame.getState();
+              let n = 0;
+              for (const r of saleable) if (g.act({ type: 'runSale', releaseId: r.id, discount: 0.5 }).ok) n++;
+              g.toast({ text: `${n} game${n === 1 ? '' : 's'} now 50% off`, tone: 'good', icon: 'coin' });
+            }}
+          >
+            Put them all 50% off
+          </Button>
+        </div>
+      )}
       {all.length > 1 && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           {view !== 'stats' && (
