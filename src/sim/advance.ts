@@ -20,7 +20,7 @@ import { refreshOffers } from './systems/offers';
 import { updateLiveMonthly, updateSalesWeekly, yearlyAwards } from './systems/release';
 import { updateResearchDaily } from './systems/research';
 import { rivalScheduledReleases, rivalsHistory, rivalsMonthly } from './systems/rivals';
-import { refreshCandidates, updateStaffDaily, updateStaffMonthly } from './systems/staff';
+import { refreshCandidates, staffAutomationWeekly, updateStaffDaily, updateStaffMonthly } from './systems/staff';
 import { subsidiariesMonthly } from './systems/subsidiaries';
 import type { GameState } from './types';
 import { addRep, pushNews } from './util';
@@ -106,6 +106,7 @@ export function tick(c: Ctx): void {
   cheatsDaily(s);
 
   if (weekday(s.day) === 0) {
+    staffAutomationWeekly(s);
     updateSalesWeekly(c);
     stockWeekly(c);
     hypeWeekly(s);

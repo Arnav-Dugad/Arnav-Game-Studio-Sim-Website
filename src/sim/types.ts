@@ -632,7 +632,14 @@ export interface Company {
   /** Temporary studio-wide morale modifiers from events/decisions. */
   moraleMods: { v: number; until: number; label: string }[];
   /** Persistent policies set by the player. */
-  policies: { salaryPolicy: 'lean' | 'market' | 'generous'; remote: boolean; fourDayWeek: boolean };
+  policies: {
+    salaryPolicy: 'lean' | 'market' | 'generous';
+    remote: boolean;
+    fourDayWeek: boolean;
+    /** Automation: idle people go to research; burnt-out people take two weeks off. */
+    autoResearch?: boolean;
+    autoVacation?: boolean;
+  };
   /** Day of the last major layoff (morale shock). */
   lastLayoffDay?: number;
   /** Recruitment spend level 0..3 (job ads/headhunting). */

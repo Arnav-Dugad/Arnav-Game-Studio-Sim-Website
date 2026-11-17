@@ -786,6 +786,30 @@ describe('mod tools', () => {
   });
 });
 
+describe('staff automation', () => {
+  it('idle people join research and burnt-out people take time off, only when switched on', async () => {
+    const { candidateToStaff } = await import('../../src/sim/systems/staff');
+    const s = game(1995, 5);
+    s.company.cash = 1e8;
+    const mk = (id: string) => {
+      s.staff[id] = candidateToStaff(s, generateCandidate(s, new Rng([id.length, 2, 3, 4]), {}), id, 30_000);
+      s.staff[id]!.morale = 90;
+      s.staff[id]!.loyalty = 100;
+      return s.staff[id]!;
+    };
+    const idler = mk('idler');
+    const tired = mk('tired');
+    tired.burnout = 85;
+    advance(s, 8);
+    expect(idler.assignment.kind).toBe('idle'); // policies off by default
+    expect(dispatch(s, { type: 'setPolicy', autoResearch: true, autoVacation: true }).ok).toBe(true);
+    tired.burnout = 85;
+    advance(s, 8);
+    expect(idler.assignment.kind).toBe('research');
+    expect(tired.lastVacationDay).toBeDefined();
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

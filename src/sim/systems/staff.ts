@@ -312,6 +312,27 @@ export function vacationBlocked(s: GameState, st: Staff): string | null {
   return null;
 }
 
+/** Burnout level at which the auto-vacation policy sends someone home for two weeks. */
+export const AUTO_VACATION_BURNOUT = 70;
+
+/**
+ * Studio automation (weekly, opt-in policies): idle people join research instead of drawing salary for
+ * nothing, and burnt-out people take two weeks off (cooldown permitting).
+ */
+export function staffAutomationWeekly(s: GameState): void {
+  const pol = s.company.policies;
+  if (!pol.autoResearch && !pol.autoVacation) return;
+  for (const st of Object.values(s.staff)) {
+    if (pol.autoVacation && st.burnout >= AUTO_VACATION_BURNOUT && !vacationBlocked(s, st)) {
+      st.vacationDays = 14;
+      st.lastVacationDay = s.day;
+      st.loyalty = clamp(st.loyalty + 5, 0, 100);
+      continue;
+    }
+    if (pol.autoResearch && st.assignment.kind === 'idle' && !isAway(st)) st.assignment = { kind: 'research' };
+  }
+}
+
 /** Daily update for every staffer. Returns total salary cost is NOT handled here (monthly). */
 export function updateStaffDaily(c: Ctx): void {
   const { s, rng } = c;

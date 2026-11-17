@@ -152,6 +152,22 @@ function Policies() {
         />
         <p className="mt-1 text-xs text-ink3">More and better candidates each month.</p>
       </Section>
+      <Section title="Automation">
+        <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span>
+            <b>Idle staff join research</b>
+            <span className="block text-xs text-ink3">Each week, anyone left idle starts researching instead of drawing salary for nothing. Pull them onto projects any time.</span>
+          </span>
+          <input type="checkbox" checked={!!p.autoResearch} onChange={(e) => act({ type: 'setPolicy', autoResearch: e.target.checked })} className="size-5 accent-[var(--accent)]" />
+        </label>
+        <label className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span>
+            <b>Automatic vacations</b>
+            <span className="block text-xs text-ink3">Anyone whose burnout passes 70 takes two weeks off (if they haven’t had a break in the last four months).</span>
+          </span>
+          <input type="checkbox" checked={!!p.autoVacation} onChange={(e) => act({ type: 'setPolicy', autoVacation: e.target.checked })} className="size-5 accent-[var(--accent)]" />
+        </label>
+      </Section>
       <Section title="Work culture">
         <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
           <span>
