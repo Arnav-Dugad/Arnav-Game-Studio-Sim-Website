@@ -162,7 +162,7 @@ function GameCard({ p }: { p: GameProject }) {
               Beta says <b className="num text-ink">~{p.beta.predicted}</b> ·{' '}
             </>
           )}
-          {!p.beta && p.focusTest && (
+          {!p.beta && p.focusTest && p.focusTest.phase === Math.min(2, p.phase) && (
             <>
               Focus test <b className="num text-ink">~{p.focusTest.predicted}</b>
               {p.focusTest.wantMore && <> · players want more <b className="capitalize text-ink">{p.focusTest.wantMore}</b></>} ·{' '}

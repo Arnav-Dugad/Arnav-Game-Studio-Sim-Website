@@ -1,4 +1,5 @@
 import { ITEM_BY_ID } from '@/data/facilities';
+import { copyFloorCost } from '@/sim/actions';
 import { fmtMoney, money } from '@/sim/util';
 import { tierDef } from '@/sim/systems/office';
 import { Button, Segmented } from '../components/ui';
@@ -69,7 +70,7 @@ export function BuildBar() {
                 title="Duplicate this floor's layout onto the next floor (items that don't fit are skipped)"
                 onClick={() => {
                   const to = (floor + 1) % t.floors;
-                  if (window.confirm(`Copy floor ${floor + 1}'s layout onto floor ${to + 1}? Each item costs its normal price.`)) g.actOrToast({ type: 'copyFloor', from: floor, to });
+                  if (window.confirm(`Copy floor ${floor + 1}'s layout onto floor ${to + 1}? Up to ${fmtMoney(copyFloorCost(s, floor))} (items that don't fit are skipped and not charged).`)) g.actOrToast({ type: 'copyFloor', from: floor, to });
                 }}
               >
                 Copy floor → F{((floor + 1) % t.floors) + 1}

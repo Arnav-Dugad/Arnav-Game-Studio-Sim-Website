@@ -63,6 +63,12 @@ export interface StartGamePayload {
   focus?: [Focus3, Focus3, Focus3];
 }
 
+/** What copying a floor's layout costs (every item at its current price). */
+export function copyFloorCost(s: GameState, from: number): number {
+  if (s.cheats?.freeBuild) return 0;
+  return s.office.items.filter((i) => i.floor === from).reduce((t, i) => t + money(ITEM_BY_ID[i.item].cost, s.day), 0);
+}
+
 /** A focus group costs more for bigger games. */
 export function focusTestCost(s: GameState, size: Size): number {
   return money({ small: 2_500, medium: 6_000, large: 15_000, aaa: 40_000 }[size], s.day);
@@ -927,6 +933,8 @@ function apply(c: Ctx, a: Action): string | null {
       if (!finite(a.from, a.to) || a.from === a.to || a.from < 0 || a.to < 0 || a.from >= t.floors || a.to >= t.floors) return 'Pick two different floors';
       const src = s.office.items.filter((i) => i.floor === a.from);
       if (!src.length) return 'That floor is empty';
+      const total = copyFloorCost(s, a.from);
+      if (s.company.cash < total) return `Copying this floor costs ${fmtMoney(total)}`;
       let placed = 0;
       let skipped = 0;
       for (const it of src) {
@@ -1204,7 +1212,8 @@ function apply(c: Ctx, a: Action): string | null {
     case 'focusTest': {
       const p = s.projects[a.projectId];
       if (!p || p.kind !== 'game') return 'No such game';
-      const phase = Math.min(2, p.phase);
+      if (p.phase > 2) return 'Too late for a focus test';
+      const phase = p.phase;
       if (p.focusTest?.phase === phase) return 'Already focus-tested this phase';
       const cost = focusTestCost(s, p.concept.size);
       if (s.company.cash < cost) return 'Not enough cash';
@@ -1213,7 +1222,9 @@ function apply(c: Ctx, a: Action): string | null {
       // which of this phase's areas is furthest below what the genre wants?
       const g = GENRE_BY_ID[p.concept.genre];
       const areas = PHASE_AREAS[phase]!;
-      const focus = p.focus[phase as 0 | 1 | 2];
+      const raw = p.focus[phase as 0 | 1 | 2];
+      const fsum = raw.reduce((t, v) => t + v, 0) || 1;
+      const focus = raw.map((v) => (v / fsum) * 100);
       const total = areas.reduce((t, ar) => t + (g.ideal[ar] ?? 1), 0);
       let worst: { area: string; gap: number } | null = null;
       areas.forEach((ar, i) => {

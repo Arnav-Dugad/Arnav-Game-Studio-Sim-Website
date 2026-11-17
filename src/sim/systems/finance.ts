@@ -184,6 +184,11 @@ export function valuation(s: GameState): number {
   return Math.max(0, Math.max(earningsValue, revenueValue) + s.company.cash + ipValue(s) - debt);
 }
 
+/** What the founder's stake is worth: before going public, venture investors own part of the studio. */
+export function ownerValue(s: GameState): number {
+  return valuation(s) * (s.finance.stock ? 1 : 1 - (s.company.investorStake ?? 0));
+}
+
 export function ipoEligible(s: GameState): { ok: boolean; why: string } {
   if (s.finance.stock) return { ok: false, why: 'Already public' };
   const need = BALANCE.IPO_MIN_REVENUE * inflation(s.day);
@@ -237,12 +242,14 @@ export function doIPO(s: GameState, sellPct: number): number {
   const val = valuation(s);
   const shares = BALANCE.SHARES_OUTSTANDING;
   const price = Math.max(1, (val * 1.1) / shares);
-  const sold = Math.round(shares * clamp(sellPct, 0.1, 0.49));
-  const raised = sold * price * 0.94; // underwriting fees
+  const stake = s.company.investorStake ?? 0;
+  // venture investors cash out into the IPO first; new shares make up the rest
+  const sold = Math.round(shares * clamp(Math.max(sellPct, stake), 0.1, 0.49));
+  const newShares = Math.max(0, sold - Math.round(shares * stake));
+  const raised = newShares * price * 0.94; // underwriting fees; the investors' shares pay them, not you
   s.finance.stock = {
     shares,
-    // venture investors keep their slice: it comes out of the founder's shares
-    founderShares: Math.max(0, shares - sold - Math.round(shares * (s.company.investorStake ?? 0))),
+    founderShares: shares - sold,
     price,
     history: [price],
     ipoDay: s.day,
@@ -252,6 +259,7 @@ export function doIPO(s: GameState, sellPct: number): number {
     dividendsPaid: 0,
   };
   s.company.publicSince = s.day;
+  s.company.investorStake = 0; // they sold out at the IPO
   s.company.cash += Math.round(raised); // equity raise: not revenue, not taxable
   return raised;
 }

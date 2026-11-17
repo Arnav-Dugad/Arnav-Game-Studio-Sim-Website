@@ -50,7 +50,7 @@ describe('annual shareholder meeting', () => {
 });
 
 describe('venture funding', () => {
-  it('rounds need reputation and a year apart, and investors keep their slice at the IPO', () => {
+  it('rounds need reputation and a year apart, and investors sell into the IPO', () => {
     const s = createGame({ seed: 6, companyName: 'VC', founderName: 'F', startYear: 1990, endless: true, autopause: false, difficulty: 'standard' });
     s.company.cash = 2_000_000;
     expect(dispatch(s, { type: 'raiseFunding' }).ok).toBe(false); // reputation
@@ -64,6 +64,8 @@ describe('venture funding', () => {
     expect(dispatch(s, { type: 'raiseFunding' }).ok).toBe(true);
     doIPO(s, 0.3);
     const st = s.finance.stock!;
-    expect(st.founderShares / st.shares).toBeCloseTo(1 - 0.3 - 0.3, 2);
+    // investors (30%) sell into the IPO first; the founder keeps the rest
+    expect(st.founderShares / st.shares).toBeCloseTo(0.7, 2);
+    expect(s.company.investorStake).toBe(0);
   });
 });

@@ -3,7 +3,7 @@ import { gameRegions } from '../../data/regions';
 import type { Ctx } from '../ctx';
 import type { GameState } from '../types';
 import { money, pushNews } from '../util';
-import { valuation } from './finance';
+import { ownerValue } from './finance';
 
 export interface AchievementDef {
   id: string;
@@ -77,7 +77,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'custom_engine', name: 'Engine Builder', desc: 'Build a custom engine.', icon: 'gear', check: (s) => Object.values(s.engines).some((e) => !e.licensedFrom && e.builtDay > 0) },
   { id: 'engine_license_out', name: 'Middleware Mogul', desc: 'License your engine to another studio.', icon: 'plug', check: (s) => Object.values(s.engines).some((e) => e.licensees > 0) },
   { id: 'go_public', name: 'Ring the Bell', desc: 'Take your company public.', icon: 'bell', check: (s) => !!s.finance.stock },
-  { id: 'valuation_1b', name: 'Unicorn', desc: 'Reach a $1B valuation.', icon: 'unicorn', check: (s) => valuation(s) >= 1_000_000_000 },
+  { id: 'valuation_1b', name: 'Unicorn', desc: 'Reach a $1B valuation.', icon: 'unicorn', check: (s) => ownerValue(s) >= 1_000_000_000 },
   { id: 'acquire', name: 'Shopping Spree', desc: 'Acquire another studio.', icon: 'cart', check: (s) => s.progress.stats.acquisitions >= 1 },
   { id: 'acquire_real', name: 'Industry Titan', desc: 'Acquire a real-world company.', icon: 'castle', check: (s) => Object.values(s.rivals).some((r) => r.ownedByPlayer && !r.procedural) },
   { id: 'goty', name: 'Game of the Year', desc: 'Win Game of the Year.', icon: 'trophy', check: (s) => rels(s).some((r) => r.awards.includes('Game of the Year')) },
@@ -154,7 +154,7 @@ export function nextMilestone(s: GameState) {
 /** Run score for the Hall of Fame. */
 export function runScore(s: GameState): number {
   const st = s.progress.stats;
-  const val = Math.max(st.peakValuation, valuation(s));
+  const val = Math.max(st.peakValuation, ownerValue(s));
   const diff = { relaxed: 0.8, standard: 1, hardcore: 1.3 }[s.settings.difficulty];
   return Math.round(
     (Math.log10(1 + val) * 800 + Math.log10(1 + st.totalRevenue) * 400 + st.bestScore * 20 + st.hits * 150 + Object.keys(s.progress.achievements).length * 120 + Object.values(s.franchises).filter((f) => f.entries.length >= 3).length * 300) * diff,

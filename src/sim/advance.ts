@@ -19,7 +19,7 @@ import { cheatsDaily } from './cheats';
 import { decadeReview } from './systems/decade';
 import { esportsMonthly } from './systems/esports';
 import { publishingMonthly } from './systems/publishing';
-import { financeMonthly, quarterlyEarnings, solvencyCheck, stockWeekly, valuation, yearlyTaxes } from './systems/finance';
+import { financeMonthly, ownerValue, quarterlyEarnings, solvencyCheck, stockWeekly, yearlyTaxes } from './systems/finance';
 import { processHistory, updateFuturePlatforms, updateMarketMonthly } from './systems/market';
 import { refreshOffers } from './systems/offers';
 import { updateLiveMonthly, updateSalesWeekly, yearlyAwards } from './systems/release';
@@ -105,7 +105,7 @@ export function tick(c: Ctx): void {
     if (d.month % 3 === 1) objectivesQuarterly(c);
     if (d.month === 5 && s.finance.stock && s.day - s.finance.stock.ipoDay > 300) fireEvent(c, 'agm');
     s.progress.stats.peakCash = Math.max(s.progress.stats.peakCash, s.company.cash);
-    const v = valuation(s);
+    const v = ownerValue(s);
     if (v > s.progress.stats.peakValuation) s.progress.stats.peakValuation = v;
     // reputation slowly decays toward a floor without new releases (attention economy)
     const lastRel = s.releaseOrder.length ? s.releases[s.releaseOrder[s.releaseOrder.length - 1]!]!.day : -1e9;

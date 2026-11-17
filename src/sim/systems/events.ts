@@ -10,7 +10,7 @@ import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
 import { addRep, aOrAn, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from '../util';
-import { valuation } from './finance';
+import { ownerValue } from './finance';
 import { candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, removeStaff } from './staff';
 import { assignDesks, freeDesks } from './office';
 
@@ -817,7 +817,7 @@ export const EVENT_DEFS: EventDef[] = [
       const big = Object.values(s.rivals).filter((r) => r.alive && !r.procedural && r.staff > 200);
       if (!big.length) return null;
       const r = rng.pick(big);
-      const price = Math.round(valuation(s) * rng.range(1.2, 1.6));
+      const price = Math.round(ownerValue(s) * rng.range(1.2, 1.6)); // investors take their share of a buyout
       if (price <= 0) return null;
       return {
         title: `${r.name} wants to buy you`,

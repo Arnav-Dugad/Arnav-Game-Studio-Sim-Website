@@ -1,6 +1,7 @@
 /**
  * Headless bot players. They interact ONLY through dispatch(), exactly like the UI.
  */
+import { BRANCH } from '../../src/data/regions';
 import { LOC_YEAR, REGIONS, regionMix } from '../../src/data/regions';
 import { BALANCE } from '../../src/data/balance';
 import { GENRES, GENRE_BY_ID } from '../../src/data/genres';
@@ -331,6 +332,17 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
   if (o.aggressive && s.company.cash < monthlyBurn(s) * 2 && creditLimit(s) > money(20_000, s.day)) {
     dispatch(s, { type: 'takeLoan', amount: Math.min(creditLimit(s), monthlyBurn(s) * 6), months: 48 });
   }
+  // planners use the studio-life systems a sensible player would
+  if (!o.aggressive && o.mode !== 'random') {
+    if (!(s.company.values ?? []).length && Object.keys(s.staff).length >= 6) dispatch(s, { type: 'setValues', values: o.mode === 'trend' ? ['innovation', 'players'] : ['craft', 'balance'] });
+    if (s.company.cash > monthlyBurn(s) * 12) dispatch(s, { type: 'teamRetreat' });
+    // pair juniors with seniors in the same craft
+    const seniors = Object.values(s.staff).filter((x) => (x.level === 'senior' || x.level === 'lead') && !x.mentorId);
+    for (const j of Object.values(s.staff).filter((x) => (x.level === 'junior' || x.level === 'mid') && !x.mentorId).slice(0, 3)) {
+      const m = seniors.find((x) => x.role === j.role);
+      if (m) dispatch(s, { type: 'setMentor', staffId: j.id, mentorId: m.id });
+    }
+  }
   if (o.tycoon) {
     if (ipoEligible(s).ok) dispatch(s, { type: 'ipo', pct: 0.3 });
     const t = s.offers.acquisitions[0];
@@ -343,6 +355,7 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
     const old = Object.values(s.releases).find((r) => r.score >= 70 && !canRunSale(s, r));
     if (old && rng.chance(0.2)) dispatch(s, { type: 'runSale', releaseId: old.id, discount: rng.pick([0.25, 0.5, 0.75] as const) });
     if (!showcaseBlocked(s) && s.company.cash > showcaseCost(s) * 20) dispatch(s, { type: 'hostShowcase' });
+    for (const r of ['eu', 'jp', 'row'] as const) if (s.company.cash > money(BRANCH.open, s.day) * 20) dispatch(s, { type: 'openBranch', region: r });
     const indie = signableIndies(s)[0];
     if (indie && !labelBlocked(s) && s.company.cash > dealAdvance(s, 'medium') * 15) dispatch(s, { type: 'signIndie', rivalId: indie.id, tier: 'medium' });
     if (!canLaunchSub(s) && s.company.cash > subLaunchCost(s) * 20) dispatch(s, { type: 'launchSubscription', name: 'Bot Pass', price: subRefPrice(s) });

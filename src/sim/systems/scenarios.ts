@@ -10,7 +10,7 @@ import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState, Release, Size } from '../types';
 import { fmtMoney, fmtUnits, money, pushNews } from '../util';
-import { valuation } from './finance';
+import { ownerValue } from './finance';
 import { checkAchievements } from './achievements';
 
 export type GoalDef =
@@ -160,7 +160,7 @@ export function goalProgress(s: GameState, g: GoalDef): { p: number; text: strin
       return { p: net / g.amount, text: `Have ${fmtMoney(g.amount)} in the bank (net of loans)`, now: fmtMoney(net) };
     }
     case 'valuation': {
-      const v = valuation(s);
+      const v = ownerValue(s);
       return { p: v / g.amount, text: `Reach a ${fmtMoney(g.amount)} valuation`, now: fmtMoney(v) };
     }
     case 'score': {

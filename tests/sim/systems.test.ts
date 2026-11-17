@@ -1372,6 +1372,7 @@ describe('classic re-releases', () => {
     const r = s.releases[s.releaseOrder[0]!]!;
     r.score = 82;
     s.company.cash = 10_000_000;
+    s.research.done.push('biz_self_publishing');
     s.cheats = { noEvents: true, noBankruptcy: true };
     const plat = () => availablePlatforms(s).find((p) => !r.concept.platforms.includes(p.id))!.id;
     expect(dispatch(s, { type: 'rerelease', releaseId: r.id, platform: plat() }).ok).toBe(false); // too new

@@ -594,14 +594,16 @@ export function competition(s: GameState, rel: Release): number {
   const now = s.day;
   // Only meaningful during the launch window (first ~10 weeks)
   if (rel.week > 10 && rel.platforms.every((p) => rel.week - (p.startWeek ?? 0) > 10)) return 1;
+  // a re-released classic competes with what's out now, not with its original launch window
+  const launch = rel.rereleaseDay ?? rel.day;
   let comp = 1;
   for (const g of s.rivalGames) {
-    if (Math.abs(g.day - rel.day) > w || g.genre !== rel.concept.genre) continue;
+    if (Math.abs(g.day - launch) > w || g.genre !== rel.concept.genre) continue;
     if (!g.platforms.some((p) => rel.concept.platforms.includes(p))) continue;
     comp += BALANCE.COMPETITION_WEIGHT * BALANCE.DIFFICULTY[s.settings.difficulty].competition * Math.pow(g.score / 100, 2) * (g.franchise ? 1.6 : 1);
   }
   for (const o of Object.values(s.releases)) {
-    if (o.id === rel.id || Math.abs(o.day - rel.day) > w || o.concept.genre !== rel.concept.genre) continue;
+    if (o.id === rel.id || Math.abs(o.day - launch) > w || o.concept.genre !== rel.concept.genre) continue;
     comp += 0.3 * Math.pow(o.score / 100, 2);
   }
   void now;
@@ -877,6 +879,8 @@ export function rereleaseBlocked(s: GameState, rel: Release): string | null {
   if (rel.score < 70) return 'Only well-loved games (70+) are worth re-releasing';
   if (rel.rereleased) return 'Already re-released';
   if (rel.concept.expansionOf) return 'Expansions come with their base game';
+  if (rel.concept.monetization !== 'premium' && rel.concept.monetization !== 'shareware') return 'Only boxed and shareware classics can be re-released';
+  if (!s.research.done.includes('biz_self_publishing')) return 'Research Self-Publishing first';
   return null;
 }
 
@@ -889,6 +893,7 @@ export function applyRerelease(s: GameState, rel: Release, platform: string): vo
   applyPort(s, rel, platform);
   const ps = rel.platforms[rel.platforms.length - 1];
   if (ps) ps.potential *= 0.4;
+  rel.rereleaseDay = s.day;
   rel.rereleased = true;
 }
 

@@ -273,7 +273,8 @@ function Stock() {
                 <b className="num w-10">{pct}%</b>
               </label>
               <p className="text-xs">
-                Raises about <b>{fmtMoney(valuation(s) * 1.1 * (pct / 100) * 0.94)}</b>.
+                Raises about <b>{fmtMoney(valuation(s) * 1.1 * Math.max(0, Math.max(pct / 100, s.company.investorStake ?? 0) - (s.company.investorStake ?? 0)) * 0.94)}</b> · you keep <b>{Math.round((1 - Math.min(0.49, Math.max(pct / 100, s.company.investorStake ?? 0))) * 100)}%</b>
+                {(s.company.investorStake ?? 0) > 0 && <span className="text-ink3"> (your investors sell their {Math.round((s.company.investorStake ?? 0) * 100)}% first)</span>}
               </p>
               <Button
                 variant="gold"
