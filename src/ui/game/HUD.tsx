@@ -103,7 +103,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom }: { saveStatus: SaveSt
                 {[
                   { icon: 'save' as const, label: 'Save now', run: onSave },
                   { icon: 'settings' as const, label: 'Settings', run: () => openPanel('settings') },
-                  { icon: 'sparkle' as const, label: 'Cheats', run: () => openPanel('cheats') },
+                  { icon: 'sparkle' as const, label: 'Cheats ( ` )', run: () => openPanel('cheats') },
                   { icon: 'book' as const, label: 'How to play', run: () => pushModal({ kind: 'guide' }) },
                   { icon: 'keyboard' as const, label: 'Shortcuts (?)', run: () => pushModal({ kind: 'shortcuts' }) },
                   { icon: 'logout' as const, label: 'Save & exit', run: onExit },

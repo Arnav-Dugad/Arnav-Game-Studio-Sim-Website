@@ -382,7 +382,8 @@ export class OfficeRenderer {
       this.staticKey = sKey;
       this.drawStatic(s, floor);
     }
-    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}`;
+    this.trophies = Math.min(8, s.progress.stats.awardsWon ?? 0);
+    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}`;
     if (iKey !== this.itemsKey) {
       this.itemsKey = iKey;
       this.syncItems(s, floor, era);
@@ -456,18 +457,20 @@ export class OfficeRenderer {
 
   // ── Items ────────────────────────────────────────────────────────────────
 
+  private trophies = 0;
+
   private texFor(id: ItemId, rot: 0 | 1, era: number): { tex: Texture; ox: number; oy: number } {
     const def = ITEM_BY_ID[id];
     const w = rot ? def.h : def.w;
     const h = rot ? def.w : def.h;
-    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}`;
+    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}`;
     const lift = itemLift(id) + 12;
     let tex = this.textures.get(key);
     if (!tex) {
       const g = new Graphics();
       // pad region so generateTexture includes lift and overhangs
       g.rect(-6, -lift, w * T + 12, h * T + lift + 10).fill({ color: 0x000000, alpha: 0.001 });
-      drawItem(g, id, w, h, { era, P: this.P });
+      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies });
       tex = this.app.renderer.generateTexture({ target: g, resolution: 2, antialias: true });
       g.destroy();
       this.textures.set(key, tex);

@@ -21,7 +21,7 @@ import { fromDay } from '@/sim/calendar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { navigate } from '../router';
 
-const KEYS: Record<string, PanelId> = { n: 'develop', h: 'staff', b: 'office', r: 'research', m: 'market', f: 'finance', c: 'company', j: 'news', g: 'goals', l: 'releases' };
+const KEYS: Record<string, PanelId> = { n: 'develop', h: 'staff', b: 'office', r: 'research', m: 'market', f: 'finance', c: 'company', j: 'news', g: 'goals', l: 'releases', '`': 'cheats' };
 
 export function GameScreen({ slotId }: { slotId: SlotId }) {
   const s = useGame((g) => g.s);

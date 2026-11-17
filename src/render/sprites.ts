@@ -76,6 +76,8 @@ function plant(g: Graphics, P: ScenePalette, cx: number, base: number, s: number
 export interface DrawOpts {
   era: number;
   P: ScenePalette;
+  /** Awards to show on a trophy shelf (capped at 8). */
+  trophies?: number;
 }
 
 /**
@@ -243,16 +245,30 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       if (P.night) g.circle(W / 2, 0, 30).fill({ color: P.accentDesign, alpha: 0.12 });
       g.rect(W / 2 - 1, 12, 2, H - 16).fill(P.metalDark);
       break;
-    case 'trophy_shelf':
+    case 'trophy_shelf': {
       shadow(g, 3, 4, W - 6, H - 4);
       box(g, { x: 4, y: 6, w: W - 8, h: H - 10, height: 22, top: P.wood, front: P.woodDark, r: 3 });
-      for (let i = 0; i < 3; i++) {
-        const cx = 14 + i * ((W - 28) / 2);
-        g.roundRect(cx - 5, -14, 10, 9, 3).fill(P.accentBiz);
-        g.rect(cx - 1.5, -5, 3, 5).fill(shade(P.accentBiz, 0.8));
-        g.rect(cx - 4, 0, 8, 2.5).fill(shade(P.accentBiz, 0.7));
+      // Your real awards: up to four on the shelf, more on a second tier behind.
+      const n = Math.max(0, Math.min(8, Math.floor(o.trophies ?? 0)));
+      if (n === 0) {
+        g.roundRect(W / 2 - 9, -6, 18, 6, 1.5).fill(shade(P.woodDark, 0.85)); // an empty plaque, waiting
+        break;
       }
+      if (n > 4) box(g, { x: 8, y: -2, w: W - 16, h: 6, height: 10, top: shade(P.wood, 1.05), front: P.woodDark, r: 2 });
+      const row = (count: number, y: number, scale: number) => {
+        for (let i = 0; i < count; i++) {
+          const cx = count === 1 ? W / 2 : 12 + i * ((W - 24) / (count - 1));
+          const gold = i % 3 !== 2 ? P.accentBiz : 0xc9ced6; // mostly gold, the odd silver
+          g.roundRect(cx - 5 * scale, y - 14 * scale, 10 * scale, 9 * scale, 3 * scale).fill(gold);
+          g.rect(cx - 1.5 * scale, y - 5 * scale, 3 * scale, 5 * scale).fill(shade(gold, 0.8));
+          g.rect(cx - 4 * scale, y, 8 * scale, 2.5 * scale).fill(shade(gold, 0.7));
+        }
+      };
+      if (n > 4) row(n - 4, -12, 0.8);
+      row(Math.min(4, n), 0, 1);
+      if (P.night) g.circle(W / 2, -8, 22).fill({ color: P.accentBiz, alpha: 0.08 });
       break;
+    }
     case 'whiteboard':
       shadow(g, 4, 4, W - 8, H - 4, 0.12);
       g.rect(8, 4, 2, H - 8).fill(P.metalDark);

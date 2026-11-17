@@ -722,6 +722,7 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
     ['C', 'Company'],
     ['J', 'News'],
     ['G', 'Goals'],
+    ['` (backtick)', 'Cheats'],
     ['W A S D / arrows', 'Pan the office'],
     ['+ / − / 0', 'Zoom in / out / fit'],
     ['Shift + P', 'Save now'],
