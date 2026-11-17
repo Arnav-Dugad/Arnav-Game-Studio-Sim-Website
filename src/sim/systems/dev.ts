@@ -2,6 +2,7 @@
  * Development pipeline: daily progress for game / contract / engine projects, bug creation and QA,
  * phase gates, and the quality model (with full breakdown).
  */
+import { teamChemistry } from './relations';
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
 import { LOC_WORK } from '../../data/regions';
@@ -78,6 +79,11 @@ export function teamSynergy(s: GameState, team: Staff[]): Breakdown {
   if (tp && n > 1) bd.mul('Team players', 1 + Math.min(0.1, tp * 0.025));
   const hot = team.filter((t) => hasTrait(t, 'hothead')).length;
   if (hot && n > 1) bd.mul('Hotheads', 1 - Math.min(0.08, hot * 0.03));
+  if (n > 1) {
+    const chem = teamChemistry(s, team);
+    if (Math.abs(chem.avg) >= 1) bd.mul(chem.avg >= 0 ? 'Team chemistry' : 'Bad blood', 1 + clamp(chem.avg / 100, -0.6, 1) * 0.06);
+    for (const [a, b] of chem.feuds.slice(0, 2)) bd.mul(`Feud: ${a.name.split(' ')[0]} vs ${b.name.split(' ')[0]}`, 0.96);
+  }
   // seated near each other
   if (n > 1) {
     const desks = team.map((t) => (t.deskId ? L.desks[t.deskId] : undefined)).filter(Boolean);

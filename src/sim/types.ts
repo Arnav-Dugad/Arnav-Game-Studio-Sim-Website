@@ -700,6 +700,8 @@ export interface Settings {
 export type GameStatus = 'running' | 'bankrupt' | 'acquired' | 'retired';
 
 export interface GameState {
+  /** Relationships between colleagues (pair key 'a|b' → −100..100; systems/relations.ts). */
+  relations?: Record<string, number>;
   schemaVersion: number;
   seed: number;
   rng: RngState;

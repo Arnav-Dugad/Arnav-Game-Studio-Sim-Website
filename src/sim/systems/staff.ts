@@ -1,6 +1,7 @@
 /**
  * Staff: generation, salary, productivity, morale, energy, burnout, loyalty, growth, quitting.
  */
+import { relationMorale } from './relations';
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
 import { BALANCE } from '../../data/balance';
@@ -302,6 +303,7 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
   if (hasTrait(st, 'ambitious') && st.level !== 'junior' && st.salary < market) bd.add('Wants a raise', -6);
   if (st.mood && st.mood.until > s.day) bd.add(st.mood.label, st.mood.v);
   if (hasValue(s, 'balance')) bd.add('Culture: Work-Life Balance', CULTURE_FX.balanceMorale);
+  for (const r of relationMorale(s, st)) bd.add(r.label, r.v);
   if (hasValue(s, 'profit')) bd.add('Culture: Profit Driven', CULTURE_FX.profitMorale);
   bd.clamp(0, 100);
   return bd.done();

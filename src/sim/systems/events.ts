@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { pairKey, worstFeud } from './relations';
 import { COMPANY_BY_ID } from '../../data/companies';
 import { clamp } from '../breakdown';
 import { fromDay, toDay } from '../calendar';
@@ -52,6 +53,55 @@ function staffById(s: GameState, id: string | number | undefined): Staff | undef
 }
 
 export const EVENT_DEFS: EventDef[] = [
+  {
+    // A feud between colleagues (raised when a relationship sours past the feud line; never rolled at random).
+    id: 'feud',
+    art: 'conflict',
+    cooldown: 60,
+    weight: () => 0,
+    make: ({ s }) => {
+      const f = worstFeud(s);
+      if (!f) return null;
+      const cost = money(2_000, s.day);
+      const together = f.a.assignment.kind === 'project' && f.b.assignment.kind === 'project' && f.a.assignment.id === f.b.assignment.id;
+      return {
+        title: 'A feud in the team',
+        body: `${f.a.name} and ${f.b.name} can’t stand each other any more. ${together ? 'They’re on the same project, and the whole team feels it.' : 'It’s poisoning the mood.'}`,
+        options: [
+          { id: 'mediate', label: `Bring in a mediator (${fmtMoney(cost)})`, preview: 'They make peace: the relationship recovers a lot', disabled: s.company.cash < cost },
+          { id: 'split', label: `Split them up (${f.b.name.split(' ')[0]} leaves the project)`, preview: together ? 'The team calms down; the project loses a person' : 'Not on the same project', disabled: !together },
+          { id: 'ignore', label: 'Let them work it out', preview: 'Both morale −8; it may get worse — or one may quit' },
+        ],
+        ctx: { a: f.a.id, b: f.b.id, cost },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      const a = staffById(s, e.ctx.a);
+      const b = staffById(s, e.ctx.b);
+      if (!a || !b) return;
+      const k = pairKey(a.id, b.id);
+      const rel = (s.relations ??= {});
+      if (opt === 'mediate') {
+        spend(s, 'other_expense', Number(e.ctx.cost));
+        rel[k] = Math.max(rel[k] ?? 0, 0) + 10;
+        pushNews(s, { category: 'staff', headline: `${a.name} and ${b.name} make peace`, tone: 'good' });
+      } else if (opt === 'split' && b.assignment.kind === 'project') {
+        const p = s.projects[b.assignment.id];
+        if (p) p.team = p.team.filter((x) => x !== b.id);
+        b.assignment = { kind: 'idle' };
+        rel[k] = (rel[k] ?? 0) + 15;
+      } else {
+        for (const x of [a, b]) x.morale = clamp(x.morale - 8, 0, 100);
+        rel[k] = clamp((rel[k] ?? 0) - 10, -100, 100);
+        const quitter = a.traits.includes('hothead') ? a : b;
+        if (quitter.role !== 'founder' && rng.chance(0.12)) {
+          removeStaff(s, quitter.id);
+          s.progress.stats.staffLost += 1;
+          pushNews(s, { category: 'staff', headline: `${quitter.name} quits over a feud`, tone: 'bad' });
+        }
+      }
+    },
+  },
   {
     // Annual shareholder meeting (scheduled each May for public studios; never rolled at random).
     id: 'agm',

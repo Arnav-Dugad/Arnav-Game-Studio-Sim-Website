@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { BEST_FRIENDS, FEUD, relationsOf } from '@/sim/systems/relations';
 import { BuzzList, BuzzMeter } from '../components/BuzzList';
 import { releaseBuzz } from './buzz';
 import { REGIONS, REGION_BY_ID } from '@/data/regions';
@@ -502,6 +503,31 @@ function ReleaseBuzz({ releaseId }: { releaseId: string }) {
   );
 }
 
+function Relationships({ staffId }: { staffId: string }) {
+  const s = useGame((g) => g.s)!;
+  const list = relationsOf(s, staffId).filter((r) => Math.abs(r.v) >= 15).slice(0, 5);
+  if (!list.length) return null;
+  const label = (v: number) => (v >= BEST_FRIENDS ? 'Best friends' : v >= 25 ? 'Friends' : v > -15 ? 'Colleagues' : v > FEUD ? 'Tension' : 'Feud');
+  return (
+    <Section title="Relationships">
+      <ul className="space-y-1 text-xs">
+        {list.map(({ other, v }) => (
+          <li key={other.id} className="flex items-center gap-2">
+            <button type="button" className="w-28 shrink-0 truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().pushModal({ kind: 'staff', staffId: other.id })}>
+              {other.name}
+            </button>
+            <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-bg2">
+              <span className={cx('absolute top-0 h-full rounded-full', v >= 0 ? 'left-1/2 bg-good' : 'right-1/2 bg-bad')} style={{ width: `${Math.abs(v) / 2}%` }} />
+            </span>
+            <span className={cx('w-20 shrink-0 text-right', v >= 25 ? 'text-good' : v <= -15 ? 'text-bad' : 'text-ink3')}>{label(v)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[11px] text-ink3">People grow close working on the same project. Best friends on a team lift morale and chemistry; a feud drags both down.</p>
+    </Section>
+  );
+}
+
 function GateModal({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const s = useGame((g) => g.s)!;
   const act = useGame((g) => g.act);
@@ -682,6 +708,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
             </Section>
           )}
           {(st.dreamsMet ?? 0) > 0 && <div className="mb-2 text-[11px] text-gold">★ {st.dreamsMet} ambition{st.dreamsMet === 1 ? '' : 's'} fulfilled here</div>}
+          <Relationships staffId={staffId} />
           {st.role !== 'founder' && (
             <Section title="Pay">
               <div className="text-sm">

@@ -1126,7 +1126,9 @@ export class OfficeRenderer {
         const free = bst.assignment.kind === 'idle' || bst.activity === 'break' || bst.activity === 'chat' || b.mode === 'wander' || b.mode === 'station' || b.mode === 'fun';
         if (!free || b.mode === 'walk' || b.mode === 'meeting') continue;
       }
-      const friends = this.affinity.get(a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`) ?? 0;
+      const real = s.relations?.[a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`] ?? 0;
+      if (real <= -25) continue; // they avoid each other
+      const friends = Math.max(this.affinity.get(a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`) ?? 0, real / 15);
       const score = (d * (0.6 + Math.random() * 0.8)) / (1 + Math.min(4, friends) * 0.6);
       if (!best || score < best.d) best = { b, bst, d: score };
     }
