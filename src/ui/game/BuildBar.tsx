@@ -19,6 +19,9 @@ export function BuildBar() {
   const sel = build?.selected ? s.office.items.find((i) => i.id === build.selected) : undefined;
   const floors = t.floors > 1;
   if (!build && !floors) return null;
+  const deskFloor = new Map(s.office.items.map((it) => [it.id, it.floor]));
+  const perFloor = Array.from({ length: t.floors }, () => 0);
+  for (const st of Object.values(s.staff)) perFloor[st.deskId ? (deskFloor.get(st.deskId) ?? 0) : 0]! += 1;
   return (
     <div className={`pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center px-2 sm:bottom-4 ${panelOpen ? 'lg:pl-[600px]' : ''}`}>
       <div className="glass pointer-events-auto flex max-w-full flex-wrap items-center gap-2 rounded-2xl px-3 py-2">
@@ -27,7 +30,7 @@ export function BuildBar() {
             ariaLabel="Floor"
             value={floor}
             onChange={(f) => g.setFloor(f)}
-            options={Array.from({ length: t.floors }, (_, i) => ({ value: i, label: `F${i + 1}` }))}
+            options={Array.from({ length: t.floors }, (_, i) => ({ value: i, label: perFloor[i] ? `F${i + 1} · ${perFloor[i]}` : `F${i + 1}` }))}
           />
         )}
         {build && (
