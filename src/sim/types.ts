@@ -413,6 +413,8 @@ export interface Release {
   earlyAccess?: { weeks: number; units: number; net: number };
   /** Crowdfunded: what backers pledged, and how many days late it shipped against the promise (0 = on time). */
   crowdfund?: { raised: number; backers: number; late: number };
+  /** Inducted into the Golden Pixel Hall of Classics (the year). */
+  classic?: number;
   /** Re-released on a modern storefront (once), and when. */
   rereleased?: boolean;
   rereleaseDay?: number;
@@ -783,6 +785,7 @@ export interface LifetimeStats {
   fanMail?: number;
   talks?: number;
   mediaHits?: number;
+  classics?: number;
   ovations?: number;
   /** Games that topped the weekly chart. */
   numberOnes?: number;

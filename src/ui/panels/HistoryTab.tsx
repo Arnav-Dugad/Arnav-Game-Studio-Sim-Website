@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { ACHIEVEMENTS } from '@/sim/systems/achievements';
-import { formatDate, fromDay } from '@/sim/calendar';
+import { formatDate, fromDay, toDay } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import type { GameState } from '@/sim/types';
 import { Button, Empty, cx } from '../components/ui';
@@ -48,6 +48,7 @@ export function studioHistory(s: GameState): Entry[] {
   }
   for (const a of s.alumni ?? []) out.push({ day: a.day, icon: 'heart', text: `${a.name} retires`, sub: `${a.years} years at the studio · ${a.games} game${a.games === 1 ? '' : 's'} shipped${a.legend ? ' · a legend' : ''}`, tone: 'good' });
   if (s.subscription) out.push({ day: s.subscription.launchedDay, icon: 'people', text: `${s.subscription.name} launches`, sub: `Peak ${fmtUnits(s.subscription.peak)} subscribers`, tone: 'good' });
+  for (const r of Object.values(s.releases)) if (r.classic) out.push({ day: toDay(r.classic), icon: 'medal', text: `${r.name} enters the Hall of Classics`, sub: `Released ${fromDay(r.day).year} · scored ${Math.round(r.score)}`, tone: 'gold', releaseId: r.id });
   if (s.finance.stock) out.push({ day: s.finance.stock.ipoDay, icon: 'chart', text: `${s.company.name} goes public`, tone: 'gold' });
   return out.sort((a, b) => b.day - a.day);
 }

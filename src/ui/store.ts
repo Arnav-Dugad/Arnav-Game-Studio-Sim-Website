@@ -285,6 +285,7 @@ export function handleEvents(events: SimEvent[]): void {
         break;
       case 'toast':
         g.toast({ text: e.text, tone: e.tone });
+        if (e.text.startsWith('📬')) sound.play('mail');
         break;
       default:
         break;

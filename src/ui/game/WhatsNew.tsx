@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18v';
+export const WHATS_NEW_VERSION = '2026-11-18w';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'medal', title: 'Hall of Classics', body: 'Ten years on, the best games of all time are inducted into the Golden Pixel Hall of Classics — front-page news, reputation, fans for the series and a new generation discovering it. Will yours make it? (Plus a little chime when fan mail arrives.)' },
   { icon: 'camera', title: 'Studio card', body: 'Company → History → Studio card: a shareable image of your run — your studio, the numbers, your three best games fanned out and the founder. Save it as a PNG and show it off.' },
   { icon: 'sparkle', title: 'Media & licensing', body: 'Company → IP → Licensing: turn your series into comics, board games, toy lines, cartoons, TV shows, films and theme-park rides. Take the money and run, or keep creative control for half the fee and a much better shot at a hit. Hits grow the fan base and send viewers back to your games; flops embarrass the series.' },
   { icon: 'megaphone', title: 'Conference talks', body: 'From 1988 the studio gets one speaking slot a year at the Developers Summit (open a senior’s or lead’s card). They talk about a game they made — or give an honest post-mortem of a flop. A great talk builds reputation and brings better applicants for three months… and puts your star in front of rival recruiters.' },

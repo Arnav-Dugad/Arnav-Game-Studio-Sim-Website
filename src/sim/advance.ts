@@ -1,6 +1,7 @@
 /**
  * The fixed-step simulation loop: 1 tick = 1 day. Subsystems run at their own cadence.
  */
+import { hallOfClassics } from './systems/classics';
 import { mediaMonthly } from './systems/media';
 import { takeYearbookPhoto } from './systems/yearbook';
 import { fanMailMonthly } from './systems/fanMail';
@@ -81,6 +82,7 @@ export function tick(c: Ctx): void {
       yearlyTaxes(c);
       yearlyAwards(c, d.year - 1); // the ceremony covers every release of last year, December included
       takeYearbookPhoto(s, d.year - 1);
+      hallOfClassics(c, d.year);
       if (d.year % 10 === 0) decadeReview(c, d.year - 10);
       updateFuturePlatforms(c);
       // studio anniversaries every five years

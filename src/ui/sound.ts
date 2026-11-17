@@ -26,7 +26,8 @@ export type SoundName =
   | 'review'
   | 'cash'
   | 'place'
-  | 'sell';
+  | 'sell'
+  | 'mail';
 
 interface Prefs {
   volume: number;
@@ -290,6 +291,13 @@ function render(name: SoundName, c: AudioContext, out: AudioNode): void {
     case 'error':
       tone(c, out, t, { type: 'square', freq: 196, dur: 0.09, gain: 0.045, lp: 900 });
       tone(c, out, t, { type: 'square', freq: 185, at: 0.12, dur: 0.11, gain: 0.045, lp: 900 });
+      break;
+
+    case 'mail':
+      // an envelope opening, then a little two-note chime
+      noise(c, out, t, { dur: 0.16, gain: 0.05, filter: 'bandpass', freq: 3200, to: 5200, q: 1.2, attack: 0.02 });
+      bell(c, out, t, 987.77, 0.12, 0.35, 0.06);
+      bell(c, out, t, 1318.5, 0.24, 0.45, 0.055);
       break;
 
     case 'notify':
