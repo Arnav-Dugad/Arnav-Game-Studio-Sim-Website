@@ -6,7 +6,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Look } from './sprites';
 
-export type Prop = 'none' | 'cup' | 'phone' | 'book' | 'paddle' | 'box' | 'pizza' | 'briefcase' | 'notepad' | 'guitar' | 'mic';
+export type Prop = 'none' | 'cup' | 'phone' | 'book' | 'paddle' | 'box' | 'pizza' | 'briefcase' | 'notepad' | 'guitar' | 'mic' | 'camera';
 
 export interface Rig {
   root: Container;
@@ -153,6 +153,13 @@ function setProp(r: Rig, kind: Prop): void {
   } else if (kind === 'notepad') {
     g.roundRect(-2.8, -2, 5.6, 7, 0.6).fill(0xfaf6ee);
     for (let y = 0; y < 3; y++) g.rect(-1.8, -0.4 + y * 1.6, 3.6, 0.4).fill(0x9ab0c8);
+  } else if (kind === 'camera') {
+    // a shoulder-mounted film camera: body, lens hood, viewfinder and the red tally light
+    g.roundRect(-7, -5, 13, 7.5, 1.6).fill(0x2a2d34);
+    g.roundRect(5, -4, 5, 5.5, 1).fill(0x1b1d22);
+    g.circle(10, -1.3, 2).fill(0x5d7fa3);
+    g.roundRect(-5, -8.2, 6, 3.4, 1).fill(0x3a3f4a);
+    g.circle(3.5, -3.4, 0.9).fill(0xe0473e);
   } else if (kind === 'paddle') {
     g.circle(0, 3.6, 2.8).fill(0xd1495b);
     g.rect(-0.6, 0, 1.2, 2).fill(0x8a5a3b);
@@ -296,6 +303,9 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
     if (i.carry === 'briefcase') {
       rr = walking ? Math.sin(t * 12) * 0.25 : 0.05;
       l = walking ? Math.sin(t * 12) * 0.5 : 0.08;
+    } else if (i.carry === 'camera') {
+      rr = -2.25; // up on the shoulder
+      l = walking ? Math.sin(t * 12) * 0.4 : -0.35;
     } else if (i.carry === 'notepad') {
       rr = 0.95;
       l = i.speaking ? -0.6 - Math.abs(Math.sin(t * 9)) * 0.3 : 0.1;
@@ -378,7 +388,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   r.armR.rotation = rr;
   setProp(r, prop);
   // keep held things roughly upright (a cup tips a little when sipping)
-  r.prop.rotation = prop === 'paddle' || prop === 'briefcase' ? -rr : prop === 'guitar' ? -rr - 0.9 : -rr * 0.85;
+  r.prop.rotation = prop === 'paddle' || prop === 'briefcase' || prop === 'camera' ? -rr : prop === 'guitar' ? -rr - 0.9 : -rr * 0.85;
 
   // whole-body: breathing, leaning, nodding while listening, sulking droop, desk head-turns
   const breathe = i.reducedMotion ? 0 : Math.sin(t * 2.4 + ph) * 0.018;

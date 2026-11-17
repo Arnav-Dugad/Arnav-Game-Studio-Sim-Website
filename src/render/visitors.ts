@@ -10,7 +10,7 @@ import { animate, createRig, newAnim, setHat, type Anim, type Prop, type Rig } f
 import type { ScenePalette } from './palette';
 import { T, drawPerson, lookFor, type Look } from './sprites';
 
-export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver' | 'headhunter' | 'guide' | 'kid' | 'fan';
+export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver' | 'headhunter' | 'guide' | 'kid' | 'fan' | 'filmcrew';
 
 export interface VisitorPerson {
   id: string;
@@ -51,8 +51,8 @@ interface Visitor {
   carry: Prop;
 }
 
-const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888, headhunter: 0x1f2328, guide: 0x2eb5a8, kid: 0xf2c450, fan: 0xd1495b };
-const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box', headhunter: 'briefcase', guide: 'notepad', kid: 'none', fan: 'none' };
+const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888, headhunter: 0x1f2328, guide: 0x2eb5a8, kid: 0xf2c450, fan: 0xd1495b, filmcrew: 0x4a4f3a };
+const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box', headhunter: 'briefcase', guide: 'notepad', kid: 'none', fan: 'none', filmcrew: 'camera' };
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
 const first = (n: string) => n.split(' ')[0] ?? n;
 
@@ -100,6 +100,7 @@ export class VisitorSystem {
     const legR = new Graphics().roundRect(1, -8, 4, 8, 2).fill(suit ? 0x22262e : 0x3a3f4a);
     const rig = createRig(fig, look);
     if (kind === 'courier' || kind === 'pizza') setHat(rig, 'cap', kind === 'pizza' ? 0xf2f2f2 : 0x5a3b26);
+    if (kind === 'filmcrew') setHat(rig, 'cap', 0x2a2d34);
     c.addChild(legL, legR, rig.root);
     this.layer.addChild(c);
     const ent = entrance(s);
@@ -136,6 +137,21 @@ export class VisitorSystem {
     if (hyped && hyped.kind === 'game') {
       const team = people.filter((p) => p.project === hyped.id);
       if (team.length) opts.push({ w: 2, go: () => this.spawn(s, floor, 'journalist', pick(team), [pick([`Can I get a quote on ${hyped.concept.name.slice(0, 16)}?`, 'Exclusive preview?', 'Any release date?']), pick(['It’s going to be huge!', 'No comment! 😄', 'You’ll love it.', 'Soon™'])]) });
+    }
+    // a documentary crew filming the team behind the game
+    const filmed = projects.find((p) => p.kind === 'game' && p.documentary);
+    if (filmed && filmed.kind === 'game' && !this.list.some((v) => v.kind === 'filmcrew')) {
+      const team = people.filter((p) => p.project === filmed.id);
+      const crunch = filmed.documentary!.crunchDays >= 20;
+      if (team.length)
+        opts.push({
+          w: 2.5,
+          go: () =>
+            this.spawn(s, floor, 'filmcrew', pick(team), [
+              pick(crunch ? ['How long since you slept?', 'Tell us about the late nights.', 'Is this normal?'] : ['Just act natural.', 'Pretend we’re not here.', 'What are you working on?', 'Talk us through it.']),
+              pick(crunch ? ['…Can we not film this?', 'It’s fine. Everything’s fine.', 'Don’t put this in the film!'] : ['Uh… hi, Mum? 👋', 'Is it rolling?', 'Do I look okay?', 'So, this is the boss fight…']),
+            ]),
+        });
     }
     const founder = people.find((p) => p.role === 'founder');
     if (founder && (s.finance.stock || s.company.cash > 5_000_000)) opts.push({ w: 1, go: () => this.spawn(s, floor, 'investor', founder, [pick(['The numbers look great.', 'Shall we talk growth?', 'Impressive quarter.']), pick(['Wait till you see what’s next.', 'Coffee first?', 'We’re just warming up.'])]) });
@@ -288,7 +304,7 @@ export class VisitorSystem {
         }
       } else if (v.phase === 'in') {
         v.phase = 'visit';
-        v.wait = 6;
+        v.wait = v.kind === 'filmcrew' ? 11 : 6;
         const p = host.people().find((x) => x.id === v.target);
         if (p) v.face = p.x >= v.x ? 1 : -1;
         this.say(v, v.lines[0], 2.4);
