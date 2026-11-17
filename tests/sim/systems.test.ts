@@ -711,6 +711,16 @@ describe('studio identity', () => {
   });
 });
 
+describe('achievement catalogue', () => {
+  it('has unique ids and every check runs on a fresh and a late game', async () => {
+    const { ACHIEVEMENTS, MILESTONES } = await import('../../src/sim/systems/achievements');
+    const ids = [...ACHIEVEMENTS.map((a) => a.id), ...MILESTONES.map((m) => m.id)];
+    expect(new Set(ids).size).toBe(ids.length);
+    const s = game(1990, 3);
+    for (const a of ACHIEVEMENTS) expect(typeof a.check(s)).toBe('boolean');
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

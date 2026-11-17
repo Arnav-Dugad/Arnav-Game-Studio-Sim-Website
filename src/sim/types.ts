@@ -283,6 +283,8 @@ export interface Release {
   why: { sales?: Breakdown; user?: Breakdown };
   /** Post-launch patches shipped. */
   patches?: number;
+  /** The game ran an open beta before release. */
+  betaTested?: boolean;
   /** Storefront discounts run so far, and when the last one started. */
   saleCount?: number;
   lastSaleDay?: number;

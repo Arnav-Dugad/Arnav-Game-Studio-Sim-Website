@@ -315,6 +315,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     liveIncome: 0,
     serverLoad: ['mmo'].includes(p.concept.genre) || ['subscription', 'f2p', 'live_service'].includes(p.concept.monetization) ? 1 : 0,
     why: { sales: salesWhy, user: ub.done() },
+    ...(p.beta ? { betaTested: true } : {}),
   };
   s.releases[id] = rel;
   s.releaseOrder.push(id);
