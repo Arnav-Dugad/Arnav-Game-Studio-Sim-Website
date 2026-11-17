@@ -1,4 +1,6 @@
 /** "The story of your studio": a short biography written from what actually happened in the run. */
+import { GENRE_BY_ID } from '@/data/genres';
+import { knownFor } from '@/sim/systems/renown';
 import { SCENARIO_BY_ID } from '@/sim/systems/scenarios';
 import { REGION_BY_ID } from '@/data/regions';
 import { fromDay } from '@/sim/calendar';
@@ -44,6 +46,8 @@ export function biography(s: GameState): string[] {
   if (peak > 5) out.push(`The team grew to ${peak} people${s.office.tier > startTier ? `, and the studio moved into a ${tierDef(s.office.tier).name}` : ''}.`);
   const series = Object.values(s.franchises).filter((f) => f.entries.length >= 2).sort((a, b) => b.fans - a.fans)[0];
   if (series) out.push(`${series.name} became its signature series: ${series.entries.length} games and ${fmtUnits(series.fans)} fans.`);
+  const known = knownFor(s);
+  if (known.length) out.push(`Players came to know it as ${known.length > 1 ? `a home of great ${GENRE_BY_ID[known[0]!.genre].name} and ${GENRE_BY_ID[known[1]!.genre].name} games` : `the ${GENRE_BY_ID[known[0]!.genre].name} studio`}.`);
   const hits = (s.mediaDeals ?? []).filter((d) => d.outcome === 'hit');
   if (hits.length) out.push(`Its worlds reached beyond games — ${list(hits.slice(0, 3).map((d) => `a hit ${d.name} ${MEDIA[d.kind].noun}`))}.`);
   const classics = rels.filter((r) => r.classic);
@@ -53,6 +57,12 @@ export function biography(s: GameState): string[] {
   if ((s.progress.stats.donated ?? 0) > 0) extras.push(`${fmtMoney(s.progress.stats.donated!)} given to charity`);
   if (s.community && s.community.members > 1000) extras.push(`a community of ${fmtUnits(s.community.members)} players`);
   if ((s.progress.stats.babies ?? 0) + (s.progress.stats.weddings ?? 0) >= 3) extras.push(`${(s.progress.stats.weddings ?? 0)} weddings and ${(s.progress.stats.babies ?? 0)} babies among its people`);
+  const doc = rels.find((r) => r.documentary?.outcome === 'acclaimed');
+  if (doc) extras.push(`an acclaimed documentary about the making of ${doc.name}`);
+  const coll = rels.find((r) => r.collection?.length);
+  if (coll) extras.push(`a ${coll.name} collection that brought ${coll.collection!.length + 1} classics back`);
+  if (s.company.crunchPledge?.since !== undefined && s.day - s.company.crunchPledge.since > 365 * 3) extras.push(`a no-crunch pledge kept for ${Math.floor((s.day - s.company.crunchPledge.since) / 365)} years`);
+  else if (s.company.crunchPledge?.brokenDay !== undefined) extras.push('a no-crunch pledge it didn’t keep');
   if (extras.length) out.push(`Along the way: ${list(extras)}.`);
   out.push(`In all, ${name} released ${rels.length} game${rels.length > 1 ? 's' : ''} and sold ${fmtUnits(s.progress.stats.totalUnits)} copies${s.progress.stats.peakValuation > 0 ? `, peaking at a ${fmtMoney(s.progress.stats.peakValuation)} valuation` : ''}.`);
   return out;
