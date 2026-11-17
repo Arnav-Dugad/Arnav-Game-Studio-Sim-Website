@@ -441,6 +441,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
       )}
       <PostLaunch releaseId={releaseId} />
       <ReleaseBuzz releaseId={releaseId} />
+      <Credits releaseId={releaseId} />
       <div className="mt-2 flex flex-wrap justify-end gap-2">
         {!r.concept.remasterOf && !r.concept.expansionOf && r.score >= EXPANSION_MIN_SCORE && s.day - r.day < EXPANSION_MAX_AGE_YEARS * 365.25 && (
           <Button
@@ -488,6 +489,41 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
   );
 }
 
+function Credits({ releaseId }: { releaseId: string }) {
+  const s = useGame((g) => g.s)!;
+  const r = s.releases[releaseId];
+  if (!r?.credits?.length) return null;
+  const byRole = new Map<string, NonNullable<typeof r.credits>>();
+  for (const c of r.credits) byRole.set(c.role, [...(byRole.get(c.role) ?? []), c]);
+  const order = ['founder', 'producer', 'designer', 'programmer', 'artist', 'audio', 'writer', 'qa', 'marketer'];
+  const roles = [...byRole.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  return (
+    <Section title="Credits">
+      <div className="rounded-xl bg-[#14161b] px-4 py-3 text-center text-[#e9e4dc]">
+        <div className="font-display text-sm font-semibold tracking-[0.2em] text-[#f2c450]">{r.name.toUpperCase()}</div>
+        <div className="mb-2 text-[10px] uppercase tracking-widest opacity-60">a {s.company.name} production</div>
+        {roles.map((role) => (
+          <div key={role} className="mb-1.5">
+            <div className="text-[10px] uppercase tracking-widest opacity-60">{role === 'founder' ? 'Studio founder' : `${ROLE_NAMES[role as keyof typeof ROLE_NAMES] ?? role}${byRole.get(role)!.length > 1 ? 's' : ''}`}</div>
+            {byRole.get(role)!.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                disabled={!s.staff[c.id]}
+                onClick={() => useGame.getState().pushModal({ kind: 'staff', staffId: c.id })}
+                className="block w-full text-sm enabled:hover:underline disabled:opacity-70"
+                title={s.staff[c.id] ? 'Open their card' : 'No longer at the studio'}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
 function ReleaseBuzz({ releaseId }: { releaseId: string }) {
   const s = useGame((g) => g.s)!;
   const r = s.releases[releaseId];
@@ -500,6 +536,30 @@ function ReleaseBuzz({ releaseId }: { releaseId: string }) {
         <BuzzMeter posts={posts} />
       </div>
       <BuzzList posts={posts.slice(0, 6)} showGame={false} />
+    </Section>
+  );
+}
+
+function Shipped({ staffId }: { staffId: string }) {
+  const s = useGame((g) => g.s)!;
+  const games = s.releaseOrder.map((id) => s.releases[id]!).filter((r) => r?.credits?.some((c) => c.id === staffId));
+  if (!games.length) return null;
+  return (
+    <Section title={`Credits (${games.length})`}>
+      <ul className="space-y-0.5 text-xs">
+        {games
+          .slice(-8)
+          .reverse()
+          .map((r) => (
+            <li key={r.id} className="flex items-center gap-2">
+              <button type="button" className="min-w-0 flex-1 truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().pushModal({ kind: 'release', releaseId: r.id })}>
+                {r.name}
+              </button>
+              <span className="text-ink3">{fromDay(r.day).year}</span>
+              <span className={cx('num w-7 text-right font-semibold', r.score >= 80 ? 'text-good' : r.score < 50 ? 'text-bad' : '')}>{r.score}</span>
+            </li>
+          ))}
+      </ul>
     </Section>
   );
 }
@@ -711,6 +771,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
           {(st.eotmCount ?? 0) > 0 && <div className="mb-1 text-[11px] text-gold">⭐ Employee of the Month ×{st.eotmCount}{s.eotm?.id === st.id ? ' (this month)' : ''}</div>}
           {(st.dreamsMet ?? 0) > 0 && <div className="mb-2 text-[11px] text-gold">★ {st.dreamsMet} ambition{st.dreamsMet === 1 ? '' : 's'} fulfilled here</div>}
           <Relationships staffId={staffId} />
+          <Shipped staffId={staffId} />
           {st.role !== 'founder' && (
             <Section title="Pay">
               <div className="text-sm">

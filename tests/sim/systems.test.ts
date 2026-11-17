@@ -1240,3 +1240,18 @@ describe('live events', () => {
     expect(dispatch(s, { type: 'liveEvent', releaseId: r.id }).ok).toBe(false);
   });
 });
+
+describe('credits', () => {
+  it('a release remembers who made it', () => {
+    const s = game(1981, 21);
+    startSmall(s);
+    for (let i = 0; i < 200 && !s.releaseOrder.length; i++) {
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const r = s.releases[s.releaseOrder[0]!]!;
+    expect(r.credits?.map((c) => c.id)).toContain('founder');
+    expect(r.credits?.[0]?.name).toBe(s.staff.founder!.name);
+  });
+});

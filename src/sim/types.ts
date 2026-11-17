@@ -323,6 +323,8 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Who made it (names and roles as they were at launch). */
+  credits?: { id: string; name: string; role: string; level: string }[];
   /** Live events run (systems/liveEvents.ts): the current one, how many so far, and the last. */
   liveEvent?: { until: number; mul: number; name: string };
   liveEvents?: number;
