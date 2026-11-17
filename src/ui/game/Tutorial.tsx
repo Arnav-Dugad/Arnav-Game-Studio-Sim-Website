@@ -52,30 +52,49 @@ export function Tutorial() {
   }, [cur, panel]);
 
   if (!s || !show || !cur || s.status !== 'running') return null;
+  const nextBtn = cur.next && (
+    <Button size="sm" variant="primary" onClick={() => act({ type: 'tutorial', step: step + 1 >= STEPS.length ? 99 : step + 1 })}>
+      {cur.next}
+    </Button>
+  );
   return (
-    <div className="glass absolute bottom-20 left-1/2 z-40 w-[min(420px,calc(100vw-1rem))] -translate-x-1/2 rounded-2xl p-4 animate-fade-up sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0" role="region" aria-label="Tutorial">
-      <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gold/20 text-gold">
-          <Icon name="lightbulb" size={18} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-ink3">
-            Tutorial · {step + 1}/{STEPS.length}
+    <>
+      {/* phones, with a panel open: a slim strip above the bottom bar so the panel stays usable */}
+      {panel && (
+        <div className="glass absolute bottom-[5.25rem] left-1/2 z-40 flex w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-2 rounded-xl px-3 py-2 animate-fade-up sm:hidden" role="region" aria-label="Tutorial">
+          <Icon name="lightbulb" size={16} className="shrink-0 text-gold" />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-xs font-semibold">
+              {step + 1}/{STEPS.length} · {cur.title}
+            </div>
+            <div className="truncate text-[11px] text-ink3">{cur.body}</div>
           </div>
-          <h3 className="font-display font-semibold">{cur.title}</h3>
-          <p className="mt-1 text-sm text-ink2">{cur.body}</p>
-          <div className="mt-3 flex gap-2">
-            {cur.next && (
-              <Button size="sm" variant="primary" onClick={() => act({ type: 'tutorial', step: step + 1 >= STEPS.length ? 99 : step + 1 })}>
-                {cur.next}
+          {nextBtn}
+          <button type="button" className="shrink-0 text-[11px] text-ink3 underline" onClick={() => act({ type: 'tutorial', step: 99 })}>
+            Skip
+          </button>
+        </div>
+      )}
+      <div className={`glass absolute bottom-20 left-1/2 z-40 w-[min(420px,calc(100vw-1rem))] -translate-x-1/2 rounded-2xl p-4 animate-fade-up sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0 ${panel ? 'hidden sm:block' : ''}`} role="region" aria-label="Tutorial">
+        <div className="flex items-start gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gold/20 text-gold">
+            <Icon name="lightbulb" size={18} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-ink3">
+              Tutorial · {step + 1}/{STEPS.length}
+            </div>
+            <h3 className="font-display font-semibold">{cur.title}</h3>
+            <p className="mt-1 text-sm text-ink2">{cur.body}</p>
+            <div className="mt-3 flex gap-2">
+              {nextBtn}
+              <Button size="sm" variant="ghost" onClick={() => act({ type: 'tutorial', step: 99 })}>
+                Skip tutorial
               </Button>
-            )}
-            <Button size="sm" variant="ghost" onClick={() => act({ type: 'tutorial', step: 99 })}>
-              Skip tutorial
-            </Button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
