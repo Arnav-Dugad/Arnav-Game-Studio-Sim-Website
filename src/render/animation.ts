@@ -6,7 +6,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Look } from './sprites';
 
-export type Prop = 'none' | 'cup' | 'phone' | 'book' | 'paddle' | 'box' | 'pizza' | 'briefcase' | 'notepad' | 'guitar';
+export type Prop = 'none' | 'cup' | 'phone' | 'book' | 'paddle' | 'box' | 'pizza' | 'briefcase' | 'notepad' | 'guitar' | 'mic';
 
 export interface Rig {
   root: Container;
@@ -131,6 +131,9 @@ function setProp(r: Rig, kind: Prop): void {
   } else if (kind === 'book') {
     g.roundRect(-3.2, -1.5, 6.4, 4.6, 0.8).fill(0xc2563a);
     g.rect(-0.2, -1.5, 0.4, 4.6).fill(0xf4efe7);
+  } else if (kind === 'mic') {
+    g.rect(-0.7, -1, 1.4, 6).fill(0x2a2622);
+    g.circle(0, -2.2, 2).fill(0x6d7685);
   } else if (kind === 'guitar') {
     g.rect(-0.6, -12, 1.2, 12).fill(0x6b4a2e);
     g.ellipse(-0.5, 2, 4.5, 5).fill(0xb98957);
@@ -231,7 +234,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
 
   // mouth
   if (a.yawn > 0) setMouth(r, 'yawn');
-  else if (i.speaking) setMouth(r, Math.sin(t * 22 + ph) > 0 ? 'talk2' : 'talk1');
+  else if (i.speaking || i.leisure === '🎤') setMouth(r, Math.sin(t * (i.leisure === '🎤' ? 9 : 22) + ph) > 0 ? 'talk2' : 'talk1');
   else if (a.joy > 0 || a.laugh > 0 || a.highfive > 0) setMouth(r, 'grin');
   else if (a.idea > 0) setMouth(r, 'talk1');
   else if (a.sad > 0 || i.morale < 35) setMouth(r, 'frown');
@@ -323,6 +326,12 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
     l = -0.75;
     rr = 0.55 + Math.sin(t * 13) * 0.22;
     prop = 'guitar';
+  } else if (i.leisure === '🎤') {
+    // singing their heart out
+    rr = 2.3 + Math.sin(t * 3) * 0.1;
+    l = 0.6 + Math.abs(Math.sin(t * 5 + ph)) * 1.4;
+    prop = 'mic';
+    lean = Math.sin(t * 4) * 0.08;
   } else if (i.leisure === '🏋️') {
     // lifting: both arms pump up and down
     const lift = Math.abs(Math.sin(t * 4 + ph));

@@ -150,6 +150,26 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       }
       break;
     }
+    case 'hammock': {
+      shadow(g, 6, 6, W - 12, H - 8);
+      g.rect(8, 6, 3, H - 12).fill(P.woodDark);
+      g.rect(W - 11, 6, 3, H - 12).fill(P.woodDark);
+      g.moveTo(10, 14).quadraticCurveTo(W / 2, H * 0.7, W - 10, 14).lineTo(W - 10, 20).quadraticCurveTo(W / 2, H * 0.78, 10, 20).closePath().fill(P.accentArt);
+      for (let i = 0; i < 4; i++) g.moveTo(14 + i * ((W - 28) / 3), 16).lineTo(14 + i * ((W - 28) / 3), H * 0.55).stroke({ width: 1, color: 0xffffff, alpha: 0.35 });
+      break;
+    }
+    case 'karaoke': {
+      shadow(g, 5, 4, W - 10, H - 4);
+      box(g, { x: 6, y: 8, w: W - 12, h: H - 12, height: 16, top: 0x3a2a52, front: 0x2a1e3d, r: 4 });
+      g.roundRect(9, -14, W - 18, 16, 3).fill(0x1e232b);
+      g.roundRect(11, -12, W - 22, 12, 2).fill(0x9b6bd3);
+      for (let i = 0; i < 3; i++) g.rect(13, -10 + i * 3.5, (W - 26) * (0.4 + i * 0.2), 1.2).fill({ color: 0xffffff, alpha: 0.8 });
+      g.circle(W / 2 - 6, 10, 3).fill(0x2a2622);
+      g.circle(W / 2 + 6, 10, 3).fill(0x2a2622);
+      g.rect(W - 9, -6, 1.5, 14).fill(0x6d7685);
+      g.circle(W - 8.25, -7, 2.4).fill(0x2a2622);
+      break;
+    }
     case 'gym': {
       shadow(g, 3, 4, W - 6, H - 4);
       g.roundRect(4, 4, W - 8, H - 8, 6).fill({ color: 0x3b3f48, alpha: 0.9 });
@@ -474,6 +494,10 @@ export function itemLift(id: ItemId): number {
       return 8;
     case 'gym':
       return 6;
+    case 'hammock':
+      return 4;
+    case 'karaoke':
+      return 30;
     case 'claw_machine':
     case 'mascot_statue':
       return 38;

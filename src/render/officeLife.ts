@@ -138,6 +138,8 @@ export const LEISURE: Record<string, { glyph: string; secs: [number, number] }> 
   plant_large: { glyph: '🌿', secs: [2, 4] },
   foosball: { glyph: '⚽', secs: [5, 9] },
   gym: { glyph: '🏋️', secs: [6, 10] },
+  hammock: { glyph: '😴', secs: [6, 11] },
+  karaoke: { glyph: '🎤', secs: [5, 9] },
   claw_machine: { glyph: '🧸', secs: [3, 6] },
   guitar_corner: { glyph: '🎸', secs: [5, 9] },
   globe: { glyph: '🌍', secs: [2, 4] },
