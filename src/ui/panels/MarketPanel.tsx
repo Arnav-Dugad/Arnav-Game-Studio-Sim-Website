@@ -11,7 +11,7 @@ import { genrePopularity, livePlatforms, platformName } from '@/sim/systems/mark
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { FRANCHISES } from '@/data/franchises';
 import { parseYM } from '@/sim/calendar';
-import { StackedArea, LineChart } from '../charts';
+import { StackedArea, LineChart, SERIES_COLORS } from '../charts';
 import { Button, Pill, Section, Segmented, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { InitialsBadge } from '../art/Avatar';
@@ -72,6 +72,44 @@ function Platforms() {
       .map(([k]) => k);
   }, [hist]);
   const labels = Object.fromEntries(keys.map((k) => [k, platformName(s, k)]));
+  // every platform gets its own colour while there are enough; after that, a long-gone platform's colour is reused
+  const colors = useMemo(() => {
+    const span: Record<string, [number, number]> = {};
+    for (const h of hist)
+      for (const k of keys)
+        if ((h.share[k] ?? 0) > 0.005) {
+          const sp = span[k];
+          span[k] = sp ? [sp[0], h.day] : [h.day, h.day];
+        }
+    // today's platforms (then the biggest of the past) get a colour of their own; the rest borrow
+    // the colour of a platform they never shared the market with (the longest gap wins)
+    const owners: string[][] = SERIES_COLORS.map(() => []);
+    const out: Record<string, string> = {};
+    const gap = (a: string, b: string) => {
+      const [a0, a1] = span[a] ?? [0, 0];
+      const [b0, b1] = span[b] ?? [0, 0];
+      return Math.max(a0 - b1, b0 - a1); // negative when they overlap
+    };
+    const now = hist[hist.length - 1]?.share ?? {};
+    const order = [...keys].sort((a, b) => (now[b] ?? 0) - (now[a] ?? 0) || keys.indexOf(a) - keys.indexOf(b)); // today's platforms first
+    order.forEach((k, n) => {
+      let i = n;
+      if (n >= SERIES_COLORS.length) {
+        i = 0;
+        let bestGap = -Infinity;
+        owners.forEach((os, j) => {
+          const g = Math.min(...os.map((o) => gap(k, o)));
+          if (g > bestGap) {
+            bestGap = g;
+            i = j;
+          }
+        });
+      }
+      owners[i]!.push(k);
+      out[k] = SERIES_COLORS[i]!;
+    });
+    return out;
+  }, [hist, keys]);
   const live = livePlatforms(s).sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0));
   return (
     <div>
@@ -80,6 +118,7 @@ function Platforms() {
           data={hist.map((h) => ({ x: h.day, values: h.share }))}
           keys={keys}
           labels={labels}
+          colors={colors}
           height={210}
           ariaLabel="Platform market share over time"
           xFormat={dayAxis((hist[hist.length - 1]?.day ?? 0) - (hist[0]?.day ?? 0))}
