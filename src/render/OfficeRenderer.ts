@@ -13,6 +13,7 @@ import { T, drawItem, drawPerson, itemLift, lookFor, type Look } from './sprites
 import { PetSystem } from './pets';
 import { VisitorSystem } from './visitors';
 import { ScreenSystem, type ScreenUser } from './screens';
+import { NightShift } from './nightShift';
 import { SeasonDecor, birthdayOf, dayOfYear, seasonOf, type Season } from './seasons';
 import { animate, createRig, newAnim, reskinRig, setHat, type Anim, type Rig } from './animation';
 import { LEISURE, RESEARCH_SPOTS, chatExchange, workExchange, workThought } from './officeLife';
@@ -144,6 +145,7 @@ export class OfficeRenderer {
   private seasonDecor = new SeasonDecor(this.itemLayer);
   private visitors = new VisitorSystem(this.itemLayer);
   private monitors = new ScreenSystem(this.itemLayer);
+  private nightShift = new NightShift(this.itemLayer);
   private season: Season | null = null;
   private lastDay = -1;
   private bdayGreeted = new Set<string>();
@@ -517,6 +519,14 @@ export class OfficeRenderer {
       if (st && (st.activity === 'work' || st.activity === 'research')) users.push({ deskId: a.deskId, role: st.role, research: st.activity === 'research', phase: a.anim.phase });
     }
     this.monitors.update(s, floor, era, users, dt, ui.reducedMotion);
+    const crunchers: { x: number; y: number }[] = [];
+    for (const a of this.agents.values()) {
+      if (!a.c.visible || a.mode !== 'desk') continue;
+      const st = s.staff[a.id];
+      const p = st?.assignment.kind === 'project' ? s.projects[st.assignment.id] : undefined;
+      if (p && p.kind === 'game' && p.crunch && st?.activity === 'work') crunchers.push({ x: a.x, y: a.y });
+    }
+    this.nightShift.update(s, floor, dt, crunchers, this.P.night, ui.reducedMotion);
     this.visitors.update(s, floor, dt * (ui.speed === 0 ? 0.6 : 1), this.visitorHost(s, floor), ui.reducedMotion, this.P);
     this.updateParticles(dt);
   }
