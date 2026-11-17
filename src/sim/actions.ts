@@ -169,7 +169,7 @@ export type Action =
   | { type: 'setSubsidiary'; id: string; budget: 'low' | 'normal' | 'high'; focusGenre?: GenreId }
   | { type: 'sellFranchise'; franchiseId: string }
   | { type: 'resolveEvent'; uid: number; option: string }
-  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; parentalLeave?: 'minimal' | 'standard' | 'generous'; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean }
+  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; parentalLeave?: 'minimal' | 'standard' | 'generous'; interns?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean }
   | { type: 'setRecruiting'; level: number }
   | { type: 'buyDevkit'; platform: string }
   | { type: 'continueEndless' }
@@ -1073,6 +1073,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.remote !== undefined) s.company.policies.remote = a.remote;
       if (a.fourDayWeek !== undefined) s.company.policies.fourDayWeek = a.fourDayWeek;
       if (a.wellness !== undefined) s.company.policies.wellness = !!a.wellness;
+      if (a.interns !== undefined) s.company.policies.interns = !!a.interns;
       if (a.parentalLeave !== undefined) {
         if (!['minimal', 'standard', 'generous'].includes(a.parentalLeave)) return 'Unknown parental leave policy';
         s.company.policies.parentalLeave = a.parentalLeave;

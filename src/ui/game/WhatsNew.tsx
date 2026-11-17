@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18y';
+export const WHATS_NEW_VERSION = '2026-11-18z';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'Summer internships', body: 'Staff → Policies (1985+): every June a few students join for the summer — cheap, green and full of potential, learning 50% faster. Pair them with mentors. On September 1 you can offer the standout intern a job; former interns are loyal for life.' },
   { icon: 'build', title: 'Bonsai, meditation & movie nights', body: 'Three new things to build: a Bonsai Tree (1984) the gardeners fuss over, a Meditation Corner (2005) that slows burnout nearby, and a Screening Room (1990) with a big screen and comfy seats — a big morale aura, and the retro gamers’ favourite hangout.' },
   { icon: 'heart', title: 'Hobbies', body: 'Everyone has a hobby now — baking, running, music, retro gaming, gardening, board games and more (shown on their card). It changes what they chat about and where they spend their breaks, and on Fridays the bakers bring in treats.' },
   { icon: 'medal', title: 'Hall of Classics', body: 'Ten years on, the best games of all time are inducted into the Golden Pixel Hall of Classics — front-page news, reputation, fans for the series and a new generation discovering it. Will yours make it? (Plus a little chime when fan mail arrives.)' },

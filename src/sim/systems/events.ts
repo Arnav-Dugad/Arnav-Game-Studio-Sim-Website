@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { hireIntern, starIntern } from './interns';
 import { campaignGoal, crowdfundBlocked, startCrowdfund } from './crowdfunding';
 import { BALANCE } from '../../data/balance';
 import { pairKey, worstFeud } from './relations';
@@ -12,7 +13,7 @@ import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
 import { addRep, aOrAn, earn, fmtMoney, hasFlag, money, newId, pushNews, spend } from '../util';
 import { ownerValue } from './finance';
-import { candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, removeStaff } from './staff';
+import { ROLE_NAMES, ROLE_SKILLS, candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, removeStaff } from './staff';
 import { assignDesks, freeDesks } from './office';
 
 interface EventDef {
@@ -400,6 +401,37 @@ export const EVENT_DEFS: EventDef[] = [
           pushNews(s, { category: 'staff', headline: `${quitter.name} quits over a feud`, tone: 'bad' });
         }
       }
+    },
+  },
+  {
+    // End of the summer internship (fired on September 1; never rolled at random).
+    id: 'intern_offer',
+    art: 'handshake',
+    cooldown: 300,
+    weight: () => 0,
+    make: ({ s }) => {
+      const st = starIntern(s);
+      if (!st) return null;
+      const salary = Math.round(marketSalary(s, st.skills) * 0.9);
+      const [primary] = ROLE_SKILLS[st.role];
+      return {
+        title: `Hire ${st.name}?`,
+        body: `${st.name} was the standout intern this summer — a ${ROLE_NAMES[st.role].toLowerCase()} with ${Math.round(st.skills[primary])} ${primary} and potential ${Math.round(st.potential)}. They’d love to stay.`,
+        options: [
+          { id: 'hire', label: `Offer a junior role (${fmtMoney(salary)}/yr)`, preview: 'Loyal from day one: loyalty +25' },
+          { id: 'go', label: 'Wish them luck at school', preview: 'They go back to their studies' },
+        ],
+        ctx: { staff: st.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const st = staffById(s, e.ctx.staff);
+      if (!st || !st.intern) return;
+      if (opt === 'hire') {
+        hireIntern(s, st);
+        s.progress.stats.internsHired = (s.progress.stats.internsHired ?? 0) + 1;
+        pushNews(s, { category: 'staff', headline: `${st.name} joins full-time after their internship`, tone: 'good' });
+      } else removeStaff(s, st.id);
     },
   },
   {

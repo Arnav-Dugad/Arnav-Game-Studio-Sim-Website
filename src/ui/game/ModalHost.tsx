@@ -792,7 +792,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-2xl font-semibold">{st.name}</h2>
           <div className="text-sm text-ink2">
-            {st.level} {ROLE_NAMES[st.role]}
+            {st.intern ? `summer intern (until ${formatDate(st.intern.until, false)})` : st.level} {ROLE_NAMES[st.role]}
             {st.spec && ` · ${SPECS.find((x) => x.id === st.spec)?.label}`} · since {fromDay(st.hiredDay).year} · {st.gamesShipped} games shipped
             {retirementDay(st) !== null && retirementDay(st)! - s.day < 5 * 365 && ` · retires around ${fromDay(retirementDay(st)!).year}`}
           </div>

@@ -377,7 +377,7 @@ function DenseRow({
         <span className="min-w-0 flex-1 truncate font-semibold">{st.name}</span>
       </button>
       <span className="hidden w-28 truncate text-ink3 sm:block">
-        {st.level} {ROLE_NAMES[st.role]}
+        {st.intern ? 'intern' : st.level} {ROLE_NAMES[st.role]}
       </span>
       <span className="hidden w-28 truncate text-ink2 min-[480px]:block">{assignmentLabel(s, st)}</span>
       <span className="num w-8 text-right font-semibold" title="Top skill">
@@ -431,7 +431,7 @@ function CardRow({
             {st.ambition && <Pill tone="gold">★ {ambitionText(st, st.ambition)}</Pill>}
           </div>
           <div className="truncate text-xs text-ink3">
-            {st.level} {ROLE_NAMES[st.role]} · {assignmentLabel(s, st)} · since {fromDay(st.hiredDay).year}
+            {st.intern ? 'intern' : st.level} {ROLE_NAMES[st.role]} · {assignmentLabel(s, st)} · since {fromDay(st.hiredDay).year}
           </div>
         </div>
         <div className="w-24 space-y-1 text-[10px]">

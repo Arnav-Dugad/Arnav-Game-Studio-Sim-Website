@@ -666,6 +666,7 @@ export function growSkill(s: GameState, st: Staff, skill: Skill, weight: number,
   let g = BALANCE.SKILL_GROWTH * weight * (gap / 100) * (1 + mentorBoost);
   if (hasTrait(st, 'fast_learner')) g *= 1.6;
   if (hasTrait(st, 'ambitious')) g *= 1.2;
+  if (st.intern) g *= 1.5; // eager to learn
   st.skills[skill] = Math.min(st.potential, st.skills[skill] + g);
   void s;
 }

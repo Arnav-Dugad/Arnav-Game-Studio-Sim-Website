@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { fromDay } from '@/sim/calendar';
+import { INTERN_YEAR, internCount } from '@/sim/systems/interns';
 import { WELLNESS_COST } from '@/sim/systems/finance';
 import { RETREAT_MORALE, retreatBlocked, retreatCost } from '@/sim/systems/studioLife';
 import { PERSON_BY_ID } from '@/data/people';
@@ -259,6 +261,18 @@ function Policies() {
             <span className="block text-xs text-ink3">Meditation, therapy, gym passes: +2 morale, burnout builds 15% slower. {fmtMoney(money(WELLNESS_COST, s.day))} per person per month.</span>
           </span>
           <input type="checkbox" checked={!!p.wellness} onChange={(e) => act({ type: 'setPolicy', wellness: e.target.checked })} className="size-5 accent-[var(--accent)]" />
+        </label>
+      </Section>
+      <Section title="Summer internships">
+        <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span>
+            <b>Host summer interns{fromDay(s.day).year < INTERN_YEAR ? ` (from ${INTERN_YEAR})` : ''}</b>
+            <span className="block text-xs text-ink3">
+              Every June, {internCount(s)} student{internCount(s) > 1 ? 's' : ''} join until September (if there are free desks): cheap, green, high potential, learning 50% faster — pair them with mentors. At the end you can offer the best one a job.
+              {(s.progress.stats.internsHired ?? 0) > 0 && ` ${s.progress.stats.internsHired} former intern${s.progress.stats.internsHired === 1 ? '' : 's'} on the books so far.`}
+            </span>
+          </span>
+          <input type="checkbox" disabled={fromDay(s.day).year < INTERN_YEAR} checked={!!p.interns} onChange={(e) => act({ type: 'setPolicy', interns: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
       </Section>
       <Section title="Parental leave">

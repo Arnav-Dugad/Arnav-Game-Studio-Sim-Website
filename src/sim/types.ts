@@ -107,6 +107,9 @@ export interface Staff {
   life?: { partnerId?: Id; married?: number; kids?: number; remote?: boolean; event?: { kind: 'romance' | 'wedding' | 'baby' | 'moved'; day: number } };
   /** Why they're away, when it isn't an ordinary vacation. */
   leave?: 'honeymoon' | 'parental' | 'conference';
+  /** A summer intern (until September 1), or a former intern now on staff. */
+  intern?: { until: number };
+  wasIntern?: boolean;
   /** After a standing ovation, rival recruiters are watching until this day. */
   spotlightUntil?: number;
 }
@@ -785,6 +788,8 @@ export interface LifetimeStats {
   fanMail?: number;
   talks?: number;
   mediaHits?: number;
+  interns?: number;
+  internsHired?: number;
   classics?: number;
   ovations?: number;
   /** Games that topped the weekly chart. */
@@ -835,6 +840,8 @@ export interface Company {
     fourDayWeek: boolean;
     /** Wellness program: a monthly cost per head for morale and slower burnout. */
     wellness?: boolean;
+    /** Summer internship program (1985+). */
+    interns?: boolean;
     /** Parental leave: two, six (default) or sixteen weeks. */
     parentalLeave?: 'minimal' | 'standard' | 'generous';
     /** Automation: idle people go to research; burnt-out people take two weeks off. */

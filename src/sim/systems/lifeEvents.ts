@@ -54,7 +54,7 @@ function leave(st: Staff, days: number, kind: 'honeymoon' | 'parental'): void {
 /** Monthly: love, weddings, babies and moves. */
 export function lifeEventsMonthly(c: Ctx): void {
   const { s, rng } = c;
-  const all = Object.values(s.staff).filter((x) => x.role !== 'founder');
+  const all = Object.values(s.staff).filter((x) => x.role !== 'founder' && !x.intern);
   if (!all.length) return;
   const small = all.length <= NEWS_LIMIT;
   const digest: string[] = [];

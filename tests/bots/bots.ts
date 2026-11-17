@@ -336,7 +336,8 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
   if (!o.aggressive && o.mode !== 'random') {
     if (!(s.company.values ?? []).length && Object.keys(s.staff).length >= 6) dispatch(s, { type: 'setValues', values: o.mode === 'trend' ? ['innovation', 'players'] : ['craft', 'balance'] });
     if (s.company.cash > monthlyBurn(s) * 12) dispatch(s, { type: 'teamRetreat' });
-    if (s.company.policies.parentalLeave === undefined) dispatch(s, { type: 'setPolicy', parentalLeave: 'generous' });
+    if (s.company.policies.parentalLeave === undefined) dispatch(s, { type: 'setPolicy', parentalLeave: 'generous', interns: true });
+    for (const e of s.pendingEvents.filter((x) => x.defId === 'intern_offer')) dispatch(s, { type: 'resolveEvent', uid: e.uid, option: 'hire' });
     // a talk a year from the most senior person with a shipped game
     const speaker = Object.values(s.staff).find((x) => x.level === 'lead' || x.role === 'founder');
     const credited = speaker && Object.values(s.releases).filter((r) => (r.credits ?? []).some((c) => c.id === speaker.id));
@@ -454,7 +455,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   () => ({ type: 'undoPlace' }),
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'earlyAccess', projectId: rng.chance(0.9) ? rng.pick(p) : 'nope' } : null; },
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'crowdfund', projectId: rng.pick(p), tier: rng.pick(['modest', 'ambitious', 'moonshot', 'bogus'] as never[]) } : null; },
-  (_s, rng) => ({ type: 'setPolicy', parentalLeave: rng.pick(['minimal', 'standard', 'generous', 'bogus'] as never[]) }),
+  (_s, rng) => ({ type: 'setPolicy', parentalLeave: rng.pick(['minimal', 'standard', 'generous', 'bogus'] as never[]), interns: rng.chance(0.5) }),
   (s, rng) => (s.fanMail?.length ? { type: 'pinFanArt', id: rng.pick(s.fanMail).id, on: rng.chance(0.7) } : { type: 'readFanMail' }),
   (s, rng) => { const st = Object.keys(s.staff); const r = Object.keys(s.releases); return st.length ? { type: 'giveTalk', staffId: rng.pick(st), releaseId: r.length && rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
   (s, rng) => { const f = Object.keys(s.franchises); return f.length ? { type: 'mediaDeal', franchiseId: rng.pick(f), kind: rng.pick(['comic', 'board', 'toys', 'animated', 'tv', 'movie', 'ride', 'opera'] as never[]), control: rng.pick(['licensed', 'involved', 'nope'] as never[]) } : null; },
