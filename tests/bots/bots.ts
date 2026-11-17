@@ -416,6 +416,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
   () => ({ type: 'teamRetreat' }),
+  (s, rng) => { const f = Object.keys(s.franchises); return { type: 'fanCon', franchiseId: f.length && rng.chance(0.8) ? rng.pick(f) : 'nope' }; },
   (s, rng) => { const st = Object.keys(s.staff); return st.length > 1 ? { type: 'setMentor', staffId: rng.pick(st), mentorId: rng.chance(0.2) ? null : rng.pick(st) } : null; },
   (_s, rng) => ({ type: rng.chance(0.7) ? 'openBranch' : 'closeBranch', region: rng.pick(['na', 'eu', 'jp', 'row', 'moon'] as never[]) }),
   (_s, rng) => ({ type: 'setOfficeStyle', floor: rng.pick(['auto', 'wood', 'tiles', 'lava'] as never[]), wall: rng.pick([undefined, '#abcdef', 'red'] as never[]) }),

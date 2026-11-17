@@ -61,6 +61,17 @@ export interface StartGamePayload {
   focus?: [Focus3, Focus3, Focus3];
 }
 
+/** Fan conventions for a big series (once every two years). */
+export function fanConCost(s: GameState, f: { fans: number }): number {
+  return Math.round(Math.max(money(40_000, s.day), f.fans * 0.04 * inflation(s.day)));
+}
+export function fanConBlocked(s: GameState, f: { fans: number; lastCon?: number }): string | null {
+  if (f.fans < 300_000) return 'Needs 300k fans';
+  if (f.lastCon !== undefined && s.day - f.lastCon < 730) return `Next con in ${730 - (s.day - f.lastCon)} days`;
+  if (s.company.cash < fanConCost(s, f)) return `Needs ${fmtMoney(fanConCost(s, f))}`;
+  return null;
+}
+
 /** Why a branch office can't open in this region right now (or null). */
 export function branchBlocked(s: GameState, region: RegionId): string | null {
   if (!REGION_BY_ID[region]) return 'Unknown region';
@@ -110,6 +121,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'fanCon'; franchiseId: string }
   | { type: 'bugBash'; projectId: string; hits: number }
   | { type: 'setMentor'; staffId: string; mentorId: string | null }
   | { type: 'setOfficeStyle'; floor: FloorStyle; wall?: string }
@@ -840,6 +852,19 @@ function apply(c: Ctx, a: Action): string | null {
       p.bugBashed = true;
       p.bugs *= 1 - Math.min(0.25, Math.floor(a.hits) * 0.01);
       s.company.moraleMods.push({ v: 2, until: s.day + 21, label: 'Bug bash' });
+      return null;
+    }
+    case 'fanCon': {
+      const f = s.franchises[a.franchiseId];
+      if (!f) return 'No such series';
+      const why = fanConBlocked(s, f);
+      if (why) return why;
+      spend(s, 'marketing', fanConCost(s, f));
+      f.lastCon = s.day;
+      f.fans = Math.round(f.fans * 1.08);
+      s.company.moraleMods.push({ v: 3, until: s.day + 45, label: `${f.name} Con` });
+      for (const p of Object.values(s.projects)) if (p.kind === 'game' && p.concept.franchiseId === f.id) p.hype = Math.min(2, p.hype + 0.3);
+      pushNews(s, { category: 'studio', headline: `Thousands of fans pack ${f.name} Con`, body: 'Cosplay, panels, a surprise announcement — and a very long merch queue.', tone: 'good' });
       return null;
     }
     case 'liveEvent':

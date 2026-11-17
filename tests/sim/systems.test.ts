@@ -1268,3 +1268,16 @@ describe('bug bash', () => {
     expect(dispatch(s, { type: 'bugBash', projectId: p.id, hits: 5 }).ok).toBe(false);
   });
 });
+
+describe('fan conventions', () => {
+  it('need a big fanbase, cost money, grow fans, and wait two years', () => {
+    const s = game(1995, 41);
+    s.company.cash = 50_000_000;
+    s.franchises.fx = { id: 'fx', name: 'X', genre: 'action', topic: 'scifi', fans: 100_000, entries: [], fatigue: 0, lastDay: 0, bestScore: 80 };
+    expect(dispatch(s, { type: 'fanCon', franchiseId: 'fx' }).ok).toBe(false);
+    s.franchises.fx!.fans = 1_000_000;
+    expect(dispatch(s, { type: 'fanCon', franchiseId: 'fx' }).ok).toBe(true);
+    expect(s.franchises.fx!.fans).toBe(1_080_000);
+    expect(dispatch(s, { type: 'fanCon', franchiseId: 'fx' }).ok).toBe(false);
+  });
+});

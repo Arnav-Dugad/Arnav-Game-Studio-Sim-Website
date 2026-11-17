@@ -358,6 +358,8 @@ export interface Franchise {
   bestScore: number;
   /** Came from an acquisition of a real company's IP. */
   origin?: string;
+  /** Last fan convention for this series. */
+  lastCon?: number;
 }
 
 export interface RivalGame {

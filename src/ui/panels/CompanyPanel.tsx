@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fanConBlocked, fanConCost } from '@/sim/actions';
 import { COMPANY_BY_ID } from '@/data/companies';
 import { GENRE_BY_ID } from '@/data/genres';
 import { TRADE_SHOWS } from '@/data/marketing';
@@ -408,6 +409,11 @@ function IP() {
                 {f.fatigue > 0.15 && ` · fatigue ${Math.round(f.fatigue * 100)}%`}
               </div>
             </div>
+            {f.fans >= 300_000 && (
+              <Button size="sm" icon="people" disabled={!!fanConBlocked(s, f)} title={fanConBlocked(s, f) ?? 'Fans +8%, morale up, hype for any sequel in development'} onClick={() => useGame.getState().actOrToast({ type: 'fanCon', franchiseId: f.id }, `${f.name} Con is a hit!`)}>
+                Fan con · {fmtMoney(fanConCost(s, f))}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="ghost"
