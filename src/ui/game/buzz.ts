@@ -113,6 +113,8 @@ function linesFor(s: GameState, rel: Release, week: number, r: () => number): Li
       crafting: { w: 2, tone: 'neutral', text: 'Spent 6 hours crafting a chair. Worth it.' },
       procedural: { w: 2, tone: score >= 70 ? 'good' : 'neutral', text: score >= 70 ? 'Every run feels new!' : 'The levels all blur together.' },
       licensed_music: { w: 2, tone: 'good', text: 'That soundtrack though 🎵' },
+      roguelite: { w: 2, tone: 'good', text: 'Just one more run… it’s 4am.' },
+      cross_save: { w: 1.5, tone: 'good', text: 'Cross-save is a lifesaver.' },
     };
     if (t[f]) L.push(t[f]!);
   }

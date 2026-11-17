@@ -37,6 +37,8 @@ export const GAME_FEATURES: GameFeatureDef[] = [
   { id: 'crafting', name: 'Crafting', year: 2009, work: 0.1, fits: { sandbox: 1.042, rpg: 1.024, simulation: 1.024, mmo: 1.024 }, misfit: 0.98, desc: 'Gather, build, survive.' },
   { id: 'accessibility', name: 'Accessibility options', year: 2015, work: 0.05, fits: {}, misfit: 1, user: 2, sales: 1.03, desc: 'Remappable controls, subtitles, colour-blind modes. More people can play, and they notice.' },
   { id: 'photo_mode', name: 'Photo mode', year: 2016, work: 0.03, fits: { adventure: 1.012, racing: 1.012, rpg: 1.006 }, misfit: 1, sales: 1.02, desc: 'Players share screenshots: free marketing.' },
+  { id: 'roguelite', name: 'Roguelite runs', year: 2008, work: 0.06, fits: { action: 1.03, rpg: 1.024, platformer: 1.03, shooter: 1.018, strategy: 1.012 }, misfit: 0.98, user: 1, desc: 'Permadeath runs with unlocks that carry over. One more run…' },
+  { id: 'cross_save', name: 'Cross-save', year: 2015, research: 'online_basic', work: 0.04, fits: {}, misfit: 1, sales: 1.02, user: 1, desc: 'Progress follows players between platforms. Small effort, appreciated.' },
   { id: 'battle_pass', name: 'Battle pass', year: 2017, work: 0.05, fits: {}, misfit: 1, sales: 1.12, user: -3, monet: ['f2p', 'live_service'], desc: 'Seasonal rewards that keep players paying. Effective, and a little resented.' },
 ];
 
