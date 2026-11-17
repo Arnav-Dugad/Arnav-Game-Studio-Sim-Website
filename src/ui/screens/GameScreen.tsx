@@ -129,7 +129,10 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
           const g = useGame.getState();
           return { floor: g.floor, build: g.build, heat: g.heat, selectedStaff: g.selectedStaff, speed: g.speed, reducedMotion: prefersReducedMotion(useSettings.getState()), leftInset: g.panel ? 640 : 80, modalOpen: g.modals.length > 0 };
         }}
-        onReady={(r) => (rendererRef.current = r)}
+        onReady={(r) => {
+          rendererRef.current = r;
+          if (import.meta.env.DEV) (window as unknown as { __renderer?: unknown }).__renderer = r;
+        }}
         onStaffClick={(id) => {
           useGame.getState().selectStaff(id);
           useGame.getState().pushModal({ kind: 'staff', staffId: id });

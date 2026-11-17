@@ -10,6 +10,7 @@ import { canPlace, entrance, findPath, footprint, heatField, occupancy, tierDef 
 import type { GameState, PlacedItem, Staff } from '@/sim/types';
 import { DARK, LIGHT, hexToNum, mix, shade, type ScenePalette } from './palette';
 import { T, drawItem, drawPerson, itemLift, lookFor, type Look } from './sprites';
+import { LEISURE, RESEARCH_SPOTS, chatExchange, workExchange, workThought } from './officeLife';
 
 export interface RendererUI {
   floor: number;
@@ -37,7 +38,17 @@ export interface RendererCallbacks {
   onPaintEnd?: () => void;
 }
 
-type Mode = 'desk' | 'walk' | 'station' | 'away' | 'wander' | 'meeting';
+type Mode = 'desk' | 'walk' | 'station' | 'away' | 'wander' | 'meeting' | 'talk' | 'fun';
+
+interface Talk {
+  partner: string;
+  lines: string[];
+  i: number;
+  timer: number;
+  host: boolean;
+  /** Seconds a non-host waits for the host to arrive before giving up. */
+  patience: number;
+}
 
 interface Agent {
   id: string;
@@ -64,6 +75,12 @@ interface Agent {
   ring: Graphics;
   legL: Graphics;
   legR: Graphics;
+  /** 1 = facing right, -1 = left. */
+  face: number;
+  talk: Talk | null;
+  speech: Container | null;
+  speechT: number;
+  thinkT: number;
 }
 
 const GLYPHS = ['♪', '!', '?', '☕', '💡', '…', '★', '♥'];
@@ -79,6 +96,8 @@ export class OfficeRenderer {
   private textures = new Map<string, Texture>();
   private itemSprites = new Map<string, Sprite>();
   private agents = new Map<string, Agent>();
+  /** After the first sync, newly created agents are new hires and say hello. */
+  private agentsReady = false;
   private staticKey = '';
   private itemsKey = '';
   private heatKey = '';
@@ -616,7 +635,7 @@ export class OfficeRenderer {
     const legR = new Graphics().roundRect(1, -8, 4, 8, 2).fill(0x3a3f4a);
     c.addChild(ring, legL, legR, fig);
     this.itemLayer.addChild(c);
-    return { id: st.id, c, fig, look, pose: 'sit', x: 0, y: 0, path: [], mode: 'desk', next: 'desk', wait: 0, cooldown: 3 + Math.random() * 8, bubble: null, bubbleT: 0, icon: null, t: Math.random() * 10, floor: 0, sweat: 0, label: null, ring, legL, legR };
+    return { id: st.id, c, fig, look, pose: 'sit', x: 0, y: 0, path: [], mode: 'desk', next: 'desk', wait: 0, cooldown: 3 + Math.random() * 8, bubble: null, bubbleT: 0, icon: null, t: Math.random() * 10, floor: 0, sweat: 0, label: null, ring, legL, legR, face: 1, talk: null, speech: null, speechT: 0, thinkT: 4 + Math.random() * 10 };
   }
 
   private setPose(a: Agent, pose: Agent['pose']): void {
@@ -658,6 +677,7 @@ export class OfficeRenderer {
         a.y = ey;
         a.mode = 'walk';
         a.next = 'desk';
+        if (this.agentsReady) this.say(a, Math.random() < 0.5 ? 'Hi everyone! 👋' : 'First day! 😊', 3);
       }
       const desk = st.deskId ? s.office.items.find((i) => i.id === st.deskId) : undefined;
       const agentFloor = desk ? desk.floor : 0;
@@ -671,7 +691,7 @@ export class OfficeRenderer {
       }
       if (!a.seat || a.deskId !== st.deskId) {
         a.deskId = st.deskId;
-        a.seat = this.seatFor(s, st.deskId, floor) ?? [ent.x, Math.max(0, ent.y - 1)];
+        a.seat = this.seatFor(s, st.deskId, floor) ?? this.standingSpot(s, floor, st.id, ent);
         if (a.mode === 'desk') {
           const [sx, sy] = this.tileCenter(a.seat[0], a.seat[1]);
           a.path = this.route(s, floor, a, sx, sy);
@@ -684,7 +704,8 @@ export class OfficeRenderer {
       // Decide trips
       if (a.mode === 'desk' && a.cooldown <= 0 && !ui.reducedMotion) {
         const wantsBreak = st.activity === 'break' || (st.energy < 45 && Math.random() < 0.3);
-        if (wantsBreak) {
+        const free = st.assignment.kind === 'idle' || st.activity === 'chat' || (st.activity === 'break' && Math.random() < 0.5);
+        if (wantsBreak && !(free && Math.random() < 0.5)) {
           const target = this.nearestStation(s, floor, a.seat!);
           if (target) {
             const [tx, ty] = this.tileCenter(target[0], target[1]);
@@ -695,6 +716,14 @@ export class OfficeRenderer {
             }
           }
           a.cooldown = 8 + Math.random() * 14;
+        } else if (free && Math.random() < 0.4 && this.tryChat(s, floor, a, st, 'social')) {
+          a.cooldown = 10 + Math.random() * 12;
+        } else if (free && Math.random() < 0.55 && this.tryLeisure(s, floor, a, LEISURE)) {
+          a.cooldown = 8 + Math.random() * 10;
+        } else if (st.activity === 'research' && Math.random() < 0.18 && this.tryLeisure(s, floor, a, null)) {
+          a.cooldown = 12 + Math.random() * 14;
+        } else if (st.assignment.kind === 'project' && st.activity === 'work' && Math.random() < 0.07 && this.tryChat(s, floor, a, st, 'work')) {
+          a.cooldown = 14 + Math.random() * 16;
         } else if (st.assignment.kind === 'project' && st.activity === 'work' && Math.random() < 0.12) {
           // project teams huddle at a meeting table or whiteboard now and then (cosmetic)
           const target = this.nearestStation(s, floor, a.seat!, 'meeting');
@@ -725,13 +754,15 @@ export class OfficeRenderer {
       if (a.mode === 'walk') {
         const target = a.path[0];
         if (!target) {
+          if (a.next !== 'fun') a.wait = a.next === 'station' ? 3 + Math.random() * 3 : a.next === 'meeting' ? 4 + Math.random() * 4 : a.next === 'wander' ? 1.5 + Math.random() * 2 : 0;
           a.mode = a.next;
-          a.wait = a.next === 'station' ? 3 + Math.random() * 3 : a.next === 'meeting' ? 4 + Math.random() * 4 : a.next === 'wander' ? 1.5 + Math.random() * 2 : 0;
+          if (a.mode === 'talk' && a.talk) a.talk.timer = 0.2;
         } else {
           const sp = 2.3 * T * dt * speedMul * (st.activity === 'burnout' ? 0.6 : 1);
           const dx = target[0] - a.x;
           const dy = target[1] - a.y;
           const d = Math.hypot(dx, dy);
+          if (Math.abs(dx) > 0.5) a.face = dx > 0 ? 1 : -1;
           if (d <= sp) {
             a.x = target[0];
             a.y = target[1];
@@ -741,9 +772,13 @@ export class OfficeRenderer {
             a.y += (dy / d) * sp;
           }
         }
-      } else if (a.mode === 'station' || a.mode === 'wander' || a.mode === 'meeting') {
+      } else if (a.mode === 'talk') {
+        this.updateTalk(s, floor, a, dt * speedMul);
+      } else if (a.mode === 'station' || a.mode === 'wander' || a.mode === 'meeting' || a.mode === 'fun') {
         a.wait -= dt * speedMul;
         if (a.mode === 'station' && Math.random() < dt * 0.8) this.puff(a.x + 8, a.y - 30, 0xffffff);
+        // Water-cooler talk: someone else on a break nearby? Chat where you stand.
+        if ((a.mode === 'station' || a.mode === 'fun' || a.mode === 'wander') && !a.talk && Math.random() < dt * 0.25) this.tryChat(s, floor, a, st, 'nearby');
         if (a.wait <= 0 && a.seat) {
           const [sx, sy] = this.tileCenter(a.seat[0], a.seat[1]);
           a.path = this.route(s, floor, a, sx, sy);
@@ -751,6 +786,10 @@ export class OfficeRenderer {
           a.next = 'desk';
         }
       } else if (a.mode === 'desk' && a.seat) {
+        if (a.talk && !a.talk.host) {
+          a.talk.patience -= dt * speedMul;
+          if (a.talk.patience <= 0) a.talk = null;
+        }
         const [sx, sy] = this.tileCenter(a.seat[0], a.seat[1]);
         a.x += (sx - a.x) * Math.min(1, dt * 8);
         a.y += (sy - 10 - a.y) * Math.min(1, dt * 8);
@@ -766,6 +805,7 @@ export class OfficeRenderer {
       }
       if (st.morale > 82 && atDesk && Math.sin(a.t * 1.3) > 0.995) bob += 5;
       a.fig.position.set(0, -bob);
+      a.fig.scale.x = a.face;
       const standing = a.pose !== 'sit' && a.pose !== 'slump';
       a.legL.visible = a.legR.visible = standing;
       if (standing) {
@@ -784,8 +824,28 @@ export class OfficeRenderer {
       }
       // bubbles
       a.bubbleT -= dt;
+      a.thinkT -= dt * speedMul;
+      if (atDesk && st.activity === 'work' && a.thinkT <= 0 && a.bubbleT < -1 && !ui.reducedMotion) {
+        const p = st.assignment.kind === 'project' ? s.projects[st.assignment.id] : undefined;
+        const buggy = !!p && p.kind === 'game' && p.bugs > (p.design + p.tech) * 0.06;
+        this.showBubble(a, workThought(st, buggy));
+        a.bubbleT = 1.8;
+        a.thinkT = 10 + Math.random() * 25;
+      }
+      a.speechT -= dt;
+      if (a.speech) {
+        a.speech.visible = a.speechT > 0;
+        a.speech.position.set(0, -58 - (a.mode === 'desk' ? 0 : 4));
+      }
       if ((st.activity === 'chat' && a.bubbleT < -2 && Math.random() < dt * 2) || ((a.mode === 'station' || a.mode === 'meeting') && a.bubbleT < -4 && Math.random() < dt * 1.5)) {
         this.showBubble(a, a.mode === 'station' ? '☕' : a.mode === 'meeting' ? (Math.random() < 0.5 ? '💡' : '📋') : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!);
+      }
+      if (a.mode === 'fun' && a.bubbleT < 0.5) {
+        const g = (a as Agent & { funGlyph?: string }).funGlyph;
+        if (g) {
+          this.showBubble(a, g);
+          a.bubbleT = Math.max(1, a.wait);
+        }
       }
       if (a.bubble) {
         a.bubble.visible = a.bubbleT > 0;
@@ -820,6 +880,193 @@ export class OfficeRenderer {
         this.agents.delete(id);
       }
     }
+    for (const a of this.agents.values()) if (a.talk && !this.agents.get(a.talk.partner)?.c.visible) this.endTalk(s, floor, a);
+    this.agentsReady = true;
+  }
+
+  // ── Office life: conversations and leisure (cosmetic) ──────────────────────
+
+  /** Somewhere for a deskless person to stand (spread out near the entrance, stable per person) instead of all on one tile. */
+  private standingSpot(s: GameState, floor: number, id: string, ent: { x: number; y: number }): [number, number] {
+    const t = tierDef(s.office.tier);
+    const occ = occupancy(s, floor);
+    const spots: [number, number][] = [];
+    for (let r = 1; r <= 6 && spots.length < 24; r++)
+      for (let dx = -r; dx <= r; dx++) {
+        const x = ent.x + dx;
+        const y = ent.y - r;
+        if (x >= 0 && y >= 0 && x < t.w && y < t.h && !occ.has(y * t.w + x)) spots.push([x, y]);
+      }
+    if (!spots.length) return [ent.x, Math.max(0, ent.y - 1)];
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return spots[h % spots.length]!;
+  }
+
+  private goDesk(s: GameState, floor: number, a: Agent): void {
+    if (!a.seat) return;
+    const [sx, sy] = this.tileCenter(a.seat[0], a.seat[1]);
+    a.path = this.route(s, floor, a, sx, sy);
+    a.mode = 'walk';
+    a.next = 'desk';
+  }
+
+  private endTalk(s: GameState, floor: number, a: Agent): void {
+    const partner = a.talk ? this.agents.get(a.talk.partner) : undefined;
+    a.talk = null;
+    if (a.mode === 'talk') this.goDesk(s, floor, a);
+    if (partner?.talk && partner.talk.partner === a.id) {
+      partner.talk = null;
+      if (partner.mode === 'talk') this.goDesk(s, floor, partner);
+    }
+  }
+
+  /** Start a conversation. social: walk over to someone free; work: visit a teammate's desk; nearby: chat where you stand. */
+  private tryChat(s: GameState, floor: number, a: Agent, st: Staff, kind: 'social' | 'work' | 'nearby'): boolean {
+    if (a.talk) return false;
+    const talking = [...this.agents.values()].filter((x) => x.talk?.host).length;
+    if (talking >= Math.max(3, Math.min(14, this.agents.size / 12))) return false;
+    const range = kind === 'nearby' ? 2.6 * T : 11 * T;
+    let best: { b: Agent; bst: Staff; d: number } | null = null;
+    for (const b of this.agents.values()) {
+      if (b === a || b.talk || !b.c.visible || b.floor !== floor) continue;
+      const bst = s.staff[b.id];
+      if (!bst) continue;
+      const d = Math.hypot(b.x - a.x, b.y - a.y);
+      if (d > range) continue;
+      if (kind === 'work') {
+        const sameProject = st.assignment.kind === 'project' && bst.assignment.kind === 'project' && bst.assignment.id === st.assignment.id;
+        if (!sameProject || b.mode !== 'desk') continue;
+      } else {
+        const free = bst.assignment.kind === 'idle' || bst.activity === 'break' || bst.activity === 'chat' || b.mode === 'wander' || b.mode === 'station' || b.mode === 'fun';
+        if (!free || b.mode === 'walk' || b.mode === 'meeting') continue;
+      }
+      const score = d * (0.6 + Math.random() * 0.8);
+      if (!best || score < best.d) best = { b, bst, d: score };
+    }
+    if (!best) return false;
+    const { b, bst } = best;
+    const [l1, r1] = kind === 'work' ? workExchange(st, bst) : chatExchange(s, st, bst);
+    const lines = [l1, r1];
+    if (kind !== 'work' && Math.random() < 0.6) {
+      const [l2, r2] = chatExchange(s, bst, st);
+      lines.push(l2, r2);
+    }
+    a.talk = { partner: b.id, lines, i: 0, timer: 0.3, host: true, patience: 30 };
+    b.talk = { partner: a.id, lines, i: 0, timer: 0, host: false, patience: 25 };
+    if (kind === 'nearby') {
+      a.mode = 'talk';
+      a.path = [];
+      if (b.mode !== 'desk') {
+        b.mode = 'talk';
+        b.path = [];
+      }
+      return true;
+    }
+    // walk to a free tile beside them
+    const t = tierDef(s.office.tier);
+    const occ = occupancy(s, floor);
+    const bx = Math.floor(b.x / T);
+    const by = Math.floor((b.y + 6) / T);
+    const spots: [number, number][] = [[bx - 1, by], [bx + 1, by], [bx, by + 1], [bx, by - 1], [bx - 1, by + 1], [bx + 1, by + 1]];
+    for (const [x, y] of spots) {
+      if (x < 0 || y < 0 || x >= t.w || y >= t.h || occ.has(y * t.w + x)) continue;
+      const [tx, ty] = this.tileCenter(x, y);
+      const path = this.route(s, floor, a, tx, ty);
+      if (!path.length) continue;
+      a.path = path;
+      a.mode = 'walk';
+      a.next = 'talk';
+      if (b.mode !== 'desk') {
+        b.mode = 'talk';
+        b.path = [];
+      }
+      return true;
+    }
+    a.talk = null;
+    b.talk = null;
+    return false;
+  }
+
+  private updateTalk(s: GameState, floor: number, a: Agent, dt: number): void {
+    const tk = a.talk;
+    const partner = tk ? this.agents.get(tk.partner) : undefined;
+    if (!tk || !partner) {
+      this.endTalk(s, floor, a);
+      return;
+    }
+    a.face = partner.x >= a.x ? 1 : -1;
+    if (partner.mode === 'talk') partner.face = a.x >= partner.x ? 1 : -1;
+    if (!tk.host) {
+      // waiting for the host to walk over
+      tk.patience -= dt;
+      if (tk.patience <= 0) this.endTalk(s, floor, a);
+      return;
+    }
+    tk.timer -= dt;
+    if (tk.timer > 0) return;
+    if (tk.i >= tk.lines.length) {
+      this.endTalk(s, floor, a);
+      return;
+    }
+    const speaker = tk.i % 2 === 0 ? a : partner;
+    this.say(speaker, tk.lines[tk.i]!, 2.1);
+    tk.i += 1;
+    tk.timer = 2.2;
+  }
+
+  /** Go and do something on a break (arcade, sofa, bookshelf…) or, with spots=null, think at a research spot. */
+  private tryLeisure(s: GameState, floor: number, a: Agent, spots: typeof LEISURE | null): boolean {
+    const t = tierDef(s.office.tier);
+    const occ = occupancy(s, floor);
+    const options = s.office.items.filter((it) => it.floor === floor && (spots ? spots[it.item] : RESEARCH_SPOTS.has(it.item)));
+    if (!options.length) return false;
+    const it = options[Math.floor(Math.random() * options.length)]!;
+    const fp = footprint(it);
+    const free: [number, number][] = [];
+    for (let dy = -1; dy <= fp.h; dy++)
+      for (let dx = -1; dx <= fp.w; dx++) {
+        const x = it.x + dx;
+        const y = it.y + dy;
+        if (x >= 0 && y >= 0 && x < t.w && y < t.h && !occ.has(y * t.w + x)) free.push([x, y]);
+      }
+    if (!free.length) return false;
+    const [x, y] = free[Math.floor(Math.random() * free.length)]!;
+    const [tx, ty] = this.tileCenter(x, y);
+    const path = this.route(s, floor, a, tx, ty);
+    if (!path.length) return false;
+    const spec = spots?.[it.item];
+    a.path = path;
+    a.mode = 'walk';
+    a.next = 'fun';
+    a.wait = spec ? spec.secs[0] + Math.random() * (spec.secs[1] - spec.secs[0]) : 4 + Math.random() * 4;
+    const glyph = spec ? spec.glyph : Math.random() < 0.5 ? '🧠' : '⚗';
+    this.showBubble(a, glyph);
+    a.bubbleT = -0.5; // shown on arrival
+    (a as Agent & { funGlyph?: string }).funGlyph = glyph;
+    return true;
+  }
+
+  /** A speech bubble with words (sized to the text). */
+  private say(a: Agent, text: string, secs: number): void {
+    const w = Math.min(170, Math.max(34, 10 + text.length * 5.4));
+    if (!a.speech) {
+      const c = new Container();
+      c.addChild(new Graphics(), new Text({ text: '', style: { fontFamily: 'Inter, sans-serif', fontSize: 9.5, fontWeight: '600', fill: 0x2a2622 } }));
+      a.c.addChild(c);
+      a.speech = c;
+    }
+    const bg = a.speech.children[0] as Graphics;
+    const tx = a.speech.children[1] as Text;
+    bg.clear();
+    bg.roundRect(-w / 2, -11, w, 20, 8).fill({ color: 0xffffff, alpha: 0.97 });
+    bg.roundRect(-w / 2, -11, w, 20, 8).stroke({ width: 1, color: 0x2a2622, alpha: 0.12 });
+    bg.poly([-3, 9, 4, 9, -1, 15]).fill({ color: 0xffffff, alpha: 0.97 });
+    tx.text = text;
+    tx.anchor.set(0.5);
+    tx.position.set(0, -1);
+    a.speechT = secs;
+    a.speech.visible = true;
   }
 
   private route(s: GameState, floor: number, a: Agent, wx: number, wy: number): [number, number][] {

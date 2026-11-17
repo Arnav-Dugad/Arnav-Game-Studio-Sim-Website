@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17i';
+export const WHATS_NEW_VERSION = '2026-11-17j';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'A living office', body: 'Staff chat about your games, reviews and rivals, play arcade games on breaks, visit teammates to help, think at whiteboards — and greet you on their first day.' },
   { icon: 'sliders', title: 'Signature features', body: 'Open world, online multiplayer, branching story, battle pass and more — up to three per game, each a bet on your genre.' },
   { icon: 'house', title: 'Studio overview & automation', body: 'A home screen of everything needing attention with one-click fixes (O), plus policies that put idle staff on research and send burnt-out people on vacation.' },
   { icon: 'people', title: 'Big-team management', body: 'Filter, search, group and bulk-assign hundreds of staff; every team picker gets search and a one-click “Best team”.' },
   { icon: 'sparkle', title: 'Cheats & sandbox mode', body: 'Bend any rule from Menu → Cheats (press `), with one-click presets, or tick Sandbox mode when founding a studio.' },
   { icon: 'trophy', title: 'Gala ceremonies & rivalries', body: 'Win an award and the Golden Pixel Gala celebrates you. Beat rival studios in head-to-head showdowns.' },
-  { icon: 'people', title: 'Open betas & retirement', body: 'Test with real players during polish (2005+). Veterans now retire after long careers and join your alumni.' },
 ];
 
 function seen(): boolean {

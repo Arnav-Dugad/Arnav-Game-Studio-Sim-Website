@@ -33,6 +33,7 @@
   - IPO, stock price and board, acquisitions and subsidiaries, and hostile takeovers.
   - Bankruptcy is a real fail state.
 - **Reviews.** Critic outlets with their own biases and generated blurbs, user scores, franchises, fans, fatigue and yearly awards.
+- **A living office.** Staff walk over to colleagues and chat in speech bubbles about what's really happening: your current game, last week's reviews, a rival's hit, crunch, awards, the new office, the era's tech. Their personalities and moods show. On breaks they play arcade games and ping-pong, lounge on sofas, browse bookshelves and gather at the water cooler. Seniors drop by juniors' desks to help, researchers think at whiteboards, workers show role-specific thoughts (a programmer's 🐛 when bugs pile up), and new hires say hello.
 - **Runs a big studio without busywork.**
   - **Studio Overview (O):** lists everything that needs attention, each with a one-click fix.
   - **Team tab:** filters, search, grouping and compact rows for hundreds of people, plus bulk actions (assign, research, vacation, training, raises).
