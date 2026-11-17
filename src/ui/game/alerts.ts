@@ -1,4 +1,5 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
+import { sabbaticalBlocked } from '@/sim/systems/staff';
 import { formatDate } from '@/sim/calendar';
 import { fmtMoney } from '@/sim/util';
 import { monthlyBurn, trailingRevenue } from '@/sim/systems/finance';
@@ -50,6 +51,8 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   const idle = staff.filter((x) => x.assignment.kind === 'idle' && !isAway(x) && x.role !== 'founder').length;
   if (idle) out.push({ id: 'idle', tone: idle >= 5 ? 'warn' : 'info', icon: 'hourglass', text: `${idle} ${idle === 1 ? 'person is' : 'people are'} idle — paid, but not working.`, action: { label: 'Assign', run: () => open('staff', 'idle') } });
   if (staff.length >= 6 && !(s.company.values ?? []).length) out.push({ id: 'culture', tone: 'info', icon: 'sparkle', text: 'Your studio has no stated values yet. Pick a culture — quality, speed, players, profit, innovation or balance.', action: { label: 'Culture', run: () => open('company', 'culture') } });
+  const tired = staff.filter((x) => x.burnout > 60 && !sabbaticalBlocked(s, x)).length;
+  if (tired) out.push({ id: 'sabbatical', tone: 'info', icon: 'leaf', text: `${tired} burnt-out ${tired === 1 ? 'veteran could' : 'veterans could'} use a sabbatical (two months off, back stronger).`, action: { label: 'See who', run: () => open('staff', 'risk') } });
   const dreams = staff.filter((x) => x.ambition && x.ambition.until - s.day < 45);
   if (dreams.length) out.push({ id: 'ambitions', tone: 'warn', icon: 'star', text: `${dreams.length} ${dreams.length === 1 ? 'ambition runs' : 'ambitions run'} out soon — help them and they’ll be far more loyal.`, action: { label: 'See who', run: () => open('staff', 'ambition') } });
   const avgMorale = staff.reduce((t, x) => t + x.morale, 0) / Math.max(1, staff.length);
