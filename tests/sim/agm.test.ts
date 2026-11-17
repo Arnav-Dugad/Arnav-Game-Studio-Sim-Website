@@ -48,3 +48,22 @@ describe('annual shareholder meeting', () => {
     }
   });
 });
+
+describe('venture funding', () => {
+  it('rounds need reputation and a year apart, and investors keep their slice at the IPO', () => {
+    const s = createGame({ seed: 6, companyName: 'VC', founderName: 'F', startYear: 1990, endless: true, autopause: false, difficulty: 'standard' });
+    s.company.cash = 2_000_000;
+    expect(dispatch(s, { type: 'raiseFunding' }).ok).toBe(false); // reputation
+    s.company.reputation = 50;
+    const cash = s.company.cash;
+    expect(dispatch(s, { type: 'raiseFunding' }).ok).toBe(true);
+    expect(s.company.cash).toBeGreaterThan(cash);
+    expect(s.company.investorStake).toBeCloseTo(0.15, 6);
+    expect(dispatch(s, { type: 'raiseFunding' }).ok).toBe(false); // a year apart
+    s.day += 366;
+    expect(dispatch(s, { type: 'raiseFunding' }).ok).toBe(true);
+    doIPO(s, 0.3);
+    const st = s.finance.stock!;
+    expect(st.founderShares / st.shares).toBeCloseTo(1 - 0.3 - 0.3, 2);
+  });
+});

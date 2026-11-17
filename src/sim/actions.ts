@@ -28,7 +28,7 @@ import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } fro
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
 import { applyPatch, applyPort, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, SALE_DISCOUNTS, type SaleDiscount } from './systems/release';
-import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
+import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost } from './systems/research';
@@ -127,6 +127,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'raiseFunding' }
   | { type: 'negotiateDeal'; dealId: string; ask: 'advance' | 'royalty' }
   | { type: 'sabbatical'; staffId: string }
   | { type: 'undoPlace' }
@@ -910,6 +911,8 @@ function apply(c: Ctx, a: Action): string | null {
       }
       return null;
     }
+    case 'raiseFunding':
+      return raiseFunding(s);
     case 'liveEvent':
       return runLiveEvent(s, a.releaseId);
     case 'teamRetreat':

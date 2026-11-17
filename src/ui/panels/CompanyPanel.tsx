@@ -6,7 +6,7 @@ import { TRADE_SHOWS } from '@/data/marketing';
 import type { GenreId } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits, inflation, money } from '@/sim/util';
-import { ipoEligible, valuation } from '@/sim/systems/finance';
+import { fundingAmount, fundingBlocked, ipoEligible, nextFunding, valuation } from '@/sim/systems/finance';
 import { LineChart } from '../charts';
 import { Button, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
@@ -244,6 +244,23 @@ function Stock() {
         <div className="grid grid-cols-2 gap-2">
           <Stat label="Private valuation" value={fmtMoney(valuation(s))} />
           <Stat label="Reputation" value={Math.round(s.company.reputation)} />
+        </div>
+        <div className="rounded-2xl border border-line p-3 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">Venture funding</span>
+            <span className="text-xs text-ink3">Investors own {Math.round((s.company.investorStake ?? 0) * 100)}%</span>
+          </div>
+          <p className="mt-1 text-xs text-ink3">Sell a slice of the studio for cash now. It’s money for growth — but every round shrinks the share you’ll keep when you go public, and below half, rivals can try a hostile takeover.</p>
+          {nextFunding(s) ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button size="sm" icon="coin" disabled={!!fundingBlocked(s)} title={fundingBlocked(s) ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'raiseFunding' }, 'Funding secured!')}>
+                {nextFunding(s)!.name}: {fmtMoney(fundingAmount(s))} for {Math.round(nextFunding(s)!.stake * 100)}%
+              </Button>
+              {fundingBlocked(s) && <span className="text-xs text-ink3">{fundingBlocked(s)}</span>}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-ink3">All private rounds raised.</p>
+          )}
         </div>
         <div className="rounded-2xl border border-line p-3 text-sm">
           <div className="font-semibold">Initial public offering</div>

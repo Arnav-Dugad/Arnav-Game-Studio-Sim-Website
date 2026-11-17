@@ -714,6 +714,10 @@ export interface Company {
   values?: CultureId[];
   valuesDay?: number;
   lastRetreatDay?: number;
+  /** Venture funding before the IPO: rounds raised, investors' share of the company, and when the last round closed. */
+  fundingRounds?: number;
+  investorStake?: number;
+  lastFundingDay?: number;
   /** Staff are unionised (recognised after a union drive). */
   union?: boolean;
   founderName: string;

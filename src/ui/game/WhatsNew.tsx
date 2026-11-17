@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18k';
+export const WHATS_NEW_VERSION = '2026-11-18l';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'coin', title: 'Venture funding', body: 'Company → Stock: before going public, raise a Seed round, Series A and Series B — cash now for a slice of the studio. Every round shrinks the share you keep at the IPO.' },
   { icon: 'handshake', title: 'Spin-offs & negotiation', body: 'A star who quits may found their own studio and become your rival (buy them back for an achievement). And you can now haggle with publishers: ask for a bigger advance or royalty — they might walk away.' },
   { icon: 'leaf', title: 'Sabbaticals & work anniversaries', body: 'Veterans with 8+ years can take a two-month sabbatical and come back better at their craft. Work anniversaries bring cake every five years and loyalty at 10, 20 and 30.' },
   { icon: 'library', title: 'New topics, gym & unions', body: 'Four new topics with their own cover art — Trains, Witches & Wizards, Giant Monsters and Cozy Village (huge around 2020). A Studio Gym slows burnout nearby. Heavy crunch can spark a union drive. Personalities now show in the office.' },

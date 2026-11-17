@@ -9,7 +9,7 @@ import { clamp } from '../breakdown';
 import { fromDay, interp, yearFrac } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState, Loan, MonthLedger } from '../types';
-import { earn, inflation, newId, pushNews, spend, sum } from '../util';
+import { earn, fmtMoney, inflation, money, newId, pushNews, spend, sum } from '../util';
 import { tierDef } from './office';
 import { payrollMonthly } from './staff';
 
@@ -188,6 +188,47 @@ export function ipoEligible(s: GameState): { ok: boolean; why: string } {
   return { ok: true, why: '' };
 }
 
+/** Venture funding rounds before going public. */
+export const FUNDING_ROUNDS = [
+  { name: 'Seed round', stake: 0.15, minRep: 10 },
+  { name: 'Series A', stake: 0.15, minRep: 25 },
+  { name: 'Series B', stake: 0.15, minRep: 40 },
+] as const;
+
+export function nextFunding(s: GameState): (typeof FUNDING_ROUNDS)[number] | undefined {
+  return FUNDING_ROUNDS[s.company.fundingRounds ?? 0];
+}
+
+/** What investors would pay for the next round (they buy at the current valuation, a little discounted). */
+export function fundingAmount(s: GameState): number {
+  const r = nextFunding(s);
+  return r ? Math.round(valuation(s) * r.stake * 0.9) : 0;
+}
+
+export function fundingBlocked(s: GameState): string | null {
+  const r = nextFunding(s);
+  if (s.finance.stock) return 'You’re public now';
+  if (!r) return 'No more private rounds — next stop, the stock market';
+  if (fromDay(s.day).year < 1983) return 'Venture capital discovers games in 1983';
+  if (s.company.reputation < r.minRep) return `Investors want reputation ${r.minRep}+`;
+  if (s.company.lastFundingDay !== undefined && s.day - s.company.lastFundingDay < 365) return 'Investors want a year of results before the next round';
+  if (fundingAmount(s) < money(50_000, s.day)) return 'Too small for investors to bother';
+  return null;
+}
+
+export function raiseFunding(s: GameState): string | null {
+  const why = fundingBlocked(s);
+  if (why) return why;
+  const r = nextFunding(s)!;
+  const amount = fundingAmount(s);
+  s.company.cash += amount; // equity: not revenue
+  s.company.investorStake = (s.company.investorStake ?? 0) + r.stake;
+  s.company.fundingRounds = (s.company.fundingRounds ?? 0) + 1;
+  s.company.lastFundingDay = s.day;
+  pushNews(s, { category: 'studio', headline: `${s.company.name} closes a ${fmtMoney(amount)} ${r.name.toLowerCase()}`, body: `Investors now own ${Math.round((s.company.investorStake ?? 0) * 100)}% of the studio.`, tone: 'good' });
+  return null;
+}
+
 export function doIPO(s: GameState, sellPct: number): number {
   const val = valuation(s);
   const shares = BALANCE.SHARES_OUTSTANDING;
@@ -196,7 +237,8 @@ export function doIPO(s: GameState, sellPct: number): number {
   const raised = sold * price * 0.94; // underwriting fees
   s.finance.stock = {
     shares,
-    founderShares: shares - sold,
+    // venture investors keep their slice: it comes out of the founder's shares
+    founderShares: Math.max(0, shares - sold - Math.round(shares * (s.company.investorStake ?? 0))),
     price,
     history: [price],
     ipoDay: s.day,
