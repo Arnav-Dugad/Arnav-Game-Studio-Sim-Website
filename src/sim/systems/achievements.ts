@@ -1,4 +1,5 @@
 import { fromDay, toDay } from '../calendar';
+import { gameRegions } from '../../data/regions';
 import type { Ctx } from '../ctx';
 import type { GameState } from '../types';
 import { money, pushNews } from '../util';
@@ -51,7 +52,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'pets_both', name: 'Raining Cats and Dogs', desc: 'Keep a studio cat and an office dog at the same time.', icon: 'heart', check: (s) => s.office.items.some((i) => i.item === 'pet_cat') && s.office.items.some((i) => i.item === 'pet_dog') },
   { id: 'culture', name: 'Culture Club', desc: 'Give your studio stated values.', icon: 'sparkle', check: (s) => (s.company.values ?? []).length > 0 },
   { id: 'dreams_10', name: 'Dream Employer', desc: 'Help staff fulfil 10 ambitions.', icon: 'star', check: (s) => (s.progress.stats.dreamsMet ?? 0) >= 10 },
-  { id: 'global_hit', name: 'Lost in Translation? Never.', desc: 'Sell 1 million copies of a game localised for every region.', icon: 'globe', check: (s) => Object.values(s.releases).some((r) => (r.concept.localized?.length ?? 0) >= 3 && r.units >= 1_000_000) },
+  { id: 'global_hit', name: 'Lost in Translation? Never.', desc: 'Sell 1 million copies of a game localised for every region.', icon: 'globe', check: (s) => Object.values(s.releases).some((r) => gameRegions(r.concept).filter((x) => x !== (s.company.homeRegion ?? 'na')).length >= 3 && r.units >= 1_000_000) },
   { id: 'dividend', name: 'Shareholder Value', desc: 'Pay your shareholders a dividend.', icon: 'coin', check: (s) => (s.finance.stock?.dividendsPaid ?? 0) > 0 },
   { id: 'global_studio', name: 'Global Studio', desc: 'Run branch offices in every other region of the world.', icon: 'globe', check: (s) => (s.company.branches ?? []).length >= 3 },
   { id: 'live_ops', name: 'Live Ops', desc: 'Run 10 live events across your games.', icon: 'sparkle', check: (s) => Object.values(s.releases).reduce((t, r) => t + (r.liveEvents ?? 0), 0) >= 10 },

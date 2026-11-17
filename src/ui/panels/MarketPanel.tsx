@@ -154,7 +154,13 @@ function World() {
                   <>
                     <Pill tone="good">Branch office open</Pill>
                     <span className="text-ink3">{fmtMoney(money(BRANCH.rent, s.day))}/mo</span>
-                    <Button size="sm" variant="ghost" onClick={() => useGame.getState().actOrToast({ type: 'closeBranch', region: r.id }, `Closed the ${r.name} studio`)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        if (window.confirm(`Close the ${r.name} studio? Reopening costs the full fee again.`)) useGame.getState().actOrToast({ type: 'closeBranch', region: r.id }, `Closed the ${r.name} studio`);
+                      }}
+                    >
                       Close
                     </Button>
                   </>

@@ -173,6 +173,8 @@ export interface Concept {
   features?: string[];
   /** Regions the game is translated for (the studio's home region always is). */
   localized?: RegionId[];
+  /** Regions a branch office translated it for, free, at the time it was made. */
+  branchLocalized?: RegionId[];
 }
 
 export interface PublisherDeal {

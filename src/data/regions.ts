@@ -85,6 +85,11 @@ export function regionShare(r: RegionDef, year: number): number {
   return a[a.length - 1]![1];
 }
 
+/** Every region a game reaches in its players' language: paid localisation, branch-office versions and current branches (de-duplicated). */
+export function gameRegions(c: { localized?: readonly RegionId[]; branchLocalized?: readonly RegionId[] }, branches: readonly RegionId[] = []): RegionId[] {
+  return [...new Set([...(c.localized ?? []), ...(c.branchLocalized ?? []), ...branches])];
+}
+
 /** Shares normalised to sum to 1 for a year. */
 export function regionShares(year: number): Record<RegionId, number> {
   const raw = REGIONS.map((r) => regionShare(r, year));

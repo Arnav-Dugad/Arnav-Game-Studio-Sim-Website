@@ -92,6 +92,8 @@ interface GameStore {
   step: (days: number) => void;
   openPanel: (p: PanelId | null, tab?: string | null) => void;
   pushModal: (m: Modal) => void;
+  /** Show a modal immediately on top of the current one (navigation from inside a modal). */
+  openModalNow: (m: Modal) => void;
   popModal: () => void;
   toast: (t: Omit<Toast, 'id'>) => void;
   dismissToast: (id: number) => void;
@@ -175,6 +177,7 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ panel: get().panel === p && !tab ? null : p, panelTab: tab, build: p === 'office' ? get().build : null });
   },
   pushModal: (m) => set({ modals: [...get().modals, m] }),
+  openModalNow: (m) => set({ modals: [m, ...get().modals.filter((x) => JSON.stringify(x) !== JSON.stringify(m))] }),
   popModal: () => set({ modals: get().modals.slice(1) }),
   toast: (t) => {
     const id = nextId++;

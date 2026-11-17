@@ -366,6 +366,7 @@ function apply(c: Ctx, a: Action): string | null {
           expansionOf: base?.id,
           ...(feats.length ? { features: feats } : {}),
           ...(locs.length ? { localized: locs } : {}),
+          ...((s.company.branches ?? []).length ? { branchLocalized: [...(s.company.branches ?? [])] } : {}),
           deal: deal ? { publisherId: deal.publisherId, advance: dealAdvanceFor(deal, g.size, s.day), royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
         },
         phase: 0,
@@ -676,7 +677,7 @@ function apply(c: Ctx, a: Action): string | null {
       // keep items that fit on the new grid; refund the rest at 40%
       const kept = [];
       const old = s.office.items;
-      s.office = { tier: a.tier, items: [], nextItemId: s.office.nextItemId };
+      s.office = { tier: a.tier, items: [], nextItemId: s.office.nextItemId, ...(s.office.style ? { style: s.office.style } : {}) };
       for (const it of old) {
         const def = ITEM_BY_ID[it.item];
         // try original spot, else first free spot on any floor

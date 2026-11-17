@@ -4,7 +4,7 @@
  */
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
-import { REGION_BY_ID, regionMix } from '../../data/regions';
+import { REGION_BY_ID, gameRegions, regionMix } from '../../data/regions';
 import { ambitionOnShip } from './ambitions';
 import { exclusiveBuzz } from './hardware';
 import { catalogSalesMul } from './subscription';
@@ -251,11 +251,14 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
     });
   for (const lt of launchTitles) sb.mul(`Launch title on ${lt.name} (early adopters buy everything)`, lt.mul);
   // Localisation: translated versions reach players abroad who'd otherwise pass.
-  const loc = regionMix(fromDay(s.day).year, concept.genre, s.company.homeRegion ?? 'na', concept.localized ?? [], s.company.branches ?? []);
-  if (loc.mul > 1.0005) {
-    for (const ps of platforms) ps.potential *= loc.mul;
-    sb.mul(`Localised for ${[...(concept.localized ?? []), ...(s.company.branches ?? [])].map((r) => REGION_BY_ID[r].short).join(', ')}`, loc.mul);
-  }
+  const home = s.company.homeRegion ?? 'na';
+  const year = fromDay(s.day).year;
+  const reached = gameRegions(concept, s.company.branches ?? []);
+  const homeMul = regionMix(year, concept.genre, home, [], []).mul;
+  const loc = regionMix(year, concept.genre, home, reached, s.company.branches ?? []);
+  if (Math.abs(loc.mul - 1) > 0.0005) for (const ps of platforms) ps.potential *= loc.mul;
+  if (Math.abs(homeMul - 1) > 0.0005) sb.mul(`Home market: ${REGION_BY_ID[home].name}`, homeMul);
+  if (loc.mul / homeMul > 1.0005) sb.mul(`Localised for ${reached.filter((r) => r !== home).map((r) => REGION_BY_ID[r].short).join(', ')}`, loc.mul / homeMul);
   if (fr && fr.fans > 0) {
     const fanBuy = fr.fans * clamp((effScore - 40) / 50, 0.05, 1) * fatigueMul;
     for (const ps of platforms) ps.potential += fanBuy * (((s.market.users[ps.platform] ?? 0) * 1e6) / Math.max(1, totalUsers));
@@ -344,7 +347,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     id,
     name: p.concept.name,
     concept: p.concept,
-    regionMix: regionMix(fromDay(s.day).year, p.concept.genre, s.company.homeRegion ?? 'na', p.concept.localized ?? [], s.company.branches ?? []).mix,
+    regionMix: regionMix(fromDay(s.day).year, p.concept.genre, s.company.homeRegion ?? 'na', gameRegions(p.concept, s.company.branches ?? []), s.company.branches ?? []).mix,
     day: s.day,
     quality,
     score,

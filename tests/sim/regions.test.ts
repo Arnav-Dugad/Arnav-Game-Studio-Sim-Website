@@ -59,3 +59,16 @@ describe('branch offices', () => {
     expect(dispatch(s, { type: 'closeBranch', region: 'jp' }).ok).toBe(true);
   });
 });
+
+describe('localisation from any home', () => {
+  it('always pays off a little or more, never zero, whatever the home region', () => {
+    for (const home of ['na', 'eu', 'jp', 'row'] as const)
+      for (const genre of ['rpg', 'adventure', 'shooter', 'sports'] as const)
+        for (const y of [1985, 2000, 2020])
+          for (const r of ['na', 'eu', 'jp', 'row'] as const) {
+            if (r === home) continue;
+            const gain = regionMix(y, genre, home, [r]).mul / regionMix(y, genre, home, []).mul;
+            expect(gain).toBeGreaterThan(1.0005);
+          }
+  });
+});

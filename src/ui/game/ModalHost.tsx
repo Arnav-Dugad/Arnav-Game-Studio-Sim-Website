@@ -3,7 +3,7 @@ import { liveEventBlocked, liveEventBoost, liveEventCost, liveEventName } from '
 import { BEST_FRIENDS, FEUD, relationsOf } from '@/sim/systems/relations';
 import { BuzzList, BuzzMeter } from '../components/BuzzList';
 import { releaseBuzz } from './buzz';
-import { REGIONS, REGION_BY_ID } from '@/data/regions';
+import { REGIONS, REGION_BY_ID, gameRegions } from '@/data/regions';
 import { AMBITION_PENALTY, AMBITION_REWARD, ambitionHint, ambitionText } from '@/sim/systems/ambitions';
 import { GENRE_BY_ID } from '@/data/genres';
 import { TOPIC_BY_ID } from '@/data/topics';
@@ -422,7 +422,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         </ul>
       </Section>
       {r.regionMix && (
-        <Section title="Players by region" right={<span className="text-xs text-ink3">{r.concept.localized?.length ? `Localised: ${r.concept.localized.map((x) => REGION_BY_ID[x].short).join(', ')}` : 'Not localised'}</span>}>
+        <Section title="Players by region" right={<span className="text-xs text-ink3">{gameRegions(r.concept).length ? `Localised: ${gameRegions(r.concept).map((x) => REGION_BY_ID[x].short).join(', ')}` : 'Not localised'}</span>}>
           <ul className="space-y-1 text-xs">
             {REGIONS.map((rg) => {
               const v = r.regionMix![rg.id] ?? 0;
@@ -510,7 +510,7 @@ function Credits({ releaseId }: { releaseId: string }) {
                 key={c.id}
                 type="button"
                 disabled={!s.staff[c.id]}
-                onClick={() => useGame.getState().pushModal({ kind: 'staff', staffId: c.id })}
+                onClick={() => useGame.getState().openModalNow({ kind: 'staff', staffId: c.id })}
                 className="block w-full text-sm enabled:hover:underline disabled:opacity-70"
                 title={s.staff[c.id] ? 'Open their card' : 'No longer at the studio'}
               >
@@ -552,7 +552,7 @@ function Shipped({ staffId }: { staffId: string }) {
           .reverse()
           .map((r) => (
             <li key={r.id} className="flex items-center gap-2">
-              <button type="button" className="min-w-0 flex-1 truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().pushModal({ kind: 'release', releaseId: r.id })}>
+              <button type="button" className="min-w-0 flex-1 truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().openModalNow({ kind: 'release', releaseId: r.id })}>
                 {r.name}
               </button>
               <span className="text-ink3">{fromDay(r.day).year}</span>
@@ -574,7 +574,7 @@ function Relationships({ staffId }: { staffId: string }) {
       <ul className="space-y-1 text-xs">
         {list.map(({ other, v }) => (
           <li key={other.id} className="flex items-center gap-2">
-            <button type="button" className="w-28 shrink-0 truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().pushModal({ kind: 'staff', staffId: other.id })}>
+            <button type="button" className="w-28 shrink-0 truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().openModalNow({ kind: 'staff', staffId: other.id })}>
               {other.name}
             </button>
             <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-bg2">

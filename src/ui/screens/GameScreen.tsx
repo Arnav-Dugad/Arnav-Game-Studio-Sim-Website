@@ -87,13 +87,16 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
 
   // Cinematic mode (V): hide the interface and let the camera wander the office
   const [cinema, setCinema] = useState(false);
+  const cinemaRef = useRef(false);
   const toggleCinema = useCallback((on?: boolean) => {
-    setCinema((was) => {
-      const next = on ?? !was;
-      rendererRef.current?.setCinematic(next);
-      if (next) useGame.getState().openPanel(null);
-      return next;
-    });
+    const r = rendererRef.current;
+    if (!r) return;
+    const next = on ?? !cinemaRef.current;
+    if (next === cinemaRef.current) return;
+    cinemaRef.current = next;
+    r.setCinematic(next);
+    if (next) useGame.getState().openPanel(null);
+    setCinema(next);
   }, []);
 
   // Keyboard shortcuts
@@ -134,7 +137,8 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       else if (k === '2') g.setSpeed(2);
       else if (k === '3' || k === '4') g.setSpeed(4);
       else if (k === 'v') toggleCinema();
-      else if (k === 'escape' && rendererRef.current?.cinematic) toggleCinema(false);
+      else if (k === 'escape' && cinemaRef.current) toggleCinema(false);
+      else if (cinemaRef.current) return; // the interface is hidden: no panels
       else if (k === 'escape') {
         if (g.build) g.setBuild(null);
         else g.openPanel(null);

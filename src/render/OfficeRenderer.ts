@@ -222,10 +222,10 @@ export class OfficeRenderer {
   }
 
   /** Cinematic mode: the camera drifts between interesting moments on its own. */
-  private tour: { target: { x: number; y: number } | null; follow: string | null; t: number } | null = null;
+  private tour: { target: { x: number; y: number } | null; follow: string | null; t: number; pausedUntil: number } | null = null;
 
   setCinematic(on: boolean): void {
-    this.tour = on ? { target: null, follow: null, t: 0 } : null;
+    this.tour = on ? { target: null, follow: null, t: 0, pausedUntil: 0 } : null;
     if (!on) this.fit();
   }
 
@@ -233,9 +233,11 @@ export class OfficeRenderer {
     return !!this.tour;
   }
 
-  private updateTour(dt: number): void {
+  private updateTour(dt: number, still: boolean): void {
     const tour = this.tour;
-    if (!tour || !this.el) return;
+    if (!tour || !this.el || still) return;
+    // the player is steering: let them for a few seconds
+    if (performance.now() < tour.pausedUntil) return;
     tour.t -= dt;
     if (tour.t <= 0) {
       tour.t = 6 + Math.random() * 4;
@@ -248,7 +250,10 @@ export class OfficeRenderer {
       this.targetZoom = 1.6 + Math.random() * 0.8;
     }
     const a = tour.follow ? this.agents.get(tour.follow) : undefined;
-    if (!a || !a.c.visible) return;
+    if (!a || !a.c.visible) {
+      tour.t = 0; // they left: find someone else
+      return;
+    }
     // ease towards keeping them centred (a little above, to frame bubbles)
     this.zoom += (this.targetZoom - this.zoom) * Math.min(1, dt * 0.8);
     const tx = this.el.clientWidth / 2 - a.x * this.zoom;
@@ -280,6 +285,7 @@ export class OfficeRenderer {
   // ── Input ────────────────────────────────────────────────────────────────
 
   private onPointerDown = (e: PointerEvent) => {
+    if (this.tour) this.tour.pausedUntil = performance.now() + 5000;
     this.pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
     if (this.pointers.size === 2) {
       const [a, b] = [...this.pointers.values()];
@@ -371,6 +377,7 @@ export class OfficeRenderer {
 
   private onWheel = (e: WheelEvent) => {
     e.preventDefault();
+    if (this.tour) this.tour.pausedUntil = performance.now() + 5000;
     this.zoomBy(Math.exp(-e.deltaY * 0.0015), e.offsetX, e.offsetY);
   };
 
@@ -484,7 +491,7 @@ export class OfficeRenderer {
     if (this.keys.has('d') || this.keys.has('arrowright')) this.cam.x -= pan;
     if (this.keys.has('w') || this.keys.has('arrowup')) this.cam.y += pan;
     if (this.keys.has('s') || this.keys.has('arrowdown')) this.cam.y -= pan;
-    this.updateTour(dt);
+    this.updateTour(dt, ui.reducedMotion);
     this.world.scale.set(this.zoom);
     this.world.position.set(this.cam.x, this.cam.y);
 

@@ -631,7 +631,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             {REGIONS.filter((r) => r.id !== home).map((r) => {
               const branch = (s.company.branches ?? []).includes(r.id);
               const on = branch || locs.includes(r.id);
-              const gain = regionMix(yr, genre, home, [r.id]).mul - 1;
+              const gain = regionMix(yr, genre, home, [r.id]).mul / regionMix(yr, genre, home, []).mul - 1;
               const taste = r.taste[genre] ?? 1;
               return (
                 <button
