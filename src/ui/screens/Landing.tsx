@@ -21,7 +21,10 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
   { icon: 'company', title: 'Legendary rivals', body: `${COMPANIES.length} real companies compete with you, releasing ${FRANCHISES.reduce((t, f) => t + f.releases.length, 0)} classic games on their real dates.` },
   { icon: 'build', title: 'A living office', body: 'Design your studio tile by tile. Staff walk to the coffee machine, chat, crunch and burn out — and layout really changes the numbers.' },
   { icon: 'sliders', title: 'Deep development', body: 'Genre × topic × platform × audience. Focus sliders per phase, bugs, crunch, delays, engines and research.' },
-  { icon: 'chart', title: 'Build an empire', body: 'Publishing deals, self-publishing, IPOs, acquisitions and subsidiaries — then launch your own console and take on the platform giants. Or go bankrupt trying.' },
+  { icon: 'chart', title: 'Build an empire', body: 'Publishing deals, IPOs and acquisitions, expansion packs, esports leagues, a subscription pass — then launch your own console and take on the platform giants. Or go bankrupt trying.' },
+  { icon: 'trophy', title: 'Rivals, awards, legacy', body: 'Head-to-head showdowns with real studios, a yearly awards gala with real-history winners, and a trophy shelf in your office that fills up as you win.' },
+  { icon: 'music', title: 'A soundtrack that ages with you', body: 'Music generated live in your browser: chiptune in the ’80s, FM in the ’90s, soft synths after. No downloads, no files.' },
+  { icon: 'sparkle', title: 'Sandbox & cheats', body: 'Play it straight, or tick Sandbox mode and bend every rule: money, staff, review scores, trends, rivals and time itself.' },
 ];
 
 export function Landing() {
