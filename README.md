@@ -42,6 +42,10 @@
 - **Staff ambitions.** People set personal goals with deadlines; help them for loyalty and morale, or watch them feel overlooked.
 - **Shareholders.** Public studios face an annual meeting: dividends, bold growth promises and, if the board turns, a no-confidence vote.
 - **Player buzz.** What players say about your games, in the medium of the era — magazine mailbags, bulletin boards, forums, social posts and streams.
+- **Scenarios.** Seven curated challenges with their own start, team, goals and deadline, from *Garage Days* to the legendary *Empire*: survive the 1983 crash, build Japan's greatest RPG house, bet on 3D, win Game of the Year as a two-person indie.
+- **Friendships, feuds and studio life.** Teammates grow close (better chemistry, happier) or clash into feuds you have to handle. Employee of the Month, yearly team retreats, birthdays, farewells when people leave, and credits on every game.
+- **Live events and branch offices.** Run seasonal events in live games; open studios abroad for free localisation and local know-how.
+- **Cinematic mode and office style.** Press V to hide the interface and let the camera wander the office; choose your floor and wall colours; build foosball, a claw machine, a guitar corner and a statue of your series' mascot. Desk monitors show each person's work.
 - **Runs a big studio without busywork.**
   - **Studio Overview (O):** lists everything that needs attention, each with a one-click fix.
   - **Team tab:** filters, search, grouping and compact rows for hundreds of people, plus bulk actions (assign, research, vacation, training, raises).
