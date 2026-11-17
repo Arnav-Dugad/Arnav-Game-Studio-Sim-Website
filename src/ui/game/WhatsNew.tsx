@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20p';
+export const WHATS_NEW_VERSION = '2026-11-20q';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'New personalities', body: 'Three new traits: Industry Names (their fame keeps your announced games in the news), Quick Workers (faster, buggier) and Tinkerers (engines and research go 20% faster). Plus a Collector’s Edition feature and rain you can hear on the office windows.' },
   { icon: 'news', title: 'Review embargoes', body: 'During polish, decide when the critics’ reviews go live: a week early (confident — great reviews sell more, weak ones scare buyers off), at launch, or no review copies at all (hides a weak game a little longer, but the press notices).' },
   { icon: 'sparkle', title: 'Design your mascot', body: 'Menu → Studio identity: give your studio a mascot — a bear, cat, robot, dragon, blob or bird in your colours, with a cap, headphones, a star or a crown. It stars on the office Mascot Statue and your studio card. Plus new features: official league licences and celebrity casts.' },
   { icon: 'handshake', title: 'Publishers remember', body: 'Deliver a published game on time and above the bar and that publisher trusts you more — bigger advances, better royalties, a lower score bar next time. Miss deadlines, disappoint them or cancel, and they grow wary; burn them badly and they stop calling.' },

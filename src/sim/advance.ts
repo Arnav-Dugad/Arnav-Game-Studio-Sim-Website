@@ -65,6 +65,9 @@ function hypeWeekly(s: GameState): void {
   for (const p of Object.values(s.projects)) {
     if (p.kind !== 'game') continue;
     p.hype = Math.max(0, p.hype * (1 - BALANCE.HYPE_DECAY_WEEKLY));
+    // an industry name on the team keeps people talking
+    const famous = p.team.filter((id) => (s.staff[id]?.traits as string[] | undefined)?.includes('famous')).length;
+    if (famous && p.announcedDay !== undefined) p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + Math.min(0.03, 0.01 * famous));
   }
 }
 

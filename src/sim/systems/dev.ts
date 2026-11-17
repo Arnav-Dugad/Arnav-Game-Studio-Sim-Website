@@ -184,6 +184,7 @@ function progressGame(c: Ctx, p: GameProject): void {
           if (hasValue(s, 'speed')) br *= CULTURE_FX.speedBugs;
           if (engine) br *= 1 - engine.maturity * 0.35;
           if (hasTrait(st, 'bug_magnet')) br *= 1.35;
+          if (hasTrait(st, 'quick')) br *= 1.15;
           if (hasTrait(st, 'meticulous')) br *= 0.7;
           if (p.concept.platforms.length > 2) br *= 1.1;
           p.bugs += pts * br;
@@ -470,6 +471,7 @@ function progressEngine(c: Ctx, p: EngineProject): void {
     for (const st of team) {
       let pts = (st.skills.programming / 100) * productivity(s, st).total;
       if (st.spec === 'engine_programmer') pts *= 1.4;
+      if (hasTrait(st, 'tinkerer')) pts *= 1.2;
       p.points += pts;
       growSkill(s, st, 'programming', 1, 0);
     }

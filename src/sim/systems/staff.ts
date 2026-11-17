@@ -314,6 +314,7 @@ export function productivity(s: GameState, st: Staff): ReturnType<BD['done']> {
   }
   if (hasTrait(st, 'workaholic')) bd.mul('Workaholic', 1.1);
   if (hasTrait(st, 'perfectionist')) bd.mul('Perfectionist', 0.9);
+  if (hasTrait(st, 'quick')) bd.mul('Quick Worker', 1.15);
   if (onFavouriteGenre(s, st)) bd.mul(`Loves ${GENRE_BY_ID[favouriteGenre(st.id)].name} games`, 1.05);
   if (isCrunching(s, st)) {
     const boost = BALANCE.CRUNCH_OUTPUT * (hasTrait(st, 'night_owl') ? 1.08 : 1);

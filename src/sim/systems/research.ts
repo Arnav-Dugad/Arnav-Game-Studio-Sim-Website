@@ -45,7 +45,7 @@ export function researchRate(s: GameState): number {
   const L = layout(s);
   let pts = 0;
   for (const st of researchers(s)) {
-    pts += ((st.skills.programming + st.skills.design) / 200) * productivity(s, st).total;
+    pts += ((st.skills.programming + st.skills.design) / 200) * productivity(s, st).total * ((st.traits as string[]).includes('tinkerer') ? 1.2 : 1);
   }
   return pts * (1 + L.research) * (s.cheats?.researchMul ?? 1) * (hasValue(s, 'innovation') ? CULTURE_FX.innovationResearch : 1);
 }
