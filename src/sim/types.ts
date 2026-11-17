@@ -455,6 +455,8 @@ export interface Release {
   archived?: boolean;
   /** It was someone's passion project (their staff id). */
   passion?: string;
+  /** Fans asked to translate it (the event happened, whatever you chose). */
+  fanTranslated?: boolean;
   /** Licensed content (systems/licences.ts): renewed until this day; once delisted it never sells again. */
   licenceUntil?: number;
   delisted?: boolean;

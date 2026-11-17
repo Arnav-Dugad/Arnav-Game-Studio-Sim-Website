@@ -55,6 +55,14 @@ const oldClassic = (s: GameState) =>
     .filter((r) => !r.delisted && s.day - r.day >= 3 * 365 && r.score >= 75)
     .sort((a, b) => b.units - a.units)[0];
 /** A warning for delays when a publisher or backers are waiting on a date. */
+/** Your best recent game in a genre (within `years`), if it scored at least `min`. */
+const genreHit = (s: GameState, genre: string, min: number, years: number) =>
+  Object.values(s.releases)
+    .filter((r) => r.concept.genre === genre && r.score >= min && s.day - r.day < 365 * years && !r.concept.expansionOf)
+    .sort((a, b) => b.score - a.score)[0];
+/** A loved visual novel that was never translated for players in North America or Europe. */
+const untranslatedNovel = (s: GameState) =>
+  Object.values(s.releases).find((r) => r.concept.genre === 'visual_novel' && r.score >= 70 && !r.fanTranslated && s.day - r.day < 365 * 6 && !(r.concept.localized ?? []).some((x) => x === 'na' || x === 'eu'));
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
@@ -858,6 +866,86 @@ export const EVENT_DEFS: EventDef[] = [
         p.bugs *= 1.05;
       } else if (p.phase <= 2) p.phaseDays[Math.min(2, p.phase) as 0 | 1 | 2] += 14;
       else p.extraDays += 14;
+    },
+  },
+  {
+    id: 'card_tournament',
+    art: 'trophy',
+    cooldown: 700,
+    weight: (s) => (yr(s) >= 1995 && genreHit(s, 'cards', 72, 3) ? 0.2 : 0),
+    make: ({ s }) => {
+      const r = genreHit(s, 'cards', 72, 3);
+      if (!r) return null;
+      const cost = money(15_000, s.day);
+      return {
+        title: `Players are running a ${r.name} tournament`,
+        body: `Hundreds of fans have signed up for a weekend ${r.name} tournament in a hotel ballroom. The organisers ask if you’d like to put your name on it.`,
+        options: [
+          { id: 'sponsor', label: `Sponsor it (${fmtMoney(cost)})`, preview: 'Fans +8% for the series, reputation +0.5, and a little burst of sales', disabled: s.company.cash < cost },
+          { id: 'cheer', label: 'Send a signed deck and cheer them on', preview: 'Fans +2% for the series' },
+        ],
+        ctx: { rel: r.id, cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (!r) return;
+      const fr = r.concept.franchiseId ? s.franchises[r.concept.franchiseId] : undefined;
+      const cost = Number(e.ctx.cost);
+      if (opt === 'sponsor' && s.company.cash >= cost) {
+        spend(s, 'marketing', cost);
+        addRep(s, 0.5, `${r.name} tournament`);
+        if (fr) fr.fans *= 1.08;
+        s.company.fans = Math.round(s.company.fans * 1.01);
+        if (!r.delisted) {
+          for (const ps of r.platforms) ps.potential *= 1.03;
+          r.active = true;
+        }
+      } else if (fr) fr.fans *= 1.02;
+    },
+  },
+  {
+    id: 'fan_translation',
+    art: 'letters',
+    cooldown: 900,
+    weight: (s) => (yr(s) >= 2000 && untranslatedNovel(s) ? 0.2 : 0),
+    make: ({ s }) => {
+      const r = untranslatedNovel(s);
+      if (!r) return null;
+      const cost = money(20_000, s.day);
+      return {
+        title: `Fans want to translate ${r.name}`,
+        body: `A group of volunteer translators abroad loves ${r.name} and wants to release an unofficial translation. They’ve asked for your blessing — and a copy of the script.`,
+        options: [
+          { id: 'official', label: `Hire them to make it official (${fmtMoney(cost)})`, preview: 'Sales abroad (+15%), reputation +1, and a lot of goodwill', disabled: s.company.cash < cost },
+          { id: 'bless', label: 'Give them your blessing', preview: 'Free: a few more players abroad (+6%), reputation +0.5' },
+          { id: 'no', label: 'Send a takedown notice', preview: 'Protects the IP — but fans are furious (reputation −1)' },
+        ],
+        ctx: { rel: r.id, cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (!r) return;
+      r.fanTranslated = true;
+      const cost = Number(e.ctx.cost);
+      const boost = (m: number) => {
+        if (r.delisted) return;
+        for (const ps of r.platforms) ps.potential *= m;
+        r.active = true;
+      };
+      if (opt === 'official' && s.company.cash >= cost) {
+        spend(s, 'other_expense', cost);
+        boost(1.15);
+        addRep(s, 1, `Official translation of ${r.name}`);
+        pushNews(s, { category: 'studio', headline: `${r.name} gets an official translation`, body: 'The fans who wanted to translate it are now doing it for real.', tone: 'good' });
+      } else if (opt === 'bless') {
+        boost(1.06);
+        addRep(s, 0.5, `Blessed a fan translation of ${r.name}`);
+      } else {
+        addRep(s, -1, `Took down a fan translation of ${r.name}`);
+        communityNudge(s, -6);
+      }
     },
   },
   {
