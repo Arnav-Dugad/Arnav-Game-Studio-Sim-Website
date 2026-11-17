@@ -35,6 +35,16 @@ const retroClassics = (s: GameState) =>
     .map((id) => s.releases[id]!)
     .filter((r) => r && s.day - r.day > 20 * 365 && r.score >= 75 && !r.concept.remasterOf)
     .sort((a, b) => b.score - a.score);
+/** Your best release from the last `days` days scoring at least `min` (not expansions or remasters). */
+const recentHit = (s: GameState, days: number, min: number) =>
+  Object.values(s.releases)
+    .filter((r) => s.day - r.day <= days && r.score >= min && !r.concept.expansionOf && !r.concept.remasterOf)
+    .sort((a, b) => b.score - a.score)[0];
+/** A beloved game at least three years old. */
+const oldClassic = (s: GameState) =>
+  Object.values(s.releases)
+    .filter((r) => s.day - r.day >= 3 * 365 && r.score >= 75)
+    .sort((a, b) => b.units - a.units)[0];
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
 function staffById(s: GameState, id: string | number | undefined): Staff | undefined {
@@ -936,7 +946,7 @@ export const EVENT_DEFS: EventDef[] = [
     },
   },
   {
-    id: 'game_jam',
+    id: 'online_game_jam',
     art: 'lightbulb',
     cooldown: 500,
     weight: (s) => (yr(s) >= 2005 && s.company.reputation < 35 && staffList(s).length + 1 <= 12 ? 0.5 : 0),
@@ -1149,6 +1159,191 @@ export const EVENT_DEFS: EventDef[] = [
       earn(s, 'other_income', Number(e.ctx.bonus));
       hw.price = Math.max(1, Math.round(hw.price * 0.9));
       hw.boost += 0.2;
+    },
+  },
+  // ── The modern scene ──────────────────────────────────────────────────────
+  {
+    id: 'streamer_spotlight',
+    art: 'crowd',
+    cooldown: 300,
+    weight: (s) => (yr(s) >= 2011 && recentHit(s, 730, 70) ? 0.45 : 0),
+    make: ({ s }) => {
+      const r = recentHit(s, 730, 70);
+      if (!r) return null;
+      const cost = money(15_000, s.day);
+      return {
+        title: `${r.name} is all over the streams`,
+        body: `One of the biggest streamers just played ${r.name} for six hours straight, and chat loved it.`,
+        options: [
+          { id: 'sponsor', label: `Sponsor a follow-up stream (${fmtMoney(cost)})`, preview: 'Sales potential +12%, studio fans +4%', disabled: s.company.cash < cost },
+          { id: 'thanks', label: 'Send a thank-you note', preview: 'Sales potential +5%' },
+        ],
+        ctx: { rel: r.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (!r) return;
+      const cost = money(15_000, s.day);
+      const sponsor = opt === 'sponsor' && s.company.cash >= cost;
+      if (sponsor) {
+        spend(s, 'marketing', cost);
+        s.company.fans *= 1.04;
+      }
+      for (const ps of r.platforms) ps.potential *= sponsor ? 1.12 : 1.05;
+      r.active = true;
+    },
+  },
+  {
+    id: 'leaked_build',
+    art: 'leak',
+    cooldown: 900,
+    weight: (s) => (yr(s) >= 1996 && activeGames(s).some((p) => p.phase >= 1 && p.phase < 3) ? 0.2 : 0),
+    make: ({ s }) => {
+      const p = activeGames(s).find((x) => x.phase >= 1 && x.phase < 3);
+      if (!p) return null;
+      const cost = money(20_000, s.day);
+      return {
+        title: `An early build of ${p.concept.name} has leaked`,
+        body: 'Screenshots and a playable alpha are spreading online. Fans are… curious.',
+        options: [
+          { id: 'legal', label: `Send the lawyers (${fmtMoney(cost)})`, preview: 'Contained: no other effect', disabled: s.company.cash < cost },
+          { id: 'embrace', label: 'Lean in: “yes, it’s real”', preview: 'Hype +0.3, reputation −1' },
+          { id: 'ignore', label: 'Say nothing', preview: 'Hype +0.15, team morale −4 for a month' },
+        ],
+        ctx: { project: p.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      const cost = money(20_000, s.day);
+      if (opt === 'legal' && s.company.cash >= cost) {
+        spend(s, 'other_expense', cost);
+        return;
+      }
+      if (!p || p.kind !== 'game') return;
+      if (opt === 'embrace') {
+        p.hype = Math.min(3, p.hype + 0.3);
+        addRep(s, -1, 'Leaked build');
+      } else {
+        p.hype = Math.min(3, p.hype + 0.15);
+        mod(s, -4, 30, 'The leak');
+      }
+    },
+  },
+  {
+    id: 'speedrun_record',
+    art: 'trophy',
+    cooldown: 800,
+    weight: (s) => (yr(s) >= 2008 && oldClassic(s) ? 0.3 : 0),
+    make: ({ s }) => {
+      const r = oldClassic(s);
+      if (!r) return null;
+      const cost = money(10_000, s.day);
+      return {
+        title: `A ${r.name} speedrun goes viral`,
+        body: `A runner just shaved 11 seconds off the ${r.name} world record with a glitch your team never knew about.`,
+        options: [
+          { id: 'event', label: `Host a speedrun showcase (${fmtMoney(cost)})`, preview: 'Reputation +2, franchise fans +10%, the game sells again', disabled: s.company.cash < cost },
+          { id: 'cheer', label: 'Cheer from the sidelines', preview: 'Franchise fans +3%' },
+        ],
+        ctx: { rel: r.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (!r) return;
+      const fr = r.concept.franchiseId ? s.franchises[r.concept.franchiseId] : undefined;
+      const cost = money(10_000, s.day);
+      if (opt === 'event' && s.company.cash >= cost) {
+        spend(s, 'marketing', cost);
+        addRep(s, 2, 'Speedrun showcase');
+        if (fr) fr.fans *= 1.1;
+        for (const ps of r.platforms) ps.potential *= 1.04;
+        r.active = true;
+      } else if (fr) fr.fans *= 1.03;
+    },
+  },
+  {
+    id: 'office_cat',
+    art: 'heart',
+    cooldown: 3000,
+    weight: (s) => (staffList(s).length >= 3 && !s.eventCooldowns.office_cat_adopted ? 0.15 : 0),
+    make: () => ({
+      title: 'A stray cat wanders into the office',
+      body: 'It has claimed the warmest keyboard and refuses to leave. The team is smitten.',
+      options: [
+        { id: 'adopt', label: 'Adopt the studio cat', preview: 'Morale +4 for two years' },
+        { id: 'shelter', label: 'Take it to a shelter', preview: 'No change' },
+      ],
+      ctx: {},
+    }),
+    resolve: ({ s }, _e, opt) => {
+      if (opt !== 'adopt') return;
+      mod(s, 4, 730, 'The studio cat');
+      s.eventCooldowns.office_cat_adopted = s.day + 1e7;
+      pushNews(s, { category: 'studio', headline: `${s.company.name} adopts a studio cat`, body: 'Productivity is unchanged. Morale is way up.', tone: 'good' });
+    },
+  },
+  {
+    id: 'localization_offer',
+    art: 'handshake',
+    cooldown: 600,
+    weight: (s) => (yr(s) >= 1994 && recentHit(s, 365, 72) ? 0.3 : 0),
+    make: ({ s }) => {
+      const r = recentHit(s, 365, 72);
+      if (!r) return null;
+      const cost = Math.round(money(12_000, s.day) * (r.concept.size === 'aaa' ? 4 : r.concept.size === 'large' ? 2 : 1));
+      return {
+        title: `Localize ${r.name}?`,
+        body: `A translation studio offers to bring ${r.name} to Japanese, German, French and Brazilian players.`,
+        options: [
+          { id: 'yes', label: `Localize it (${fmtMoney(cost)})`, preview: 'Sales potential +10% on every platform', disabled: s.company.cash < cost },
+          { id: 'no', label: 'English is enough', preview: 'No change' },
+        ],
+        ctx: { rel: r.id, cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      const cost = Number(e.ctx.cost);
+      if (opt !== 'yes' || !r || s.company.cash < cost) return;
+      spend(s, 'other_expense', cost);
+      for (const ps of r.platforms) ps.potential *= 1.1;
+      r.active = true;
+    },
+  },
+  {
+    id: 'voice_strike',
+    art: 'conflict',
+    cooldown: 1200,
+    weight: (s) => (yr(s) >= 2016 && activeGames(s).some((p) => p.phase >= 1 && p.phase < 3 && p.concept.size !== 'small') ? 0.2 : 0),
+    make: ({ s }) => {
+      const p = activeGames(s).find((x) => x.phase >= 1 && x.phase < 3 && x.concept.size !== 'small');
+      if (!p) return null;
+      const cost = money(40_000, s.day);
+      return {
+        title: 'Voice actors are on strike',
+        body: `The performers' union is striking over pay and AI clauses. ${p.concept.name}'s recording sessions are on hold.`,
+        options: [
+          { id: 'agree', label: `Sign the union's terms (${fmtMoney(cost)})`, preview: 'Reputation +2, recording resumes', disabled: s.company.cash < cost },
+          { id: 'wait', label: 'Wait it out', preview: 'Release slips by about a month' },
+          { id: 'cut', label: 'Ship with text only', preview: 'Hype −0.2' },
+        ],
+        ctx: { project: p.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      const cost = money(40_000, s.day);
+      if (opt === 'agree' && s.company.cash >= cost) {
+        spend(s, 'salaries', cost);
+        addRep(s, 2, 'Fair deal for performers');
+        return;
+      }
+      if (!p || p.kind !== 'game') return;
+      if (opt === 'wait') p.extraDays += 30;
+      else if (opt === 'cut') p.hype = Math.max(0, p.hype - 0.2);
     },
   },
 ];

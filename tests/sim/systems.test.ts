@@ -615,6 +615,40 @@ describe('esports leagues', () => {
   });
 });
 
+describe('event catalogue', () => {
+  it('has unique ids, so every option resolves through its own event', async () => {
+    const { EVENT_DEFS } = await import('../../src/sim/systems/events');
+    const ids = EVENT_DEFS.map((d) => d.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  it('new modern-scene events resolve without breaking state', async () => {
+    const { EVENT_DEFS } = await import('../../src/sim/systems/events');
+    const s = game(2016, 12);
+    s.research.done.push('biz_self_publishing');
+    s.company.cash = 1e8;
+    startSmall(s, { size: 'small' });
+    for (let i = 0; i < 300 && !s.releaseOrder.length; i++) {
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const r = s.releases[s.releaseOrder[0]!]!;
+    r.score = 85;
+    const before = r.platforms[0]!.potential;
+    const c = { s, rng: new Rng([1, 2, 3, 4]), out: [] };
+    const def = EVENT_DEFS.find((d) => d.id === 'streamer_spotlight')!;
+    expect(def.weight(s)).toBeGreaterThan(0);
+    const made = def.make(c)!;
+    def.resolve(c, { uid: 1, defId: def.id, day: s.day, expires: s.day + 30, title: made.title, body: made.body, options: made.options, ctx: made.ctx, art: def.art } as never, 'sponsor');
+    expect(r.platforms[0]!.potential).toBeGreaterThan(before * 1.1);
+    const loc = EVENT_DEFS.find((d) => d.id === 'localization_offer')!;
+    const m2 = loc.make(c)!;
+    const p0 = r.platforms[0]!.potential;
+    loc.resolve(c, { ctx: m2.ctx } as never, 'yes');
+    expect(r.platforms[0]!.potential).toBeGreaterThan(p0);
+  });
+});
+
 describe('vacations', () => {
   it('take people out of work, cut burnout, and have a cooldown', () => {
     const s = game(1985, 3);
