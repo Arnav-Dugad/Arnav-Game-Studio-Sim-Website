@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { StudioHQ } from '../art/StudioHQ';
 import { itemRequirement } from '@/sim/systems/office';
 import { ITEMS, OFFICE_TIERS, type ItemCategory } from '@/data/facilities';
 import { RESEARCH_BY_ID } from '@/data/research';
@@ -39,7 +40,15 @@ export default function OfficePanel() {
   return (
     <div>
       <Section title={`${t.name} · tier ${t.tier}`} right={<Pill>{Object.keys(s.staff).length}/{t.staffCap} staff</Pill>}>
+        <div className="mb-2 overflow-hidden rounded-xl">
+          <StudioHQ tier={t.tier} name={s.company.name} month={fromDay(s.day).month} width={560} />
+        </div>
         <p className="text-xs text-ink3">{t.desc}</p>
+        {next && (
+          <p className="mt-1 text-xs text-ink3">
+            Next: <b className="text-ink2">{next.name}</b> — room for {next.staffCap} people{next.floors > 1 ? ` on ${next.floors} floors` : ''}.
+          </p>
+        )}
         <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
           <div className="rounded-xl bg-bg2/70 p-2">
             <div className="text-ink3">Rent</div>

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20g';
+export const WHATS_NEW_VERSION = '2026-11-20h';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'building', title: 'Your headquarters', body: 'The Office panel now shows your studio’s building — from a suburban garage to a storefront, a brick studio, your own building, a campus and finally a glass tower — with your name on the sign and the season in the sky.' },
   { icon: 'heart', title: 'An office tortoise, and more to do', body: 'Adopt an Office Tortoise (Decor): it naps in its enclosure and makes very slow tours of the office. The parrot now bobs and flaps while it talks. Plus five new events: a preservation society, guest lectures, a children’s hospital, a viral fan cover of your theme and a former employee’s tell-all memoir.' },
   { icon: 'book', title: 'The story of your studio', body: 'Company → History (and the final screen) now tells your run as a story: the founding, the debut, the breakthrough, the awards, the dark times, the team you built and the legacy you left. Copy it and share it.' },
   { icon: 'handshake', title: 'Co-development', body: 'From 1985, bring another studio onto a medium-or-bigger game before polish (Develop → the project → Co-develop). Their team works alongside yours every day; in return they take 15–55% of the game’s revenue for good. The best studios only partner with studios they respect.' },
