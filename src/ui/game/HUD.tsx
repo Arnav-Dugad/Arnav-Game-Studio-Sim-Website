@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { formatDate } from '@/sim/calendar';
+import { weatherGlyph } from '@/render/weather';
+import { formatDate, fromDay } from '@/sim/calendar';
 import { BD } from '@/sim/breakdown';
 import { fmtMoney } from '@/sim/util';
 import { monthlyBurn, trailingRevenue } from '@/sim/systems/finance';
@@ -48,7 +49,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto, onCinema }: {
         <div className="min-w-0">
           <div className="max-w-40 truncate font-display text-sm font-semibold leading-tight">{s.company.name}</div>
           <div className="num text-xs text-ink3" aria-live="polite">
-            {formatDate(s.day)}
+            {formatDate(s.day)} <span aria-hidden title="Today’s weather">{weatherGlyph(s.day, fromDay(s.day).month)}</span>
           </div>
         </div>
       </div>

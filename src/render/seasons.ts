@@ -9,6 +9,9 @@ import { occupancy, tierDef } from '@/sim/systems/office';
 import type { GameState } from '@/sim/types';
 import type { ScenePalette } from './palette';
 import { T } from './sprites';
+import { isRainy } from './weather';
+
+export { isRainy } from './weather';
 
 export type Hat = 'none' | 'santa' | 'witch' | 'party';
 
@@ -48,14 +51,6 @@ export function seasonOf(s: GameState): Season {
   };
 }
 
-/** Rainy days, stable per day: wettest in spring and autumn. */
-export function isRainy(day: number, month: number): boolean {
-  if (month === 12 || month <= 2) return false; // that's snow
-  let h = Math.imul(day ^ 0x9e3779b9, 2654435761) >>> 0;
-  h ^= h >>> 15;
-  const chance = month >= 3 && month <= 5 ? 0.35 : month >= 9 && month <= 11 ? 0.4 : 0.15;
-  return (h % 1000) / 1000 < chance;
-}
 
 /** Day of year a staff member celebrates their birthday (stable per person). */
 export function birthdayOf(id: string): number {
