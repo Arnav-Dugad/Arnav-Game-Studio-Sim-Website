@@ -56,6 +56,27 @@ interface Vignette {
 }
 
 const VIGNETTES: Record<string, Vignette> = {
+  bell: {
+    tint: C.tech,
+    draw: () => (
+      <>
+        <Shadow cy={98} rx={42} />
+        {/* a podium under a share-price chart */}
+        <path d="M22 70L42 58L56 64L76 42L98 34" stroke={C.green} strokeWidth={4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M90 32L99 33L96 42" stroke={C.green} strokeWidth={4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x={40} y={70} width={40} height={26} rx={3} fill={C.woodDk} />
+        <rect x={36} y={64} width={48} height={8} rx={2} fill={C.wood} />
+        <circle cx={60} cy={82} r={5} fill={C.gold} />
+        {/* the opening bell */}
+        <path d="M24 30C24 22 28 18 32 18C36 18 40 22 40 30V36H24Z" fill={C.gold} />
+        <rect x={21} y={35} width={22} height={4} rx={2} fill={C.goldDk} />
+        <circle cx={32} cy={41} r={2.4} fill={C.goldDk} />
+        <path d="M27 24V31" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" opacity={0.5} />
+        <path d="M45 22L50 19M46 29H52M45 36L50 39" stroke={C.gold} strokeWidth={2} strokeLinecap="round" />
+        <Twinkle x={100} y={56} r={4} />
+      </>
+    ),
+  },
   handshake: {
     tint: C.tech,
     draw: () => (

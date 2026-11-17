@@ -24,6 +24,7 @@ const EVENT_KEYS = [
   'letters',
   'briefcase',
   'shark',
+  'bell',
   'lightbulb',
   'heart',
   'calendar',
