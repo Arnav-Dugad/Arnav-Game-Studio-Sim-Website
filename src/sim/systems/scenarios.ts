@@ -139,7 +139,7 @@ export const SCENARIOS: ScenarioDef[] = [
     id: 'kickstarter',
     name: 'Kickstarter Kid',
     tagline: 'Let the fans fund your dream.',
-    blurb: '2012: crowdfunding has arrived. A two-person studio with more ideas than money — pitch your games to players, raise a million dollars and ship an 80+ game.',
+    blurb: '2012: crowdfunding has arrived. A two-person studio with more ideas than money — pitch your games to players, raise three-quarters of a million dollars and ship an 80+ game.',
     difficulty: 'Medium',
     year: 2012,
     until: 2020,
@@ -148,7 +148,7 @@ export const SCENARIOS: ScenarioDef[] = [
     hires: 1,
     hireQuality: 0.3,
     research: ['biz_self_publishing'],
-    goals: [{ kind: 'crowdfunded', amount: 1_000_000 }, { kind: 'score', score: 80 }],
+    goals: [{ kind: 'crowdfunded', amount: 750_000 }, { kind: 'score', score: 80 }],
   },
   {
     id: 'early_access',
