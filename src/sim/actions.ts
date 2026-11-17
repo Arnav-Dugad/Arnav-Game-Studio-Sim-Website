@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { docOnCancel } from './systems/documentary';
 import type { MascotDesign } from './types';
 import { signCodev } from './systems/codev';
 import { communityNudge, foundCommunity, setModeration } from './systems/community';
@@ -550,6 +551,7 @@ function apply(c: Ctx, a: Action): string | null {
         }
       }
       delete s.projects[a.projectId];
+      if (p.kind === 'game') docOnCancel(s, p);
       if (p.kind === 'game' && p.announcedDay !== undefined) addRep(s, -(2), 'Cancelled an announced game');
       if (p.kind === 'game' && p.crowdfund?.success) {
         addRep(s, -8, 'Cancelled a crowdfunded game');

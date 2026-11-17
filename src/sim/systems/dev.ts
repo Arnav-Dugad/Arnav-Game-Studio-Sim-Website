@@ -2,6 +2,7 @@
  * Development pipeline: daily progress for game / contract / engine projects, bug creation and QA,
  * phase gates, and the quality model (with full breakdown).
  */
+import { docDaily } from './documentary';
 import { teamChemistry } from './relations';
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
@@ -148,6 +149,7 @@ function progressGame(c: Ctx, p: GameProject): void {
     p.spent += dc;
   }
   if (crunch) s.progress.stats.crunchDays += 1;
+  docDaily(p);
   if (crunch) s.progress.stats.crunchRecent = (s.progress.stats.crunchRecent ?? 0) + 1;
   if (crunch) s.progress.stats.noCrunchSince = s.day;
   const phase = Math.min(2, p.phase) as 0 | 1 | 2;

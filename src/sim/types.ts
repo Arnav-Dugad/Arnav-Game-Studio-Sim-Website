@@ -326,6 +326,8 @@ export interface GameProject {
   reviewPolicy?: 'early' | 'launch' | 'none';
   /** This sequel resolves the series' cliffhanger. */
   paysCliffhanger?: boolean;
+  /** A documentary crew is filming its making (systems/documentary.ts): since when, and crunch days caught on camera. */
+  documentary?: { day: number; crunchDays: number };
   /** A co-development partner: their contribution and revenue share. */
   coDev?: { rivalId: string; name: string; power: number; share: number };
   /** The trailer's score (0..8) once cut (once per game). */
@@ -441,6 +443,8 @@ export interface Release {
   liveMul?: number;
   /** Archived by a preservation society. */
   archived?: boolean;
+  /** Its making-of documentary: premiere day, crunch caught on camera, and how it was received once out. */
+  documentary?: { premiere: number; crunchDays: number; outcome?: 'acclaimed' | 'warm' | 'mixed' | 'cautionary' };
   /** Released without ever being announced (2015+). */
   shadowDrop?: boolean;
   /** Spent time in Early Access before its 1.0 launch (already counted in units/gross/net). */

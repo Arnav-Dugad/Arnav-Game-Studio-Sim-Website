@@ -34,6 +34,10 @@ export function comingUp(s: GameState, days = 120, max = 10): CalendarEntry[] {
     if (p.crowdfund?.promised !== undefined) add({ day: p.crowdfund.promised, icon: 'crowd', text: `Promised to backers: ${p.concept.name}`, tone: 'bad' });
     if (p.earlyAccess && !p.earlyAccess.stale) add({ day: p.earlyAccess.day + EA_STALE_WEEKS * 7, icon: 'hourglass', text: `${p.concept.name}: Early Access patience runs out`, tone: 'bad' });
   }
+  for (const id of s.releaseOrder.slice(-12)) {
+    const r = s.releases[id];
+    if (r?.documentary && !r.documentary.outcome) add({ day: r.documentary.premiere, icon: 'camera', text: `“Making ${r.name}” premieres` });
+  }
   for (const d of s.mediaDeals ?? []) if (d.outcome === undefined) add({ day: d.releaseDay, icon: 'sparkle', text: `The ${d.name} ${MEDIA[d.kind].noun} comes out` });
   // the industry
   for (const r of upcomingReleases(s, s.day + 1, end).slice(0, 4)) add({ day: r.day, icon: 'company', text: `${s.rivals[r.company]?.name ?? COMPANY_BY_ID[r.company]?.name ?? r.company}: ${r.title}` });

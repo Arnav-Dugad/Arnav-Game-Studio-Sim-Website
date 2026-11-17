@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { docEligible } from './documentary';
 import { communityNudge } from './community';
 import { hireIntern, starIntern } from './interns';
 import { campaignGoal, crowdfundBlocked, startCrowdfund } from './crowdfunding';
@@ -850,6 +851,34 @@ export const EVENT_DEFS: EventDef[] = [
         p.bugs *= 1.05;
       } else if (p.phase <= 2) p.phaseDays[Math.min(2, p.phase) as 0 | 1 | 2] += 14;
       else p.extraDays += 14;
+    },
+  },
+  {
+    id: 'documentary',
+    art: 'letters',
+    cooldown: 1200,
+    weight: (s) => (s.company.reputation >= 25 && activeGames(s).some((p) => docEligible(s, p)) ? 0.12 : 0),
+    make: ({ s, rng }) => {
+      const pool = activeGames(s).filter((p) => docEligible(s, p));
+      const p = pool.length ? rng.pick(pool) : undefined;
+      if (!p) return null;
+      return {
+        title: 'A film crew wants to follow you',
+        body: `An independent filmmaker wants to document the making of ${p.concept.name} — every meeting, every setback, all the way to launch day. Fly-on-the-wall, nothing off limits.`,
+        options: [
+          { id: 'yes', label: 'Let the cameras in', preview: 'Hype +0.3 now. The film premieres six months after launch: a great game (82+) makes it a celebrated documentary (fans, reputation, applicants); a flop makes it a cautionary tale. Crunch on camera always makes the cut.' },
+          { id: 'no', label: 'Politely decline', preview: 'No change' },
+        ],
+        ctx: { project: p.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (!p || p.kind !== 'game' || opt !== 'yes' || p.documentary) return;
+      p.documentary = { day: s.day, crunchDays: 0 };
+      p.hype = Math.min(3, p.hype + 0.3);
+      mod(s, -1, 60, 'Cameras in the office');
+      pushNews(s, { category: 'studio', headline: `Documentary to follow the making of ${p.concept.name}`, body: 'A film crew has moved into the office. The team is mostly pretending not to notice.', tone: 'good' });
     },
   },
   {

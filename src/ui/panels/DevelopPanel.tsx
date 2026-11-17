@@ -191,6 +191,7 @@ function GameCard({ p }: { p: GameProject }) {
           )}
           Hype <b className="num text-ink">{p.hype.toFixed(2)}</b>
           {p.announcedDay === undefined && (fromDay(s.day).year >= 2015 && !p.concept.expansionOf ? ' · unannounced (a shadow drop if it stays that way)' : ' · unannounced')}
+          {p.documentary && ` · film crew on set${p.documentary.crunchDays >= 20 ? ' (filming the crunch)' : ''}`}
         </span>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
