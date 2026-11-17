@@ -48,6 +48,7 @@ export type ItemId =
   | 'karaoke'
   | 'robot_vacuum'
   | 'fan_wall'
+  | 'release_wall'
   | 'bonsai'
   | 'zen_corner'
   | 'screening_room'
@@ -116,6 +117,7 @@ export const ITEMS: readonly ItemDef[] = [
   { id: 'hammock', name: 'Hammock', category: 'energy', w: 1, h: 2, cost: 1_100, upkeep: 6, year: 1980, energy: 24, aura: 2, radius: 1, noise: -1, desc: 'Swing gently. Breaks restore 24 energy; quiet.' },
   { id: 'karaoke', name: 'Karaoke Machine', category: 'decor', w: 1, h: 1, cost: 3_500, upkeep: 20, year: 1990, aura: 9, radius: 3, noise: 3.5, desc: 'Friday nights will never be the same. Big morale aura — and very loud.' },
   { id: 'robot_vacuum', name: 'Robot Vacuum', category: 'decor', w: 1, h: 1, cost: 350, upkeep: 4, year: 2002, aura: 1.5, radius: 3, noise: 0.5, desc: 'Trundles around keeping the floor spotless. Somehow everyone has named it.' },
+  { id: 'release_wall', name: 'Release Wall', category: 'decor', w: 2, h: 1, cost: 300, upkeep: 0, year: 1980, aura: 2.5, radius: 3, desc: 'Framed posters of your six latest games, each with its score. The team walks past their own work every day.' },
   { id: 'fan_wall', name: 'Fan Art Wall', category: 'decor', w: 2, h: 1, cost: 150, upkeep: 0, year: 1980, aura: 1.5, radius: 3, effect: 'fanart', power: 1, desc: 'A corkboard for the drawings fans send in (pin them from News → Fan mail). Each pinned drawing lifts morale a little.' },
   { id: 'bonsai', name: 'Bonsai Tree', category: 'decor', w: 1, h: 1, cost: 450, upkeep: 3, year: 1984, aura: 2.5, radius: 2, noise: -0.5, desc: 'A tiny, ancient tree on a stand. Calming — and the gardeners on staff will fuss over it.' },
   { id: 'zen_corner', name: 'Meditation Corner', category: 'energy', w: 2, h: 2, cost: 6_500, upkeep: 25, year: 2005, energy: 20, aura: 3, radius: 2, noise: -2, effect: 'wellness', power: 0.15, desc: 'Cushions, a water feature and soft light. Breaks restore 20 energy; burnout builds 15% slower within six tiles. Very quiet.' },

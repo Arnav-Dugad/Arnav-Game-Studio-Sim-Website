@@ -82,6 +82,8 @@ export interface DrawOpts {
   mascot?: { kind: string; color: number; acc: string };
   /** Pinned fan drawings: a seed and a crayon colour each. */
   fanArt?: { seed: number; color: number }[];
+  /** Your latest games for the Release Wall (genre colour, score, a seed for the art). */
+  releases?: { color: number; score: number; seed: number }[];
 }
 
 /**
@@ -476,6 +478,39 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       if (P.night) g.circle(W / 2, -8, 22).fill({ color: P.accentBiz, alpha: 0.08 });
       break;
     }
+    case 'release_wall': {
+      shadow(g, 4, 4, W - 8, H - 4, 0.12);
+      g.rect(8, 4, 2, H - 8).fill(P.woodDark);
+      g.rect(W - 10, 4, 2, H - 8).fill(P.woodDark);
+      g.roundRect(3, -25, W - 6, H + 4, 3).fill(0x33302c); // a dark display panel
+      g.roundRect(3, -25, W - 6, H + 4, 3).stroke({ width: 2, color: P.woodDark });
+      const wide = W >= H;
+      const cols = wide ? 3 : 1;
+      const rows = wide ? 2 : 3;
+      const games = (o.releases ?? []).slice(0, cols * rows);
+      const pw = (W - 14) / cols - 4;
+      const ph = Math.min(wide ? pw * 1.3 : pw * 0.75, (H + 10) / rows - 4);
+      games.forEach((gm, i) => {
+        const cx = 7 + (i % cols) * (pw + 4);
+        const cy = -22 + Math.floor(i / cols) * (ph + 4);
+        g.roundRect(cx - 1.2, cy - 1.2, pw + 2.4, ph + 2.4, 1).fill(P.woodDark); // frame
+        g.rect(cx, cy, pw, ph).fill(gm.color);
+        // a simple key-art shape and a title bar
+        const r = gm.seed % 3;
+        if (r === 0) g.circle(cx + pw / 2, cy + ph * 0.42, pw * 0.22).fill({ color: 0xffffff, alpha: 0.75 });
+        else if (r === 1) g.poly([cx + pw * 0.2, cy + ph * 0.65, cx + pw / 2, cy + ph * 0.2, cx + pw * 0.8, cy + ph * 0.65]).fill({ color: 0xffffff, alpha: 0.7 });
+        else g.rect(cx + pw * 0.25, cy + ph * 0.25, pw * 0.5, ph * 0.35).fill({ color: 0xffffff, alpha: 0.65 });
+        g.rect(cx, cy + ph - 3, pw, 3).fill({ color: 0x000000, alpha: 0.35 });
+        g.circle(cx + pw - 2.5, cy + 2.5, 2.2).fill(gm.score >= 80 ? 0xe3b23c : 0xf4efe7); // the score badge
+      });
+      // empty frames wait for the next games
+      for (let i = games.length; i < cols * rows; i++) {
+        const cx = 7 + (i % cols) * (pw + 4);
+        const cy = -22 + Math.floor(i / cols) * (ph + 4);
+        g.rect(cx, cy, pw, ph).stroke({ width: 1, color: 0xf4efe7, alpha: 0.18 });
+      }
+      break;
+    }
     case 'fan_wall': {
       shadow(g, 4, 4, W - 8, H - 4, 0.12);
       g.rect(8, 4, 2, H - 8).fill(P.woodDark);
@@ -603,6 +638,7 @@ export function itemLift(id: ItemId): number {
     case 'kitchen':
     case 'aquarium':
     case 'whiteboard':
+    case 'release_wall':
     case 'fan_wall':
     case 'sound_booth':
     case 'trophy_shelf':

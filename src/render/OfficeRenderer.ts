@@ -22,6 +22,14 @@ import { SeasonDecor, birthdayOf, dayOfYear, seasonOf, type Season } from './sea
 import { animate, createRig, newAnim, reskinRig, setHat, type Anim, type Rig } from './animation';
 import { LEISURE, RESEARCH_SPOTS, chatExchange, workExchange, workThought } from './officeLife';
 
+/** Poster colours for the Release Wall, picked per genre. */
+const GENRE_POSTER = [0xd65a3a, 0x3b82c4, 0x17a08c, 0x9168cf, 0xe08a1e, 0xc95f97, 0x7d9a35, 0x4fb0e0];
+function hashStr(x: string): number {
+  let h = 0;
+  for (let i = 0; i < x.length; i++) h = (Math.imul(h, 31) + x.charCodeAt(i)) | 0;
+  return h;
+}
+
 const FAN_COLORS = [0xe07a5f, 0x3d85c6, 0xf2c450, 0x9b6bd3, 0x5f9e6e, 0xf28fb0];
 
 export interface RendererUI {
@@ -522,6 +530,9 @@ export class OfficeRenderer {
     this.trophies = Math.min(8, s.progress.stats.awardsWon ?? 0);
     this.fanArt = pinnedArt(s).slice(0, 8).map((m) => ({ seed: m.seed, color: FAN_COLORS[m.seed % FAN_COLORS.length]! }));
     const fanKey = this.fanArt.map((a) => a.seed).join(',');
+    const recent = s.releaseOrder.slice(-6).reverse().map((id) => s.releases[id]!).filter(Boolean);
+    this.wallGames = recent.map((r) => ({ color: GENRE_POSTER[Math.abs(hashStr(r.concept.genre)) % GENRE_POSTER.length]!, score: r.score, seed: Math.abs(hashStr(r.id)) }));
+    this.wallKey = recent.map((r) => r.id + ':' + Math.round(r.score)).join(',');
     const mc = s.company.mascot;
     this.mascot = mc ? { kind: mc.kind, color: parseInt(mc.color.slice(1), 16), acc: mc.acc } : undefined;
     if (fanKey !== this.lastFanKey) {
@@ -531,7 +542,7 @@ export class OfficeRenderer {
         this.textures.delete(k);
       }
     }
-    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}|${mc ? mc.kind + mc.color + mc.acc : ''}`;
+    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}|${this.wallKey}|${mc ? mc.kind + mc.color + mc.acc : ''}`;
     if (iKey !== this.itemsKey) {
       this.itemsKey = iKey;
       this.syncItems(s, floor, era);
@@ -649,6 +660,8 @@ export class OfficeRenderer {
 
   private trophies = 0;
   private fanArt: { seed: number; color: number }[] = [];
+  private wallGames: { color: number; score: number; seed: number }[] = [];
+  private wallKey = '';
   private mascot?: { kind: string; color: number; acc: string };
   private lastFanKey = '';
   private agentColor: number | undefined;
@@ -657,14 +670,14 @@ export class OfficeRenderer {
     const def = ITEM_BY_ID[id];
     const w = rot ? def.h : def.w;
     const h = rot ? def.w : def.h;
-    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}${id === 'mascot_statue' && this.mascot ? `|m${this.mascot.kind}${this.mascot.color}${this.mascot.acc}` : ''}`;
+    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}${id === 'release_wall' ? `|r${this.wallKey}` : ''}${id === 'mascot_statue' && this.mascot ? `|m${this.mascot.kind}${this.mascot.color}${this.mascot.acc}` : ''}`;
     const lift = itemLift(id) + 12;
     let tex = this.textures.get(key);
     if (!tex) {
       const g = new Graphics();
       // pad region so generateTexture includes lift and overhangs
       g.rect(-6, -lift, w * T + 12, h * T + lift + 10).fill({ color: 0x000000, alpha: 0.001 });
-      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies, fanArt: this.fanArt, mascot: this.mascot });
+      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies, fanArt: this.fanArt, mascot: this.mascot, releases: this.wallGames });
       tex = this.app.renderer.generateTexture({ target: g, resolution: 2, antialias: true });
       g.destroy();
       this.textures.set(key, tex);
