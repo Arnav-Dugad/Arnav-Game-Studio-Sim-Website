@@ -190,7 +190,7 @@ function GameCard({ p }: { p: GameProject }) {
             </>
           )}
           Hype <b className="num text-ink">{p.hype.toFixed(2)}</b>
-          {p.announcedDay === undefined && ' · unannounced'}
+          {p.announcedDay === undefined && (fromDay(s.day).year >= 2015 ? ' · unannounced (a shadow drop if it stays that way)' : ' · unannounced')}
         </span>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">

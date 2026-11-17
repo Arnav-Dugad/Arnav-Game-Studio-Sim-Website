@@ -347,7 +347,9 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   // Sales potential
   const effScore = score * 0.7 + userScore * 0.3;
   // a 1.0 launch after Early Access is old news to part of the audience
-  const pot = salesPotential(s, p.concept, effScore, ea && ea.units > 0 ? p.hype * 0.85 : p.hype);
+  // a shadow drop: never announced, released out of nowhere (2015+), the surprise is the marketing
+  const shadowDrop = p.announcedDay === undefined && !ea && !p.crowdfund && !p.concept.expansionOf && fromDay(s.day).year >= 2015;
+  const pot = salesPotential(s, p.concept, effScore, (ea && ea.units > 0 ? p.hype * 0.85 : p.hype) + (shadowDrop ? 0.6 * clamp((score - 60) / 25, 0, 1) : 0));
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
@@ -397,6 +399,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     serverLoad: ['mmo'].includes(p.concept.genre) || ['subscription', 'f2p', 'live_service'].includes(p.concept.monetization) ? 1 : 0,
     why: { sales: salesWhy, user: ub.done() },
     ...(p.beta ? { betaTested: true } : {}),
+    ...(shadowDrop ? { shadowDrop: true } : {}),
     ...(p.coDev ? { coDev: { name: p.coDev.name, share: p.coDev.share, rivalId: p.coDev.rivalId } } : {}),
     ...(ea ? { earlyAccess: { weeks: eaWeeks, units: ea.units, net: Math.round(ea.net) } } : {}),
     ...(cf ? { crowdfund: { raised: cf.raised, backers: cf.backers, late: cfLate } } : {}),
@@ -472,7 +475,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   }
   pushNews(s, {
     category: 'studio',
-    headline: `${rel.name}${ea ? ' leaves Early Access and' : ''} launches to ${score >= 85 ? 'rave' : score >= 70 ? 'positive' : score >= 50 ? 'mixed' : 'poor'} reviews (${score})`,
+    headline: `${rel.name}${ea ? ' leaves Early Access and' : shadowDrop ? ' shadow-drops out of nowhere and' : ''} launches to ${score >= 85 ? 'rave' : score >= 70 ? 'positive' : score >= 50 ? 'mixed' : 'poor'} reviews (${score})`,
     body: `${GENRE_BY_ID[p.concept.genre].name} · ${TOPIC_BY_ID[p.concept.topic]?.name ?? p.concept.topic}. Users rate it ${userScore}.`,
     tone: score >= 70 ? 'good' : score >= 50 ? 'neutral' : 'bad',
   });

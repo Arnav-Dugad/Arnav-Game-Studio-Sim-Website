@@ -427,6 +427,8 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Released without ever being announced (2015+). */
+  shadowDrop?: boolean;
   /** Spent time in Early Access before its 1.0 launch (already counted in units/gross/net). */
   earlyAccess?: { weeks: number; units: number; net: number };
   /** Crowdfunded: what backers pledged, and how many days late it shipped against the promise (0 = on time). */

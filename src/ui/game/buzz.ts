@@ -133,6 +133,7 @@ function linesFor(s: GameState, rel: Release, week: number, r: () => number): Li
   if (rel.modded && week > 4) L.push({ w: 2, tone: 'good', text: pick(['The mod scene is wild.', 'Installed 40 mods. No regrets.']) });
   if (rel.crowdfund && week < 8) L.push({ w: 2, tone: rel.crowdfund.late > 0 ? 'bad' : 'good', text: rel.crowdfund.late > 0 ? pick(['Backed this years ago. Finally.', 'Took them long enough. Still, it’s here.']) : pick(['Proud backer! My name’s in the credits.', 'Backed it on day one — worth every cent.', 'The stretch goals were worth it.']) });
   if (rel.earlyAccess && week < 8) L.push({ w: 2, tone: rel.earlyAccess.weeks >= 78 ? 'bad' : 'good', text: rel.earlyAccess.weeks >= 78 ? pick(['Finally out of Early Access. Only took forever.', 'Bought it in Early Access years ago. It’s… done?']) : pick(['Backed it in Early Access — so proud of how it turned out.', 'Watched this grow from a buggy alpha. 1.0 is great.', `My bug report made it into ${name}!`]) });
+  if (rel.shadowDrop && week < 4) L.push({ w: 3, tone: 'good', text: pick(['It just… came out?! Downloading now.', 'Best surprise of the year.', 'Shadow drop! Cancelling my weekend plans.']) });
   if (rel.betaTested && week < 6) L.push({ w: 1, tone: 'good', text: 'Played the beta — launch is so much smoother.' });
   if (plat) L.push({ w: 0.7, tone: 'neutral', text: pick([`Playing it on ${plat}.`, `Runs well on my ${plat}.`, `Picked it up for ${plat}.`]) });
   if (yr < 1990) L.push({ w: 1, tone: 'good', text: 'Please print a map of level 3!' });
