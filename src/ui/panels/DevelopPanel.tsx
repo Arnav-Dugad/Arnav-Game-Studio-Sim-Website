@@ -817,6 +817,11 @@ function NewGame({ onDone }: { onDone: () => void }) {
               </button>
             );
           })}
+          {!GAME_FEATURES.some((f) => yr >= f.year) &&
+            (() => {
+              const next = [...GAME_FEATURES].sort((a, b) => a.year - b.year)[0];
+              return next ? <span className="text-xs text-ink3">None invented yet — the first, {next.name}, arrives around {next.year}.</span> : null;
+            })()}
         </div>
         <p className="mt-2 text-[11px] text-ink3">Features add scope (the percentage is extra work) and lift quality in genres they suit; a poor fit drags a little. Some change sales or how players feel — hover for details.</p>
       </Section>

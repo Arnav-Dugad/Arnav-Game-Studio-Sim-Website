@@ -335,8 +335,8 @@ interface NewOpts {
 function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: (o: NewOpts) => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   const user = useAuth((a) => a.user);
-  const [o, setO] = useState<NewOpts>({
-    companyName: '',
+  const [o, setO] = useState<NewOpts>(() => ({
+    companyName: studioName(), // a ready-made name; the dice rerolls it
     founderName: user?.displayName && !user.guest ? user.displayName : '',
     color: COLORS[0]!,
     difficulty: 'standard',
@@ -347,7 +347,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
     endless: false,
     tutorial: true,
     sandbox: false,
-  });
+  }));
   const [err, setErr] = useState('');
   const set = <K extends keyof NewOpts>(k: K, v: NewOpts[K]) => setO((x) => ({ ...x, [k]: v }));
   return (
@@ -473,12 +473,12 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
             <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={o.tutorial} onChange={(e) => set('tutorial', e.target.checked)} />
           </label>
         </div>
-        {err && (
-          <p role="alert" className="text-sm text-bad">
-            {err}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
+        <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 flex items-center justify-end gap-2 border-t border-line bg-panel px-5 py-3 backdrop-blur">
+          {err && (
+            <p role="alert" className="mr-auto text-sm text-bad">
+              {err}
+            </p>
+          )}
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>

@@ -40,7 +40,7 @@ export function reputationReach(rep: number): number {
 
 // ── Blurbs ───────────────────────────────────────────────────────────────────
 
-const PRAISE: Record<string, string[]> = {
+export const PRAISE: Record<string, string[]> = {
   effort: ['Brimming with content and craft.', 'You can feel the hours poured into every corner.', 'An astonishing amount of game for the price.', 'Generous, confident and packed with ideas.'],
   focus: ['Every system pulls in the same direction.', 'It knows exactly what kind of game it wants to be.', 'The core loop is tight and endlessly replayable.', 'Smart priorities: the team put effort exactly where it counts.'],
   combo: ['A premise and genre made for each other.', 'The setting and mechanics click instantly.', 'The theme gives every mechanic a reason to exist.'],
@@ -50,8 +50,9 @@ const PRAISE: Record<string, string[]> = {
   fresh: ['Something genuinely new.', 'A breath of fresh air.', 'Bold, original and a little bit strange — in a good way.'],
   balance: ['Design and technology in perfect balance.', 'Feels as good as it looks.'],
   repeat: ['Comfort food done right.'],
+  audience: ['Knows exactly who it’s for.', 'Pitched perfectly at its audience.'],
 };
-const CRITIQUE: Record<string, string[]> = {
+export const CRITIQUE: Record<string, string[]> = {
   effort: ['Feels thin and rushed.', 'There just isn’t much here.', 'Over before it gets going.'],
   focus: ['Pulls in too many directions at once.', 'The priorities feel muddled.', 'Strong parts, wrong emphasis.'],
   combo: ['The theme and the mechanics never gel.', 'An odd pairing that never quite works.'],
@@ -60,16 +61,19 @@ const CRITIQUE: Record<string, string[]> = {
   trend: ['Arrives after the party ended.', 'Players have moved on from this.'],
   repeat: ['We have played this before. Several times.', 'Familiar to a fault.'],
   balance: ['Ambition outpaces execution.', 'Lopsided — great ideas, shaky foundations.', 'Lovely on paper, wobbly in the hands.'],
+  audience: ['Not sure who it’s meant for.', 'Aimed at the wrong crowd.'],
 };
 
 function partKey(label: string): string {
   if (label.startsWith('Development')) return 'effort';
   if (label.startsWith('Focus')) return 'focus';
-  if (label.includes('×') || label.startsWith('Audience')) return 'combo';
+  if (label.startsWith('Audience')) return 'audience';
+  if (label.includes('×')) return 'combo';
   if (label.startsWith('Engine') || label.startsWith('Platform')) return 'tech';
   if (label.startsWith('Bugs')) return 'bugs';
   if (label.includes('trend')) return 'trend';
-  if (label.startsWith('Fresh')) return 'fresh';
+  if (label.startsWith('Fresh') || label.startsWith('Visionary')) return 'fresh';
+  if (label.includes('(great for') || label.includes('(an odd fit')) return 'focus';
   if (label.startsWith('Repetitive')) return 'repeat';
   if (label.startsWith('Design/tech')) return 'balance';
   return 'effort';
@@ -86,11 +90,18 @@ function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, g
   const effortGood = (base?.value ?? 0) > 0.7;
   let line: string;
   if (score >= 75) {
-    const k = best && best.value > 1.0 ? partKey(best.label) : effortGood ? 'effort' : 'focus';
+    let k = best && best.value > 1.0 ? partKey(best.label) : effortGood ? 'effort' : 'focus';
+    if (k === 'effort' && !effortGood) k = 'focus';
     line = rng.pick(PRAISE[k] ?? PRAISE.effort!);
   } else if (score >= 55) {
-    const good = rng.pick(PRAISE[best && best.value > 1 ? partKey(best.label) : 'focus'] ?? PRAISE.focus!);
-    const bad = rng.pick(CRITIQUE[worst ? partKey(worst.label) : 'effort'] ?? CRITIQUE.effort!);
+    let gk = best && best.value > 1 ? partKey(best.label) : 'focus';
+    if (gk === 'effort' && !effortGood) gk = 'focus'; // don't praise effort that wasn't there
+    // never praise and knock the same thing in one breath
+    const bw = worsts.map((w) => partKey(w.label)).filter((k) => k !== gk);
+    let bk = worst && partKey(worst.label) !== gk ? partKey(worst.label) : (bw[0] ?? (gk === 'effort' ? 'focus' : 'effort'));
+    if (bk === 'effort' && effortGood) bk = gk === 'focus' ? 'balance' : 'focus';
+    const good = rng.pick(PRAISE[gk] ?? PRAISE.focus!);
+    const bad = rng.pick(CRITIQUE[bk] ?? CRITIQUE.effort!);
     line = `${good} ${bad}`;
   } else {
     const k = worst && worst.value < 0.95 ? partKey(worst.label) : effortGood ? 'focus' : 'effort';
