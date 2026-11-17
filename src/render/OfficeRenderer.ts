@@ -809,7 +809,8 @@ export class OfficeRenderer {
       const away = st.activity === 'sick' || st.activity === 'vacation';
       if (away) a.awayWas = st.activity === 'sick' ? 'sick' : 'vacation';
       else if (a.awayWas && agentFloor === floor && this.agentsReady && !ui.reducedMotion) {
-        this.say(a, a.awayWas === 'vacation' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?']), 2.6);
+        const sabbatical = st.lastSabbaticalDay !== undefined && s.day - st.lastSabbaticalDay < 70;
+        this.say(a, sabbatical ? pickOne(['Back from my sabbatical! 🌍', 'I have SO many ideas.', 'Two months off — I’m a new person!']) : a.awayWas === 'vacation' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?']), 2.6);
         a.anim.wave = 1.4;
         a.awayWas = undefined;
       } else a.awayWas = undefined;
