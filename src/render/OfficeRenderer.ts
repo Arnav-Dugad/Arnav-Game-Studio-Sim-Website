@@ -1109,7 +1109,8 @@ export class OfficeRenderer {
         a.bubble.position.set(10, -44 - (1 - Math.max(0, a.bubbleT) / 2) * 4);
       }
       // activity icon
-      const iconText = st.activity === 'research' ? '⚗' : st.activity === 'training' ? '📘' : st.activity === 'burnout' ? '☁' : st.assignment.kind === 'idle' && atDesk ? '💤' : '';
+      const onPassion = st.assignment.kind === 'project' && (s.projects[st.assignment.id] as { passion?: string } | undefined)?.passion === st.id;
+      const iconText = st.activity === 'research' ? '⚗' : st.activity === 'training' ? '📘' : st.activity === 'burnout' ? '☁' : st.assignment.kind === 'idle' && atDesk ? '💤' : onPassion ? '✨' : '';
       if (iconText) {
         if (!a.icon) {
           a.icon = new Text({ text: iconText, style: { fontSize: 13 } });
