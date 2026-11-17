@@ -37,6 +37,7 @@ export default function MarketPanel() {
           { value: 'rivals', label: 'Rivals' },
           { value: 'releases', label: 'Rival releases' },
           { value: 'upcoming', label: 'Coming soon' },
+          { value: 'week', label: 'This week' },
           { value: 'charts', label: 'All-time charts' },
         ]}
       />
@@ -46,6 +47,7 @@ export default function MarketPanel() {
       {tab === 'rivals' && <Rivals />}
       {tab === 'releases' && <RivalReleases />}
       {tab === 'upcoming' && <Upcoming />}
+      {tab === 'week' && <WeeklyChart />}
       {tab === 'charts' && <Charts />}
     </div>
   );
@@ -328,6 +330,56 @@ function Upcoming() {
 }
 
 /** Best-selling games so far: real history up to today plus your own releases. */
+/** This week's top ten: your games' real weekly sales and estimates for recent rival releases. */
+function WeeklyChart() {
+  const s = useGame((g) => g.s)!;
+  const v = useGame((g) => g.v);
+  const rows = useMemo(() => {
+    const out: { name: string; company: string; weekly: number; weeks: number; mine: boolean; id?: string }[] = [];
+    for (const id of s.releaseOrder.slice(-30)) {
+      const r = s.releases[id];
+      if (!r || !r.active) continue;
+      const weekly = r.weekly.length ? r.weekly[r.weekly.length - 1]! : 0;
+      if (weekly > 0) out.push({ name: r.name, company: s.company.name, weekly, weeks: Math.floor((s.day - r.day) / 7), mine: true, id });
+    }
+    for (const g of s.rivalGames) {
+      const weeks = Math.floor((s.day - g.day) / 7);
+      if (weeks < 0 || weeks > 26) continue;
+      // launch-heavy curve: about 12% of lifetime sales in week one, fading 15% a week
+      const weekly = g.units * 0.12 * Math.pow(0.85, weeks);
+      out.push({ name: g.name, company: s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company, weekly, weeks, mine: false });
+    }
+    return out.sort((a, b) => b.weekly - a.weekly).slice(0, 10);
+    // v: recompute as sales tick
+  }, [s, v]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!rows.length) return <p className="text-sm text-ink3">Nothing is selling yet this week.</p>;
+  return (
+    <div>
+      <p className="mb-2 text-xs text-ink3">The week’s best-sellers. Rival figures are industry estimates.</p>
+      <ol className="divide-y divide-line">
+        {rows.map((r, i) => (
+          <li key={`${r.name}-${i}`} className={cx('flex items-center gap-3 py-1.5 text-sm', r.mine && 'rounded-lg bg-gold/10 px-1.5')}>
+            <span className={cx('num grid size-7 shrink-0 place-items-center rounded-lg text-xs font-bold', i === 0 ? 'bg-gold/25 text-gold' : 'bg-bg2 text-ink2')}>{i + 1}</span>
+            <div className="min-w-0 flex-1">
+              {r.mine && r.id ? (
+                <button type="button" className="truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().pushModal({ kind: 'release', releaseId: r.id! })}>
+                  {r.name}
+                </button>
+              ) : (
+                <div className="truncate font-semibold">{r.name}</div>
+              )}
+              <div className="truncate text-xs text-ink3">
+                {r.company} · {r.weeks === 0 ? 'new this week' : `${r.weeks} week${r.weeks === 1 ? '' : 's'} on sale`}
+              </div>
+            </div>
+            <span className="num shrink-0 text-xs font-semibold">{fmtUnits(r.weekly)}/wk</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function Charts() {
   const s = useGame((g) => g.s)!;
   const v = useGame((g) => g.v);
