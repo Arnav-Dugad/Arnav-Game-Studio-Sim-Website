@@ -28,7 +28,7 @@ import { researchAvailable, researchCost } from './systems/research';
 import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
-import type { Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
+import type { BadgeShape, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
 import { applyCheat, markCheated, type CheatOp } from './cheats';
 import { canFoundLeague, closeLeague, foundLeague, LEAGUE_TIERS, leagueSetupCost } from './systems/esports';
 import { addRep, aOrAn, earn, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
@@ -99,6 +99,7 @@ export type Action =
   | { type: 'patchGame'; releaseId: string }
   | { type: 'cheat'; cheat: CheatOp }
   | { type: 'openBeta'; projectId: string }
+  | { type: 'setIdentity'; name?: string; color?: string; emblem?: string | null; shape?: BadgeShape }
   | { type: 'foundLeague'; releaseId: string; tier: LeagueTier; name: string }
   | { type: 'closeLeague'; id: string }
   | { type: 'runSale'; releaseId: string; discount: SaleDiscount }
@@ -876,6 +877,25 @@ function apply(c: Ctx, a: Action): string | null {
       const lg = (s.leagues ?? []).find((l) => l.id === a.id && l.status === 'live');
       if (!lg) return 'No such league';
       closeLeague(s, lg);
+      return null;
+    }
+    case 'setIdentity': {
+      if (a.name !== undefined) {
+        const n = String(a.name).trim().slice(0, 40);
+        if (!n) return 'Your studio needs a name';
+        s.company.name = n;
+      }
+      if (a.color !== undefined) {
+        if (!/^#[0-9a-f]{6}$/i.test(a.color)) return 'Pick a colour';
+        s.company.color = a.color;
+      }
+      if (a.shape !== undefined && !['rounded', 'circle', 'shield', 'hex'].includes(a.shape)) return 'Unknown shape';
+      if (a.emblem !== undefined && a.emblem !== null && !/^[a-z_]{2,20}$/.test(a.emblem)) return 'Unknown emblem';
+      const logo = { ...s.company.logo };
+      if (a.shape !== undefined) logo.shape = a.shape;
+      if (a.emblem === null) delete logo.emblem;
+      else if (a.emblem !== undefined) logo.emblem = a.emblem;
+      s.company.logo = logo;
       return null;
     }
     case 'openBeta': {

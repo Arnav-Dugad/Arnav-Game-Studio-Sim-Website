@@ -42,7 +42,9 @@ export function HUD({ saveStatus, onSave, onExit, onZoom }: { saveStatus: SaveSt
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-wrap items-start gap-2 p-2 sm:p-3">
       <div className="glass pointer-events-auto flex items-center gap-2.5 rounded-2xl py-1.5 pl-1.5 pr-3">
-        <CompanyBadge name={s.company.name} color={s.company.color} size={34} />
+        <button type="button" className="rounded-xl transition hover:scale-105" title="Studio identity" aria-label="Edit studio identity" onClick={() => pushModal({ kind: 'identity' })}>
+          <CompanyBadge name={s.company.name} color={s.company.color} size={34} emblem={s.company.logo?.emblem} shape={s.company.logo?.shape} />
+        </button>
         <div className="min-w-0">
           <div className="max-w-40 truncate font-display text-sm font-semibold leading-tight">{s.company.name}</div>
           <div className="num text-xs text-ink3" aria-live="polite">

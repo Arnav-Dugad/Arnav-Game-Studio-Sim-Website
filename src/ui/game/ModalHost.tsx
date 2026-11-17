@@ -12,14 +12,15 @@ import { marketSalary, productivity, moraleTarget, retirementDay, ROLE_NAMES, va
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
 import { runScore } from '@/sim/systems/achievements';
 import { qualityToScore } from '@/sim/systems/dev';
-import type { Focus3, Specialisation } from '@/sim/types';
+import type { BadgeShape, Focus3, Specialisation } from '@/sim/types';
 import { addHallOfFame, type SlotId } from '@/services/saves';
 import { useAuth } from '@/services/auth';
-import { Button, BreakdownList, Meter, Modal, Pill, Section, Segmented, Tip, cx } from '../components/ui';
+import { Button, BreakdownList, Meter, Modal, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { EventArt } from '../art/EventArt';
 import { Cover } from '../art/Cover';
 import { LineChart } from '../charts';
-import { Icon } from '../icons';
+import { Icon, type IconName } from '../icons';
+import { CompanyBadge } from '../art/CompanyBadge';
 import { useGame } from '../store';
 import { FocusSliders } from './FocusEditor';
 import { GuideModal } from './Guide';
@@ -70,6 +71,8 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       return <MajorNewsModal newsId={modal.newsId} onClose={pop} />;
     case 'gala':
       return <GalaModal year={modal.year} onClose={pop} />;
+    case 'identity':
+      return <IdentityModal onClose={pop} />;
     case 'shortcuts':
       return <ShortcutsModal onClose={pop} />;
     case 'guide':
@@ -194,6 +197,69 @@ function ReviewsModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         )}
         <Button variant="primary" onClick={onClose}>
           Continue
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+const BRAND_COLORS = ['#e07a5f', '#d1495b', '#e3b23c', '#5f9e6e', '#2eb5a8', '#3d85c6', '#9b6bd3', '#334155', '#1f2937', '#c2410c'];
+const EMBLEMS: IconName[] = ['rocket', 'controller', 'star', 'crown', 'fire', 'zap', 'heart', 'gem', 'diamond', 'leaf', 'shield', 'sun', 'moon', 'music', 'cube', 'phoenix', 'unicorn', 'castle', 'mountain', 'shuriken', 'robot', 'globe', 'flag', 'sparkle', 'coffee', 'pizza', 'lightbulb', 'target'];
+const SHAPE_OPTS: { value: BadgeShape; label: string }[] = [
+  { value: 'rounded', label: 'Rounded' },
+  { value: 'circle', label: 'Circle' },
+  { value: 'shield', label: 'Shield' },
+  { value: 'hex', label: 'Hexagon' },
+];
+
+/** Studio identity: name, colour, emblem and badge shape. */
+function IdentityModal({ onClose }: { onClose: () => void }) {
+  const s = useGame((g) => g.s)!;
+  const act = useGame((g) => g.actOrToast);
+  const [name, setName] = useState(s.company.name);
+  const [color, setColor] = useState(s.company.color);
+  const [emblem, setEmblem] = useState<string | null>(s.company.logo?.emblem ?? null);
+  const [shape, setShape] = useState<BadgeShape>(s.company.logo?.shape ?? 'rounded');
+  const save = () => {
+    if (act({ type: 'setIdentity', name, color, emblem, shape }, 'Studio identity updated')) onClose();
+  };
+  return (
+    <Modal open onClose={onClose} title="Studio identity">
+      <div className="flex items-center gap-4">
+        <CompanyBadge name={name || '?'} color={color} size={84} emblem={emblem ?? undefined} shape={shape} />
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-ink3">Studio identity</div>
+          <input className={cx(inputCls, 'mt-1 font-display text-lg font-semibold')} value={name} maxLength={40} onChange={(e) => setName(e.target.value)} aria-label="Studio name" />
+        </div>
+      </div>
+      <Section title="Colour" className="mt-4">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Studio colour">
+          {BRAND_COLORS.map((c) => (
+            <button key={c} type="button" role="radio" aria-checked={color === c} aria-label={c} onClick={() => setColor(c)} className={cx('size-8 rounded-full ring-offset-2 ring-offset-[var(--panel)] transition', color === c && 'ring-2 ring-ink')} style={{ background: c }} />
+          ))}
+        </div>
+      </Section>
+      <Section title="Shape" className="mt-3">
+        <Segmented<BadgeShape> ariaLabel="Badge shape" value={shape} onChange={setShape} options={SHAPE_OPTS} />
+      </Section>
+      <Section title="Emblem" className="mt-3">
+        <div className="grid grid-cols-7 gap-1.5 sm:grid-cols-10">
+          <button type="button" aria-pressed={!emblem} onClick={() => setEmblem(null)} className={cx('grid aspect-square place-items-center rounded-lg border text-xs font-bold', !emblem ? 'border-accent bg-accent/10' : 'border-line hover:bg-bg2')} title="Initials">
+            Aa
+          </button>
+          {EMBLEMS.map((e) => (
+            <button key={e} type="button" aria-pressed={emblem === e} aria-label={e} onClick={() => setEmblem(e)} className={cx('grid aspect-square place-items-center rounded-lg border', emblem === e ? 'border-accent bg-accent/10 text-accent' : 'border-line text-ink2 hover:bg-bg2')}>
+              <Icon name={e} size={16} />
+            </button>
+          ))}
+        </div>
+      </Section>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={save}>
+          Save
         </Button>
       </div>
     </Modal>

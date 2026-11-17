@@ -617,6 +617,8 @@ export interface Company {
   name: string;
   founderName: string;
   color: string;
+  /** Studio emblem (an icon id) and badge shape; the monogram is used without one. */
+  logo?: { emblem?: string; shape?: BadgeShape };
   reputation: number; // 0..100
   fans: number;
   cash: number;
@@ -763,3 +765,4 @@ export interface RivalryRecord {
   last: string;
 }
 
+export type BadgeShape = 'rounded' | 'circle' | 'shield' | 'hex';

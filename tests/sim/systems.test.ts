@@ -696,6 +696,21 @@ describe('decade in review', () => {
   });
 });
 
+describe('studio identity', () => {
+  it('renames and restyles the studio with validation', () => {
+    const s = game(1990, 1);
+    expect(dispatch(s, { type: 'setIdentity', name: '  New Name  ', color: '#3d85c6', emblem: 'phoenix', shape: 'shield' }).ok).toBe(true);
+    expect(s.company.name).toBe('New Name');
+    expect(s.company.logo).toEqual({ emblem: 'phoenix', shape: 'shield' });
+    expect(dispatch(s, { type: 'setIdentity', name: '   ' }).ok).toBe(false);
+    expect(dispatch(s, { type: 'setIdentity', color: 'red' }).ok).toBe(false);
+    expect(dispatch(s, { type: 'setIdentity', shape: 'star' as never }).ok).toBe(false);
+    expect(dispatch(s, { type: 'setIdentity', emblem: '<script>' }).ok).toBe(false);
+    expect(dispatch(s, { type: 'setIdentity', emblem: null }).ok).toBe(true);
+    expect(s.company.logo?.emblem).toBeUndefined();
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

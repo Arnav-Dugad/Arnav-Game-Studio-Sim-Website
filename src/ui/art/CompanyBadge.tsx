@@ -1,3 +1,7 @@
+import type { ReactNode } from 'react';
+import type { BadgeShape } from '@/sim/types';
+import { Icon, type IconName } from '../icons';
+
 /*
  * Rival/own company badge: a rounded-square monogram on the company's brand-adjacent colour with a lighter
  * inner ring (docs/ART.md §6). Deliberately generic — never a logo, never a wordmark.
@@ -68,23 +72,56 @@ function lighten(rgb: [number, number, number], t: number): string {
   return `rgb(${rgb.map((v) => Math.round(v + (255 - v) * t)).join(' ')})`;
 }
 
+const SHAPES: Record<BadgeShape, (fill: string, props?: Record<string, unknown>) => ReactNode> = {
+  rounded: (fill, p) => <rect x={0.5} y={0.5} width={39} height={39} rx={10} fill={fill} {...p} />,
+  circle: (fill, p) => <circle cx={20} cy={20} r={19.5} fill={fill} {...p} />,
+  shield: (fill, p) => <path d="M20 0.8 L38.5 6.5 V19 C38.5 29 30.5 36.2 20 39.2 C9.5 36.2 1.5 29 1.5 19 V6.5 Z" fill={fill} {...p} />,
+  hex: (fill, p) => <path d="M20 0.6 L37 10.3 V29.7 L20 39.4 L3 29.7 V10.3 Z" fill={fill} {...p} />,
+};
+
 export function CompanyBadge({
   name,
   color,
   size = 36,
   className,
+  emblem,
+  shape = 'rounded',
 }: {
   name: string;
   /** Brand-adjacent tint (hex preferred; any CSS colour works with a white monogram). */
   color: string;
   size?: number;
   className?: string;
+  /** Your studio's chosen emblem (an icon id) instead of the monogram. */
+  emblem?: string;
+  shape?: BadgeShape;
 }) {
   const letters = monogram(name);
   const rgb = parseHex(color);
   const light = rgb ? luminance(rgb) > 0.45 : false;
   const ink = light ? '#1E1A16' : '#FFFFFF';
   const ring = rgb ? lighten(rgb, light ? 0.55 : 0.4) : 'rgb(255 255 255 / 0.45)';
+  if (emblem || shape !== 'rounded') {
+    return (
+      <span className={className} style={{ position: 'relative', display: 'inline-grid', width: size, height: size, flexShrink: 0 }} role="img" aria-label={`${name} badge`}>
+        <svg width={size} height={size} viewBox="0 0 40 40" style={{ gridArea: '1 / 1' }} aria-hidden focusable="false">
+          {SHAPES[shape](color)}
+          {SHAPES[shape]('#FFFFFF', { opacity: 0.1, transform: 'translate(20 20) scale(1 0.5) translate(-20 -20)' })}
+          {SHAPES[shape]('none', { stroke: ring, strokeWidth: 1.3, opacity: 0.9, transform: 'translate(20 20) scale(0.85) translate(-20 -20)' })}
+          {!emblem && (
+            <text x={20} y={21} textAnchor="middle" dominantBaseline="central" fontSize={letters.length > 1 ? 14 : 18} fontWeight={700} fill={ink} style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>
+              {letters}
+            </text>
+          )}
+        </svg>
+        {emblem && (
+          <span style={{ gridArea: '1 / 1', display: 'grid', placeItems: 'center', color: ink }}>
+            <Icon name={emblem as IconName} size={Math.round(size * 0.5)} />
+          </span>
+        )}
+      </span>
+    );
+  }
   return (
     <svg
       width={size}

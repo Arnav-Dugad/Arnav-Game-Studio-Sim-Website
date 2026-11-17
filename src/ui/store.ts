@@ -31,7 +31,8 @@ export type Modal =
   | { kind: 'shortcuts' }
   | { kind: 'guide' }
   | { kind: 'rival'; rivalId: string }
-  | { kind: 'gala'; year: number };
+  | { kind: 'gala'; year: number }
+  | { kind: 'identity' };
 
 export interface Toast {
   id: number;
