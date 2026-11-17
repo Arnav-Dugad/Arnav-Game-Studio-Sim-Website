@@ -110,6 +110,16 @@ function GameCard({ p }: { p: GameProject }) {
   const pct = Math.min(1, done / total);
   const q = p.qualityPreview;
   const est = q ? Math.round(qualityToScore(q.total)) : null;
+  // what the hype is worth: roughly how many extra buyers it would bring at today's estimate (refreshed weekly)
+  const week = Math.floor(s.day / 7);
+  const hypeStep = Math.round(p.hype * 20);
+  const waiting = useMemo(() => {
+    if (p.hype < 0.05 || est === null) return 0;
+    const units = salesPotential(s, p.concept, est, p.hype).platforms.reduce((t, x) => t + x.potential, 0);
+    const lift = (p.hype * 0.45) / (1 + p.hype * 0.45);
+    return Math.round(units * lift);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [week, p.id, est, hypeStep]);
   const yr = fromDay(s.day).year;
   const run = (a: Parameters<typeof act>[0]) => {
     const r = act(a);
@@ -195,7 +205,10 @@ function GameCard({ p }: { p: GameProject }) {
               {p.focusTest.wantMore && <> · players want more <b className="capitalize text-ink">{p.focusTest.wantMore}</b></>} ·{' '}
             </>
           )}
-          Hype <b className="num text-ink">{p.hype.toFixed(2)}</b>
+          <span title="Hype: excitement before launch. More hype, more day-one buyers — it fades a little every week without marketing.">
+            Hype <b className="num text-ink">{p.hype.toFixed(2)}</b>
+            {waiting >= 1000 && <> (~{fmtUnits(waiting)} players waiting)</>}
+          </span>
           {p.announcedDay === undefined && (fromDay(s.day).year >= 2015 && !p.concept.expansionOf ? ' · unannounced (a shadow drop if it stays that way)' : ' · unannounced')}
           {p.documentary && ` · film crew on set${p.documentary.crunchDays >= 20 ? ' (filming the crunch)' : ''}`}
         </span>
