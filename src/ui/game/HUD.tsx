@@ -26,7 +26,7 @@ function lastMonthBreakdown(s: NonNullable<ReturnType<typeof useGame.getState>['
   return bd.done();
 }
 
-export function HUD({ saveStatus, onSave, onExit, onZoom }: { saveStatus: SaveStatus; onSave: () => void; onExit: () => void; onZoom: (f: number) => void }) {
+export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto }: { saveStatus: SaveStatus; onSave: () => void; onExit: () => void; onZoom: (f: number) => void; onPhoto?: () => void }) {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
   const speed = useGame((g) => g.speed);
@@ -104,6 +104,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom }: { saveStatus: SaveSt
               <div className="glass absolute right-0 top-11 z-50 w-48 rounded-xl p-1 animate-pop" role="menu" onMouseLeave={() => setMenu(false)}>
                 {[
                   { icon: 'save' as const, label: 'Save now', run: onSave },
+                  ...(onPhoto ? [{ icon: 'camera' as const, label: 'Office photo', run: onPhoto }] : []),
                   { icon: 'settings' as const, label: 'Settings', run: () => openPanel('settings') },
                   { icon: 'sparkle' as const, label: 'Cheats ( ` )', run: () => openPanel('cheats') },
                   { icon: 'book' as const, label: 'How to play', run: () => pushModal({ kind: 'guide' }) },

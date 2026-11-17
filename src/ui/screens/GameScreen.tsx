@@ -17,7 +17,7 @@ import { BuildBar } from '../game/BuildBar';
 import { ProjectDock, YearInReview } from '../game/Dock';
 import { sound } from '../sound';
 import { music } from '../music';
-import { fromDay } from '@/sim/calendar';
+import { formatDate, fromDay } from '@/sim/calendar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { navigate } from '../router';
 
@@ -194,6 +194,21 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
           useGame.getState().unload();
         }}
         onZoom={(f) => (f === 0 ? rendererRef.current?.fit() : rendererRef.current?.zoomBy(f))}
+        onPhoto={async () => {
+          const g = useGame.getState();
+          const st = g.s;
+          if (!st || !rendererRef.current) return;
+          const staffN = Object.keys(st.staff).length;
+          const blob = await rendererRef.current.snapshot(st.company.name, `${formatDate(st.day)} · ${staffN} ${staffN === 1 ? 'person' : 'people'} · ${st.releaseOrder.length} games released`);
+          if (!blob) return g.toast({ text: 'Couldn’t take the photo', tone: 'bad' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${st.company.name.replace(/[^\w -]+/g, '').trim() || 'studio'} ${fromDay(st.day).year}.png`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          g.toast({ text: 'Office photo saved', tone: 'good', icon: 'camera' });
+        }}
       />
       <Rail />
       <BuildBar />

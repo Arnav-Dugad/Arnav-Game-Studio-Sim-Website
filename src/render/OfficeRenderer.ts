@@ -1338,6 +1338,47 @@ export class OfficeRenderer {
     }
   }
 
+  /** A captioned PNG of the current floor (photo mode). Hover rings and labels are hidden for the shot. */
+  async snapshot(caption: string, sub: string): Promise<Blob | null> {
+    if (!this.ready) return null;
+    const hidden: Container[] = [];
+    for (const a of this.agents.values())
+      for (const c of [a.ring, a.label]) if (c?.visible) {
+        c.visible = false;
+        hidden.push(c);
+      }
+    if (this.ghost?.visible) {
+      this.ghost.visible = false;
+      hidden.push(this.ghost);
+    }
+    try {
+      const b = this.world.getLocalBounds();
+      const res = Math.max(0.5, Math.min(2, 4096 / Math.max(b.width, b.height)));
+      const shot = this.app.renderer.extract.canvas({ target: this.world, resolution: res, clearColor: this.P.bg }) as HTMLCanvasElement;
+      const bar = Math.round(70 * res);
+      const pad = Math.round(28 * res);
+      const out = document.createElement('canvas');
+      out.width = shot.width + pad * 2;
+      out.height = shot.height + pad * 2 + bar;
+      const ctx = out.getContext('2d');
+      if (!ctx) return null;
+      const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+      ctx.fillStyle = hex(this.P.bg);
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(shot, pad, pad);
+      ctx.fillStyle = this.P.night ? '#f1ede6' : '#2a2622';
+      ctx.font = `600 ${Math.round(26 * res)}px "Space Grotesk", Inter, sans-serif`;
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(caption, pad, shot.height + pad + bar * 0.55);
+      ctx.globalAlpha = 0.6;
+      ctx.font = `500 ${Math.round(15 * res)}px Inter, sans-serif`;
+      ctx.fillText(sub, pad, shot.height + pad + bar * 0.9);
+      return await new Promise((res2) => out.toBlob(res2, 'image/png'));
+    } finally {
+      for (const c of hidden) c.visible = true;
+    }
+  }
+
   /** Coin burst at a world position (sales pops). */
   burst(count = 8): void {
     const s = this.cb.getState();
