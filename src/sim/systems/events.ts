@@ -18,7 +18,7 @@ import { COMPANY_BY_ID } from '../../data/companies';
 import { clamp } from '../breakdown';
 import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
-import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
+import type { EventInstance, EventOption, Franchise, GameProject, GameState, Staff } from '../types';
 import { addRep, aOrAn, earn, fmtMoney, hasFlag, money, newId, pushNews, spend } from '../util';
 import { ownerValue } from './finance';
 import { ROLE_NAMES, ROLE_SKILLS, candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, rememberLeaver, removeStaff } from './staff';
@@ -77,6 +77,8 @@ const certRisk = (s: GameState) =>
 const accessibilityCandidate = (s: GameState) =>
   Object.values(s.releases).find((r) => !r.delisted && !r.accessibilityAsked && r.score >= 70 && s.day - r.day < 365 * 2 && !(r.concept.features ?? []).includes('accessibility'));
 const isAwayStaff = (x: Staff) => x.sickDays > 0 || (x.vacationDays ?? 0) > 0;
+/** Series with at least two games, most-loved first. */
+const votableSeries = (s: GameState) => Object.values(s.franchises).filter((f) => f.entries.length >= 2 && f.fans > 1000).sort((a, b) => b.fans - a.fans);
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
@@ -920,6 +922,38 @@ export const EVENT_DEFS: EventDef[] = [
         if (fr) fr.fans *= 1.05;
         mod(s, 3, 60, 'Proud of the charity stream');
       } else s.company.fans = Math.round(s.company.fans * 1.01);
+    },
+  },
+  {
+    id: 'fan_vote',
+    art: 'crowd',
+    cooldown: 900,
+    weight: (s) => (yr(s) >= 2008 && votableSeries(s).length >= 2 ? 0.18 : 0),
+    make: ({ s }) => {
+      const pool = votableSeries(s).slice(0, 2);
+      if (pool.length < 2) return null;
+      const [a, b] = pool as [Franchise, Franchise];
+      return {
+        title: 'Which sequel should we make?',
+        body: `Your community manager wants to run a poll: ${a.name} or ${b.name}? Fans of both are loud, and the winner would get a sequel.`,
+        options: [
+          { id: 'poll', label: 'Run the poll', preview: 'The winning series gets fans (+5%), and a sequel started within a year begins with extra hype (+0.35)' },
+          { id: 'skip', label: 'We decide what we make', preview: 'No change' },
+        ],
+        ctx: { a: a.id, b: b.id },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      if (opt !== 'poll') return;
+      const a = s.franchises[String(e.ctx.a)];
+      const b = s.franchises[String(e.ctx.b)];
+      if (!a || !b) return;
+      const win = rng.chance(a.fans / Math.max(1, a.fans + b.fans)) ? a : b;
+      const lose = win === a ? b : a;
+      win.fans = Math.round(win.fans * 1.05);
+      win.votedUntil = s.day + 365;
+      const share = Math.round((win.fans / Math.max(1, win.fans + lose.fans)) * 100);
+      pushNews(s, { category: 'studio', headline: `Fans vote for a new ${win.name}`, body: `${win.name} beat ${lose.name} with about ${Math.min(95, Math.max(51, share))}% of the vote. Start the sequel within a year and the fans will be waiting.`, tone: 'good' });
     },
   },
   {

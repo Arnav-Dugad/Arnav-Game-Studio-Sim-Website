@@ -537,6 +537,8 @@ export interface Franchise {
   lastCon?: number;
   /** A cliffhanger left open by the series' latest game (the day it shipped), until a sequel starts. */
   openCliffhanger?: number;
+  /** Fans voted for this series' next game: extra hype for a sequel started before this day. */
+  votedUntil?: number;
 }
 
 export interface RivalGame {

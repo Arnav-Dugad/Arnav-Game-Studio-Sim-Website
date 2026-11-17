@@ -45,6 +45,7 @@ export function comingUp(s: GameState, days = 120, max = 10): CalendarEntry[] {
     const due = r ? licenceDue(r) : null;
     if (r && due !== null && r.active) add({ day: due, icon: 'calendar', text: `${r.name}’s licences expire`, tone: 'bad' });
   }
+  for (const f of Object.values(s.franchises)) if (f.votedUntil !== undefined) add({ day: f.votedUntil, icon: 'crowd', text: `Last day to start the ${f.name} sequel fans voted for` });
   const pitch = s.company.pitch;
   const pitcher = pitch ? s.staff[pitch.staffId] : undefined;
   if (pitch && pitcher) add({ day: pitch.until, icon: 'lightbulb', text: `${pitcher.name.split(' ')[0]}’s pitch expires (${pitchText(pitch)})`, tone: 'bad' });

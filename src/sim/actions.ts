@@ -480,6 +480,12 @@ function apply(c: Ctx, a: Action): string | null {
         awaitingGate: false,
       };
       s.projects[id] = proj;
+      // the fans voted for this one
+      const voted = g.franchiseId && !g.expansionOf && !g.remasterOf ? s.franchises[g.franchiseId] : undefined;
+      if (voted?.votedUntil !== undefined && s.day <= voted.votedUntil) {
+        proj.hype = Math.min(BALANCE.HYPE_MAX, proj.hype + 0.35);
+        voted.votedUntil = undefined;
+      }
       // this sequel claims the series' open cliffhanger
       if (g.franchiseId && !g.expansionOf && !g.remasterOf && cliffhangerPending(s, g.franchiseId)) {
         proj.paysCliffhanger = true;
