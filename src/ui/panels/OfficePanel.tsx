@@ -97,6 +97,39 @@ export default function OfficePanel() {
         <p className="mt-1.5 text-[11px] text-ink3">Breaks restore energy; long walks waste time. Décor lifts morale nearby; crowding and noise hurt it. Use the overlays in build mode to see it.</p>
       </Section>
 
+      <Section title="Style">
+        <div className="mb-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Floor">
+          {(['auto', 'wood', 'carpet', 'concrete', 'tiles', 'checker'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              role="radio"
+              aria-checked={(s.office.style?.floor ?? 'auto') === f}
+              onClick={() => useGame.getState().act({ type: 'setOfficeStyle', floor: f, wall: s.office.style?.wall })}
+              className={cx('rounded-full border px-2.5 py-1 text-xs capitalize transition', (s.office.style?.floor ?? 'auto') === f ? 'border-accent bg-accent text-accent-ink' : 'border-line hover:bg-bg2')}
+            >
+              {f === 'auto' ? 'Default floor' : f}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="Wall colour">
+          <span className="mr-1 text-xs text-ink3">Walls</span>
+          {[undefined, '#f3ece2', '#dfe9f2', '#e6f0e1', '#f6e3d8', '#e9e0f2', '#3b3f48'].map((c) => (
+            <button
+              key={c ?? 'default'}
+              type="button"
+              role="radio"
+              aria-checked={s.office.style?.wall === c}
+              aria-label={c ?? 'Default walls'}
+              onClick={() => useGame.getState().act({ type: 'setOfficeStyle', floor: s.office.style?.floor ?? 'auto', wall: c })}
+              className={cx('size-6 rounded-full border ring-offset-1 ring-offset-[var(--panel)]', s.office.style?.wall === c ? 'ring-2 ring-ink' : 'border-line')}
+              style={{ background: c ?? 'linear-gradient(135deg, #f3ece2 50%, #2a2622 50%)' }}
+            />
+          ))}
+        </div>
+        <p className="mt-1.5 text-[11px] text-ink3">Purely cosmetic — make the place yours.</p>
+      </Section>
+
       <Section title="Catalogue">
         <Segmented ariaLabel="Item category" value={cat} onChange={setCat} className="mb-2" options={CATS.map((c) => ({ value: c.id, label: c.label }))} />
         <div className="grid gap-1.5 sm:grid-cols-2">

@@ -34,7 +34,7 @@ import { researchAvailable, researchCost } from './systems/research';
 import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
-import type { BadgeShape, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
+import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
 import { applyCheat, markCheated, type CheatOp } from './cheats';
 import { canFoundLeague, closeLeague, foundLeague, LEAGUE_TIERS, leagueSetupCost } from './systems/esports';
 import { addRep, aOrAn, earn, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
@@ -110,6 +110,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'setOfficeStyle'; floor: FloorStyle; wall?: string }
   | { type: 'openBranch'; region: RegionId }
   | { type: 'closeBranch'; region: RegionId }
   | { type: 'acquire'; targetId: string }
@@ -804,6 +805,11 @@ function apply(c: Ctx, a: Action): string | null {
       if (!(s.company.branches ?? []).includes(a.region)) return 'No branch there';
       s.company.branches = (s.company.branches ?? []).filter((r) => r !== a.region);
       pushNews(s, { category: 'studio', headline: `${s.company.name} closes its ${REGION_BY_ID[a.region].name} studio`, tone: 'neutral' });
+      return null;
+    case 'setOfficeStyle':
+      if (!['auto', 'wood', 'carpet', 'concrete', 'tiles', 'checker'].includes(a.floor)) return 'Unknown floor';
+      if (a.wall !== undefined && !/^#[0-9a-fA-F]{6}$/.test(a.wall)) return 'Invalid colour';
+      s.office.style = { floor: a.floor, ...(a.wall ? { wall: a.wall } : {}) };
       return null;
     case 'liveEvent':
       return runLiveEvent(s, a.releaseId);

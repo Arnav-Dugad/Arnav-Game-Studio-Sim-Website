@@ -484,7 +484,7 @@ export class OfficeRenderer {
 
     const era = fromDay(s.day).year;
     const eraBucket = era < 2003 ? 'crt' : 'lcd';
-    const sKey = `${s.office.tier}|${floor}|${this.P.night}`;
+    const sKey = `${s.office.tier}|${floor}|${this.P.night}|${s.office.style?.floor ?? ''}|${s.office.style?.wall ?? ''}`;
     if (sKey !== this.staticKey) {
       this.staticKey = sKey;
       this.drawStatic(s, floor);
@@ -527,21 +527,34 @@ export class OfficeRenderer {
     const W = t.w * T;
     const H = t.h * T;
     const garage = t.tier === 1;
-    const f1 = garage ? mix(P.floorWood, 0x9a9a9a, 0.45) : t.tier >= 3 && floor % 2 === 1 ? P.floorCarpet : P.floorWood;
-    const f2 = garage ? mix(P.floorWood2, 0x9a9a9a, 0.45) : t.tier >= 3 && floor % 2 === 1 ? P.floorCarpet2 : P.floorWood2;
+    const style = s.office.style?.floor ?? 'auto';
+    const dim = P.night ? 0.62 : 1;
+    const pair: Record<Exclude<typeof style, 'auto'>, [number, number]> = {
+      wood: [P.floorWood, P.floorWood2],
+      carpet: [P.floorCarpet, P.floorCarpet2],
+      concrete: [shade(0xc9c6c1, dim), shade(0xbfbcb6, dim)],
+      tiles: [shade(0xeef0f2, dim), shade(0xdfe3e7, dim)],
+      checker: [shade(0xf2efe9, dim), shade(0x3b3f48, P.night ? 0.8 : 1)],
+    };
+    const [f1, f2] =
+      style !== 'auto'
+        ? pair[style]
+        : [garage ? mix(P.floorWood, 0x9a9a9a, 0.45) : t.tier >= 3 && floor % 2 === 1 ? P.floorCarpet : P.floorWood, garage ? mix(P.floorWood2, 0x9a9a9a, 0.45) : t.tier >= 3 && floor % 2 === 1 ? P.floorCarpet2 : P.floorWood2];
+    const checker = style === 'checker' || style === 'tiles' || (style === 'auto' && garage);
+    const wallColor = s.office.style?.wall ? shade(hexToNum(s.office.style.wall), P.night ? 0.6 : 1) : P.wall;
     // outer shadow
     g.roundRect(-14, -1.4 * T, W + 28, H + 1.4 * T + 18, 18).fill({ color: 0x000000, alpha: 0.12 });
     // floor
     g.roundRect(-6, -6, W + 12, H + 12, 10).fill(shade(f1, 0.85));
     for (let y = 0; y < t.h; y++)
       for (let x = 0; x < t.w; x++) {
-        const c = garage ? ((x + y) % 2 ? f1 : f2) : x % 2 === 0 ? f1 : f2;
+        const c = checker ? ((x + y) % 2 ? f1 : f2) : x % 2 === 0 ? f1 : f2;
         g.rect(x * T, y * T, T, T).fill(c);
         if (!garage) g.rect(x * T, y * T + T - 1, T, 1).fill({ color: 0x000000, alpha: 0.04 });
       }
     // back wall
-    g.roundRect(-8, -1.35 * T, W + 16, 1.35 * T, 8).fill(P.wall);
-    g.rect(-8, -1.35 * T, W + 16, 8).fill(P.wallTop);
+    g.roundRect(-8, -1.35 * T, W + 16, 1.35 * T, 8).fill(wallColor);
+    g.rect(-8, -1.35 * T, W + 16, 8).fill(s.office.style?.wall ? shade(wallColor, 1.12) : P.wallTop);
     g.rect(-8, -8, W + 16, 8).fill(P.trim);
     if (garage) {
       // garage door

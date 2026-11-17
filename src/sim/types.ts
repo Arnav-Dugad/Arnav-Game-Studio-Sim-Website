@@ -109,8 +109,12 @@ export interface PlacedItem {
   rot: 0 | 1; // 1 = rotated 90°
 }
 
+export type FloorStyle = 'auto' | 'wood' | 'carpet' | 'concrete' | 'tiles' | 'checker';
+
 export interface Office {
   tier: number;
+  /** Cosmetic: floor finish and wall colour (hex), chosen in the Office panel. */
+  style?: { floor: FloorStyle; wall?: string };
   items: PlacedItem[];
   nextItemId: number;
   /** Bumped on every layout change (cache key). */
