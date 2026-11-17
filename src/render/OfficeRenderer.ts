@@ -91,6 +91,8 @@ interface Agent {
   speechT: number;
   thinkT: number;
   medal?: Graphics;
+  /** Last seen level, to celebrate promotions. */
+  level?: string;
 }
 
 const pickOne = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
@@ -926,6 +928,15 @@ export class OfficeRenderer {
       a.c.position.set(a.x, a.y);
       a.c.zIndex = a.y + 1;
       a.rig.root.tint = st.activity === 'burnout' ? 0x9a9a9a : 0xffffff;
+      if (a.level && a.level !== st.level && this.agentsReady && !ui.reducedMotion) {
+        a.anim.joy = 2;
+        this.say(a, pickOne(['Promoted! 🎉', `I’m ${st.level === 'lead' ? 'a lead' : st.level === 'senior' ? 'senior' : 'mid-level'} now!`, 'Level up! ⭐']), 2.6);
+        for (const b of [...this.agents.values()].filter((x) => x !== a && x.c.visible && x.floor === a.floor && !x.talk && Math.hypot(x.x - a.x, x.y - a.y) < 140).slice(0, 2)) {
+          this.say(b, pickOne(['Congrats! 🎉', 'Well deserved!', 'Go you!', 'Drinks on you!']), 2.2);
+          b.anim.wave = 1.2;
+        }
+      }
+      a.level = st.level;
       const star = s.eotm?.id === st.id;
       if (star && !a.medal) {
         a.medal = new Graphics();
