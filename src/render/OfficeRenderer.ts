@@ -107,7 +107,7 @@ const pickOne = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.le
 const firstName = (n: string) => n.split(' ')[0] ?? n;
 
 /** What a break at this kind of station looks like. */
-const stationGlyph = (item?: string) => (item === 'gym' ? '🏋️' : item === 'hammock' || item === 'bean_bag' || item === 'nap_pod' ? '😴' : item === 'lounge_sofa' ? '😌' : item === 'foosball' ? '⚽' : item === 'ping_pong' ? '🏓' : '☕');
+const stationGlyph = (item?: string) => (item === 'gym' ? '🏋️' : item === 'zen_corner' ? '🧘' : item === 'hammock' || item === 'bean_bag' || item === 'nap_pod' ? '😴' : item === 'lounge_sofa' ? '😌' : item === 'foosball' ? '⚽' : item === 'ping_pong' ? '🏓' : '☕');
 
 const GLYPHS = ['♪', '!', '?', '☕', '💡', '…', '★', '♥'];
 

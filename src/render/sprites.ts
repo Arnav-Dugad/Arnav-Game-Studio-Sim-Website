@@ -179,6 +179,51 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       g.circle(W - 8.25, -7, 2.4).fill(0x2a2622);
       break;
     }
+    case 'bonsai': {
+      shadow(g, 10, 12, W - 20, H - 16);
+      box(g, { x: W / 2 - 9, y: H - 22, w: 18, h: 8, height: 6, top: 0x8a5a3c, front: 0x6b4430, r: 2 });
+      g.moveTo(W / 2, H - 22).bezierCurveTo(W / 2 - 6, H - 30, W / 2 + 6, H - 36, W / 2 - 2, H - 44).stroke({ width: 3, color: 0x6b4430 });
+      g.ellipse(W / 2 - 8, H - 44, 10, 6).fill(0x4f8f4f);
+      g.ellipse(W / 2 + 7, H - 38, 8, 5).fill(0x5fa35a);
+      g.ellipse(W / 2 - 1, H - 50, 9, 5).fill(0x6db466);
+      break;
+    }
+    case 'zen_corner': {
+      shadow(g, 4, 6, W - 8, H - 8, 0.1);
+      g.roundRect(4, 6, W - 8, H - 10, 10).fill({ color: 0xd9cfb8, alpha: 0.9 }); // tatami
+      for (let i = 1; i < 4; i++) g.rect(4 + ((W - 8) * i) / 4, 8, 1, H - 14).fill({ color: 0xb8ab8c, alpha: 0.7 });
+      // cushions
+      for (const [cx, cy] of [[W * 0.3, H * 0.62], [W * 0.62, H * 0.66]] as const) {
+        g.ellipse(cx, cy, 9, 5).fill(0x8a6bb0);
+        g.ellipse(cx, cy - 1.5, 7, 3.5).fill(0xa98bd0);
+      }
+      // water feature: a little stone bowl
+      g.ellipse(W * 0.78, H * 0.32, 9, 5).fill(0x8f9499);
+      g.ellipse(W * 0.78, H * 0.31, 6.5, 3.2).fill(0x7cc4ef);
+      // a candle and a plant
+      g.rect(W * 0.18, H * 0.22, 3, 6).fill(0xf4efe7);
+      g.circle(W * 0.18 + 1.5, H * 0.2, 1.6).fill(0xf2c450);
+      g.ellipse(W * 0.42, H * 0.25, 6, 4).fill(0x5f9e6e);
+      break;
+    }
+    case 'screening_room': {
+      shadow(g, 3, 4, W - 6, H - 4);
+      g.roundRect(4, 4, W - 8, H - 8, 6).fill({ color: 0x2a2433, alpha: 0.95 });
+      // the screen on its stand
+      g.rect(W * 0.12, -26, W * 0.76, 34).fill(0x111111);
+      g.rect(W * 0.14, -24, W * 0.72, 30).fill(0x3d85c6);
+      g.circle(W * 0.5, -9, 7).fill({ color: 0xf2c450, alpha: 0.85 });
+      g.moveTo(W * 0.14, 6).lineTo(W * 0.3, -6).lineTo(W * 0.45, 2).lineTo(W * 0.62, -10).lineTo(W * 0.86, 6).fill({ color: 0x2f8a63, alpha: 0.9 });
+      // two rows of seats
+      for (let r = 0; r < 2; r++)
+        for (let i = 0; i < 4; i++) {
+          const x = W * 0.16 + i * (W * 0.19);
+          const y = H * 0.48 + r * H * 0.24;
+          g.roundRect(x, y, W * 0.15, 9, 3).fill(0xb8323c);
+          g.roundRect(x, y - 4, W * 0.15, 5, 2).fill(0x8f2430);
+        }
+      break;
+    }
     case 'gym': {
       shadow(g, 3, 4, W - 6, H - 4);
       g.roundRect(4, 4, W - 8, H - 8, 6).fill({ color: 0x3b3f48, alpha: 0.9 });
@@ -529,6 +574,12 @@ export function itemLift(id: ItemId): number {
       return 8;
     case 'gym':
       return 6;
+    case 'zen_corner':
+      return 4;
+    case 'screening_room':
+      return 34;
+    case 'bonsai':
+      return 52;
     case 'hammock':
       return 4;
     case 'robot_vacuum':
