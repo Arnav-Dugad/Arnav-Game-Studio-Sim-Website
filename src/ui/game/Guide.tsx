@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Segmented } from '../components/ui';
+import { Modal, Segmented, inputCls } from '../components/ui';
 
 const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
   {
@@ -12,6 +12,14 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Bugs & QA', 'Tech work creates bugs; QA skill (and QA lab stations) fix them during polish. Crunch is faster but buggier and burns people out.'],
       ['Engines', 'Research features, then build your own engine (Research → Engines) or license one. Old engines look dated on new hardware.'],
       ['Release timing', 'Boxed games sell best in November–December. Competing with a big release in the same genre hurts.'],
+      ['Price tiers', 'Self-published full-price games pick a launch price: Budget (about 30% more buyers and fans at 30% less per copy; players love the value), Standard, or Premium (more per copy, fewer buyers — forgiven only on an 85+ game). Publishers set their own prices.'],
+      ['Review embargo', 'During polish, choose when reviews go live: a week early (great reviews sell more, weak ones scare buyers off), at launch, or no review copies at all (hides a weak game a little longer, but the press notices and a decent game sells a little less).'],
+      ['Shadow drops', 'From 2015, a good game that was never announced launches as a surprise: the shock is the marketing, and it works best for studios people already know.'],
+      ['Cliffhangers', 'The Cliffhanger feature costs a little user score now, but the sequel starts with built-in hype — and paying it off delights players.'],
+      ['Post-mortems', 'Every release has a post-mortem (open it from the Games panel): what went right, what went wrong and what to try next time. Money is only judged once sales have settled.'],
+      ['Genre renown', 'Two or more 75+ games in a genre make your studio known for it (★ in the genre picker and on the Overview): up to 12% more buyers for your next one — but a weak entry disappoints those fans.'],
+      ['Licences', 'An official league licence or a licensed soundtrack lasts seven years. When it runs out on a game that still sells, renew it (half the original fees) or let it be delisted for good.'],
+      ['Trailers & documentaries', 'Announced games can cut a trailer (a 25-second mini-game) for extra hype. From 1995 a film crew may ask to follow a medium-or-bigger game: hype now, and six months after launch the film premieres — acclaimed for a great game, a cautionary tale for a flop.'],
     ],
   },
   {
@@ -23,6 +31,9 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Burnout', 'Low energy and crunch build burnout. Burnt-out staff slump at their desks, get sick, and eventually quit. Send them on a week or two of vacation (click a person) before it gets that far.'],
       ['Layout', 'Use build mode (B) and the heat-map overlays to place break areas, décor and desks. Seating a team together boosts synergy.'],
       ['Growth', 'Staff learn by doing. Training (after research) and specialisations (seniors+) push them further.'],
+      ['One-on-ones', 'Open anyone’s card and Check in: they say what’s really on their mind (burnout, pay against the market, a cramped desk, a dream) and feel heard. Six a month, plus two per producer; the same person benefits again after 90 days.'],
+      ['Studio Awards', 'Every December: MVP, Rookie of the Year, Mentor of the Year and Heart of the Studio. Winners keep the honour on their card.'],
+      ['Favourite genres & hobbies', 'Everyone has a favourite genre (a ♥ in the team picker): on a game they love they work 5% faster and are happier. Hobbies change their chatter and breaks.'],
     ],
   },
   {
@@ -38,6 +49,8 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Showcases', 'Once famous (70+ reputation, 1990+), host your own yearly showcase to hype every announced game at once.'],
       ['Subscription pass', 'With Subscription Service research, 8+ games and decent reputation, launch a monthly pass (Company → Pass). Good recent games bring subscribers; older games sell a little less while it runs.'],
       ['Your own console', 'Research the Hardware Lab, then design a console or handheld (Research → Hardware). Hardware is sold near cost; licence fees from other publishers and your own royalty-free exclusives are where the money is. Price it against what the market expects and keep releasing hits on it.'],
+      ['Publisher trust', 'Deliver published games on time and above the bar and that publisher offers bigger advances and better terms; let them down and they grow wary. Trust fades slowly either way.'],
+      ['Giving back', 'Staff → Policies: pledge 1% or 5% of monthly profit to charity for morale and goodwill; open-source an eight-year-old engine for reputation.'],
     ],
   },
   {
@@ -88,19 +101,28 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Esports leagues', 'After researching Esports (2009+), Company → Esports lets you run a league for a competitive game (shooter, strategy, fighting, MMO, sports or racing) scoring 75+ from the last six years. Viewers come from its player base, reviews and the league’s prestige, which grows each season. Sponsors pay per viewer; running costs and a yearly prize pool cost money. Big hits make real money, small ones mostly build fans. A strong sequel takes the league over automatically.'],
       ['Cheats', 'Menu → Cheats (or Settings → Sandbox) opens a sandbox: set or add cash, reputation and fans; forgive loans; edit any staff stats and traits or summon a hire; strengthen or cripple rivals; push genre and topic trends; clear sequel fatigue; unlock achievements; finish games instantly; set review bonuses and sales, work and research multipliers; unlock research; skip time; move offices for free; and switch on infinite money, no bankruptcy, a tireless team, bug-free code or a world without random events. Runs that use cheats are marked in the Hall of Fame.'],
       ['Storefront sales', 'Once most copies sell digitally, a paid game at least 4 months old can go 25%, 50% or 75% off every 6 months. Half price usually earns the most; 75% off moves the most copies (and wins fans before a sequel). Each sale draws a little less than the last.'],
+      ['Hall of Classics', 'Ten years on, the best games of all time may be inducted into the Hall of Classics: reputation, series fans and a new generation of players.'],
+      ['Yearbook & studio card', 'Company → Yearbook keeps a photo of the team every New Year; Company → History → Studio card makes a shareable image of your run.'],
+      ['Mascot & headquarters', 'Menu → Studio identity designs your mascot (it stars on the office statue and your studio card); the Office panel shows your building as it grows.'],
     ],
   },
 ];
 
 export function GuideModal({ onClose, initial = 'games' }: { onClose: () => void; initial?: string }) {
   const [tab, setTab] = useState(initial);
+  const [q, setQ] = useState('');
+  const query = q.trim().toLowerCase();
   const sec = SECTIONS.find((x) => x.id === tab) ?? SECTIONS[0]!;
+  // searching looks through every section at once
+  const rows = query ? SECTIONS.flatMap((x) => x.body).filter(([k, v]) => k.toLowerCase().includes(query) || v.toLowerCase().includes(query)) : sec.body;
   return (
     <Modal open onClose={onClose} title="How to play" wide>
       <h2 className="font-display text-2xl font-semibold">How to play</h2>
       <Segmented ariaLabel="Guide sections" value={tab} onChange={setTab} className="mt-3" options={SECTIONS.map((x) => ({ value: x.id, label: x.title }))} />
+      <input className={inputCls + ' mt-3 h-9 text-sm'} placeholder="Search the guide…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search the guide" />
+      {query && !rows.length && <p className="mt-4 text-sm text-ink3">Nothing about “{q.trim()}” yet.</p>}
       <dl className="mt-4 space-y-3">
-        {sec.body.map(([k, v]) => (
+        {rows.map(([k, v]) => (
           <div key={k} className="rounded-xl bg-bg2/60 p-3">
             <dt className="text-sm font-semibold">{k}</dt>
             <dd className="mt-0.5 text-sm text-ink2">{v}</dd>
