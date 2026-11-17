@@ -741,7 +741,11 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
 /** What's lifting and dragging morale studio-wide (computed when opened; refreshed monthly). */
 function Pulse() {
   const s = useGame((g) => g.s)!;
-  const [open, setOpen] = useState(false);
+  // open by itself when morale is low (that's when you need it)
+  const [open, setOpen] = useState(() => {
+    const team = Object.values(s.staff);
+    return team.length > 0 && team.reduce((a, x) => a + x.morale, 0) / team.length < 45;
+  });
   const month = Math.floor(s.day / 30);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const pulse = useMemo(() => (open ? teamPulse(s) : null), [open, month]);
