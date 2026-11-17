@@ -83,6 +83,9 @@ interface Agent {
   thinkT: number;
 }
 
+const pickOne = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
+const firstName = (n: string) => n.split(' ')[0] ?? n;
+
 const GLYPHS = ['♪', '!', '?', '☕', '💡', '…', '★', '♥'];
 
 export class OfficeRenderer {
@@ -98,6 +101,9 @@ export class OfficeRenderer {
   private agents = new Map<string, Agent>();
   /** After the first sync, newly created agents are new hires and say hello. */
   private agentsReady = false;
+  /** Who has chatted with whom (pair key → count). Friends seek each other out. */
+  private affinity = new Map<string, number>();
+  private lunchT = 40 + Math.random() * 40;
   private staticKey = '';
   private itemsKey = '';
   private heatKey = '';
@@ -866,12 +872,13 @@ export class OfficeRenderer {
       // hover label
       if (this.hoverStaff === st.id) {
         if (!a.label) {
-          a.label = new Text({ text: st.name, style: { fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: '600', fill: this.P.night ? 0xf1ede6 : 0x2a2622, stroke: { color: this.P.night ? 0x15130f : 0xffffff, width: 3 } } });
+          a.label = new Text({ text: st.name, style: { fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: '600', align: 'center', fill: this.P.night ? 0xf1ede6 : 0x2a2622, stroke: { color: this.P.night ? 0x15130f : 0xffffff, width: 3 } } });
           a.label.anchor.set(0.5, 1);
           a.c.addChild(a.label);
         }
+        a.label.text = `${st.name}\n${this.doing(s, a, st)}`;
         a.label.visible = true;
-        a.label.position.set(0, -50);
+        a.label.position.set(0, a.speechT > 0 ? -72 : -50);
       } else if (a.label) a.label.visible = false;
     }
     for (const [id, a] of this.agents) {
@@ -882,9 +889,59 @@ export class OfficeRenderer {
     }
     for (const a of this.agents.values()) if (a.talk && !this.agents.get(a.talk.partner)?.c.visible) this.endTalk(s, floor, a);
     this.agentsReady = true;
+    this.lunchT -= dt * speedMul;
+    if (this.lunchT <= 0 && !ui.reducedMotion) {
+      this.lunchT = 45 + Math.random() * 60;
+      this.lunchRun(s, floor);
+    }
   }
 
   // ── Office life: conversations and leisure (cosmetic) ──────────────────────
+
+  /** What someone is up to, for the hover label. */
+  private doing(s: GameState, a: Agent, st: Staff): string {
+    const partner = a.talk ? s.staff[a.talk.partner] : undefined;
+    if (partner && (a.mode === 'talk' || (a.mode === 'walk' && a.next === 'talk'))) return `chatting with ${firstName(partner.name)}`;
+    if (a.mode === 'fun' || (a.mode === 'walk' && a.next === 'fun')) return st.activity === 'research' ? 'thinking at the whiteboard' : 'taking a break';
+    if (a.mode === 'station' || (a.mode === 'walk' && a.next === 'station')) return 'grabbing a coffee';
+    if (a.mode === 'meeting' || (a.mode === 'walk' && a.next === 'meeting')) return 'in a team huddle';
+    if (a.mode === 'wander') return 'stretching their legs';
+    if (st.activity === 'burnout') return 'burnt out';
+    if (st.activity === 'research') return 'researching';
+    if (st.activity === 'training') return 'in training';
+    if (st.assignment.kind === 'project') {
+      const p = s.projects[st.assignment.id];
+      if (p) return `working on ${p.kind === 'game' ? p.concept.name : p.kind === 'contract' ? 'a contract' : p.name}`;
+    }
+    return st.assignment.kind === 'idle' ? 'idle — no assignment' : 'working';
+  }
+
+  /** Every so often, a few free people head to the kitchen (or coffee) together. */
+  private lunchRun(s: GameState, floor: number): void {
+    const free = [...this.agents.values()].filter((a) => {
+      const st = s.staff[a.id];
+      return st && a.c.visible && a.floor === floor && a.mode === 'desk' && !a.talk && (st.assignment.kind === 'idle' || st.activity === 'break' || st.activity === 'chat');
+    });
+    if (free.length < 2) return;
+    const host = free[Math.floor(Math.random() * free.length)]!;
+    const spot = this.nearestStation(s, floor, host.seat ?? [0, 0]);
+    if (!spot) return;
+    const group = free.sort((x, y) => Math.hypot(x.x - host.x, x.y - host.y) - Math.hypot(y.x - host.x, y.y - host.y)).slice(0, 2 + Math.floor(Math.random() * 3));
+    this.say(host, pickOne(['Lunch, anyone?', 'Food run!', 'Coffee break?', 'Pizza time!']), 2.4);
+    const t = tierDef(s.office.tier);
+    const occ = occupancy(s, floor);
+    group.forEach((a, i) => {
+      const x = Math.max(0, Math.min(t.w - 1, spot[0] + (i % 3) - 1));
+      const y = Math.max(0, Math.min(t.h - 1, spot[1] + Math.floor(i / 3)));
+      const [tx, ty] = occ.has(y * t.w + x) ? this.tileCenter(spot[0], spot[1]) : this.tileCenter(x, y);
+      const path = this.route(s, floor, a, tx, ty);
+      if (!path.length) return;
+      a.path = path;
+      a.mode = 'walk';
+      a.next = 'station';
+      a.cooldown = 20;
+    });
+  }
 
   /** Somewhere for a deskless person to stand (spread out near the entrance, stable per person) instead of all on one tile. */
   private standingSpot(s: GameState, floor: number, id: string, ent: { x: number; y: number }): [number, number] {
@@ -941,7 +998,8 @@ export class OfficeRenderer {
         const free = bst.assignment.kind === 'idle' || bst.activity === 'break' || bst.activity === 'chat' || b.mode === 'wander' || b.mode === 'station' || b.mode === 'fun';
         if (!free || b.mode === 'walk' || b.mode === 'meeting') continue;
       }
-      const score = d * (0.6 + Math.random() * 0.8);
+      const friends = this.affinity.get(a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`) ?? 0;
+      const score = (d * (0.6 + Math.random() * 0.8)) / (1 + Math.min(4, friends) * 0.6);
       if (!best || score < best.d) best = { b, bst, d: score };
     }
     if (!best) return false;
@@ -952,6 +1010,10 @@ export class OfficeRenderer {
       const [l2, r2] = chatExchange(s, bst, st);
       lines.push(l2, r2);
     }
+    const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
+    const friends = this.affinity.get(key) ?? 0;
+    this.affinity.set(key, friends + 1);
+    if (friends >= 3 && kind !== 'work' && Math.random() < 0.4) lines[0] = pickOne([`${firstName(bst.name)}! My favourite.`, 'Hey, you!', 'There you are!', 'Coffee buddy!']);
     a.talk = { partner: b.id, lines, i: 0, timer: 0.3, host: true, patience: 30 };
     b.talk = { partner: a.id, lines, i: 0, timer: 0, host: false, patience: 25 };
     if (kind === 'nearby') {
