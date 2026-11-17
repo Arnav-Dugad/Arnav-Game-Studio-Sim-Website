@@ -16,6 +16,8 @@ import { Tutorial } from '../game/Tutorial';
 import { BuildBar } from '../game/BuildBar';
 import { ProjectDock, YearInReview } from '../game/Dock';
 import { sound } from '../sound';
+import { music } from '../music';
+import { fromDay } from '@/sim/calendar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { navigate } from '../router';
 
@@ -30,6 +32,11 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
   const saverRef = useRef<AutoSaver | null>(null);
   const rendererRef = useRef<OfficeRenderer | null>(null);
   useGameLoop();
+  // Era-aware generative soundtrack (starts on the first click/key if the browser blocks autoplay).
+  useEffect(() => {
+    music.start({ year: () => fromDay(useGame.getState().s?.day ?? 0).year, active: () => useGame.getState().speed > 0 });
+    return () => music.stop();
+  }, []);
 
   // Autosave: local each in-game month, cloud throttled + on tab hide.
   useEffect(() => {

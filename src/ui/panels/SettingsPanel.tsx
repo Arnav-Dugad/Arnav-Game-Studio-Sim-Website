@@ -3,6 +3,7 @@ import { Button, Section, Segmented } from '../components/ui';
 import { useGame } from '../store';
 import { useSettings, type MotionPref, type ThemePref } from '../settings';
 import { sound } from '../sound';
+import { music } from '../music';
 
 export default function SettingsPanel() {
   const st = useSettings();
@@ -11,6 +12,8 @@ export default function SettingsPanel() {
   const act = useGame((g) => g.act);
   const [vol, setVol] = useState(sound.volume);
   const [muted, setMuted] = useState(sound.muted);
+  const [musicOn, setMusicOn] = useState(music.on);
+  const [musicVol, setMusicVol] = useState(music.volume);
   return (
     <div className="space-y-1 text-sm">
       <Section title="Appearance">
@@ -49,7 +52,7 @@ export default function SettingsPanel() {
       </Section>
       <Section title="Sound">
         <div className="space-y-2">
-          <Row label="Mute">
+          <Row label="Mute effects">
             <input
               type="checkbox"
               className="size-5 accent-[var(--accent)]"
@@ -60,7 +63,7 @@ export default function SettingsPanel() {
               }}
             />
           </Row>
-          <Row label={`Volume ${Math.round(vol * 100)}%`}>
+          <Row label={`Effects volume ${Math.round(vol * 100)}%`}>
             <input
               type="range"
               min={0}
@@ -75,6 +78,33 @@ export default function SettingsPanel() {
               aria-label="Volume"
             />
           </Row>
+          <Row label="Music">
+            <input
+              type="checkbox"
+              className="size-5 accent-[var(--accent)]"
+              checked={musicOn}
+              onChange={(e) => {
+                music.setOn(e.target.checked);
+                setMusicOn(e.target.checked);
+              }}
+            />
+          </Row>
+          <Row label={`Music volume ${Math.round(musicVol * 100)}%`}>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={musicVol}
+              disabled={!musicOn}
+              onChange={(e) => {
+                music.setVolume(Number(e.target.value));
+                setMusicVol(Number(e.target.value));
+              }}
+              aria-label="Music volume"
+            />
+          </Row>
+          <p className="px-1 text-[11px] text-ink3">The soundtrack is generated live and follows the era: chiptune in the ’80s, FM in the ’90s, soft synths after.</p>
         </div>
       </Section>
       {s && (

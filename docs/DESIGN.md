@@ -770,4 +770,8 @@ This section records decisions made during the build that differ from, or add to
   - **Prestige:** grows monthly with a good game, gets a bump at the yearly finals (which also pay the prize pool and add reputation for big leagues), and fades once the game is over 6 years old.
   - **Side effects:** viewers become franchise and studio fans, and the game sells 12% better while its league runs. A sequel in the same genre scoring 70+ takes the league over.
   - **Tuning** (`scripts/dev/esports.ts`): a 1M-unit game loses money at every tier; a 5M-unit game breaks even in its pro league by year 4; a 20M-unit hit makes about $15M a year in a pro league and $20–40M in a world championship.
+- **Soundtrack** (`src/ui/music.ts`). The music is a generative WebAudio sequencer using a lookahead scheduler (a 90 ms timer schedules notes 250 ms ahead).
+  - **Structure:** each 8-bar section picks a key, a chord progression (I–V–vi–IV, ii–V–I–vi, i–VI–III–VII and others) and a tempo of 80–97 BPM. Over that it plays a pad chord, a root/fifth bass line, a sparse pentatonic melody that lands on chord tones on strong beats, and quiet percussion while time runs. The melody thins out when the game is paused.
+  - **Instruments by era:** chiptune before 1990, FM to 2002, filtered pads after.
+  - **Controls:** separate on/off and volume (`ase:music`). The audio context resumes on the first gesture.
 
