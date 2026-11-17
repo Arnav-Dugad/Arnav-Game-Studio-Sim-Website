@@ -416,6 +416,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
   () => ({ type: 'teamRetreat' }),
+  (_s, rng) => ({ type: 'copyFloor', from: rng.int(-1, 4), to: rng.int(-1, 4) }),
   () => ({ type: 'raiseFunding' }),
   (s, rng) => (s.offers.deals.length ? { type: 'negotiateDeal', dealId: rng.pick(s.offers.deals).id, ask: rng.pick(['advance', 'royalty', 'everything'] as never[]) } : null),
   (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'sabbatical', staffId: rng.pick(st) } : null; },

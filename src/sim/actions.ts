@@ -127,6 +127,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'copyFloor'; from: number; to: number }
   | { type: 'raiseFunding' }
   | { type: 'negotiateDeal'; dealId: string; ask: 'advance' | 'royalty' }
   | { type: 'sabbatical'; staffId: string }
@@ -913,6 +914,30 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'raiseFunding':
       return raiseFunding(s);
+    case 'copyFloor': {
+      const t = tierDef(s.office.tier);
+      if (!finite(a.from, a.to) || a.from === a.to || a.from < 0 || a.to < 0 || a.from >= t.floors || a.to >= t.floors) return 'Pick two different floors';
+      const src = s.office.items.filter((i) => i.floor === a.from);
+      if (!src.length) return 'That floor is empty';
+      let placed = 0;
+      let skipped = 0;
+      for (const it of src) {
+        const def = ITEM_BY_ID[it.item];
+        const cost = s.cheats?.freeBuild ? 0 : money(def.cost, s.day);
+        if (s.company.cash < cost || itemRequirement(s, def) || !canPlace(s, def, a.to, it.x, it.y, it.rot).ok) {
+          skipped++;
+          continue;
+        }
+        spend(s, 'office', cost);
+        s.office.items.push({ id: `i${s.office.nextItemId++}`, item: it.item, floor: a.to, x: it.x, y: it.y, rot: it.rot, placedDay: s.day, paid: cost });
+        placed++;
+      }
+      touchOffice(s);
+      assignDesks(s);
+      if (!placed) return skipped ? 'Nothing fits there (or not enough cash)' : 'Nothing to copy';
+      c.out.push({ type: 'toast', text: `Copied ${placed} item${placed === 1 ? '' : 's'} to floor ${a.to + 1}${skipped ? ` (${skipped} didn’t fit or couldn’t be afforded)` : ''}`, tone: 'good' });
+      return null;
+    }
     case 'liveEvent':
       return runLiveEvent(s, a.releaseId);
     case 'teamRetreat':

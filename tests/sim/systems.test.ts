@@ -1327,3 +1327,18 @@ describe('deal negotiation', () => {
     } else expect(s.offers.deals.length).toBe(0);
   });
 });
+
+describe('copy floor', () => {
+  it('duplicates a floor layout onto another floor, paying for each item', () => {
+    const s = game(1995, 81);
+    s.company.cash = 50_000_000;
+    dispatch(s, { type: 'cheat', cheat: { op: 'officeTier', tier: 4 } });
+    const before = s.office.items.filter((i) => i.floor === 1).length;
+    expect(dispatch(s, { type: 'placeItem', item: 'plant_large', floor: 0, x: 2, y: 2, rot: 0 }).ok).toBe(true);
+    const cash = s.company.cash;
+    expect(dispatch(s, { type: 'copyFloor', from: 0, to: 1 }).ok).toBe(true);
+    expect(s.office.items.filter((i) => i.floor === 1).length).toBeGreaterThan(before);
+    expect(s.company.cash).toBeLessThan(cash);
+    expect(dispatch(s, { type: 'copyFloor', from: 0, to: 0 }).ok).toBe(false);
+  });
+});

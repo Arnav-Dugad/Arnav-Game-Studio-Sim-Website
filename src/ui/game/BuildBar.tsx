@@ -62,6 +62,19 @@ export function BuildBar() {
                 </Button>
               </>
             )}
+            {floors && !build.item && !build.moving && !sel && (
+              <Button
+                size="sm"
+                icon="layers"
+                title="Duplicate this floor's layout onto the next floor (items that don't fit are skipped)"
+                onClick={() => {
+                  const to = (floor + 1) % t.floors;
+                  if (window.confirm(`Copy floor ${floor + 1}'s layout onto floor ${to + 1}? Each item costs its normal price.`)) g.actOrToast({ type: 'copyFloor', from: floor, to });
+                }}
+              >
+                Copy floor → F{((floor + 1) % t.floors) + 1}
+              </Button>
+            )}
             {(build.item || build.moving) && (
               <Button size="sm" icon="rotate" onClick={() => g.setBuild({ ...build, rot: build.rot ? 0 : 1 })}>
                 Rotate (R)
