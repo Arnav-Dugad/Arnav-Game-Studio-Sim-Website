@@ -1255,3 +1255,16 @@ describe('credits', () => {
     expect(r.credits?.[0]?.name).toBe(s.staff.founder!.name);
   });
 });
+
+describe('bug bash', () => {
+  it('only in polish, once per game, capped at 25%', () => {
+    const s = game(1990, 31);
+    const p = startSmall(s);
+    p.bugs = 200;
+    expect(dispatch(s, { type: 'bugBash', projectId: p.id, hits: 10 }).ok).toBe(false); // not polishing yet
+    p.phase = 2;
+    expect(dispatch(s, { type: 'bugBash', projectId: p.id, hits: 999 }).ok).toBe(true);
+    expect(p.bugs).toBeCloseTo(150, 6);
+    expect(dispatch(s, { type: 'bugBash', projectId: p.id, hits: 5 }).ok).toBe(false);
+  });
+});

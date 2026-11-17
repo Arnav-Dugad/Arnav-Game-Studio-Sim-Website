@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18e';
+export const WHATS_NEW_VERSION = '2026-11-18f';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'bug', title: 'Bug bash & copycats', body: 'During polish, run a 20-second bug bash (Develop → the project): squash bugs to fix up to a quarter of them, once per game. And your big hits now inspire rival knock-offs.' },
   { icon: 'people', title: 'Mentorship', body: 'Pair a junior with a senior in the same craft (open the junior’s card): they learn 40% faster and grow close; the mentor gives up 3% output per mentee. Plus: late-night crunch lighting, headhunters, anniversaries, promotions and welcome-backs in the office.' },
   { icon: 'news', title: 'Front pages & credits', body: 'Big moments make the front page — a broadsheet in the 80s, a tabloid in the 90s, a news site later. Every game now ends with a credits roll, and staff cards list the games each person shipped.' },
   { icon: 'palette', title: 'Office style', body: 'Office panel → Style: pick the floor (wood, carpet, concrete, tiles, checkerboard) and the wall colour. Purely cosmetic — make the place yours.' },

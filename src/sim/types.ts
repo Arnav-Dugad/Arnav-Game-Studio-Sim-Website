@@ -226,6 +226,8 @@ export interface GameProject {
   qualityPreview?: Breakdown;
   /** Public beta run during polish: when, and the score beta players predicted. */
   beta?: { day: number; predicted: number };
+  /** A bug bash has been run (once per game). */
+  bugBashed?: boolean;
 }
 
 export interface ContractProject {

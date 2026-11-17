@@ -110,6 +110,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'bugBash'; projectId: string; hits: number }
   | { type: 'setMentor'; staffId: string; mentorId: string | null }
   | { type: 'setOfficeStyle'; floor: FloorStyle; wall?: string }
   | { type: 'openBranch'; region: RegionId }
@@ -828,6 +829,17 @@ function apply(c: Ctx, a: Action): string | null {
       if (why) return why;
       st.mentorId = m.id;
       invalidateMentees(s);
+      return null;
+    }
+    case 'bugBash': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      if (p.phase < 2) return 'Bug bashes happen during polish';
+      if (p.bugBashed) return 'Already bashed this one';
+      if (!finite(a.hits) || a.hits < 0) return 'Invalid result';
+      p.bugBashed = true;
+      p.bugs *= 1 - Math.min(0.25, Math.floor(a.hits) * 0.01);
+      s.company.moraleMods.push({ v: 2, until: s.day + 21, label: 'Bug bash' });
       return null;
     }
     case 'liveEvent':

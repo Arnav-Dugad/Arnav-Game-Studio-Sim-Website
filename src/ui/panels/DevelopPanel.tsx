@@ -190,6 +190,11 @@ function GameCard({ p }: { p: GameProject }) {
         <Button size="sm" icon="hourglass" onClick={() => run({ type: 'delay', projectId: p.id, weeks: 2 })} title="Two more weeks of polish: more points, fewer bugs, more cost">
           Polish +2w
         </Button>
+        {p.phase >= 2 && !p.bugBashed && (
+          <Button size="sm" icon="bug" onClick={() => useGame.getState().pushModal({ kind: 'bugBash', projectId: p.id })} title="A 20-second mini-game: squash bugs to fix up to 25% of them (once per game)">
+            Bug bash
+          </Button>
+        )}
         {p.phase === 2 && !p.beta && fromDay(s.day).year >= 2005 && (
           <Button size="sm" icon="people" disabled={!!betaBlocked(s, p)} onClick={() => run({ type: 'openBeta', projectId: p.id })} title={betaBlocked(s, p) ?? `Two more weeks of polish with real players: a quarter of the bugs found, +0.15 hype and an early read on the score (${fmtMoney(betaCost(s, p))})`}>
             Open beta

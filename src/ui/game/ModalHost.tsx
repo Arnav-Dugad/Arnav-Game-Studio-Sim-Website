@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { BugBashModal } from './BugBash';
 import { liveEventBlocked, liveEventBoost, liveEventCost, liveEventName } from '@/sim/systems/liveEvents';
 import { BEST_FRIENDS, FEUD, relationsOf } from '@/sim/systems/relations';
 import { BuzzList, BuzzMeter } from '../components/BuzzList';
@@ -73,6 +74,8 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       return <GameOverModal onClose={pop} slotId={slotId} />;
     case 'insolvent':
       return <InsolventModal onClose={pop} />;
+    case 'bugBash':
+      return <BugBashModal key={modal.projectId} projectId={modal.projectId} onClose={pop} />;
     case 'majorNews':
       return <MajorNewsModal newsId={modal.newsId} onClose={pop} />;
     case 'gala':
