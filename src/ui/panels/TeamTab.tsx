@@ -369,12 +369,12 @@ function DenseRow({
       <span className="hidden w-28 truncate text-ink3 sm:block">
         {st.level} {ROLE_NAMES[st.role]}
       </span>
-      <span className="w-28 truncate text-ink2">{assignmentLabel(s, st)}</span>
+      <span className="hidden w-28 truncate text-ink2 min-[480px]:block">{assignmentLabel(s, st)}</span>
       <span className="num w-8 text-right font-semibold" title="Top skill">
         {Math.round(topSkill(st))}
       </span>
       <span
-        className="w-12"
+        className="w-8 sm:w-12"
         title={`Morale ${Math.round(st.morale)} · energy ${Math.round(st.energy)} · burnout ${Math.round(st.burnout)}`}
       >
         <Meter value={st.morale} label="Morale" />
