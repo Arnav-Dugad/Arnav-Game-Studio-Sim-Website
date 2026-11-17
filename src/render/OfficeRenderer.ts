@@ -832,8 +832,16 @@ export class OfficeRenderer {
       a.cooldown -= dt * speedMul;
       // Decide trips
       if (a.mode === 'desk' && a.cooldown <= 0 && !ui.reducedMotion) {
-        const wantsBreak = st.activity === 'break' || (st.energy < 45 && Math.random() < 0.3);
+        // personalities show: coffee fiends live at the machine, social butterflies chat, introverts don't, workaholics stay put
+        const tr = st.traits as string[];
+        const coffee = tr.includes('coffee_fiend');
+        const social = tr.includes('social_butterfly') ? 1.8 : tr.includes('introvert') ? 0.3 : 1;
+        const wantsBreak = st.activity === 'break' || (st.energy < 45 && Math.random() < 0.3) || (coffee && st.activity === 'work' && Math.random() < 0.18);
         const free = st.assignment.kind === 'idle' || st.activity === 'chat' || (st.activity === 'break' && Math.random() < 0.5);
+        if (tr.includes('workaholic') && st.activity === 'work' && !wantsBreak) {
+          a.cooldown = 12 + Math.random() * 18;
+          if (Math.random() < 0.3) this.showBubble(a, pickOne(['⌨️', '💪', '🔥']));
+        } else
         if (wantsBreak && !(free && Math.random() < 0.5)) {
           const target = this.nearestStation(s, floor, a.seat!);
           if (target) {
@@ -845,13 +853,13 @@ export class OfficeRenderer {
             }
           }
           a.cooldown = 8 + Math.random() * 14;
-        } else if (free && Math.random() < 0.4 && this.tryChat(s, floor, a, st, 'social')) {
+        } else if (free && Math.random() < Math.min(0.9, 0.4 * social) && this.tryChat(s, floor, a, st, 'social')) {
           a.cooldown = 10 + Math.random() * 12;
         } else if (free && Math.random() < 0.55 && this.tryLeisure(s, floor, a, LEISURE)) {
           a.cooldown = 8 + Math.random() * 10;
         } else if (st.activity === 'research' && Math.random() < 0.18 && this.tryLeisure(s, floor, a, null)) {
           a.cooldown = 12 + Math.random() * 14;
-        } else if (st.assignment.kind === 'project' && st.activity === 'work' && Math.random() < 0.07 && this.tryChat(s, floor, a, st, 'work')) {
+        } else if (st.assignment.kind === 'project' && st.activity === 'work' && Math.random() < 0.07 * social && this.tryChat(s, floor, a, st, 'work')) {
           a.cooldown = 14 + Math.random() * 16;
         } else if (st.assignment.kind === 'project' && st.activity === 'work' && Math.random() < 0.12) {
           // project teams huddle at a meeting table or whiteboard now and then (cosmetic)
