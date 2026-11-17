@@ -54,6 +54,131 @@ function staffById(s: GameState, id: string | number | undefined): Staff | undef
 
 export const EVENT_DEFS: EventDef[] = [
   {
+    id: 'cat_vs_server',
+    art: 'smoke',
+    cooldown: 400,
+    weight: (s) => (s.office.items.some((i) => i.item === 'pet_cat') && s.office.items.some((i) => i.item === 'server_rack') ? 0.5 : 0),
+    make: ({ s }) => {
+      const cost = money(3_000, s.day);
+      return {
+        title: 'The cat vs. the server rack',
+        body: 'The studio cat discovered that the server rack is warm, and knocked a coffee into it on the way up. The online games are flickering.',
+        options: [
+          { id: 'fix', label: `Emergency repair (${fmtMoney(cost)})`, preview: 'Back online today', disabled: s.company.cash < cost },
+          { id: 'shelf', label: 'Build the cat its own warm shelf', preview: `${fmtMoney(cost / 2)}; morale +3 (everyone loves it)` },
+          { id: 'wait', label: 'Let it dry out', preview: 'Players grumble: reputation −2' },
+        ],
+        ctx: { cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const cost = Number(e.ctx.cost);
+      if (opt === 'fix') spend(s, 'other_expense', cost);
+      else if (opt === 'shelf') {
+        spend(s, 'other_expense', cost / 2);
+        mod(s, 3, 45, 'The cat shelf');
+      } else addRep(s, -2, 'Servers down (cat-related)');
+    },
+  },
+  {
+    id: 'translation_slip',
+    art: 'letters',
+    cooldown: 500,
+    weight: (s) => (s.releaseOrder.slice(-3).some((id) => (s.releases[id]?.concept.localized?.length ?? 0) > 0 && s.day - s.releases[id]!.day < 120) ? 0.7 : 0),
+    make: ({ s }) => {
+      const rel = s.releaseOrder.slice(-3).map((id) => s.releases[id]!).find((r) => (r.concept.localized?.length ?? 0) > 0);
+      if (!rel) return null;
+      return {
+        title: 'A translation slip goes viral',
+        body: `A wonderfully garbled line in the translated version of ${rel.name} has become a meme. Players are quoting it everywhere.`,
+        options: [
+          { id: 'embrace', label: 'Embrace it: print it on T-shirts', preview: 'Fans and hype up; a little less serious' },
+          { id: 'patch', label: `Patch the translation (${fmtMoney(money(4_000, s.day))})`, preview: 'User score +1, the moment passes' },
+        ],
+        ctx: { rel: rel.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const rel = s.releases[String(e.ctx.rel)];
+      if (!rel) return;
+      if (opt === 'embrace') {
+        s.company.fans += Math.round(rel.units * 0.02);
+        const fr = rel.concept.franchiseId ? s.franchises[rel.concept.franchiseId] : undefined;
+        if (fr) fr.fans += Math.round(rel.units * 0.03);
+        pushNews(s, { category: 'studio', headline: `${s.company.name} sells T-shirts of its own typo`, tone: 'good' });
+      } else {
+        spend(s, 'other_expense', money(4_000, s.day));
+        rel.userScore = clamp(rel.userScore + 1, 0, 100);
+      }
+    },
+  },
+  {
+    id: 'dream_offer',
+    art: 'briefcase',
+    cooldown: 200,
+    weight: (s) => (staffList(s).some((x) => x.ambition && x.ambition.kind !== 'holiday') ? 0.6 : 0),
+    make: ({ s, rng }) => {
+      const who = staffList(s).filter((x) => x.ambition && x.ambition.kind !== 'holiday');
+      if (!who.length) return null;
+      const st = rng.pick(who);
+      const r = rng.pick(Object.values(s.rivals).filter((x) => x.alive));
+      if (!r) return null;
+      const raise = Math.round(st.salary * 0.15);
+      return {
+        title: 'A rival offers a dream',
+        body: `${r.name} has offered ${st.name} exactly what they’ve been wanting — and a bigger salary.`,
+        options: [
+          { id: 'match', label: `Match it: +${fmtMoney(raise)}/yr and a promise`, preview: 'They stay, loyalty +10' },
+          { id: 'talk', label: 'Remind them why they’re here', preview: 'Depends on their loyalty' },
+          { id: 'let', label: 'Wish them well', preview: 'They leave for the rival' },
+        ],
+        ctx: { st: st.id, rival: r.id, raise },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      const st = staffById(s, e.ctx.st);
+      if (!st) return;
+      const leave = () => {
+        removeStaff(s, st.id);
+        s.progress.stats.staffLost += 1;
+        pushNews(s, { category: 'staff', headline: `${st.name} joins ${s.rivals[String(e.ctx.rival)]?.name ?? 'a rival'}`, tone: 'bad' });
+      };
+      if (opt === 'match') {
+        st.salary += Number(e.ctx.raise);
+        st.loyalty = clamp(st.loyalty + 10, 0, 100);
+      } else if (opt === 'talk') {
+        if (!rng.chance(clamp(st.loyalty / 100, 0.15, 0.9))) leave();
+        else st.loyalty = clamp(st.loyalty - 5, 0, 100);
+      } else leave();
+    },
+  },
+  {
+    id: 'best_places',
+    art: 'trophy',
+    cooldown: 700,
+    weight: (s) => {
+      const l = staffList(s);
+      if (l.length < 8 || !(s.company.values ?? []).length) return 0;
+      const avg = l.reduce((t, x) => t + x.morale, 0) / l.length;
+      return avg > 72 ? 0.8 : 0;
+    },
+    make: ({ s }) => ({
+      title: 'Best Places to Work',
+      body: `${s.company.name} has been shortlisted as one of the industry’s best places to work. A magazine wants a photo shoot and interviews.`,
+      options: [
+        { id: 'yes', label: 'Open the doors', preview: 'Reputation +3, better candidates for a while' },
+        { id: 'no', label: 'Keep our heads down', preview: 'Nothing changes' },
+      ],
+      ctx: {},
+    }),
+    resolve: ({ s }, _e, opt) => {
+      if (opt !== 'yes') return;
+      addRep(s, 3, 'Best Places to Work');
+      s.company.recruiting = Math.max(s.company.recruiting, 1);
+      pushNews(s, { category: 'studio', headline: `${s.company.name} named one of the best places to work in games`, tone: 'good' });
+    },
+  },
+  {
     // A feud between colleagues (raised when a relationship sours past the feud line; never rolled at random).
     id: 'feud',
     art: 'conflict',
