@@ -20,6 +20,8 @@ export function pledgeBlocked(s: GameState): string | null {
   if (pledged(s)) return 'You’ve already pledged';
   const broken = s.company.crunchPledge?.brokenDay;
   if (broken !== undefined && s.day - broken < RETRY_DAYS) return 'Nobody would believe you yet — wait three years after breaking a pledge';
+  const withdrawn = s.company.crunchPledge?.withdrawnDay;
+  if (withdrawn !== undefined && s.day - withdrawn < 365) return 'You withdrew it recently — nobody would believe you for a year';
   if (Object.values(s.projects).some((p) => p.kind === 'game' && p.crunch)) return 'Stop crunching first';
   return null;
 }
@@ -28,7 +30,7 @@ export function takePledge(s: GameState): string | null {
   const why = pledgeBlocked(s);
   if (why) return why;
   const first = !s.company.crunchPledge?.ever;
-  s.company.crunchPledge = { since: s.day, ever: true, brokenDay: s.company.crunchPledge?.brokenDay };
+  s.company.crunchPledge = { ...s.company.crunchPledge, since: s.day, ever: true };
   if (first) addRep(s, 1.5 * (1 - s.company.reputation / 130), 'No-crunch pledge');
   pushNews(s, { category: 'studio', headline: `${s.company.name} pledges: no more crunch`, body: 'A public promise that nobody at the studio will be asked to work through nights and weekends again.', tone: 'good' });
   return null;
@@ -36,7 +38,7 @@ export function takePledge(s: GameState): string | null {
 
 export function withdrawPledge(s: GameState): string | null {
   if (!pledged(s)) return 'There’s no pledge to withdraw';
-  s.company.crunchPledge = { ...s.company.crunchPledge!, since: undefined };
+  s.company.crunchPledge = { ...s.company.crunchPledge!, since: undefined, withdrawnDay: s.day };
   addRep(s, -1, 'Withdrew the no-crunch pledge');
   pushNews(s, { category: 'studio', headline: `${s.company.name} quietly drops its no-crunch pledge`, body: 'Staff noticed.', tone: 'bad' });
   return null;

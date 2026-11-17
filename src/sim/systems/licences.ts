@@ -26,9 +26,9 @@ export function renewalCost(s: GameState, r: Release): number {
   return licensedParts(r).reduce((t, id) => t + money((FEATURE_BY_ID[id]?.cost ?? 0) * 0.5, s.day), 0);
 }
 
-/** Still worth a decision: it sold something recently. */
+/** Still worth a decision: it sold something recently — or it's loved enough to re-release one day. */
 function stillSelling(r: Release): boolean {
-  return r.active && ((r.lastWeekUnits ?? 0) >= 20 || r.liveIncome > 0);
+  return (r.active && ((r.lastWeekUnits ?? 0) >= 20 || r.liveIncome > 0)) || r.score >= 70;
 }
 
 export function delist(s: GameState, r: Release, loud: boolean): void {

@@ -458,6 +458,14 @@ export const HISTORICAL_EVENTS: readonly HistoricalEventDef[] = [
     effects: [{ kind: 'genreTrend', genre: 'shooter', delta: 0.1 }],
   },
   {
+    id: 'tomb_raider_archaeology',
+    date: '1996-10',
+    headline: 'Adventurers Raid Tombs in 3D',
+    body: 'Core Design’s Tomb Raider sends players through ancient ruins full of traps and treasure. Archaeology has become one of the most popular settings in games.',
+    category: 'market',
+    effects: [{ kind: 'topicTrend', topic: 'archaeology', delta: 0.25 }],
+  },
+  {
     id: 'voodoo_graphics_cards',
     date: '1996-11',
     headline: 'Voodoo Cards Ignite the PC Graphics Race',
@@ -533,6 +541,14 @@ export const HISTORICAL_EVENTS: readonly HistoricalEventDef[] = [
   },
 
   // ───────────────────────────── 2000–2007: PS2 era, Xbox, Steam ─────────────────────────────
+  {
+    id: 'skateboarding_boom',
+    date: '1999-09',
+    headline: 'Skateboarding Games Take Off',
+    body: 'Tony Hawk’s Pro Skater has become a surprise smash hit. Kickflips, grinds and punk soundtracks are everywhere, and extreme-sports games are in high demand.',
+    category: 'market',
+    effects: [{ kind: 'topicTrend', topic: 'extreme_sports', delta: 0.3 }],
+  },
   {
     id: 'the_sims_release',
     date: '2000-02',

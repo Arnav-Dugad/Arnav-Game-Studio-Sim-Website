@@ -50,7 +50,7 @@ const recentHit = (s: GameState, days: number, min: number) =>
 /** A beloved game at least three years old. */
 const oldClassic = (s: GameState) =>
   Object.values(s.releases)
-    .filter((r) => s.day - r.day >= 3 * 365 && r.score >= 75)
+    .filter((r) => !r.delisted && s.day - r.day >= 3 * 365 && r.score >= 75)
     .sort((a, b) => b.units - a.units)[0];
 /** A warning for delays when a publisher or backers are waiting on a date. */
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
@@ -878,7 +878,12 @@ export const EVENT_DEFS: EventDef[] = [
       const r = s.releases[String(e.ctx.rel)];
       if (!r || r.delisted) return;
       const cost = Number(e.ctx.cost);
-      if (opt === 'renew' && s.company.cash >= cost) {
+      if (opt === 'renew') {
+        if (s.company.cash < cost) {
+          // can't pay today: the licence stays due and the question comes back next month
+          pushNews(s, { category: 'studio', headline: `Couldn’t afford to renew ${r.name}’s licences`, body: 'The licence holders will ask again next month.', tone: 'bad' });
+          return;
+        }
         spend(s, 'other_expense', cost);
         r.licenceUntil = s.day + Math.round(LICENCE_YEARS * 365.25);
         pushNews(s, { category: 'studio', headline: `${r.name}’s licences renewed`, body: 'It stays on store shelves for another seven years.', tone: 'neutral' });
@@ -1692,7 +1697,7 @@ export const EVENT_DEFS: EventDef[] = [
     make: ({ s }) => {
       const r = s.releaseOrder
         .map((id) => s.releases[id]!)
-        .filter((x) => x.score >= 75)
+        .filter((x) => x.score >= 75 && !x.delisted)
         .pop();
       if (!r) return null;
       return {

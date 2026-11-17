@@ -137,7 +137,7 @@ export default function OverviewPanel() {
             <Stat label="Monthly burn" value={fmtMoney(monthlyBurn(s))} />
           </dl>
           {knownFor(s).length > 0 && (
-            <p className="mt-2 text-xs text-ink2" title="Two or more great games (75+) in a genre: its players trust your name — and expect your usual standard">
+            <p className="mt-2 text-xs text-ink2" title="An average of 75+ across your recent games in a genre (at least two): its players trust your name — and expect your usual standard">
               <span className="text-gold">★</span> Known for{' '}
               {knownFor(s)
                 .map((k) => `${GENRE_BY_ID[k.genre].name} (avg ${Math.round(k.avg)} over ${k.n})`)

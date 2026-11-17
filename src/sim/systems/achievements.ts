@@ -117,7 +117,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'cliffhanger_payoff', name: 'Worth the Wait', desc: 'Pay off a cliffhanger with a sequel.', icon: 'sparkle', check: (s) => rels(s).some((r) => (r.why.user?.parts ?? []).some((x) => x.label.startsWith('Pays off'))) },
   { id: 'final_cut', name: 'Final Cut', desc: 'Cut a perfect trailer (8/8).', icon: 'star', check: (s) => (s.progress.stats.perfectTrailers ?? 0) > 0 },
   { id: 'better_together', name: 'Better Together', desc: 'Ship a co-developed game that scores 80+.', icon: 'handshake', check: (s) => rels(s).some((r) => !!r.coDev && r.score >= 80) },
-  { id: 'specialist', name: 'Specialist', desc: 'Become known for a genre: two or more 75+ games in it.', icon: 'star', check: (s) => knownFor(s).length >= 1 },
+  { id: 'specialist', name: 'Specialist', desc: 'Become known for a genre: average 75+ across your recent games in it (at least two).', icon: 'star', check: (s) => knownFor(s).length >= 1 },
   { id: 'double_threat', name: 'Double Threat', desc: 'Be known for two genres at once.', icon: 'crown', check: (s) => knownFor(s).length >= 2 },
   { id: 'festival_favourite', name: 'Festival Favourite', desc: 'Have a making-of documentary acclaimed.', icon: 'camera', check: (s) => rels(s).some((r) => r.documentary?.outcome === 'acclaimed') },
   { id: 'open_door', name: 'Open Door', desc: 'Hold 25 one-on-ones with your staff.', icon: 'user', check: (s) => (s.progress.stats.checkIns ?? 0) >= 25 },

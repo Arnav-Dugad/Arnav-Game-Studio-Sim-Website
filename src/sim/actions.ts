@@ -1452,6 +1452,7 @@ function apply(c: Ctx, a: Action): string | null {
         if (!b) return 'No such game to bundle';
         const bw = rereleaseBlocked(s, b);
         if (bw) return `${b.name}: ${bw}`;
+        if (b.concept.remasterOf === rel.id || rel.concept.remasterOf === b.id || (b.concept.remasterOf && b.concept.remasterOf === rel.concept.remasterOf)) return `${b.name} is the same game as ${rel.name}`;
         bundled.push(b);
       }
       const cost = rereleaseCost(s, rel) + bundleCost(s, bundled);

@@ -35,7 +35,7 @@ export function hallOfClassics(c: Ctx, year: number): void {
   if (fr) fr.fans = Math.round(fr.fans * 1.05);
   // a new generation discovers it — where it can still be bought
   let revived = false;
-  for (const ps of pick.platforms) {
+  for (const ps of pick.delisted ? [] : pick.platforms) {
     const pl = platformInfo(s, ps.platform);
     if (!pl || (pl.endDay !== null && s.day > pl.endDay + 365)) continue;
     revived = true;

@@ -303,7 +303,7 @@ function Policies() {
             </span>
           </span>
           {pledged(s) ? (
-            <Button size="sm" variant="ghost" onClick={() => act({ type: 'crunchPledge', on: false })} title="Reputation −1">
+            <Button size="sm" variant="ghost" onClick={() => act({ type: 'crunchPledge', on: false })} title="Reputation −1, and no new pledge for a year">
               Withdraw
             </Button>
           ) : (

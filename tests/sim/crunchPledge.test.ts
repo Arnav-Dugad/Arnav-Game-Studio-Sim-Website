@@ -28,6 +28,8 @@ describe('no-crunch pledge', () => {
     dispatch(s, { type: 'crunchPledge', on: false });
     const rep2 = s.company.reputation;
     expect(rep2).toBeLessThan(held);
+    expect(dispatch(s, { type: 'crunchPledge', on: true }).ok).toBe(false); // not believable right away
+    s.day += 366;
     dispatch(s, { type: 'crunchPledge', on: true });
     expect(s.company.reputation).toBeCloseTo(rep2, 5);
   });

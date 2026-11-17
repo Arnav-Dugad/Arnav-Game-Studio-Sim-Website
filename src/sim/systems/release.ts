@@ -220,7 +220,7 @@ export function launchPrice(s: GameState, pl: PlatformInfo, c: GameProject['conc
   return gamePrice(s, pl, c.size, c.monetization) * (c.expansionOf ? BALANCE.EXPANSION_PRICE : 1) * (hasValue(s, 'players') ? CULTURE_FX.playersPrice : 1) * (hasValue(s, 'profit') ? CULTURE_FX.profitPrice : 1) * PRICE_MUL[priceTierOf(c)];
 }
 
-export function salesPotential(s: GameState, concept: GameProject['concept'], effScore: number, rawHype: number) {
+export function salesPotential(s: GameState, concept: GameProject['concept'], effScore: number, rawHype: number, opts: { renown?: boolean } = {}) {
   const fr = concept.franchiseId ? s.franchises[concept.franchiseId] : undefined;
   const crowd = BALANCE.ERA_BOOST / (1 + BALANCE.CROWDING * Math.max(0, fromDay(s.day).year - 1980));
   // Steep curve for hits, blended with a gentler one so mid-scoring games still find an audience.
@@ -255,7 +255,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
     }
   }
   // a studio known for this genre: its players trust the name
-  const renown = concept.expansionOf || concept.remasterOf ? 1 : renownSalesMul(s, concept.genre);
+  const renown = concept.expansionOf || concept.remasterOf || opts.renown === false ? 1 : renownSalesMul(s, concept.genre);
   if (renown > 1) sb.mul(`Known for ${GENRE_BY_ID[concept.genre].name} games`, renown);
   let totalUsers = 0;
   const launchTitles: { name: string; mul: number }[] = [];
@@ -1022,7 +1022,7 @@ export function portCost(s: GameState, rel: Release): number {
 /** Outsourced port: the game launches on a new platform with a fresh (smaller) sales curve. */
 export function applyPort(s: GameState, rel: Release, platform: string): number {
   const eff = rel.score * 0.7 + rel.userScore * 0.3;
-  const pot = salesPotential(s, { ...rel.concept, platforms: [platform], franchiseId: undefined }, eff - 3, 0.2);
+  const pot = salesPotential(s, { ...rel.concept, platforms: [platform], franchiseId: undefined }, eff - 3, 0.2, { renown: false });
   // A port joins the existing player pool, so cross-play counts all the game's platforms.
   const cross = crossplayEligible(s, rel.concept, rel.concept.platforms.length + 1) ? BALANCE.CROSSPLAY_SALES : 1;
   const potential = (pot.platforms[0]?.potential ?? 0) * 0.65 * cross;

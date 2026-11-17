@@ -78,6 +78,8 @@ function ambitionLine(a: NonNullable<Staff['ambition']>): string {
       return `I’m working hard on my ${a.skill ?? 'craft'}. I want to get really good.`;
     case 'holiday':
       return 'I could really use a proper holiday.';
+    case 'desk':
+      return 'Honestly, I’d love a better desk.';
     default:
       return 'There’s something I’ve been wanting to do here. Thanks for asking.';
   }

@@ -6,11 +6,11 @@ import { canRunSale, rereleaseBlocked } from '../../src/sim/systems/release';
 import { LICENCE_YEARS, licenceDue, licencesMonthly } from '../../src/sim/systems/licences';
 import type { GameState, Release } from '../../src/sim/types';
 
-function withLicensedGame(selling: boolean): { s: GameState; r: Release } {
+function withLicensedGame(selling: boolean, score = 80): { s: GameState; r: Release } {
   const s = createGame({ seed: 5, companyName: 'Lic Co', founderName: 'Ada Founder', startYear: 1995, autopause: false });
   s.company.cash = 1e8;
   const r = {
-    id: 'r1', name: 'Pro League 96', day: s.day, score: 80, userScore: 78, active: selling, lastWeekUnits: selling ? 500 : 0, liveIncome: 0,
+    id: 'r1', name: 'Pro League 96', day: s.day, score, userScore: 78, active: selling, lastWeekUnits: selling ? 500 : 0, liveIncome: 0,
     concept: { genre: 'sports', topic: 'sports_topic', monetization: 'premium', features: ['official_license'], platforms: [], size: 'medium' },
     platforms: [], units: 1e6, net: 1e6, devCost: 1e5, awards: [], weekly: [], monthly: [], week: 50, why: {},
   } as unknown as Release;
@@ -50,10 +50,21 @@ describe('licences', () => {
     expect(licenceDue(r)).toBeNull();
   });
 
-  it('a game nobody buys is delisted quietly, without a decision', () => {
-    const { s, r } = withLicensedGame(false);
+  it('a forgotten game nobody buys is delisted quietly, without a decision', () => {
+    const { s, r } = withLicensedGame(false, 60);
     licencesMonthly(ctx(s));
     expect(s.pendingEvents.some((e) => e.defId === 'licence_expiry')).toBe(false);
     expect(r.delisted).toBe(true);
+  });
+
+  it('a loved classic still gets the choice, and renew never delists even when cash ran out', () => {
+    const { s, r } = withLicensedGame(false, 85);
+    licencesMonthly(ctx(s));
+    const ev = s.pendingEvents.find((e) => e.defId === 'licence_expiry')!;
+    expect(ev).toBeDefined();
+    s.company.cash = 0;
+    dispatch(s, { type: 'resolveEvent', uid: ev.uid, option: 'renew' });
+    expect(r.delisted).toBeUndefined();
+    expect(licenceDue(r)).toBeLessThanOrEqual(s.day);
   });
 });

@@ -17,7 +17,7 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Shadow drops', 'From 2015, a good game that was never announced launches as a surprise: the shock is the marketing, and it works best for studios people already know.'],
       ['Cliffhangers', 'The Cliffhanger feature costs a little user score now, but the sequel starts with built-in hype — and paying it off delights players.'],
       ['Post-mortems', 'Every release has a post-mortem (open it from the Games panel): what went right, what went wrong and what to try next time. Money is only judged once sales have settled.'],
-      ['Genre renown', 'Two or more 75+ games in a genre make your studio known for it (★ in the genre picker and on the Overview): up to 12% more buyers for your next one — but a weak entry disappoints those fans.'],
+      ['Genre renown', 'Average 75+ across your recent games in a genre (at least two) and your studio becomes known for it (★ in the genre picker and on the Overview): up to 12% more buyers for your next one — but a weak entry disappoints those fans.'],
       ['Licences', 'An official league licence or a licensed soundtrack lasts seven years. When it runs out on a game that still sells, renew it (half the original fees) or let it be delisted for good.'],
       ['Trailers & documentaries', 'Announced games can cut a trailer (a 25-second mini-game) for extra hype. From 1995 a film crew may ask to follow a medium-or-bigger game: hype now, and six months after launch the film premieres — acclaimed for a great game, a cautionary tale for a flop.'],
     ],

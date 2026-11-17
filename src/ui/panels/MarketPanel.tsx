@@ -91,7 +91,9 @@ function Platforms() {
       return Math.max(a0 - b1, b0 - a1); // negative when they overlap
     };
     const now = hist[hist.length - 1]?.share ?? {};
-    const order = [...keys].sort((a, b) => (now[b] ?? 0) - (now[a] ?? 0) || keys.indexOf(a) - keys.indexOf(b)); // today's platforms first
+    // today's platforms first, in order of arrival (stable: colours never swap as shares shift), then the past by size
+    const live = (k: string) => (now[k] ?? 0) > 0.005;
+    const order = [...keys].sort((a, b) => Number(live(b)) - Number(live(a)) || (live(a) ? (span[a]?.[0] ?? 0) - (span[b]?.[0] ?? 0) : keys.indexOf(a) - keys.indexOf(b)));
     order.forEach((k, n) => {
       let i = n;
       if (n >= SERIES_COLORS.length) {

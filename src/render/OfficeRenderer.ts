@@ -535,6 +535,13 @@ export class OfficeRenderer {
     this.wallKey = recent.map((r) => r.id + ':' + Math.round(r.score)).join(',');
     const mc = s.company.mascot;
     this.mascot = mc ? { kind: mc.kind, color: parseInt(mc.color.slice(1), 16), acc: mc.acc } : undefined;
+    if (this.wallKey !== this.lastWallKey) {
+      this.lastWallKey = this.wallKey;
+      for (const [k, tex] of this.textures) if (k.startsWith('release_wall|')) {
+        tex.destroy(true);
+        this.textures.delete(k);
+      }
+    }
     if (fanKey !== this.lastFanKey) {
       this.lastFanKey = fanKey;
       for (const [k, tex] of this.textures) if (k.startsWith('fan_wall|')) {
@@ -664,6 +671,7 @@ export class OfficeRenderer {
   private wallKey = '';
   private mascot?: { kind: string; color: number; acc: string };
   private lastFanKey = '';
+  private lastWallKey = '';
   private agentColor: number | undefined;
 
   private texFor(id: ItemId, rot: 0 | 1, era: number): { tex: Texture; ox: number; oy: number } {
