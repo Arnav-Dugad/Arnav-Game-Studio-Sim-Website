@@ -1334,7 +1334,9 @@ describe('copy floor', () => {
     s.company.cash = 50_000_000;
     dispatch(s, { type: 'cheat', cheat: { op: 'officeTier', tier: 4 } });
     const before = s.office.items.filter((i) => i.floor === 1).length;
-    expect(dispatch(s, { type: 'placeItem', item: 'plant_large', floor: 0, x: 2, y: 2, rot: 0 }).ok).toBe(true);
+    let placed = false;
+    for (let x = 0; x < 20 && !placed; x++) for (let y = 0; y < 12 && !placed; y++) placed = dispatch(s, { type: 'placeItem', item: 'plant_large', floor: 0, x, y, rot: 0 }).ok;
+    expect(placed).toBe(true);
     const cash = s.company.cash;
     expect(dispatch(s, { type: 'copyFloor', from: 0, to: 1 }).ok).toBe(true);
     expect(s.office.items.filter((i) => i.floor === 1).length).toBeGreaterThan(before);
