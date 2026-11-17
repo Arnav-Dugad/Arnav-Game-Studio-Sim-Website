@@ -50,11 +50,12 @@ export function communityWeekly(c: Ctx): void {
   const { s } = c;
   const cm = s.community;
   if (!cm) return;
-  const target = Math.round(s.company.fans * (0.02 + 0.015 * cm.mods));
+  const pro = s.research.done.includes('biz_community');
+  const target = Math.round(s.company.fans * (0.02 + 0.015 * cm.mods) * (pro ? 1.25 : 1));
   cm.members = Math.max(0, Math.round(cm.members + (target - cm.members) * 0.05));
   const recent = s.releaseOrder.slice(-3).map((id) => s.releases[id]!).filter((r) => r && s.day - r.day < 540);
   const avgUser = recent.length ? recent.reduce((t, r) => t + r.userScore, 0) / recent.length : 65;
-  const goal = clamp(45 + (avgUser - 65) * 0.8 + cm.mods * 8 + (cm.mood ?? 0), 5, 98);
+  const goal = clamp(45 + (avgUser - 65) * 0.8 + cm.mods * 8 + (pro ? 6 : 0) + (cm.mood ?? 0), 5, 98);
   cm.health = Math.round((cm.health + (goal - cm.health) * 0.08) * 10) / 10;
   cm.mood = Math.round((cm.mood ?? 0) * 0.9 * 10) / 10;
   if (cm.health < 30 && !cm.toxicWarned) {

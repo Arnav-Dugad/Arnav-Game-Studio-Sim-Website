@@ -960,7 +960,7 @@ function apply(c: Ctx, a: Action): string | null {
       p.trailerCut = pts;
       // a trailer can only show what's there: hype scales with the game's projected score
       const est = qualityToScore(gameQuality(s, p, true).total);
-      p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + pts * 0.05 * clamp(est / 70, 0.4, 1.2));
+      p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + pts * 0.05 * clamp(est / 70, 0.4, 1.2) * (s.research.done.includes('biz_trailer_studio') ? 1.3 : 1));
       if (pts >= 7) pushNews(s, { category: 'studio', headline: `The ${p.concept.name} trailer goes viral`, body: 'Millions of views overnight. People can’t stop talking about it.', tone: 'good' });
       return null;
     }

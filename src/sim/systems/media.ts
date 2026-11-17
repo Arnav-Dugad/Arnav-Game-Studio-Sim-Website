@@ -44,7 +44,8 @@ const SAME_KIND_GAP = 365 * 3;
 export function mediaFee(s: GameState, f: Franchise, kind: MediaKind, control: MediaControl): number {
   const d = MEDIA[kind];
   const fee = Math.max(money(2_000, s.day), Math.min(f.fans, 20_000_000) * d.perFan * inflation(s.day) * (f.bestScore / 85));
-  return Math.round(control === 'involved' ? fee * 0.5 : fee);
+  const office = s.research.done.includes('biz_licensing') ? 1.25 : 1;
+  return Math.round((control === 'involved' ? fee * 0.5 : fee) * office);
 }
 
 export function mediaBlocked(s: GameState, f: Franchise, kind: MediaKind): string | null {
@@ -84,7 +85,7 @@ export function mediaMonthly(c: Ctx): void {
     const d = MEDIA[deal.kind];
     const f = s.franchises[deal.franchiseId];
     const best = f?.bestScore ?? 70;
-    const q = clamp(rng.normal(52 + (best - 70) * 0.6 + (deal.control === 'involved' ? 15 : 0) + d.bias(fromDay(s.day).year), 16), 0, 100);
+    const q = clamp(rng.normal(52 + (best - 70) * 0.6 + (deal.control === 'involved' ? 15 : 0) + (s.research.done.includes('biz_licensing') ? 6 : 0) + d.bias(fromDay(s.day).year), 16), 0, 100);
     deal.quality = Math.round(q);
     if (!f) {
       deal.outcome = 'fine'; // the series was sold: someone else's problem now
