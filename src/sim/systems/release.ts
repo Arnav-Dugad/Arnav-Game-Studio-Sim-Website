@@ -4,6 +4,7 @@
  */
 import { exclusiveBuzz } from './hardware';
 import { catalogSalesMul } from './subscription';
+import { leagueOnRelease, leagueSalesMul } from './esports';
 import { BALANCE } from '../../data/balance';
 import { GENRES, GENRE_BY_ID } from '../../data/genres';
 import { COMPANY_BY_ID } from '../../data/companies';
@@ -293,6 +294,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   s.releases[id] = rel;
   s.releaseOrder.push(id);
   exclusiveBuzz(s, rel);
+  leagueOnRelease(s, rel);
   // Engine maturity
   const eng = s.engines[p.concept.engineId];
   if (eng) {
@@ -402,7 +404,7 @@ export function updateSalesWeekly(c: Ctx): void {
       const share = (1 - decay) * Math.pow(decay, Math.max(0, rel.week - (ps.startWeek ?? 0)));
       // platform decline after discontinuation scales sales down
       const life = pl.endDay !== null && s.day > pl.endDay ? Math.exp(-(s.day - pl.endDay) / 250) : 1;
-      let u = (ps.potential * share * life * demandMul(s, pl) * season * (rel.serverLoad > 0 ? outage : 1) * catalogSalesMul(s, rel.day)) / comp;
+      let u = (ps.potential * share * life * demandMul(s, pl) * season * (rel.serverLoad > 0 ? outage : 1) * catalogSalesMul(s, rel.day) * leagueSalesMul(s, rel.id)) / comp;
       const cheatMul = s.cheats?.salesMul ?? 1;
       u = Math.floor(u * cheatMul + c.rng.next()); // stochastic rounding keeps integers without bias
       u = Math.min(u, Math.max(0, Math.floor(ps.potential * 1.5 * Math.max(1, cheatMul) + (ps.extraPotential ?? 0)) - ps.units)); // can't exceed the addressable market

@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17c';
+export const WHATS_NEW_VERSION = '2026-11-17d';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
   { icon: 'sparkle', title: 'Cheats sandbox', body: 'Money, staff, games, research, time and offices — bend any rule from Menu → Cheats. Cheated runs are marked in the Hall of Fame.' },
   { icon: 'layers', title: 'Expansion packs', body: 'Give a recent hit more content: less work than a sequel, and it brings players back to the original.' },
-  { icon: 'coin', title: 'Storefront sales', body: 'Put older games on sale in the digital era for a burst of copies (open a game → Post-launch).' },
+  { icon: 'coin', title: 'Storefront sales & esports', body: 'Put older games on sale in the digital era, or run an esports league for a competitive hit (Company → Esports).' },
   { icon: 'controller', title: 'Build your own console', body: 'Research the Hardware Lab, then design, price and launch a console or handheld. Rivals answer with price wars.' },
   { icon: 'briefcase', title: 'Pass & publishing label', body: 'Turn your catalogue into a monthly subscription, or fund indie studios for a share of their revenue.' },
   { icon: 'trophy', title: 'Golden Pixel Gala & more', body: 'Yearly awards with real-history winners, remasters, vacations, showcases and save export/import.' },

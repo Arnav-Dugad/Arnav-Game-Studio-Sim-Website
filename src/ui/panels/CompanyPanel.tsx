@@ -15,6 +15,7 @@ import { LABEL_SHARE, LABEL_TIERS, dealAdvance, labelBlocked, signableIndies, ta
 import { SHOWCASE_MIN_REP, SHOWCASE_MIN_YEAR, showcaseBlocked, showcaseCost, showcaseHype, showcaseName } from '@/sim/systems/showcase';
 import { HistoryTab } from './HistoryTab';
 import { SubscriptionTab } from './SubscriptionTab';
+import { EsportsTab } from './EsportsTab';
 
 export default function CompanyPanel() {
   const tab = useGame((g) => g.panelTab) ?? 'publishing';
@@ -33,6 +34,7 @@ export default function CompanyPanel() {
           { value: 'acquire', label: 'Acquisitions' },
           { value: 'ip', label: 'IP' },
           { value: 'pass', label: 'Pass' },
+          { value: 'esports', label: 'Esports' },
           { value: 'history', label: 'History' },
         ]}
       />
@@ -41,6 +43,7 @@ export default function CompanyPanel() {
       {tab === 'acquire' && <Acquire />}
       {tab === 'ip' && <IP />}
       {tab === 'pass' && <SubscriptionTab />}
+      {tab === 'esports' && <EsportsTab />}
       {tab === 'history' && <HistoryTab />}
     </div>
   );

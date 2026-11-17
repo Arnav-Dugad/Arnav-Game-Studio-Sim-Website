@@ -563,6 +563,58 @@ describe('storefront sales', () => {
   });
 });
 
+describe('esports leagues', () => {
+  it('need research and a strong competitive game, earn per viewer, hold finals and follow sequels', () => {
+    const s = game(2012, 5);
+    s.research.done.push('biz_self_publishing');
+    s.company.cash = 1e9;
+    s.company.reputation = 70;
+    const plat = availablePlatforms(s).find((p) => p.kind === 'computer')!.id;
+    startSmall(s, { genre: 'shooter', topic: 'scifi', platforms: [plat] });
+    for (let i = 0; i < 300 && !s.releaseOrder.length; i++) {
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const r = s.releases[s.releaseOrder[0]!]!;
+    r.score = 85;
+    r.platforms[0]!.units = 20e6;
+    r.units = 20e6;
+    const found = (extra = {}) => dispatch(s, { type: 'foundLeague', releaseId: r.id, tier: 'pro', name: 'Arena League', ...extra });
+    expect(found().ok).toBe(false); // no research yet
+    s.research.done.push('biz_esports');
+    expect(found({ name: '  ' }).ok).toBe(false);
+    expect(found({ tier: 'galactic' }).ok).toBe(false);
+    const cash = s.company.cash;
+    expect(found().ok).toBe(true);
+    expect(s.company.cash).toBeLessThan(cash);
+    expect(found().ok).toBe(false); // one league per franchise
+    const lg = s.leagues![0]!;
+    const fans = s.franchises[r.concept.franchiseId!]!.fans;
+    advance(s, 400);
+    s.pendingEvents = [];
+    expect(lg.viewers).toBeGreaterThan(100_000);
+    expect(lg.revenue).toBeGreaterThan(0);
+    expect(lg.seasons).toBe(1);
+    expect(lg.prestige).toBeGreaterThan(8);
+    expect(s.franchises[r.concept.franchiseId!]!.fans).toBeGreaterThan(fans);
+    // a strong sequel takes the league over
+    startSmall(s, { genre: 'shooter', topic: 'scifi', platforms: [plat], franchiseId: r.concept.franchiseId, name: 'Arena 2' });
+    for (let i = 0; i < 300 && s.releaseOrder.length < 2; i++) {
+      s.cheats = { scoreBonus: 40 };
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const sequel = s.releases[s.releaseOrder[1]!]!;
+    expect(sequel.score).toBeGreaterThanOrEqual(70);
+    expect(lg.releaseId).toBe(sequel.id);
+    expect(dispatch(s, { type: 'closeLeague', id: lg.id }).ok).toBe(true);
+    expect(lg.status).toBe('closed');
+    expect(dispatch(s, { type: 'closeLeague', id: lg.id }).ok).toBe(false);
+  });
+});
+
 describe('vacations', () => {
   it('take people out of work, cut burnout, and have a cooldown', () => {
     const s = game(1985, 3);

@@ -40,6 +40,8 @@ export function checkInvariants(s: GameState): string[] {
   for (const d of s.publishingDeals ?? []) if (d.earned < 0 || d.payoutsLeft < 0 || d.advance <= 0) errs.push(`publishing deal ${d.id} out of range`);
   if (s.subscription && (s.subscription.subscribers < 0 || s.subscription.price <= 0)) errs.push(`subscription out of range`);
   if (s.hardware.filter((h) => h.status === 'live').length > 2) errs.push('more than 2 live consoles');
+  if ((s.leagues ?? []).filter((l) => l.status === 'live').length > 2) errs.push('more than 2 live leagues');
+  for (const l of s.leagues ?? []) if (l.prestige < 0 || l.prestige > 100 || l.viewers < 0 || !s.releases[l.releaseId]) errs.push(`league ${l.name} out of range`);
   if (s.hardware.filter((h) => h.status === 'dev').length > 1) errs.push('more than 1 console in development');
   for (const r of Object.values(s.releases)) {
     if (r.units < 0 || !Number.isInteger(r.units)) errs.push(`release ${r.name} units=${r.units}`);

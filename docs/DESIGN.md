@@ -764,4 +764,10 @@ This section records decisions made during the build that differ from, or add to
   - **Persistent switches in `s.cheats`:** infinite money (with a cash floor), no bankruptcy, tireless team, always happy, bug-free code, no random events, free building, and multipliers for sales (×0.1–20), work output (×0.25–10), research (×0.25–50) and review score (±40).
   - **Validation:** inputs are validated and clamped.
   - **Invariants:** the bot invariants skip the economic sanity checks (runaway cash, the sales-over-potential cap) for cheated runs. `tests/sim/cheats.test.ts` fuzzes random cheats over 30 years.
+- **Esports leagues** (`src/sim/systems/esports.ts`). From 2009, after Esports research and with 40+ reputation, you can found up to two leagues. Each needs a competitive game scoring 75+ that launched within the last 6 years, and only one league per franchise. There are three tiers (regional circuit, pro league, world championship), each with its own setup cost, monthly running cost, yearly prize pool, reach and prestige growth.
+  - **Monthly viewers** = active players (units × e^(−age/5), plus half the franchise fans) × 25% × genre appeal × review factor × prestige factor × tier reach × the era (esports grows through the 2010s).
+  - **Money:** revenue is $0.30 (1980 dollars) per viewer per month.
+  - **Prestige:** grows monthly with a good game, gets a bump at the yearly finals (which also pay the prize pool and add reputation for big leagues), and fades once the game is over 6 years old.
+  - **Side effects:** viewers become franchise and studio fans, and the game sells 12% better while its league runs. A sequel in the same genre scoring 70+ takes the league over.
+  - **Tuning** (`scripts/dev/esports.ts`): a 1M-unit game loses money at every tier; a 5M-unit game breaks even in its pro league by year 4; a 20M-unit hit makes about $15M a year in a pro league and $20–40M in a world championship.
 

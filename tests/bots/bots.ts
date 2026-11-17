@@ -21,6 +21,7 @@ import { canLaunchSub, subLaunchCost, subRefPrice } from '../../src/sim/systems/
 import { showcaseBlocked, showcaseCost } from '../../src/sim/systems/showcase';
 import { dealAdvance, labelBlocked, signableIndies } from '../../src/sim/systems/publishing';
 import { canExpand, canRunSale, expansionPlatforms } from '../../src/sim/systems/release';
+import { canFoundLeague, leagueCandidates, leagueSetupCost } from '../../src/sim/systems/esports';
 import { MARKETING, canDesignConsole, consoleSpec, liveConsoles, refPrice } from '../../src/sim/systems/hardware';
 import type { Focus3, GameState, Size } from '../../src/sim/types';
 import { money } from '../../src/sim/util';
@@ -327,6 +328,9 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
     const t = s.offers.acquisitions[0];
     if (t && s.company.cash > t.price * 3) dispatch(s, { type: 'acquire', targetId: t.id });
     hardware(s);
+    // Start a league for a big competitive hit.
+    const lgGame = leagueCandidates(s).find((r) => !canFoundLeague(s, r) && r.units > 3e6);
+    if (lgGame && s.company.cash > leagueSetupCost(s, 'pro') * 30) dispatch(s, { type: 'foundLeague', releaseId: lgGame.id, tier: 'pro', name: 'Bot League' });
     // Wake up the back catalogue with a storefront sale now and then.
     const old = Object.values(s.releases).find((r) => r.score >= 70 && !canRunSale(s, r));
     if (old && rng.chance(0.2)) dispatch(s, { type: 'runSale', releaseId: old.id, discount: rng.pick([0.25, 0.5, 0.75] as const) });
@@ -403,6 +407,8 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => (s.hardware.length ? { type: rng.chance(0.5) ? 'retireConsole' : 'cancelConsole', id: rng.pick(s.hardware).id } : null),
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
+  (s, rng) => { const r = Object.values(s.releases); return r.length ? { type: 'foundLeague', releaseId: rng.pick(r).id, tier: rng.pick(['regional', 'pro', 'world', 'mega'] as never[]), name: rng.chance(0.1) ? '' : 'Fuzz League' } : null; },
+  (s, rng) => (s.leagues?.length ? { type: 'closeLeague', id: rng.pick(s.leagues).id } : null),
   (s, rng) => { const r = Object.values(s.releases); return r.length ? { type: 'runSale', releaseId: rng.pick(r).id, discount: rng.pick([0.25, 0.5, 0.75, 0.9] as never[]) } : null; },
   (s, rng) => {
     const r = Object.values(s.releases);

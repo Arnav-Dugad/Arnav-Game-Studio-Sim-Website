@@ -384,6 +384,7 @@ export type LedgerCat =
   | 'hardware'
   | 'platform_fees'
   | 'subscriptions'
+  | 'esports'
   | 'publishing'
   | 'advances_paid'
   | 'hardware_rd'
@@ -675,6 +676,8 @@ export interface GameState {
   publishingDeals?: PublishedDeal[];
   /** Your catalogue subscription service, once launched. */
   subscription?: SubscriptionState;
+  /** Esports leagues you run. */
+  leagues?: EsportsLeague[];
   /** Persistent cheat switches (see sim/cheats.ts). */
   cheats?: CheatSettings;
   /** Set once any cheat is used; the Hall of Fame marks the run. */
@@ -718,3 +721,27 @@ export interface CheatSettings {
   /** Review points added to every new release. */
   scoreBonus?: number;
 }
+
+export type LeagueTier = 'regional' | 'pro' | 'world';
+
+export interface EsportsLeague {
+  id: Id;
+  name: string;
+  /** The game currently played in the league (moves to a strong sequel). */
+  releaseId: Id;
+  franchiseId?: Id;
+  tier: LeagueTier;
+  foundedDay: number;
+  closedDay?: number;
+  /** 0–100: builds season by season, fades when the game gets old. */
+  prestige: number;
+  viewers: number;
+  peakViewers: number;
+  revenue: number;
+  costs: number;
+  seasons: number;
+  status: 'live' | 'closed';
+  /** Monthly viewers (last 10 years). */
+  history: number[];
+}
+

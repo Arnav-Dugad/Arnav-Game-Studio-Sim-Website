@@ -28,8 +28,9 @@ import { researchAvailable, researchCost } from './systems/research';
 import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
-import type { Focus3, GameProject, GameState, Size, Specialisation } from './types';
+import type { Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
 import { applyCheat, markCheated, type CheatOp } from './cheats';
+import { canFoundLeague, closeLeague, foundLeague, LEAGUE_TIERS, leagueSetupCost } from './systems/esports';
 import { addRep, aOrAn, earn, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
 
 export interface StartGamePayload {
@@ -97,6 +98,8 @@ export type Action =
   | { type: 'refreshCandidates' }
   | { type: 'patchGame'; releaseId: string }
   | { type: 'cheat'; cheat: CheatOp }
+  | { type: 'foundLeague'; releaseId: string; tier: LeagueTier; name: string }
+  | { type: 'closeLeague'; id: string }
   | { type: 'runSale'; releaseId: string; discount: SaleDiscount }
   | { type: 'portGame'; releaseId: string; platform: string }
   | { type: 'secondaryOffering'; pct: number }
@@ -831,6 +834,24 @@ function apply(c: Ctx, a: Action): string | null {
         s.cheats = { ...s.cheats, freeBuild: prev };
       }
       markCheated(s);
+      return null;
+    }
+    case 'foundLeague': {
+      if (!(a.tier in LEAGUE_TIERS)) return 'Pick a league tier';
+      const rel = s.releases[a.releaseId];
+      const why = canFoundLeague(s, rel);
+      if (why) return why;
+      const name = (a.name ?? '').trim().slice(0, 40);
+      if (!name) return 'Give your league a name';
+      const cost = leagueSetupCost(s, a.tier);
+      if (s.company.cash < cost) return `Setting up costs ${fmtMoney(cost)}`;
+      foundLeague(c, rel!, a.tier, name);
+      return null;
+    }
+    case 'closeLeague': {
+      const lg = (s.leagues ?? []).find((l) => l.id === a.id && l.status === 'live');
+      if (!lg) return 'No such league';
+      closeLeague(s, lg);
       return null;
     }
     case 'runSale': {

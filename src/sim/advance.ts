@@ -11,6 +11,7 @@ import { expireEvents, rollRandomEvent } from './systems/events';
 import { hardwareMonthly } from './systems/hardware';
 import { subscriptionMonthly } from './systems/subscription';
 import { cheatsDaily } from './cheats';
+import { esportsMonthly } from './systems/esports';
 import { publishingMonthly } from './systems/publishing';
 import { financeMonthly, quarterlyEarnings, solvencyCheck, stockWeekly, valuation, yearlyTaxes } from './systems/finance';
 import { processHistory, updateFuturePlatforms, updateMarketMonthly } from './systems/market';
@@ -80,6 +81,7 @@ export function tick(c: Ctx): void {
     subsidiariesMonthly(c);
     updateLiveMonthly(c);
     subscriptionMonthly(c);
+    esportsMonthly(c);
     publishingMonthly(c);
     updateStaffMonthly(c);
     refreshCandidates(c);

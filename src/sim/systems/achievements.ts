@@ -29,6 +29,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'units_10m', name: 'Phenomenon', desc: 'Sell 10 million copies of one game.', icon: 'fire', check: (s) => rels(s).some((r) => r.units >= 10_000_000) },
   { id: 'remaster_80', name: 'Better Than I Remember', desc: 'Release a remaster scoring 80+.', icon: 'sparkle', check: (s) => rels(s).some((r) => !!r.concept.remasterOf && r.score >= 80) },
   { id: 'expansion_hit', name: 'The Saga Continues', desc: 'Release an expansion pack that sells 250,000 copies.', icon: 'layers', check: (s) => rels(s).some((r) => !!r.concept.expansionOf && r.units >= 250_000) },
+  { id: 'league_1m', name: 'Sold-Out Arena', desc: 'Draw 1 million monthly viewers to one of your esports leagues.', icon: 'trophy', check: (s) => (s.leagues ?? []).some((l) => l.peakViewers >= 1_000_000) },
   { id: 'pass_1m', name: 'All You Can Play', desc: 'Reach 1 million subscribers on your pass.', icon: 'people', check: (s) => (s.subscription?.peak ?? 0) >= 1_000_000 },
   { id: 'console_launch', name: 'Platform Holder', desc: 'Launch your own console or handheld.', icon: 'controller', check: (s) => (s.hardware ?? []).some((h) => h.status !== 'dev') },
   { id: 'console_10m', name: 'In Every Living Room', desc: 'Sell 10 million units of your own hardware.', icon: 'handheld', check: (s) => (s.hardware ?? []).some((h) => h.unitsSold >= 10_000_000) },
