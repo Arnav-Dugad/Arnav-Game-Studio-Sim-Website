@@ -54,7 +54,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   const crunching = projects.filter((p) => p.kind === 'game' && p.crunch).length;
   if (crunching) out.push({ id: 'crunch', tone: 'info', icon: 'fire', text: `${crunching} game${crunching > 1 ? 's are' : ' is'} in crunch: faster, but bugs and burnout pile up.`, action: { label: 'Develop', run: () => open('develop') } });
   // Research
-  if (!s.research.active && staff.some((x) => x.assignment.kind === 'research')) out.push({ id: 'research', tone: 'warn', icon: 'research', text: 'Your researchers have nothing to research.', action: { label: 'Pick research', run: () => open('research') } });
+  if (!s.research.active && !s.company.policies.autoQueue && staff.some((x) => x.assignment.kind === 'research')) out.push({ id: 'research', tone: 'warn', icon: 'research', text: 'Your researchers have nothing to research.', action: { label: 'Pick research', run: () => open('research') } });
   // Office
   const cap = tierDef(s.office.tier).staffCap;
   if (staff.length >= cap) out.push({ id: 'office', tone: 'info', icon: 'build', text: `Your office is full (${staff.length}/${cap}). Move to grow the team.`, action: { label: 'Office', run: () => open('office') } });

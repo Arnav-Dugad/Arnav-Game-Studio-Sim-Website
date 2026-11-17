@@ -18,7 +18,7 @@ import { financeMonthly, quarterlyEarnings, solvencyCheck, stockWeekly, valuatio
 import { processHistory, updateFuturePlatforms, updateMarketMonthly } from './systems/market';
 import { refreshOffers } from './systems/offers';
 import { updateLiveMonthly, updateSalesWeekly, yearlyAwards } from './systems/release';
-import { updateResearchDaily } from './systems/research';
+import { autoQueueResearch, updateResearchDaily } from './systems/research';
 import { rivalScheduledReleases, rivalsHistory, rivalsMonthly } from './systems/rivals';
 import { refreshCandidates, staffAutomationWeekly, updateStaffDaily, updateStaffMonthly } from './systems/staff';
 import { subsidiariesMonthly } from './systems/subsidiaries';
@@ -107,6 +107,7 @@ export function tick(c: Ctx): void {
 
   if (weekday(s.day) === 0) {
     staffAutomationWeekly(s);
+    autoQueueResearch(s);
     updateSalesWeekly(c);
     stockWeekly(c);
     hypeWeekly(s);

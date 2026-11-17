@@ -167,6 +167,13 @@ function Policies() {
           </span>
           <input type="checkbox" checked={!!p.autoVacation} onChange={(e) => act({ type: 'setPolicy', autoVacation: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
+        <label className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span>
+            <b>Keep research going</b>
+            <span className="block text-xs text-ink3">When your researchers run out of work, start the quickest available project (only if it costs under 10% of your cash).</span>
+          </span>
+          <input type="checkbox" checked={!!p.autoQueue} onChange={(e) => act({ type: 'setPolicy', autoQueue: e.target.checked })} className="size-5 accent-[var(--accent)]" />
+        </label>
       </Section>
       <Section title="Work culture">
         <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">

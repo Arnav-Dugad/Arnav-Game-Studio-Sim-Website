@@ -2,7 +2,7 @@ import { RESEARCH, RESEARCH_BY_ID, type ResearchDef } from '../../data/research'
 import { fromDay, weekday } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState } from '../types';
-import { money, pushNews } from '../util';
+import { money, pushNews, spend } from '../util';
 import { layout } from './office';
 import { growSkill, productivity } from './staff';
 
@@ -16,6 +16,20 @@ export function researchAvailable(s: GameState, r: ResearchDef): { ok: boolean; 
 
 export function researchCost(s: GameState, r: ResearchDef): number {
   return money(r.cost, s.day);
+}
+
+/** "Keep research going" policy: when nothing is active or queued, start the cheapest available project. */
+export function autoQueueResearch(s: GameState): void {
+  if (!s.company.policies.autoQueue || s.research.active || s.research.queue.length || !researchers(s).length) return;
+  const pick = RESEARCH.filter((r) => researchAvailable(s, r).ok)
+    .map((r) => ({ r, cost: researchCost(s, r) }))
+    .filter((x) => x.cost <= s.company.cash * 0.1)
+    .sort((a, b) => a.r.points - b.r.points || a.cost - b.cost)[0];
+  if (!pick) return;
+  spend(s, 'research', pick.cost);
+  s.research.active = pick.r.id;
+  s.research.progress = 0;
+  pushNews(s, { category: 'tech', headline: `Research team starts on ${pick.r.name}`, body: 'Picked automatically (Staff → Policies → Keep research going).', tone: 'neutral' });
 }
 
 export function researchers(s: GameState) {

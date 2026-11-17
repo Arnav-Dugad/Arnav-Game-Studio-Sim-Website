@@ -807,6 +807,12 @@ describe('staff automation', () => {
     advance(s, 8);
     expect(idler.assignment.kind).toBe('research');
     expect(tired.lastVacationDay).toBeDefined();
+    // keep research going: idle researchers get a project when the queue runs dry
+    s.research.active = null;
+    s.research.queue = [];
+    dispatch(s, { type: 'setPolicy', autoQueue: true });
+    advance(s, 8);
+    expect(s.research.active).not.toBeNull();
   });
 });
 
