@@ -290,6 +290,7 @@ function RivalReleases() {
           <div className="min-w-0 flex-1">
             <div className="truncate font-semibold">
               {g.name} {g.franchise && <Pill tone="accent">Classic</Pill>}
+              {g.copycatOf && s.releases[g.copycatOf] && <Pill tone="bad">Copy of {s.releases[g.copycatOf]!.name}</Pill>}
             </div>
             <div className="truncate text-xs text-ink3">
               {s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company} · {GENRE_BY_ID[g.genre]?.name} · {g.platforms.map((p) => platformName(s, p)).join(', ')}
