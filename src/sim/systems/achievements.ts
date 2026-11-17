@@ -126,6 +126,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'dream_maker', name: 'Dream Maker', desc: 'Ship three of your staff’s passion projects.', icon: 'sparkle', check: (s) => rels(s).filter((r) => !!r.passion).length >= 3 },
   { id: 'welcome_back', name: 'Welcome Back', desc: 'Rehire a former colleague.', icon: 'people', check: (s) => Object.values(s.staff).some((x) => x.rejoined !== undefined) },
   { id: 'awards_campaign_win', name: 'For Your Consideration', desc: 'Win Game of the Year with a game you campaigned for.', icon: 'trophy', check: (s) => (s.awardHistory ?? []).some((y) => y.winners.some((w) => w.mine && w.category === 'Game of the Year' && w.releaseId !== undefined && s.company.awardsCampaign?.releaseId === w.releaseId)) },
+  { id: 'daily_win', name: 'Daily Grind', desc: 'Win a daily challenge.', icon: 'calendar', check: (s) => !!s.settings.daily && s.scenario?.result === 'won' },
   { id: 'garage_hit', name: 'Garage Miracle', desc: 'Score 85+ while still in the garage.', icon: 'wrench', check: (s) => s.office.tier === 1 && s.progress.stats.bestScore >= 85 },
 ];
 
