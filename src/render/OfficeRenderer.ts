@@ -165,6 +165,7 @@ export class OfficeRenderer {
   private season: Season | null = null;
   private lastDay = -1;
   private bdayGreeted = new Set<string>();
+  private checkInSeen = new Map<string, number>();
   private themeObserver: MutationObserver | null = null;
 
   constructor(private cb: RendererCallbacks) {}
@@ -1121,6 +1122,7 @@ export class OfficeRenderer {
     for (const a of this.agents.values()) if (a.talk && !this.agents.get(a.talk.partner)?.c.visible) this.endTalk(s, floor, a);
     this.agentsReady = true;
     this.dailyMoments(s, floor, doy, ui.reducedMotion);
+    if (!ui.modalOpen) this.checkInMoments(s, floor); // wait until the person's card is closed
     this.lunchT -= dt * speedMul;
     if (this.lunchT <= 0 && !ui.reducedMotion) {
       this.lunchT = 45 + Math.random() * 60;
@@ -1129,6 +1131,20 @@ export class OfficeRenderer {
   }
 
   // ── Office life: conversations and leisure (cosmetic) ──────────────────────
+
+  /** Right after a one-on-one, the person says (a short version of) what's on their mind. */
+  private checkInMoments(s: GameState, floor: number): void {
+    for (const id of s.company.checkInLog?.length ? Object.keys(s.staff) : []) {
+      const st = s.staff[id];
+      const ci = st?.checkIn;
+      if (!st || !ci || s.day - ci.day > 2 || this.checkInSeen.get(id) === ci.day) continue;
+      this.checkInSeen.set(id, ci.day);
+      const a = this.agents.get(id);
+      if (!a || !a.c.visible || a.floor !== floor) continue;
+      const short = ci.line.split(/(?<=[.?!])\s/)[0] ?? ci.line;
+      this.say(a, short.length > 46 ? `${short.slice(0, 44)}…` : short, 3.2);
+    }
+  }
 
   /** Once a day: birthday wishes; on New Year's Day, a party. */
   private dailyMoments(s: GameState, floor: number, doy: number, reducedMotion: boolean): void {
