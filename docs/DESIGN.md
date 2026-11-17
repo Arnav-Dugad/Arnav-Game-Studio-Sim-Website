@@ -712,6 +712,14 @@ This section records decisions made during the build that differ from, or add to
   - Indies looking for a publisher appear monthly while fewer than four are available.
   - Fixes from the third review: funded studios can't be acquired; a studio that dies before shipping loses the game (and your advance); published games list platforms and never compete with you for awards; the retro mini console bonus is applied once per franchise; the costly co-production option is disabled when you can't afford it.
 - **Save export/import.** The slots screen can export a slot as `{format, exportedAt, state}` JSON and import it into an empty slot. Imports go through `migrate()`, so old versions upgrade and junk is rejected with a friendly error. They are saved locally and synced to the cloud when signed in.
+- **Fourth review pass:**
+  - Import and new-studio creation re-check the cloud for that slot just before writing. They refuse if a cloud save exists there (the list could be stale, or the cloud listing failed); import also refuses when the check can't run.
+  - Import validates every core collection.
+  - Export is hidden for slots in conflict.
+  - A closed indie's deal shows as lost and no longer counts toward the publishing milestone.
+  - The revenue mix includes interest and other income.
+  - Event cost options re-check cash when resolved.
+- **All-time charts.** Market → All-time charts ranks your games against the real releases that have come out so far. Real lifetime sales build up over three years.
 - **Vacations.** Paid leave of one or two weeks: +10 energy and −4 burnout a day, morale up, loyalty +3 or +5. Each person waits 120 days between vacations. People on vacation don't work on projects or research.
 - **Studio history.** Company → History builds a timeline from data the sim already keeps: the founding, notable releases, achievements, console launches and the IPO.
 - **Second review pass (hardware/remasters):**
