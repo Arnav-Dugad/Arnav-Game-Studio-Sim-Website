@@ -1,4 +1,5 @@
 /** Shared staff helpers for the Staff panel and the team pickers: status, risk, and fit for a genre. */
+import { favouriteGenre } from '@/sim/systems/staff';
 import { PHASE_AREAS, SKILLS, type GenreId } from '@/data/types';
 import { areaSkill } from '@/sim/systems/dev';
 import { isAway, ROLE_NAMES } from '@/sim/systems/staff';
@@ -39,7 +40,7 @@ export function genreFit(st: Staff, genre: GenreId): number {
     const areas = PHASE_AREAS[ph]!;
     for (let i = 0; i < 3; i++) v += (focus[ph]![i]! / 100) * areaSkill(st, areas[i]!);
   }
-  return v / 3;
+  return (v / 3) * (favouriteGenre(st.id) === genre ? 1.05 : 1); // people do their best work on what they love
 }
 
 /** Best available team for a genre: fit, nudged by morale and energy (tired people produce less). */

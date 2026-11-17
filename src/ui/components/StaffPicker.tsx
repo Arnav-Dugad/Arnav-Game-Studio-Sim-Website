@@ -2,6 +2,7 @@
  * Team picker that scales to big studios: search, role filters, sort by fit for the genre, one-click
  * "best team", and a capacity counter. Used by the new-game wizard and the project team editor.
  */
+import { favouriteGenre } from '@/sim/systems/staff';
 import { useMemo, useState } from 'react';
 import type { GenreId } from '@/data/types';
 import type { Role, Staff } from '@/sim/types';
@@ -128,7 +129,10 @@ export function StaffPicker({
                   <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(st.id)} className="accent-[var(--accent)]" />
                   <Face p={st} size={24} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{st.name}</span>
+                    <span className="block truncate font-semibold">
+                      {st.name}
+                      {genre && favouriteGenre(st.id) === genre && <span title="Loves this genre: +5% output, +3 morale on it" className="ml-1 text-bad">♥</span>}
+                    </span>
                     <span className="block truncate text-[11px] text-ink3">
                       {st.level} {roleName(st.role)}
                       {st.assignment.kind === 'research' ? ' · researching' : ''}

@@ -21,7 +21,7 @@ import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
 import { EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, SALE_DISCOUNTS, canExpand, canPatch, canRemaster, canRunSale, expansionsOf, patchCost, portCost, rereleaseBlocked, rereleaseCost, saleForecast } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
-import { SABBATICAL, marketSalary, menteesOf, mentorBlocked, productivity, moraleTarget, retirementDay, ROLE_NAMES, sabbaticalBlocked, vacationBlocked } from '@/sim/systems/staff';
+import { ROLE_NAMES, SABBATICAL, favouriteGenre, marketSalary, menteesOf, mentorBlocked, moraleTarget, productivity, retirementDay, sabbaticalBlocked, vacationBlocked } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
 import { runScore } from '@/sim/systems/achievements';
 import { qualityToScore } from '@/sim/systems/dev';
@@ -687,7 +687,7 @@ function Relationships({ staffId }: { staffId: string }) {
   return (
     <Section title="Relationships">
       <p className="mb-1.5 text-xs text-ink2">
-        {hobbyOf(staffId).emoji} Into {hobbyOf(staffId).name.toLowerCase()}
+        {hobbyOf(staffId).emoji} Into {hobbyOf(staffId).name.toLowerCase()} · 🎮 loves {GENRE_BY_ID[favouriteGenre(staffId)].name} games
         {lifeLine(s, s.staff[staffId]!) && <> · ❤️ {lifeLine(s, s.staff[staffId]!)}</>}
       </p>
       <ul className="space-y-1 text-xs">

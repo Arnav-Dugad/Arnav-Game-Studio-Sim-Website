@@ -1,6 +1,8 @@
 /**
  * Staff: generation, salary, productivity, morale, energy, burnout, loyalty, growth, quitting.
  */
+import type { GenreId } from '../../data/types';
+import { GENRES, GENRE_BY_ID } from '../../data/genres';
 import { relationMorale } from './relations';
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
@@ -277,6 +279,24 @@ export function menteesOf(s: GameState, mentorId: string): Staff[] {
   return Object.values(s.staff).filter((x) => x.mentorId === mentorId);
 }
 
+/** Everyone has a favourite genre (stable per person, from their id). */
+export function favouriteGenre(id: string): GenreId {
+  let h = 2166136261;
+  const key = `genre:${id}`;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return GENRES[(h >>> 0) % GENRES.length]!.id;
+}
+
+/** Is this person working on a game in their favourite genre? */
+export function onFavouriteGenre(s: GameState, st: Staff): boolean {
+  if (st.assignment.kind !== 'project') return false;
+  const p = s.projects[st.assignment.id];
+  return !!p && p.kind === 'game' && p.concept.genre === favouriteGenre(st.id);
+}
+
 export function productivity(s: GameState, st: Staff): ReturnType<BD['done']> {
   const L = layout(s);
   const bd = new BD('Base', 1);
@@ -291,6 +311,7 @@ export function productivity(s: GameState, st: Staff): ReturnType<BD['done']> {
   }
   if (hasTrait(st, 'workaholic')) bd.mul('Workaholic', 1.1);
   if (hasTrait(st, 'perfectionist')) bd.mul('Perfectionist', 0.9);
+  if (onFavouriteGenre(s, st)) bd.mul(`Loves ${GENRE_BY_ID[favouriteGenre(st.id)].name} games`, 1.05);
   if (isCrunching(s, st)) {
     const boost = BALANCE.CRUNCH_OUTPUT * (hasTrait(st, 'night_owl') ? 1.08 : 1);
     bd.mul('Crunch', hasValue(s, 'balance') ? 1 + (boost - 1) * CULTURE_FX.balanceCrunch : boost);
@@ -341,6 +362,7 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
   if (s.company.policies.fourDayWeek) bd.add('Four-day week', 9);
   if (s.company.policies.wellness) bd.add('Wellness program', 2);
   if (s.company.policies.parentalLeave === 'generous') bd.add('Family-friendly leave', 1);
+  if (onFavouriteGenre(s, st)) bd.add('Making a game they love', 3);
   if (s.company.policies.charity && s.company.charitySince !== undefined && s.day - s.company.charitySince >= 90) bd.add('Giving back', s.company.policies.charity >= 5 ? 3 : 1);
   if (s.company.lastLayoffDay !== undefined && s.day - s.company.lastLayoffDay < 120) bd.add('Recent layoffs', -12);
   for (const m of s.company.moraleMods) if (m.until > s.day) bd.add(m.label, m.v);
