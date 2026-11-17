@@ -3,6 +3,7 @@
  * Staff "life" (walking to the coffee machine, chatting, slumping when burnt out) mirrors the
  * sim's activity flags but uses its own non-deterministic timing, so visuals never affect the sim.
  */
+import { ParrotSystem } from './parrot';
 import { hobbyOf } from '@/data/hobbies';
 import { pinnedArt } from '@/sim/systems/fanMail';
 import { workAnniversary } from '@/sim/systems/staff';
@@ -154,6 +155,7 @@ export class OfficeRenderer {
   private seasonDecor = new SeasonDecor(this.itemLayer);
   private visitors = new VisitorSystem(this.itemLayer);
   private monitors = new ScreenSystem(this.itemLayer);
+  private parrots = new ParrotSystem(this.itemLayer);
   /** Dims the floor and walls during crunch (below items and people, so bubbles stay readable). */
   private dusk = new Container();
   private nightShift = new NightShift(this.dusk, this.itemLayer);
@@ -546,6 +548,7 @@ export class OfficeRenderer {
       if (st && (st.activity === 'work' || st.activity === 'research')) users.push({ deskId: a.deskId, role: st.role, research: st.activity === 'research', phase: a.anim.phase });
     }
     this.monitors.update(s, floor, era, users, dt, ui.reducedMotion);
+    this.parrots.update(s, floor, dt, ui.reducedMotion);
     const crunchers: { x: number; y: number }[] = [];
     for (const a of this.agents.values()) {
       if (!a.c.visible || a.mode !== 'desk') continue;

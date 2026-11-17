@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-19g';
+export const WHATS_NEW_VERSION = '2026-11-19h';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'build', title: 'The office parrot', body: 'Build an Office Parrot (Decor): it sits on its perch and repeats what it overhears — “Ship it!”, “Who broke the build?”, your studio’s name, the game you’re making, last week’s review score…' },
   { icon: 'library', title: 'Four new topics', body: 'Samurai (1984, surging around 2020), Steampunk (1990), Ancient Egypt (1982) and Fishing (1985, a family favourite) — each with its own cover art and title ideas.' },
   { icon: 'heart', title: 'Giving back', body: 'Staff → Policies: pledge 1% or 5% of each month’s profit to charity — after three months of an unbroken pledge people find the work more meaningful (+1 or +3 morale), and goodwill builds with what you actually give. And once an engine you built is eight years old, you can open-source it (Research → Engines) for reputation and very proud programmers.' },
   { icon: 'sparkle', title: 'Lunar New Year & Diwali', body: 'The office now celebrates more of the world’s festivals: red lanterns for Lunar New Year and flickering clay lamps for Diwali — on the right dates every year, worked out from the moon — with festive chatter to match.' },

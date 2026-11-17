@@ -27,7 +27,7 @@ export const HOBBIES: Hobby[] = [
   { id: 'photography', name: 'Photography', emoji: '📷', likes: ['aquarium', 'globe', 'mascot_statue'], chat: [['Got a great sunset shot.', 'Frame it!'], ['New lens arrived!', 'Ooh.'], ['Photo walk Saturday?', 'Sure!']] },
   { id: 'singing', name: 'Singing', emoji: '🎤', likes: ['karaoke', 'guitar_corner'], chat: [['Choir concert tonight.', 'Break a leg!'], ['Karaoke after work?', 'Only if you go first.'], ['Hit the high note!', '🎶']] },
   { id: 'cycling', name: 'Cycling', emoji: '🚲', likes: ['gym', 'ping_pong'], chat: [['Biked in today.', 'In this weather?'], ['100 km on Saturday.', 'Wow.'], ['Flat tyre again.', 'Classic.']] },
-  { id: 'pets', name: 'Animals', emoji: '🐾', likes: ['aquarium', 'lounge_sofa'], chat: [['My dog learned a trick!', 'Video?!'], ['Fostering kittens.', 'Bring one in!'], ['Can I take the office cat home?', 'No!']] },
+  { id: 'pets', name: 'Animals', emoji: '🐾', likes: ['aquarium', 'lounge_sofa', 'parrot_perch'], chat: [['My dog learned a trick!', 'Video?!'], ['Fostering kittens.', 'Bring one in!'], ['Can I take the office cat home?', 'No!']] },
 ];
 
 export const HOBBY_BY_ID: Record<string, Hobby> = Object.fromEntries(HOBBIES.map((h) => [h.id, h]));
