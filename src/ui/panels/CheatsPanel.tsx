@@ -12,7 +12,7 @@ import { availableGenres, availableTopics } from '../game/lib';
 import type { CheatSettings, Role } from '@/sim/types';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import { Button, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
-import { Icon } from '../icons';
+import { Icon, type IconName } from '../icons';
 import { useGame } from '../store';
 
 type Tab = 'money' | 'staff' | 'games' | 'market' | 'research' | 'world';
@@ -52,6 +52,7 @@ export default function CheatsPanel() {
           </Button>
         )}
       </div>
+      <Presets />
       <Segmented<Tab>
         ariaLabel="Cheat categories"
         value={tab}
@@ -108,6 +109,12 @@ function Multiplier({ k, label, desc, min, max, step, format, neutral }: { k: 's
   const cheat = useCheat();
   const cur = s.cheats?.[k] ?? neutral;
   const [v, setV] = useState(cur);
+  // Follow changes made elsewhere (presets, "turn all off") while this slider is on screen.
+  const [seen, setSeen] = useState(cur);
+  if (cur !== seen) {
+    setSeen(cur);
+    setV(cur);
+  }
   const commit = (x: number) => cheat({ op: 'settings', settings: { [k]: x } });
   return (
     <div className={cx('rounded-xl border p-3', cur !== neutral ? 'border-accent bg-accent/10' : 'border-line')}>
@@ -710,6 +717,39 @@ function RivalEditor({ rivalId }: { rivalId: string }) {
         )}
       </div>
     </>
+  );
+}
+
+const PRESETS: { id: string; label: string; desc: string; icon: IconName; settings: CheatSettings }[] = [
+  { id: 'god', label: 'God mode', desc: 'Infinite money, tireless and happy team, bug-free code, +15 reviews', icon: 'crown', settings: { infiniteMoney: true, noBankruptcy: true, noBurnout: true, alwaysHappy: true, noBugs: true, scoreBonus: 15 } },
+  { id: 'fast', label: 'Fast forward', desc: 'Work ×4 and research ×10 — see the whole era in no time', icon: 'fastest', settings: { workMul: 4, researchMul: 10 } },
+  { id: 'chill', label: 'Chill', desc: 'No random events and no bankruptcy — just build', icon: 'leaf', settings: { noEvents: true, noBankruptcy: true } },
+  { id: 'hard', label: 'Hard mode', desc: 'Sales ×0.6 and reviews −8 — for veterans who want pain', icon: 'skull', settings: { salesMul: 0.6, scoreBonus: -8 } },
+];
+
+function Presets() {
+  const cheat = useCheat();
+  return (
+    <div>
+      <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink3">Quick presets</div>
+      <div className="grid grid-cols-2 gap-2">
+        {PRESETS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            title={p.desc}
+            onClick={() => cheat({ op: 'settings', settings: p.settings }, `${p.label} on`)}
+            className="flex items-start gap-2 rounded-xl border border-line p-2 text-left text-xs hover:bg-bg2"
+          >
+            <Icon name={p.icon} size={16} className="mt-0.5 shrink-0 text-accent" />
+            <span className="min-w-0">
+              <span className="block font-semibold">{p.label}</span>
+              <span className="text-ink3">{p.desc}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
