@@ -29,7 +29,7 @@ import { isAway } from '@/sim/systems/staff';
 import { FocusSliders } from '../game/FocusEditor';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
-import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, idealFocus, knowsCombo, suggestName } from '../game/lib';
+import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, idealFocus, knowsCombo, suggestConcept, suggestName } from '../game/lib';
 import { sound } from '../sound';
 
 export default function DevelopPanel() {
@@ -512,6 +512,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const idle = Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
   const [team, setTeam] = useState<string[]>(() => autoPickTeam(idle, baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre, BALANCE.SIZE.small.teamCap));
   const [franchiseId, setFranchiseId] = useState<string>(presetFr?.id ?? '');
+  const [inspiration, setInspiration] = useState<{ genre: GenreId; topic: string; why: string } | null>(null);
   useEffect(() => {
     if (presetFr || baseRel) useGame.setState({ wizardPreset: null });
   }, [presetFr, baseRel]);
@@ -585,6 +586,21 @@ function NewGame({ onDone }: { onDone: () => void }) {
             }}
           >
             Make a new game instead
+          </Button>
+        </div>
+      )}
+      {!baseRel && !locked && (
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-bg2/60 px-3 py-2 text-xs">
+          <span className="min-w-0 text-ink2">{inspiration ? <>💡 <b className="text-ink">{GENRE_BY_ID[inspiration.genre].name} × {TOPIC_BY_ID[inspiration.topic]?.name}</b> — {inspiration.why}</> : 'Stuck for an idea? Get a suggestion from the trends and what your studio knows.'}</span>
+          <Button size="sm" icon="lightbulb" onClick={() => {
+              const idea = suggestConcept(s);
+              if (!idea) return;
+              setInspiration(idea);
+              setGenre(idea.genre);
+              setTopic(idea.topic);
+              setName(suggestName(Math.random() * 1e6, idea.topic));
+            }}>
+            Inspire me
           </Button>
         </div>
       )}

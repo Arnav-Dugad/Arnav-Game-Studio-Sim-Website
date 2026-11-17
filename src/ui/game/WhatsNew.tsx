@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20i';
+export const WHATS_NEW_VERSION = '2026-11-20j';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'lightbulb', title: 'Inspire me', body: 'Stuck for an idea? The new-game screen can suggest a promising genre and topic from the trends, the pairings you’ve learned work, fresh ideas and what your team knows — and tells you why.' },
   { icon: 'coin', title: 'Loot boxes (and the backlash)', body: 'A new feature for free-to-play and live games (2009+): loot boxes sell more but players resent them. From 2018 regulators may come knocking — patch them out, publish the odds, or fight it. Rival studios now show their headquarters too.' },
   { icon: 'building', title: 'Your headquarters', body: 'The Office panel now shows your studio’s building — from a suburban garage to a storefront, a brick studio, your own building, a campus and finally a glass tower — with your name on the sign and the season in the sky.' },
   { icon: 'heart', title: 'An office tortoise, and more to do', body: 'Adopt an Office Tortoise (Decor): it naps in its enclosure and makes very slow tours of the office. The parrot now bobs and flaps while it talks. Plus five new events: a preservation society, guest lectures, a children’s hospital, a viral fan cover of your theme and a former employee’s tell-all memoir.' },

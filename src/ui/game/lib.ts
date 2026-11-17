@@ -1,4 +1,5 @@
 /** UI-side helpers that derive presentation data from the sim (pure functions). */
+import { genrePopularity, topicPopularity } from '@/sim/systems/market';
 import { GENRES, GENRE_BY_ID } from '@/data/genres';
 import { TOPICS, TOPIC_BY_ID } from '@/data/topics';
 import { BALANCE } from '@/data/balance';
@@ -112,4 +113,44 @@ export function suggestName(seed: number, topic: string): string {
   const nouns = B[topic] ?? ['Legends', 'Odyssey', 'Heroes', 'Saga', 'Rush', 'Tactics', 'Island', 'Empire'];
   const r = (n: number) => Math.abs(Math.sin(seed * 9301 + n * 49297)) % 1;
   return `${A[Math.floor(r(1) * A.length)]} ${nouns[Math.floor(r(2) * nouns.length)]}`;
+}
+
+/**
+ * "Inspire me": a promising genre × topic from what the player can already see — trends, combos they've
+ * learned, a fresh idea rather than a repeat, and genres the studio knows. Never reveals hidden fits.
+ */
+export function suggestConcept(s: GameState, rand: () => number = Math.random): { genre: GenreId; topic: string; why: string } | null {
+  const genres = availableGenres(s).filter((x) => x.ok).map((x) => x.g);
+  const topics = availableTopics(s).filter((x) => x.ok).map((x) => x.t);
+  if (!genres.length || !topics.length) return null;
+  const recent = s.releaseOrder.slice(-6).map((id) => s.releases[id]!).filter(Boolean);
+  const scored: { genre: GenreId; topic: string; score: number; why: string[] }[] = [];
+  for (const g of genres)
+    for (const t of topics) {
+      const why: string[] = [];
+      const gp = genrePopularity(s, g.id);
+      const tp = topicPopularity(s, t.id);
+      let score = gp * Math.sqrt(tp);
+      if (gp > 1.15) why.push(`${g.name}s are hot right now`);
+      if (tp > 1.15) why.push(`${t.name} is trending`);
+      if (knowsCombo(s, g.id, t.id)) {
+        const fit = comboFitValue(g.id, t.id);
+        score *= [0.5, 0.9, 1.15, 1.35][fit] ?? 1;
+        if (fit >= 2) why.push('you’ve seen this pairing work');
+      }
+      if (recent.some((r) => r.concept.genre === g.id && r.concept.topic === t.id)) score *= 0.5;
+      else if (!Object.values(s.releases).some((r) => r.concept.genre === g.id && r.concept.topic === t.id) && s.releaseOrder.length) {
+        score *= 1.08;
+        why.push('a fresh idea for you');
+      }
+      const exp = genreExperience(s, g.id);
+      if (exp) {
+        score *= 1 + Math.min(0.15, exp * 0.05);
+        why.push(`your team knows ${g.name}s`);
+      }
+      scored.push({ genre: g.id, topic: t.id, score, why });
+    }
+  scored.sort((a, b) => b.score - a.score);
+  const pick = scored[Math.floor(rand() * Math.min(6, scored.length))]!;
+  return { genre: pick.genre, topic: pick.topic, why: pick.why.slice(0, 2).join(', ') || 'a solid, balanced pick' };
 }
