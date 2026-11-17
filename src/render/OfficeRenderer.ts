@@ -1116,6 +1116,17 @@ export class OfficeRenderer {
     }
     for (const a of here) {
       const st = s.staff[a.id];
+      const served = st ? s.day - st.hiredDay : 0;
+      if (st && st.role !== 'founder' && served > 0 && served % 365 === 0 && (served / 365) % 5 === 0) {
+        this.showBubble(a, '🎂');
+        a.bubbleT = 3;
+        a.anim.joy = 1.2;
+        const near = here.filter((b) => b !== a && !b.talk && Math.hypot(b.x - a.x, b.y - a.y) < 160).slice(0, 2);
+        for (const b of near) this.say(b, pickOne([`${served / 365} years, ${firstName(st.name)}! 🎉`, 'Happy work anniversary!', 'Here’s to the next five!']), 2.4);
+      }
+    }
+    for (const a of here) {
+      const st = s.staff[a.id];
       if (!st || birthdayOf(st.id) !== doy) continue;
       const key = `${st.id}|${s.day}`;
       if (this.bdayGreeted.has(key)) continue;

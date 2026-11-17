@@ -422,6 +422,15 @@ export function updateStaffDaily(c: Ctx): void {
       st.burnout = clamp(st.burnout - 2.5, 0, 100);
       continue;
     }
+    // work anniversaries: 10, 20, 30 years
+    const served = s.day - st.hiredDay;
+    if (served > 0 && served % 365 === 0 && st.role !== 'founder') {
+      const yrs = served / 365;
+      if (yrs % 10 === 0) {
+        st.loyalty = clamp(st.loyalty + 5, 0, 100);
+        pushNews(s, { category: 'staff', headline: `${st.name} celebrates ${yrs} years at ${s.company.name}`, tone: 'good' });
+      }
+    }
     // Vacation: away from the office, recharging fast
     if ((st.vacationDays ?? 0) > 0) {
       st.vacationDays = st.vacationDays! - 1;
