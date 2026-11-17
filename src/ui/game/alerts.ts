@@ -1,4 +1,5 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
+import { pitchText } from '@/sim/systems/pitches';
 import { demoBlocked } from '@/sim/systems/demos';
 import { bonusBlocked, bonusCost, bonusTeam } from '@/sim/systems/launchBonus';
 import { pulseKey, teamPulse, type PulseItem } from './pulse';
@@ -116,6 +117,10 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
     // a game good enough to show off: a demo would win players over
     const showable = projects.find((p) => p.kind === 'game' && !demoBlocked(s, p) && p.qualityPreview && qualityToScore(p.qualityPreview.total) >= 75);
     if (showable && showable.kind === 'game') out.push({ id: 'demo', tone: 'info', icon: 'play', text: `${showable.concept.name} is looking great — a public demo would win players over.`, action: { label: 'Develop', run: () => open('develop', 'projects') } });
+    // a greenlit pitch waiting to be made
+    const pitch = s.company.pitch;
+    const pitcher = pitch && pitch.until >= s.day ? s.staff[pitch.staffId] : undefined;
+    if (pitch && pitcher) out.push({ id: 'pitch', tone: 'info', icon: 'lightbulb', text: `${pitcher.name.split(' ')[0]}’s pitch is waiting: ${pitchText(pitch, true)} (until ${formatDate(pitch.until)}).`, action: { label: 'New game', run: () => open('develop', 'new') } });
     // a recent launch, and the money to thank the team
     const thank = s.releaseOrder.slice(-3).map((id) => s.releases[id]!).find((r) => r && !bonusBlocked(s, r) && s.company.cash > bonusCost(s, r) * 6);
     if (thank) out.push({ id: 'bonus', tone: 'info', icon: 'coin', text: `${thank.name} is out — a launch bonus would thank the ${bonusTeam(s, thank).length} people who made it.`, action: { label: 'See it', run: () => useGame.getState().openModalNow({ kind: 'release', releaseId: thank.id }) } });
