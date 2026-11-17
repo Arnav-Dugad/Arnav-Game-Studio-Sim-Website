@@ -38,6 +38,19 @@ export interface Ambition {
   progress?: number;
 }
 
+/** A quarterly objective (systems/objectives.ts). */
+export type ObjectiveKind = 'ship' | 'score' | 'morale' | 'hire' | 'cash' | 'research' | 'fans' | 'contract';
+
+export interface Objective {
+  kind: ObjectiveKind;
+  /** Value to beat (absolute), and the value when the quarter began (for deltas). */
+  target: number;
+  base: number;
+  until: number;
+  done?: number;
+}
+
+
 export interface Staff {
   id: Id;
   name: string;
@@ -701,6 +714,8 @@ export interface LifetimeStats {
   dreamsMet?: number;
   /** Crunch over roughly the last few months (decays daily). */
   crunchRecent?: number;
+  /** Quarterly objectives met. */
+  objectivesDone?: number;
   /** Games that topped the weekly chart. */
   numberOnes?: number;
   /** Best bug-bash result, and mentees who graduated. */
@@ -771,6 +786,8 @@ export interface GameState {
   relations?: Record<string, number>;
   /** A scenario run (systems/scenarios.ts): goals met (index → day) and the result. */
   scenario?: { id: string; deadlineDay: number; met: Record<number, number>; hold?: Record<number, number>; result?: 'won' | 'failed' };
+  /** This quarter's objectives (systems/objectives.ts). */
+  objectives?: Objective[];
   /** This month's Employee of the Month. */
   eotm?: { id: string; day: number };
   schemaVersion: number;

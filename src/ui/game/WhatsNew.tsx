@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18m';
+export const WHATS_NEW_VERSION = '2026-11-18n';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'target', title: 'Quarterly objectives', body: 'Goals → This quarter: three bite-sized goals that fit your studio right now — ship a game, lift morale, hire, grow cash, finish research. Each one met pays cash, reputation and a morale lift. Plus: a robot vacuum (2002+).' },
   { icon: 'people', title: 'Focus tests, re-releases, wellness & floor copying', body: 'Run a focus test once per phase (any era) for a rough score and what players want more of. From 2006, re-release 12-year-old classics on modern storefronts. A Wellness Program policy slows burnout. In big offices, copy a floor’s layout onto the next floor.' },
   { icon: 'coin', title: 'Venture funding', body: 'Company → Stock: before going public, raise a Seed round, Series A and Series B — cash now for a slice of the studio. Every round shrinks the share you keep at the IPO.' },
   { icon: 'handshake', title: 'Spin-offs & negotiation', body: 'A star who quits may found their own studio and become your rival (buy them back for an achievement). And you can now haggle with publishers: ask for a bigger advance or royalty — they might walk away.' },

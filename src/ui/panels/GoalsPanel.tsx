@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS, MILESTONES, nextMilestone, runScore } from '@/sim/systems/achievements';
+import { objectiveProgress, objectiveReward, objectiveText } from '@/sim/systems/objectives';
 import { SCENARIO_BY_ID, goalProgress, yearsLeft } from '@/sim/systems/scenarios';
 import { formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
@@ -42,6 +43,34 @@ export default function GoalsPanel() {
                   {!met && (
                     <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-bg2">
                       <div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, Math.max(2, pr.p * 100))}%` }} />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+      {(s.objectives ?? []).length > 0 && (
+        <section className="mb-4 rounded-2xl border border-line p-3">
+          <div className="flex items-baseline justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wide text-accent">This quarter</div>
+            <div className="text-[11px] text-ink3">Each: +{fmtMoney(objectiveReward(s).cash)}, rep +1, morale lift</div>
+          </div>
+          <ul className="mt-1.5 space-y-1.5">
+            {(s.objectives ?? []).map((o, i) => {
+              const p = objectiveProgress(s, o);
+              const done = o.done !== undefined;
+              return (
+                <li key={i} className="text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Icon name={done ? 'check' : 'target'} size={13} className={done ? 'text-good' : 'text-ink3'} />
+                    <span className={cx('flex-1', done && 'text-good line-through decoration-good/50')}>{objectiveText(o)}</span>
+                    <span className="num text-ink3">{done ? 'done' : s.day > o.until ? 'missed' : `${Math.round(p * 100)}%`}</span>
+                  </div>
+                  {!done && (
+                    <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-bg2">
+                      <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(2, p * 100)}%` }} />
                     </div>
                   )}
                 </li>

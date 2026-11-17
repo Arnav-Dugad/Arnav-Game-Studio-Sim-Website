@@ -1382,3 +1382,22 @@ describe('classic re-releases', () => {
     expect(dispatch(s, { type: 'rerelease', releaseId: r.id, platform: plat() }).ok).toBe(false); // once
   });
 });
+
+describe('quarterly objectives', () => {
+  it('three goals each quarter, paid out when met', () => {
+    const s = game(1990, 99);
+    s.cheats = { noEvents: true, noBankruptcy: true };
+    startSmall(s);
+    advance(s, 100); // into April
+    expect((s.objectives ?? []).length).toBeGreaterThan(0);
+    expect((s.objectives ?? []).length).toBeLessThanOrEqual(3);
+    const o = s.objectives![0]!;
+    o.kind = 'hire';
+    o.base = s.progress.stats.staffHired - 1;
+    o.target = s.progress.stats.staffHired;
+    const rep = s.company.reputation;
+    advance(s, 1);
+    expect(o.done).toBeDefined();
+    expect(s.company.reputation).toBeGreaterThanOrEqual(rep);
+  });
+});
