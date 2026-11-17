@@ -150,6 +150,13 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       }
       break;
     }
+    case 'robot_vacuum': {
+      // the charging dock (the robot itself roams)
+      shadow(g, 10, 12, W - 20, H - 16);
+      g.roundRect(W / 2 - 9, H - 18, 18, 10, 3).fill(0x2a2622);
+      g.circle(W / 2, H - 15, 1.6).fill(0x5fd38a);
+      break;
+    }
     case 'hammock': {
       shadow(g, 6, 6, W - 12, H - 8);
       g.rect(8, 6, 3, H - 12).fill(P.woodDark);
@@ -495,6 +502,8 @@ export function itemLift(id: ItemId): number {
     case 'gym':
       return 6;
     case 'hammock':
+      return 4;
+    case 'robot_vacuum':
       return 4;
     case 'karaoke':
       return 30;

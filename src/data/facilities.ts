@@ -45,7 +45,8 @@ export type ItemId =
   | 'mascot_statue'
   | 'gym'
   | 'hammock'
-  | 'karaoke';
+  | 'karaoke'
+  | 'robot_vacuum';
 
 export interface ItemDef {
   id: ItemId;
@@ -108,6 +109,7 @@ export const ITEMS: readonly ItemDef[] = [
   { id: 'gym', name: 'Studio Gym', category: 'energy', w: 3, h: 2, cost: 40_000, upkeep: 300, year: 1995, energy: 25, aura: 4, radius: 3, noise: 1, effect: 'wellness', power: 0.25, desc: 'Treadmills and a rowing machine. Breaks restore 25 energy, and burnout builds 25% slower for anyone seated within six tiles.' },
   { id: 'hammock', name: 'Hammock', category: 'energy', w: 1, h: 2, cost: 1_100, upkeep: 6, year: 1980, energy: 24, aura: 2, radius: 1, noise: -1, desc: 'Swing gently. Breaks restore 24 energy; quiet.' },
   { id: 'karaoke', name: 'Karaoke Machine', category: 'decor', w: 1, h: 1, cost: 3_500, upkeep: 20, year: 1990, aura: 9, radius: 3, noise: 3.5, desc: 'Friday nights will never be the same. Big morale aura — and very loud.' },
+  { id: 'robot_vacuum', name: 'Robot Vacuum', category: 'decor', w: 1, h: 1, cost: 350, upkeep: 4, year: 2002, aura: 1.5, radius: 3, noise: 0.5, desc: 'Trundles around keeping the floor spotless. Somehow everyone has named it.' },
   { id: 'neon_sign', name: 'Neon Sign', category: 'decor', w: 1, h: 1, cost: 1_200, upkeep: 10, year: 1984, aura: 5, radius: 3, desc: 'Your studio name in glowing glass.' },
   { id: 'trophy_shelf', name: 'Trophy Shelf', category: 'decor', w: 2, h: 1, cost: 1_000, upkeep: 0, year: 1980, aura: 2, radius: 3, effect: 'trophies', power: 1, desc: 'Shows the awards you have actually won (up to eight on display). Each award adds morale.' },
   { id: 'whiteboard', name: 'Whiteboard', category: 'room', w: 2, h: 1, cost: 300, upkeep: 0, year: 1980, aura: 1, radius: 2, effect: 'meeting', power: 0.03, desc: 'Brainstorm space. Small synergy boost nearby.' },

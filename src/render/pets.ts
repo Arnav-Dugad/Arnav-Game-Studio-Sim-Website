@@ -7,7 +7,7 @@ import { findPath, footprint, occupancy, tierDef } from '@/sim/systems/office';
 import type { GameState, PlacedItem } from '@/sim/types';
 import { T } from './sprites';
 
-export type PetKind = 'cat' | 'dog';
+export type PetKind = 'cat' | 'dog' | 'robot';
 
 const CAT_NAMES = ['Pixel', 'Byte', 'Mochi', 'Sprite', 'Glitch', 'Biscuit', 'Luna', 'Nugget', 'Cheddar', 'Miso', 'Tofu', 'Widget'];
 const DOG_NAMES = ['Turbo', 'Buster', 'Patch', 'Joystick', 'Rex', 'Waffles', 'Bailey', 'Ziggy', 'Pretzel', 'Scout', 'Noodle', 'Bit'];
@@ -21,7 +21,7 @@ function hash(s: string): number {
 }
 
 export function petName(it: Pick<PlacedItem, 'id' | 'item'>): string {
-  const names = it.item === 'pet_dog' ? DOG_NAMES : CAT_NAMES;
+  const names = it.item === 'pet_dog' ? DOG_NAMES : it.item === 'robot_vacuum' ? ['Roomby', 'Dustin', 'Sir Sucks-a-Lot', 'Zippy', 'R2-Clean', 'Mopsy', 'Hoover Dam', 'Bolt'] : CAT_NAMES;
   return names[hash(it.id) % names.length]!;
 }
 
@@ -89,7 +89,7 @@ export class PetSystem {
     let cats = 0;
     let dogs = 0;
     for (const p of this.pets.values()) if (p.kind === 'cat') cats++;
-    else dogs++;
+    else if (p.kind === 'dog') dogs++;
     return { cats, dogs };
   }
 
@@ -104,7 +104,7 @@ export class PetSystem {
 
   /** Keep one pet per bed on the visible floor. */
   sync(s: GameState, floor: number): void {
-    const beds = s.office.items.filter((i) => i.floor === floor && (i.item === 'pet_cat' || i.item === 'pet_dog'));
+    const beds = s.office.items.filter((i) => i.floor === floor && (i.item === 'pet_cat' || i.item === 'pet_dog' || i.item === 'robot_vacuum'));
     const key = `${floor}|${s.office.rev ?? 0}|${beds.map((b) => `${b.id}@${b.x},${b.y}`).join(';')}`;
     if (key === this.key) return;
     this.key = key;
@@ -128,7 +128,7 @@ export class PetSystem {
         existing.y = bed[1];
         continue;
       }
-      const kind: PetKind = b.item === 'pet_dog' ? 'dog' : 'cat';
+      const kind: PetKind = b.item === 'pet_dog' ? 'dog' : b.item === 'robot_vacuum' ? 'robot' : 'cat';
       const furs = kind === 'dog' ? DOG_FUR : CAT_FUR;
       const c = new Container();
       const body = new Graphics();
@@ -182,7 +182,7 @@ export class PetSystem {
         p.label.style.fill = night ? 0xf1ede6 : 0x2a2622;
         p.label.style.stroke = { color: night ? 0x15130f : 0xffffff, width: 3 };
         p.label.text = `${p.name}
-${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'napping' : p.mode === 'desk' ? 'on a keyboard' : p.mode === 'follow' ? 'following someone' : p.mode === 'walk' ? 'exploring' : 'hanging out'}`;
+${p.kind === 'cat' ? 'studio cat' : p.kind === 'robot' ? 'robot vacuum' : 'office dog'} · ${p.mode === 'sleep' ? (p.kind === 'robot' ? 'charging' : 'napping') : p.mode === 'desk' ? 'on a keyboard' : p.mode === 'follow' ? 'following someone' : p.mode === 'walk' ? 'exploring' : 'hanging out'}`;
         p.label.visible = true;
       } else if (p.label) p.label.visible = false;
     }
@@ -228,6 +228,17 @@ ${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'nap
   private decide(s: GameState, floor: number, p: Pet, host: PetHost): void {
     const people = host.people();
     const r = Math.random();
+    if (p.kind === 'robot') {
+      // clean somewhere, then go home to charge
+      if (r < 0.3) {
+        this.go(s, floor, p, p.bed, 'sleep');
+        p.wait = 10 + Math.random() * 15;
+      } else {
+        this.go(s, floor, p, this.randomFree(s, floor), 'sit');
+        p.wait = 0.5 + Math.random() * 1.5;
+      }
+      return;
+    }
     if (p.kind === 'cat') {
       if (r < 0.35) {
         this.go(s, floor, p, p.bed, 'sleep');
@@ -354,7 +365,7 @@ ${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'nap
         const near = peopleNow().find((x) => x.id !== p.deskOf && Math.hypot(x.x - p.x, x.y - p.y) < 34 && x.mode !== 'walk');
         if (!near) p.fussT = 0.4; // look again in a moment, not every frame
         else if (Math.random() < dt * 3) {
-          const lines = p.kind === 'cat' ? CAT_LINES(p.name) : DOG_LINES(p.name);
+          const lines = p.kind === 'robot' ? [`Hi ${p.name}!`, 'It ate my cable again!', `Good job, ${p.name}.`, 'Mind my feet!'] : p.kind === 'cat' ? CAT_LINES(p.name) : DOG_LINES(p.name);
           host.react(near.id, lines[Math.floor(Math.random() * lines.length)]!, Math.random() < 0.5 ? 'laugh' : 'wave');
           p.heartT = 1.6;
           p.fussT = 12 + Math.random() * 10;
@@ -370,9 +381,9 @@ ${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'nap
     const pose = p.mode === 'sleep' && p.path.length === 0 ? 'sleep' : moving ? 'walk' : 'sit';
     if (pose !== p.pose) {
       p.pose = pose;
-      p.tailBase = p.kind === 'cat' ? drawCat(p.body, p.tail, p.fur, pose) : drawDog(p.body, p.tail, p.fur, pose);
+      p.tailBase = p.kind === 'robot' ? drawRobot(p.body, p.tail, pose) : p.kind === 'cat' ? drawCat(p.body, p.tail, p.fur, pose) : drawDog(p.body, p.tail, p.fur, pose);
     }
-    const bob = pose === 'walk' && !reducedMotion ? Math.abs(Math.sin(p.t * (p.speed > 3 ? 22 : 14))) * 1.6 : pose === 'sleep' ? Math.sin(p.t * 1.6) * 0.4 : 0;
+    const bob = p.kind === 'robot' ? 0 : pose === 'walk' && !reducedMotion ? Math.abs(Math.sin(p.t * (p.speed > 3 ? 22 : 14))) * 1.6 : pose === 'sleep' ? Math.sin(p.t * 1.6) * 0.4 : 0;
     p.body.position.set(0, -bob);
     p.body.scale.y = pose === 'sleep' ? 1 + Math.sin(p.t * 1.6) * 0.04 : 1;
     if (p.kind === 'dog') p.tail.rotation = pose === 'sleep' ? 0 : Math.sin(p.t * (p.heartT > 0 || p.mode === 'follow' ? 26 : 9)) * 0.45;
@@ -393,6 +404,17 @@ ${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'nap
     }
     p.heart.position.set(4, -26 - (p.heartT > 0 ? (1.6 - p.heartT) * 6 : Math.sin(p.t) * 2));
   }
+}
+
+function drawRobot(g: Graphics, tail: Graphics, pose: string): [number, number] {
+  g.clear();
+  tail.clear();
+  g.ellipse(0, 0, 8, 2.6).fill({ color: 0x000000, alpha: 0.18 });
+  g.ellipse(0, -2.5, 8, 4.2).fill(0x3b3f48);
+  g.ellipse(0, -3.6, 7, 3.2).fill(0x4a4f58);
+  g.circle(2.5, -4, 1).fill(pose === 'sleep' ? 0xf2c450 : 0x5fd38a);
+  g.rect(-5, -2.2, 10, 0.8).fill({ color: 0xffffff, alpha: 0.2 });
+  return [0, 0];
 }
 
 function drawCat(g: Graphics, tail: Graphics, fur: number, pose: string): [number, number] {
