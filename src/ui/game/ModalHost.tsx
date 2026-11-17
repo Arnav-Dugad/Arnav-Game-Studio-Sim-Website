@@ -698,6 +698,7 @@ function Credits({ releaseId }: { releaseId: string }) {
                 title={s.staff[c.id] ? 'Open their card' : 'No longer at the studio'}
               >
                 {c.name}
+                {r.passion === c.id && <span className="ml-1 text-[10px] text-[#f2c450]">✨ pitched it</span>}
               </button>
             ))}
           </div>
