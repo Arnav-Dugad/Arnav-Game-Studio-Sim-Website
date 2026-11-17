@@ -40,9 +40,9 @@ function savePrefs(): void {
   }
 }
 
-type Era = 'chip' | 'fm' | 'modern';
+type Era = 'chip' | 'fm' | 'modern' | 'lofi';
 export function eraFor(year: number): Era {
-  return year < 1990 ? 'chip' : year < 2002 ? 'fm' : 'modern';
+  return year < 1990 ? 'chip' : year < 2002 ? 'fm' : year < 2012 ? 'modern' : 'lofi';
 }
 
 // Scales as semitone offsets from the key root.
@@ -158,6 +158,12 @@ function voice(t: number, freq: number, dur: number, gain: number, era: Era, kin
         mg.disconnect();
       };
     }
+  } else if (era === 'lofi') {
+    // muffled keys, a little out of tune, like a worn cassette
+    o.type = kind === 'bass' ? 'sine' : 'triangle';
+    o.detune.value = (rand.next() - 0.5) * 14;
+    f.frequency.value = kind === 'pad' ? 700 : kind === 'bass' ? 300 : 1500;
+    if (kind === 'pad') gain *= 0.55;
   } else {
     o.type = kind === 'bass' ? 'sine' : kind === 'pad' ? 'sawtooth' : 'triangle';
     f.frequency.value = kind === 'pad' ? 900 : kind === 'bass' ? 400 : 2600;
@@ -235,15 +241,44 @@ const BARS_PER_SECTION = 8;
 function newSection(): void {
   key = rand.pick(KEYS);
   prog = rand.pick(PROGRESSIONS);
-  bpm = 80 + Math.floor(rand.next() * 18);
+  bpm = eraFor(getYear()) === 'lofi' ? 70 + Math.floor(rand.next() * 14) : 80 + Math.floor(rand.next() * 18);
 }
 
-function scheduleStep(t: number): void {
+/** A soft snare (lo-fi backbeat) or a speck of vinyl crackle. */
+function snare(t: number, gain: number, freq = 1700, dur = 0.09): void {
+  if (!ctx || !out) return;
+  if (!noise) {
+    noise = ctx.createBuffer(1, ctx.sampleRate * 0.2, ctx.sampleRate);
+    const d = noise.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = noise;
+  const f = ctx.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.value = freq;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f);
+  f.connect(g);
+  g.connect(out);
+  src.start(t, Math.random() * 0.1, dur + 0.02);
+  src.onended = () => {
+    src.disconnect();
+    f.disconnect();
+    g.disconnect();
+  };
+}
+
+function scheduleStep(t0: number): void {
   const era = eraFor(getYear());
   const active = getActive();
   const eighth = 60 / bpm / 2;
   const bar = Math.floor(step / STEPS_PER_BAR);
   const inBar = step % STEPS_PER_BAR;
+  // lo-fi swings the off-beats
+  const t = t0 + (era === 'lofi' && inBar % 2 === 1 ? (60 / bpm / 2) * 0.18 : 0);
   if (step % (STEPS_PER_BAR * BARS_PER_SECTION) === 0) newSection();
   const chord = prog.chords[bar % prog.chords.length]!;
   const root = key + chord.root;
@@ -268,12 +303,19 @@ function scheduleStep(t: number): void {
   }
   // Percussion only while time is running
   if (active) {
-    if (inBar % 2 === 1) hat(t, era === 'modern' ? 0.025 : 0.035, era);
-    if (era !== 'modern' && (inBar === 0 || inBar === 4)) kick(t, 0.12);
-    if (era === 'modern' && inBar === 0) kick(t, 0.09);
+    if (inBar % 2 === 1) hat(t, era === 'modern' ? 0.025 : era === 'lofi' ? 0.018 : 0.035, era);
+    if (era === 'chip' || era === 'fm') {
+      if (inBar === 0 || inBar === 4) kick(t, 0.12);
+    } else if (era === 'modern') {
+      if (inBar === 0) kick(t, 0.09);
+    } else {
+      if (inBar === 0 || inBar === 5) kick(t, 0.08);
+      if (inBar === 2 || inBar === 6) snare(t, 0.035);
+    }
   }
+  if (era === 'lofi' && rand.next() < 0.25) snare(t + rand.next() * 0.1, 0.006, 3000, 0.012);
   step += 1;
-  nextTime += eighth;
+  nextTime = t0 + eighth;
 }
 
 function tick(): void {

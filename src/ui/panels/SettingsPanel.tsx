@@ -136,7 +136,7 @@ export default function SettingsPanel() {
               aria-label="Ambience volume"
             />
           </Row>
-          <p className="px-1 text-[11px] text-ink3">The soundtrack is generated live and follows the era: chiptune in the ’80s, FM in the ’90s, soft synths after.</p>
+          <p className="px-1 text-[11px] text-ink3">The soundtrack is generated live and follows the era: chiptune in the ’80s, FM in the ’90s, soft synths in the 2000s, lo-fi beats after.</p>
         </div>
       </Section>
       {s && (
