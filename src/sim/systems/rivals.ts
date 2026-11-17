@@ -149,9 +149,10 @@ export function genTitle(rng: Rng, topic: string): string {
   const n = rng.pick(rng.chance(0.6) ? nouns : TITLE_NOUN.default!);
   const r = rng.next();
   if (r < 0.35) return `${rng.pick(TITLE_ADJ)} ${n}`;
-  if (r < 0.6) return `${n} of the ${rng.pick(TITLE_ADJ)} ${rng.pick(TITLE_NOUN.default!)}`;
+  const other = TITLE_NOUN.default!.filter((x) => x !== n); // never "Legends of the Broken Legends"
+  if (r < 0.6) return `${n} of the ${rng.pick(TITLE_ADJ)} ${rng.pick(other)}`;
   if (r < 0.8) return `${rng.pick(TITLE_ADJ)} ${n}${rng.chance(0.3) ? ' II' : ''}`;
-  return `${n}: ${rng.pick(TITLE_ADJ)} ${rng.pick(TITLE_NOUN.default!)}`;
+  return `${n}: ${rng.pick(TITLE_ADJ)} ${rng.pick(other)}`;
 }
 
 /** Monthly procedural releases + finances. */

@@ -1,4 +1,5 @@
 /** UI-side helpers that derive presentation data from the sim (pure functions). */
+import { TITLE_NOUN } from '@/data/names';
 import { genrePopularity, topicPopularity } from '@/sim/systems/market';
 import { GENRES, GENRE_BY_ID } from '@/data/genres';
 import { TOPICS, TOPIC_BY_ID } from '@/data/topics';
@@ -119,9 +120,21 @@ export function suggestName(seed: number, topic: string): string {
     cars: ['Turbo', 'Circuit', 'Drift', 'Velocity'],
     horror: ['Hollow', 'Asylum', 'Whispers', 'Night'],
   };
-  const nouns = B[topic] ?? ['Legends', 'Odyssey', 'Heroes', 'Saga', 'Rush', 'Tactics', 'Island', 'Empire'];
-  const r = (n: number) => Math.abs(Math.sin(seed * 9301 + n * 49297)) % 1;
-  return `${A[Math.floor(r(1) * A.length)]} ${nouns[Math.floor(r(2) * nouns.length)]}`;
+  // the topic's own words first (every topic has some), then a few generic ones
+  const nouns = [...(B[topic] ?? []), ...(TITLE_NOUN[topic] ?? [])];
+  const pool = nouns.length ? nouns : ['Legends', 'Odyssey', 'Heroes', 'Saga', 'Rush', 'Tactics', 'Island', 'Empire'];
+  const r = (n: number) => {
+    // an integer hash: independent values per slot, even for neighbouring seeds
+    let h = (Math.imul(seed | 0, 374761393) + Math.imul(n, 668265263)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  };
+  const noun = pool[Math.floor(r(2) * pool.length)]!;
+  if (r(3) < 0.25) {
+    const others = TITLE_NOUN.default!.filter((x) => x !== noun);
+    return `${noun} of the ${A[Math.floor(r(1) * A.length)]} ${others[Math.floor(r(4) * others.length)]}`;
+  }
+  return `${A[Math.floor(r(1) * A.length)]} ${noun}`;
 }
 
 /**
