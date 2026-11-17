@@ -21,7 +21,7 @@ describe('one-on-ones', () => {
     expect(dispatch(s, { type: 'checkIn', staffId: st.id }).ok).toBe(true);
     expect(st.burnout).toBe(67);
     expect(st.loyalty).toBeGreaterThan(loyalty);
-    expect(st.checkIn?.line).toMatch(/empty/);
+    expect(st.checkIn?.topic).toBe('burnout');
     expect(st.mood?.v).toBeGreaterThan(0);
   });
 

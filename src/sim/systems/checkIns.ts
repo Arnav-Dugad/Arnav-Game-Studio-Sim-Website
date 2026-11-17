@@ -38,24 +38,30 @@ export function checkInBlocked(s: GameState, st: Staff | undefined): string | nu
 
 /** What's really on their mind, most pressing first. */
 export function checkInTopic(s: GameState, st: Staff): { topic: CheckInTopic; line: string } {
+  // a different way of saying it each time (stable for the same person on the same day)
+  const say = (xs: string[]) => {
+    let h = s.day;
+    for (let i = 0; i < st.id.length; i++) h = (Math.imul(h, 31) + st.id.charCodeAt(i)) | 0;
+    return xs[(h >>> 0) % xs.length]!;
+  };
   const first = (n: string) => n.split(' ')[0] ?? n;
-  if (st.burnout >= 60) return { topic: 'burnout', line: 'I’m running on empty. Honestly, I need a proper break.' };
+  if (st.burnout >= 60) return { topic: 'burnout', line: say(['I’m running on empty. Honestly, I need a proper break.', 'I keep staring at the screen and nothing happens. I’m fried.', 'I haven’t had a real weekend in months. I need to stop for a bit.']) };
   const parts = moraleTarget(s, st).parts.filter((p) => p.kind === 'add' && p.value <= -5).sort((a, b) => a.value - b.value);
   const worst = parts[0];
   if (worst) {
     const l = worst.label;
     if (l === 'Pay vs market') return { topic: 'pay', line: `I could earn ${fmtMoney(marketSalary(s, st.skills))} somewhere else. I’d rather stay — but it’s on my mind.` };
     if (l === 'No desk') return { topic: 'space', line: 'I don’t even have a desk. I’ve been working off my lap.' };
-    if (l === 'Crowding') return { topic: 'space', line: 'It’s so cramped in here I can’t think.' };
-    if (l === 'Noise') return { topic: 'space', line: 'It’s really loud where I sit. Headphones only go so far.' };
+    if (l === 'Crowding') return { topic: 'space', line: say(['It’s so cramped in here I can’t think.', 'I can hear three people chewing from my desk. We need more room.', 'Every time someone stands up I have to move my chair.']) };
+    if (l === 'Noise') return { topic: 'space', line: say(['It’s really loud where I sit. Headphones only go so far.', 'Could we move the noisy stuff away from the desks?', 'I can’t focus with all the racket near me.']) };
     if (l === 'No break area') return { topic: 'space', line: 'There’s nowhere to step away for five minutes.' };
-    if (l.startsWith('Crunch')) return { topic: 'crunch', line: 'This crunch is wearing everyone down. How much longer?' };
-    if (l === 'Nothing to do') return { topic: 'idle', line: 'I’d love something real to work on.' };
+    if (l.startsWith('Crunch')) return { topic: 'crunch', line: say(['This crunch is wearing everyone down. How much longer?', 'My family has forgotten what I look like.', 'We’re making mistakes now because we’re so tired.']) };
+    if (l === 'Nothing to do') return { topic: 'idle', line: say(['I’d love something real to work on.', 'I’ve organised my desk four times this week. Got anything for me?', 'Put me on a project — any project!']) };
     if (l === 'Recent layoffs') return { topic: 'morale', line: 'After the layoffs, everyone’s quietly updating their CV.' };
-    if (l === 'Recent reviews') return { topic: 'morale', line: 'Those reviews stung. We can do better than that.' };
+    if (l === 'Recent reviews') return { topic: 'morale', line: say(['Those reviews stung. We can do better than that.', 'I read every review. I shouldn’t have.', 'Next one will be better. It has to be.']) };
     if (l === 'Wants a raise') return { topic: 'pay', line: 'I think I’ve earned a raise. I’d like to talk about it.' };
     if (l.startsWith('Burnout')) return { topic: 'burnout', line: 'I’m more tired than I’ve been in a long time.' };
-    return { topic: 'morale', line: 'A few things have been getting to me lately. Thanks for asking.' };
+    return { topic: 'morale', line: say(['A few things have been getting to me lately. Thanks for asking.', 'It’s been a rough stretch, honestly. It helps to talk.', 'I’m okay. Just… a lot going on.']) };
   }
   if (st.ambition) return { topic: 'ambition', line: ambitionLine(st.ambition) };
   if (!onFavouriteGenre(s, st)) return { topic: 'genre', line: `Someday I’d love to make a ${GENRE_BY_ID[favouriteGenre(st.id)].name.toLowerCase()} game here.` };
