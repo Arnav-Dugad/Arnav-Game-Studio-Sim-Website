@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-19b';
+export const WHATS_NEW_VERSION = '2026-11-19c';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'lightbulb', title: 'Decisions during development', body: 'Making a game now throws up real choices: your designer pitches one more feature, a programmer finds a risky rendering trick, a hard drive dies (keep backups!), a famous composer offers a score, or playtesters fall in love with something you never planned.' },
   { icon: 'handshake', title: 'Platform partners', body: 'Platform holders now keep score (Market → Platforms). Great games on their hardware — exclusives most of all — win their favour: at 75+ your launches are featured on their storefront (+12% sales there), and devkits get up to 50% cheaper. Flops cool things off, and favour fades without new games. Interns now wear a lanyard, too.' },
   { icon: 'flag', title: 'Four new scenarios', body: 'Kickstarter Kid (raise $750k from fans), Early Access Odyssey (grow an Early Access game into an 85+ hit), Media Mogul (a two-million-fan series and three licensing hits) and Timeless (two games in the Hall of Classics). Pick Scenario when founding a studio.' },
   { icon: 'people', title: 'Summer internships', body: 'Staff → Policies (1985+): every June a few students join for the summer — cheap, green and full of potential, learning 50% faster. Pair them with mentors. On September 1 you can offer the standout intern a job; former interns are loyal for life.' },

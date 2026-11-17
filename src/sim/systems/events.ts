@@ -551,6 +551,159 @@ export const EVENT_DEFS: EventDef[] = [
       }
     },
   },
+  // ── During development ────────────────────────────────────────────────────
+  {
+    id: 'feature_creep',
+    art: 'lightbulb',
+    cooldown: 200,
+    weight: (s) => (activeGames(s).some((p) => p.phase === 1 && !p.cut) ? 0.45 : 0),
+    make: ({ s, rng }) => {
+      const p = activeGames(s).find((x) => x.phase === 1 && !x.cut);
+      if (!p) return null;
+      const lead = p.team.map((id) => s.staff[id]).find((x) => x && (x.role === 'designer' || x.role === 'founder'));
+      const idea = rng.pick(['a grappling hook', 'a photo mode', 'a day–night cycle', 'a pet companion', 'a new-game-plus mode', 'destructible scenery', 'a fishing mini-game', 'a branching ending']);
+      return {
+        title: 'One more feature?',
+        body: `${lead ? lead.name : 'Your lead designer'} has a brilliant idea for ${p.concept.name}: ${idea}. It would make the game more memorable — and it would take three more weeks.`,
+        options: [
+          { id: 'add', label: 'Add it', preview: 'Three more weeks of production; a novelty boost to quality; the designers are thrilled' },
+          { id: 'no', label: 'Stay on schedule', preview: 'No delay; a little disappointment' },
+        ],
+        ctx: { project: p.id, idea, lead: lead?.id ?? '' },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (!p || p.kind !== 'game') return;
+      const lead = s.staff[String(e.ctx.lead)];
+      if (opt === 'add') {
+        if (p.phase <= 1) p.phaseDays[1] += 21;
+        else p.extraDays += 21;
+        p.novelty += 0.03;
+        if (lead) lead.morale = clamp(lead.morale + 8, 0, 100);
+      } else if (lead) lead.morale = clamp(lead.morale - 3, 0, 100);
+    },
+  },
+  {
+    id: 'tech_breakthrough',
+    art: 'lightbulb',
+    cooldown: 260,
+    weight: (s) => (activeGames(s).some((p) => p.phase <= 1 && p.team.some((id) => s.staff[id]?.role === 'programmer')) ? 0.35 : 0),
+    make: ({ s }) => {
+      const p = activeGames(s).find((x) => x.phase <= 1 && x.team.some((id) => s.staff[id]?.role === 'programmer'));
+      if (!p) return null;
+      const dev = p.team.map((id) => s.staff[id]).find((x) => x?.role === 'programmer')!;
+      return {
+        title: 'A rendering breakthrough',
+        body: `${dev.name} found a trick that makes ${p.concept.name} look a generation ahead. It's not battle-tested yet.`,
+        options: [
+          { id: 'ship', label: 'Use it now', preview: 'Tech +8%, but bugs +15%' },
+          { id: 'harden', label: 'Harden it first', preview: 'Tech +8% and a week more of production' },
+          { id: 'skip', label: 'Too risky', preview: 'No change' },
+        ],
+        ctx: { project: p.id, dev: dev.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (!p || p.kind !== 'game' || opt === 'skip') return;
+      p.tech *= 1.08;
+      if (opt === 'ship') p.bugs *= 1.15;
+      else if (p.phase <= 1) p.phaseDays[p.phase as 0 | 1] += 7;
+      else p.extraDays += 7;
+      const dev = s.staff[String(e.ctx.dev)];
+      if (dev) dev.morale = clamp(dev.morale + 5, 0, 100);
+    },
+  },
+  {
+    id: 'lost_build',
+    art: 'smoke',
+    cooldown: 500,
+    weight: (s) => (yr(s) < 2003 && activeGames(s).some((p) => p.phase >= 1) && !s.office.items.some((i) => i.item === 'server_rack') ? 0.25 : 0),
+    make: ({ s }) => {
+      const p = activeGames(s).find((x) => x.phase >= 1);
+      if (!p) return null;
+      return {
+        title: 'The hard drive died',
+        body: `A disk crash took two weeks of work on ${p.concept.name} with it — the last backup is older than anyone would like. (A server rack in the office would have kept backups.)`,
+        options: [
+          { id: 'weekend', label: 'Rebuild it over the weekend', preview: 'No delay, but morale −4 for the team' },
+          { id: 'redo', label: 'Take the time to redo it', preview: 'Two weeks more of production' },
+        ],
+        ctx: { project: p.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (!p || p.kind !== 'game') return;
+      if (opt === 'weekend') {
+        for (const id of p.team) {
+          const st = s.staff[id];
+          if (st) st.morale = clamp(st.morale - 4, 0, 100);
+        }
+        p.bugs *= 1.05;
+      } else if (p.phase <= 2) p.phaseDays[Math.min(2, p.phase) as 0 | 1 | 2] += 14;
+      else p.extraDays += 14;
+    },
+  },
+  {
+    id: 'composer_offer',
+    art: 'letters',
+    cooldown: 400,
+    weight: (s) => (yr(s) >= 1985 && activeGames(s).some((p) => p.phase <= 1 && p.concept.size !== 'small') ? 0.25 : 0),
+    make: ({ s }) => {
+      const p = activeGames(s).find((x) => x.phase <= 1 && x.concept.size !== 'small');
+      if (!p) return null;
+      const fee = money({ small: 4_000, medium: 8_000, large: 20_000, aaa: 45_000 }[p.concept.size], s.day);
+      return {
+        title: 'A celebrated composer wants in',
+        body: `An award-winning film composer loves the look of ${p.concept.name} and offers to write the score.`,
+        options: [
+          { id: 'hire', label: `Commission the score (${fmtMoney(fee)})`, preview: 'Hype +0.2 and a quality touch (novelty)', disabled: s.company.cash < fee },
+          { id: 'no', label: 'Keep it in-house', preview: 'No change' },
+        ],
+        ctx: { project: p.id, fee },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (!p || p.kind !== 'game' || opt !== 'hire' || s.company.cash < Number(e.ctx.fee)) return;
+      spend(s, 'other_expense', Number(e.ctx.fee));
+      p.hype = Math.min(3, p.hype + 0.2);
+      p.novelty += 0.02;
+      pushNews(s, { category: 'studio', headline: `${p.concept.name} gets an orchestral score`, body: 'A celebrated composer is writing the music.', tone: 'good' });
+    },
+  },
+  {
+    id: 'playtest_surprise',
+    art: 'student',
+    cooldown: 220,
+    weight: (s) => (activeGames(s).some((p) => p.phase >= 1 && p.phase <= 2) ? 0.35 : 0),
+    make: ({ s, rng }) => {
+      const p = activeGames(s).find((x) => x.phase >= 1 && x.phase <= 2);
+      if (!p) return null;
+      const thing = rng.pick(['a silly physics glitch', 'the side-quest with the talking cat', 'a throwaway mini-game', 'the hidden dance emote', 'one minor character', 'the speedrun shortcut']);
+      return {
+        title: 'Playtesters can’t get enough of it',
+        body: `In playtests of ${p.concept.name}, everyone keeps going back to ${thing}. Lean into it?`,
+        options: [
+          { id: 'expand', label: 'Build it out', preview: 'Ten more days of work; hype +0.2 and a novelty boost' },
+          { id: 'keep', label: 'Leave it as a secret', preview: 'A small hype bump' },
+        ],
+        ctx: { project: p.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const p = s.projects[String(e.ctx.project)];
+      if (!p || p.kind !== 'game') return;
+      if (opt === 'expand') {
+        if (p.phase <= 2) p.phaseDays[Math.min(2, p.phase) as 0 | 1 | 2] += 10;
+        else p.extraDays += 10;
+        p.hype = Math.min(3, p.hype + 0.2);
+        p.novelty += 0.02;
+      } else p.hype = Math.min(3, p.hype + 0.05);
+    },
+  },
   {
     id: 'journalist_preview',
     art: 'press',
