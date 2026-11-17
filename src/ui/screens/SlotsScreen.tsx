@@ -332,12 +332,28 @@ interface NewOpts {
   sandbox: boolean;
 }
 
+/** The founder name from the last studio founded on this device (a convenience; storage may be unavailable). */
+function lastFounder(): string {
+  try {
+    return localStorage.getItem('ase:lastFounder') ?? '';
+  } catch {
+    return '';
+  }
+}
+function rememberFounder(name: string): void {
+  try {
+    localStorage.setItem('ase:lastFounder', name);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: (o: NewOpts) => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   const user = useAuth((a) => a.user);
   const [o, setO] = useState<NewOpts>(() => ({
     companyName: studioName(), // a ready-made name; the dice rerolls it
-    founderName: user?.displayName && !user.guest ? user.displayName : '',
+    founderName: user?.displayName && !user.guest ? user.displayName : lastFounder(),
     color: COLORS[0]!,
     difficulty: 'standard',
     startYear: 1980,
@@ -361,6 +377,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
           if (!o.founderName.trim()) return setErr('Who is the founder?');
           if (busy) return;
           setBusy(true);
+          rememberFounder(o.founderName.trim().slice(0, 40));
           void onCreate({ ...o, companyName: o.companyName.trim().slice(0, 40), founderName: o.founderName.trim().slice(0, 40) }).finally(() => setBusy(false));
         }}
       >
