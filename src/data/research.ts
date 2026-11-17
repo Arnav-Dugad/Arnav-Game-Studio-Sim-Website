@@ -54,6 +54,7 @@ export const RESEARCH: readonly ResearchDef[] = [
   { id: 'sys_open_world', name: 'Open World Streaming', branch: 'systems', year: 2004, points: 280, cost: 100_000, requires: ['gfx_3d_2', 'sys_physics'], engineTech: 0.6, genreBonus: { action: 0.06, rpg: 0.06, sandbox: 0.05 }, desc: 'Seamless huge worlds.' },
   // Online
   { id: 'online_modem', name: 'Modem Multiplayer', branch: 'online', year: 1992, points: 70, cost: 18_000, requires: [], engineTech: 0.3, genreBonus: { shooter: 0.04, strategy: 0.04 }, desc: 'Head-to-head over phone lines.' },
+  { id: 'online_mod_tools', name: 'Mod Tools', branch: 'online', year: 1997, points: 110, cost: 35_000, requires: ['online_basic'], desc: 'Ship level editors and mod support: PC strategy, shooter, RPG, simulation and sandbox games sell longer, sell more and players love them.' },
   { id: 'online_basic', name: 'Internet Play', branch: 'online', year: 1996, points: 130, cost: 40_000, requires: ['online_modem'], engineTech: 0.5, genreBonus: { shooter: 0.05, strategy: 0.04 }, desc: 'Online servers. Unlocks Server Racks.' },
   { id: 'online_mmo', name: 'Massively Multiplayer', branch: 'online', year: 1997, points: 220, cost: 90_000, requires: ['online_basic'], engineTech: 0.5, desc: 'Thousands in one world. Unlocks MMO games and subscriptions.' },
   { id: 'online_matchmaking', name: 'Matchmaking', branch: 'online', year: 2003, points: 180, cost: 60_000, requires: ['online_basic'], engineTech: 0.4, genreBonus: { shooter: 0.05, fighting: 0.04, sports: 0.03 }, desc: 'Fair, fast online matches.' },

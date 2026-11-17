@@ -764,6 +764,28 @@ describe('achievement catalogue', () => {
   });
 });
 
+describe('mod tools', () => {
+  it('PC games in moddable genres ship with mod support: slower decay and happier players', () => {
+    const run = (mods: boolean) => {
+      const s = game(1999, 4);
+      if (mods) s.research.done.push('online_mod_tools');
+      const p = startSmall(s, { genre: 'strategy', topic: 'military', platforms: [availablePlatforms(s).find((x) => x.kind === 'computer')!.id] });
+      for (let i = 0; i < 200 && !s.releaseOrder.length; i++) {
+        advance(s, 1);
+        if (p.awaitingGate) dispatch(s, { type: 'continueGate', projectId: p.id });
+        s.pendingEvents = [];
+      }
+      return s.releases[s.releaseOrder[0]!]!;
+    };
+    const plain = run(false);
+    const modded = run(true);
+    expect(plain.modded).toBeFalsy();
+    expect(modded.modded).toBe(true);
+    expect(modded.decay).toBeGreaterThan(plain.decay);
+    expect(modded.why.user!.parts.some((x) => x.label === 'Mod support')).toBe(true);
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

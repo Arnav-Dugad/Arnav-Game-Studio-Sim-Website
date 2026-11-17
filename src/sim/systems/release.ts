@@ -169,6 +169,12 @@ function crossplayEligible(s: GameState, concept: GameProject['concept'], platfo
 /** Games out in a platform's first months sell to early adopters starved for software. */
 export const LAUNCH_WINDOW_DAYS = 120;
 const LAUNCH_TITLE_BOOST = 1.35;
+const MODDABLE = new Set<string>(['strategy', 'shooter', 'rpg', 'simulation', 'sandbox']);
+/** PC games in moddable genres ship with mod tools once researched. */
+export function moddable(s: GameState, c: GameProject['concept']): boolean {
+  return s.research.done.includes('online_mod_tools') && MODDABLE.has(c.genre) && !c.expansionOf && c.platforms.some((pid) => platformInfo(s, pid)?.kind === 'computer');
+}
+
 export function launchTitleMul(s: GameState, pl: PlatformInfo, day = s.day): number {
   const age = day - pl.launchDay;
   if (age < 0 || age > LAUNCH_WINDOW_DAYS) return 1;
@@ -289,6 +295,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   else if (sequel && ownBest >= 70 && score >= ownBest + 3) ub.add('Raises the bar for the series', 2);
   if (fr) ub.add('Franchise fatigue', -fr.fatigue * 12);
   if (s.research.done.includes('ai_genai') && fromDay(s.day).year >= 2023) ub.add('Gen-AI backlash', -1.5);
+  const modded = moddable(s, p.concept);
+  if (modded) ub.add('Mod support', 2);
   ub.add('Players vary', rng.normal(0, 3));
   ub.clamp(1, 100);
   const userScore = Math.round(ub.value);
@@ -301,7 +309,10 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
   const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization) * (p.concept.expansionOf ? BALANCE.EXPANSION_PRICE : 1);
-  const decay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
+  const baseDecay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
+  // Mod communities keep PC games selling for years.
+  const decay = modded ? 1 - (1 - baseDecay) * 0.8 : baseDecay;
+  if (modded) for (const pp of plats) if (pp.pl.kind === 'computer') pp.potential *= 1.1;
   const id = newId(s, 'r');
   const rel: Release = {
     id,
@@ -330,6 +341,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     serverLoad: ['mmo'].includes(p.concept.genre) || ['subscription', 'f2p', 'live_service'].includes(p.concept.monetization) ? 1 : 0,
     why: { sales: salesWhy, user: ub.done() },
     ...(p.beta ? { betaTested: true } : {}),
+    ...(modded ? { modded: true } : {}),
   };
   s.releases[id] = rel;
   s.releaseOrder.push(id);
