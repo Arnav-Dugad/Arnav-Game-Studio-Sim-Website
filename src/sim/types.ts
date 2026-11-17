@@ -314,6 +314,8 @@ export interface RivalGame {
   franchise?: string; // franchises.ts id
   /** Indie game released under the player's publishing label (not a rival entry for awards). */
   publishedByPlayer?: boolean;
+  /** Already faced one of your games in a showdown. */
+  contested?: boolean;
 }
 
 export interface Rival {

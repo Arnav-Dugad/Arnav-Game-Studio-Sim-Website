@@ -18,10 +18,11 @@ const rivalName = (s: GameState, id: string) => s.rivals[id]?.name ?? COMPANY_BY
 export function showdownOnRelease(s: GameState, rel: Release): void {
   if (rel.concept.expansionOf || rel.concept.remasterOf || rel.score < SHOWDOWN_MIN_SCORE) return;
   const foe = s.rivalGames
-    .filter((g) => !g.publishedByPlayer && g.genre === rel.concept.genre && rel.day - g.day >= 0 && rel.day - g.day <= SHOWDOWN_WINDOW_DAYS && g.score >= SHOWDOWN_MIN_SCORE)
+    .filter((g) => !g.publishedByPlayer && !g.contested && g.genre === rel.concept.genre && rel.day - g.day >= 0 && rel.day - g.day <= SHOWDOWN_WINDOW_DAYS && g.score >= SHOWDOWN_MIN_SCORE)
     .filter((g) => s.rivals[g.company] && !s.rivals[g.company]!.ownedByPlayer)
     .sort((a, b) => b.score - a.score)[0];
   if (!foe) return;
+  foe.contested = true; // one showdown per rival game, so releases can't be stacked against it
   const rec: RivalryRecord = ((s.rivalry ??= {})[foe.company] ??= { wins: 0, losses: 0, draws: 0, last: '' });
   const genre = GENRE_BY_ID[rel.concept.genre].name;
   const them = rivalName(s, foe.company);

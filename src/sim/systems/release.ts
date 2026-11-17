@@ -731,7 +731,7 @@ export function applySale(s: GameState, rel: Release, discount: SaleDiscount): n
     ps.revival = { week: rel.week, potential: add + left, units: 0, priceMul: 1 - discount };
     ps.extraPotential = (ps.extraPotential ?? 0) + add;
     // Some of those buyers would have paid full price later.
-    ps.potential = Math.max(ps.units, ps.potential - add * SALE_CANNIBALIZE);
+    ps.potential = Math.max(0, ps.potential - add * SALE_CANNIBALIZE); // only ever lowers it
     total += add;
   }
   rel.saleCount = (rel.saleCount ?? 0) + 1;

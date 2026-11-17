@@ -104,7 +104,8 @@ function Records() {
   const years = new Map<number, number>();
   for (const m of s.finance.ledger) {
     const y = fromDay(m.day).year;
-    const inc = Object.values(m.income).reduce((t, v) => t + (v ?? 0), 0);
+    // Operating income only: selling assets, windfalls and cheat top-ups aren't revenue.
+    const inc = Object.entries(m.income).reduce((t, [k, v]) => t + (k === 'asset_sales' || k === 'other_income' ? 0 : (v ?? 0)), 0);
     years.set(y, (years.get(y) ?? 0) + inc);
   }
   const bestYear = [...years.entries()].sort((a, b) => b[1] - a[1])[0];

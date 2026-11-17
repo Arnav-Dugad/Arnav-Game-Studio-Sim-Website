@@ -18,7 +18,14 @@ const CAT_ICON: Record<NewsCategory, IconName> = {
 export default function NewsPanel() {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
-  const [cat, setCat] = useState<NewsCategory | 'all' | 'awards'>(() => (useGame.getState().panelTab === 'awards' ? 'awards' : 'all'));
+  const panelTab = useGame((g) => g.panelTab);
+  const [cat, setCat] = useState<NewsCategory | 'all' | 'awards'>(() => (panelTab === 'awards' ? 'awards' : 'all'));
+  // Follow requests to jump to a tab while the panel is already open (e.g. the gala's "All results").
+  const [seenTab, setSeenTab] = useState(panelTab);
+  if (panelTab !== seenTab) {
+    setSeenTab(panelTab);
+    if (panelTab === 'awards') setCat('awards');
+  }
   const news = [...s.news].reverse().filter((n) => cat === 'all' || n.category === cat);
   return (
     <div>

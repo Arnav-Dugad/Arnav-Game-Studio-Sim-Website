@@ -1217,8 +1217,8 @@ export const EVENT_DEFS: EventDef[] = [
     resolve: ({ s }, e, opt) => {
       const p = s.projects[String(e.ctx.project)];
       const cost = money(20_000, s.day);
-      if (opt === 'legal' && s.company.cash >= cost) {
-        spend(s, 'other_expense', cost);
+      if (opt === 'legal') {
+        if (s.company.cash >= cost) spend(s, 'other_expense', cost);
         return;
       }
       if (!p || p.kind !== 'game') return;

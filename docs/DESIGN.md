@@ -783,4 +783,10 @@ This section records decisions made during the build that differ from, or add to
   - **Music:** FM modulator nodes are released after use.
   - **Events:** the duplicate `game_jam` event id is fixed, and a test now requires event ids to be unique.
 - **Publisher advances scale with game size.** Deal offers are sized from your reputation (an AAA-sized advance at 75+), but nothing tied the advance to the game you actually made, so a famous studio could bank an AAA advance on a tiny game. Deals now record the size they were offered for. A smaller game receives `advance × benchmark(chosen) ÷ benchmark(offered)`, and that scaled amount is also what's repaid if you cancel. The balance report caught it: a random-play bot survived on $1B of advances against $64M of its own sales. After the fix, random bots go bankrupt again as designed, and the planning bots are unaffected. Probe: `scripts/dev/income-mix.ts <bot> <seed>`.
+- **Sixth review pass:**
+  - **Storefront sales:** the 30% cannibalisation can now only lower a game's remaining full-price potential. Before, once units passed potential, `max(units, …)` raised it, so back-to-back sales grew future sales.
+  - **Rivalries:** each rival game can be in only one showdown (`RivalGame.contested`), so several releases can't be stacked against the same game to farm reputation.
+  - **Leaked-build event:** "Send the lawyers" with too little cash at resolve time no longer falls through to the "say nothing" outcome.
+  - **News panel:** it follows a request to jump to Awards while it's already open, which is what the gala's "All results" button does.
+  - **Studio records:** "Best year" counts operating income only, excluding asset sales, windfalls and cheat top-ups.
 

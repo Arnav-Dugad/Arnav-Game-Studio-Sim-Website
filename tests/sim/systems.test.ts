@@ -586,6 +586,10 @@ describe('rivalries', () => {
     showdownOnRelease(s, mk(50, s.day));
     expect(s.rivalry![foe.id]!.wins + s.rivalry![foe.id]!.losses + s.rivalry![foe.id]!.draws).toBe(2);
     expect(nemesis(s)).toBeNull();
+    // the same rival games can't be beaten again (no stacking releases against one game)
+    showdownOnRelease(s, mk(95, s.day));
+    expect(s.rivalry![foe.id]!.wins).toBe(1);
+    rival(70, s.day - 3);
     showdownOnRelease(s, mk(89, s.day));
     expect(nemesis(s)?.id).toBe(foe.id);
   });
