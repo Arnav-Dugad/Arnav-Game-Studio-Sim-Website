@@ -334,6 +334,7 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
   if (s.company.policies.salaryPolicy === 'lean') bd.add('Lean benefits', -5);
   if (s.company.policies.remote) bd.add('Remote-friendly', 4);
   if (s.company.policies.fourDayWeek) bd.add('Four-day week', 9);
+  if (s.company.policies.wellness) bd.add('Wellness program', 2);
   if (s.company.lastLayoffDay !== undefined && s.day - s.company.lastLayoffDay < 120) bd.add('Recent layoffs', -12);
   for (const m of s.company.moraleMods) if (m.until > s.day) bd.add(m.label, m.v);
   if (hasTrait(st, 'ambitious') && st.level !== 'junior' && st.salary < market) bd.add('Wants a raise', -6);
@@ -511,6 +512,7 @@ export function updateStaffDaily(c: Ctx): void {
     if (hasTrait(st, 'chill')) bGain *= 0.7;
     if (hasValue(s, 'balance')) bGain *= CULTURE_FX.balanceBurnout;
     if (desk?.wellness) bGain *= 1 - desk.wellness;
+    if (s.company.policies.wellness) bGain *= 0.85;
     if (bGain > 0) st.burnout += bGain;
     else if (st.energy > 55) st.burnout -= BALANCE.BURNOUT_DECAY * (s.company.policies.fourDayWeek ? 1.4 : 1);
     st.burnout = clamp(st.burnout, 0, 100);

@@ -142,7 +142,7 @@ export type Action =
   | { type: 'setSubsidiary'; id: string; budget: 'low' | 'normal' | 'high'; focusGenre?: GenreId }
   | { type: 'sellFranchise'; franchiseId: string }
   | { type: 'resolveEvent'; uid: number; option: string }
-  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean }
+  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean }
   | { type: 'setRecruiting'; level: number }
   | { type: 'buyDevkit'; platform: string }
   | { type: 'continueEndless' }
@@ -1009,6 +1009,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.salaryPolicy) s.company.policies.salaryPolicy = a.salaryPolicy;
       if (a.remote !== undefined) s.company.policies.remote = a.remote;
       if (a.fourDayWeek !== undefined) s.company.policies.fourDayWeek = a.fourDayWeek;
+      if (a.wellness !== undefined) s.company.policies.wellness = !!a.wellness;
       if (a.autoResearch !== undefined) s.company.policies.autoResearch = !!a.autoResearch;
       if (a.autoVacation !== undefined) s.company.policies.autoVacation = !!a.autoVacation;
       if (a.autoQueue !== undefined) s.company.policies.autoQueue = !!a.autoQueue;

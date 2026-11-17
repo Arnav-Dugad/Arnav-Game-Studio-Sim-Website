@@ -67,8 +67,11 @@ export function monthlyRent(s: GameState): number {
   return (tierDef(s.office.tier).rent + (s.company.branches?.length ?? 0) * BRANCH.rent) * inflation(s.day);
 }
 
+/** Wellness program cost per person per month (1980 dollars). */
+export const WELLNESS_COST = 40;
+
 export function monthlyBurn(s: GameState): number {
-  return payrollMonthly(s) + monthlyRent(s) + monthlyUpkeep(s) + sum(s.finance.loans.map((l) => l.monthly));
+  return payrollMonthly(s) + monthlyRent(s) + monthlyUpkeep(s) + sum(s.finance.loans.map((l) => l.monthly)) + (s.company.policies.wellness ? WELLNESS_COST * inflation(s.day) * Object.keys(s.staff).length : 0);
 }
 
 /** First day of each month: pay bills, roll the ledger, check solvency. */
@@ -92,6 +95,7 @@ export function financeMonthly(c: Ctx): void {
   spend(s, 'salaries', payrollMonthly(s));
   spend(s, 'rent', monthlyRent(s));
   spend(s, 'upkeep', monthlyUpkeep(s));
+  if (s.company.policies.wellness) spend(s, 'other_expense', WELLNESS_COST * inflation(s.day) * Object.keys(s.staff).length);
   if (s.company.recruiting > 0) spend(s, 'recruiting', s.company.recruiting * 1_500 * inflation(s.day));
   if (s.company.policies.salaryPolicy === 'generous') spend(s, 'salaries', payrollMonthly(s) * 0.08);
   // Loans

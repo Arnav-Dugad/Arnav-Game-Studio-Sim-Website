@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { WELLNESS_COST } from '@/sim/systems/finance';
 import { RETREAT_MORALE, retreatBlocked, retreatCost } from '@/sim/systems/studioLife';
 import { PERSON_BY_ID } from '@/data/people';
 import { fmtMoney, money } from '@/sim/util';
@@ -251,6 +252,13 @@ function Policies() {
             <span className="block text-xs text-ink3">+9 morale, burnout heals faster, −12% output.</span>
           </span>
           <input type="checkbox" checked={p.fourDayWeek} onChange={(e) => act({ type: 'setPolicy', fourDayWeek: e.target.checked })} className="size-5 accent-[var(--accent)]" />
+        </label>
+        <label className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span>
+            <b>Wellness program</b>
+            <span className="block text-xs text-ink3">Meditation, therapy, gym passes: +2 morale, burnout builds 15% slower. {fmtMoney(money(WELLNESS_COST, s.day))} per person per month.</span>
+          </span>
+          <input type="checkbox" checked={!!p.wellness} onChange={(e) => act({ type: 'setPolicy', wellness: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
       </Section>
       {s.company.union && (

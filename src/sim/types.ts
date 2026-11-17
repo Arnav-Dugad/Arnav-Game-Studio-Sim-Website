@@ -737,6 +737,8 @@ export interface Company {
     salaryPolicy: 'lean' | 'market' | 'generous';
     remote: boolean;
     fourDayWeek: boolean;
+    /** Wellness program: a monthly cost per head for morale and slower burnout. */
+    wellness?: boolean;
     /** Automation: idle people go to research; burnt-out people take two weeks off. */
     autoResearch?: boolean;
     autoVacation?: boolean;
