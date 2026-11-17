@@ -4,6 +4,10 @@
  * `s.cheats` and are read by the systems each day.
  */
 import { RESEARCH, RESEARCH_BY_ID } from '../data/research';
+import { GENRE_BY_ID } from '../data/genres';
+import { TOPIC_BY_ID } from '../data/topics';
+import { TRAIT_BY_ID, type TraitId } from '../data/traits';
+import { ACHIEVEMENTS } from './systems/achievements';
 import { SKILLS } from '../data/types';
 import { clamp } from './breakdown';
 import { fromDay } from './calendar';
@@ -39,6 +43,14 @@ export type CheatOp =
   /** Edit a released game: review score, user score and/or extra copies sold. */
   | { op: 'editRelease'; releaseId: string; score?: number; userScore?: number; addUnits?: number }
   | { op: 'officeTier'; tier: number }
+  /** Edit a rival studio; `close` shuts down an indie (real companies follow history and can only be weakened). */
+  | { op: 'rival'; rivalId: string; cash?: number; reputation?: number; quality?: number; staff?: number; close?: boolean }
+  /** Push a genre or topic trend (−0.5 cold … +0.8 red-hot), or reset every trend to neutral. */
+  | { op: 'trend'; kind: 'genre' | 'topic'; id: string; value: number }
+  | { op: 'resetTrends' }
+  | { op: 'franchiseFatigue'; franchiseId?: string; value: number }
+  | { op: 'staffTraits'; staffId: string; traits: TraitId[] }
+  | { op: 'unlockAchievements' }
   | { op: 'settings'; settings: CheatSettings };
 
 export const CHEAT_LIMITS = {
@@ -189,6 +201,62 @@ function run(c: Ctx, op: CheatOp): string | null {
       }
       return null;
     }
+    case 'rival': {
+      const r = s.rivals[op.rivalId];
+      if (!r || !r.alive || r.ownedByPlayer) return 'No such rival';
+      if (!finite(op.cash, op.reputation, op.quality, op.staff)) return 'Invalid value';
+      if (op.close) {
+        if (!r.procedural) return `${r.name} is a real company — you can weaken it, but history decides when it closes`;
+        r.alive = false;
+        pushNews(s, { category: 'rival', headline: `${r.name} closes its doors`, tone: 'neutral' });
+        return null;
+      }
+      if (op.cash !== undefined) r.cash = clamp(op.cash, -CHEAT_LIMITS.cash, CHEAT_LIMITS.cash);
+      if (op.reputation !== undefined) r.reputation = clamp(op.reputation, 0, 100);
+      if (op.quality !== undefined) r.quality = clamp(op.quality, 0.1, 1);
+      if (op.staff !== undefined) r.staff = Math.round(clamp(op.staff, 3, 8_000));
+      return null;
+    }
+    case 'trend': {
+      if (!finite(op.value)) return 'Invalid value';
+      const v = clamp(op.value, -0.5, 0.8);
+      if (op.kind === 'genre') {
+        if (!GENRE_BY_ID[op.id as keyof typeof GENRE_BY_ID]) return 'Unknown genre';
+        s.market.genreTrend[op.id as keyof typeof s.market.genreTrend] = v;
+      } else if (op.kind === 'topic') {
+        if (!TOPIC_BY_ID[op.id]) return 'Unknown topic';
+        s.market.topicTrend[op.id] = v;
+      } else return 'Unknown trend';
+      return null;
+    }
+    case 'resetTrends':
+      for (const k of Object.keys(s.market.genreTrend)) s.market.genreTrend[k as keyof typeof s.market.genreTrend] = 0;
+      for (const k of Object.keys(s.market.topicTrend)) s.market.topicTrend[k] = 0;
+      return null;
+    case 'franchiseFatigue': {
+      if (!finite(op.value)) return 'Invalid value';
+      const frs = op.franchiseId ? [s.franchises[op.franchiseId]].filter((x) => !!x) : Object.values(s.franchises);
+      if (!frs.length) return 'No franchise yet';
+      for (const f of frs) f.fatigue = clamp(op.value, 0, 0.9);
+      return null;
+    }
+    case 'staffTraits': {
+      const st = s.staff[op.staffId];
+      if (!st) return 'No such person';
+      if (!Array.isArray(op.traits) || op.traits.length > 4) return 'Pick up to 4 traits';
+      const uniq = [...new Set(op.traits)];
+      for (const id of uniq) {
+        const def = TRAIT_BY_ID[id];
+        if (!def) return 'Unknown trait';
+        const clash = def.excludes?.find((x) => uniq.includes(x));
+        if (clash) return `${def.name} and ${TRAIT_BY_ID[clash].name} can’t go together`;
+      }
+      st.traits = uniq;
+      return null;
+    }
+    case 'unlockAchievements':
+      for (const a of ACHIEVEMENTS) if (s.progress.achievements[a.id] === undefined) s.progress.achievements[a.id] = s.day;
+      return null;
     case 'officeTier':
       return 'Handled by the action layer';
     case 'settings': {

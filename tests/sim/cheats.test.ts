@@ -121,6 +121,33 @@ describe('cheats', () => {
     expect(checkInvariants(s)).toEqual([]);
   });
 
+  it('edit rivals, trends, fatigue, traits and achievements', () => {
+    const s = game(1995, 6);
+    const real = Object.values(s.rivals).find((r) => r.alive && !r.procedural)!;
+    expect(cheat(s, { op: 'rival', rivalId: real.id, close: true }).ok).toBe(false);
+    expect(cheat(s, { op: 'rival', rivalId: real.id, reputation: 5, quality: 0, staff: 1e9 }).ok).toBe(true);
+    expect(real.reputation).toBe(5);
+    expect(real.quality).toBe(0.1);
+    expect(real.staff).toBe(8000);
+    const indie = Object.values(s.rivals).find((r) => r.alive && r.procedural);
+    if (indie) {
+      expect(cheat(s, { op: 'rival', rivalId: indie.id, close: true }).ok).toBe(true);
+      expect(indie.alive).toBe(false);
+    }
+    expect(cheat(s, { op: 'trend', kind: 'genre', id: 'rpg', value: 5 }).ok).toBe(true);
+    expect(s.market.genreTrend.rpg).toBe(0.8);
+    expect(cheat(s, { op: 'trend', kind: 'genre', id: 'nope', value: 0 }).ok).toBe(false);
+    cheat(s, { op: 'resetTrends' });
+    expect(s.market.genreTrend.rpg).toBe(0);
+    expect(cheat(s, { op: 'staffTraits', staffId: 'founder', traits: ['loyal', 'mercenary'] }).ok).toBe(false);
+    expect(cheat(s, { op: 'staffTraits', staffId: 'founder', traits: ['visionary', 'mentor', 'meticulous'] }).ok).toBe(true);
+    expect(s.staff.founder!.traits).toEqual(['visionary', 'mentor', 'meticulous']);
+    expect(cheat(s, { op: 'staffTraits', staffId: 'founder', traits: ['visionary', 'mentor', 'meticulous', 'loyal', 'chill'] }).ok).toBe(false);
+    cheat(s, { op: 'unlockAchievements' });
+    expect(Object.keys(s.progress.achievements).length).toBeGreaterThan(30);
+    expect(cheat(s, { op: 'franchiseFatigue', value: 0 }).ok).toBe(false); // no franchise yet
+  });
+
   it('random cheating never breaks the simulation', () => {
     const s = game(1985, 77);
     const rng = new Rng([9, 8, 7, 6]);
@@ -139,6 +166,12 @@ describe('cheats', () => {
       () => ({ op: 'franchiseFans', fans: num() * 1e4 }),
       () => ({ op: 'editRelease', releaseId: rng.pick(Object.keys(s.releases).concat('none')), score: num(), userScore: num(), addUnits: num() * 1e3 }),
       () => ({ op: 'officeTier', tier: rng.int(0, 8) }),
+      () => ({ op: 'rival', rivalId: rng.pick(Object.keys(s.rivals)), cash: num() * 1e5, reputation: num(), quality: num() / 100, staff: num() * 10, close: rng.chance(0.2) }),
+      () => ({ op: 'trend', kind: rng.pick(['genre', 'topic', 'other'] as never[]), id: rng.pick(['rpg', 'action', 'fantasy', 'scifi', 'nope']), value: num() / 100 }),
+      () => ({ op: 'resetTrends' }),
+      () => ({ op: 'franchiseFatigue', value: num() / 100 }),
+      () => ({ op: 'staffTraits', staffId: rng.pick(Object.keys(s.staff)), traits: rng.shuffle(['loyal', 'mercenary', 'visionary', 'chill', 'hothead', 'mentor'] as const).slice(0, rng.int(0, 5)) }),
+      () => ({ op: 'unlockAchievements' }),
       () => ({ op: 'settings', settings: { infiniteMoney: rng.chance(0.5), noBankruptcy: rng.chance(0.5), noBugs: rng.chance(0.5), noEvents: rng.chance(0.5), freeBuild: rng.chance(0.5), salesMul: rng.range(0.1, 20), workMul: rng.range(0.25, 10), researchMul: rng.range(0.25, 50), scoreBonus: rng.int(-40, 40) } }),
     ];
     for (let d = 0; d < 365 * 30 && s.status === 'running'; d += 7) {

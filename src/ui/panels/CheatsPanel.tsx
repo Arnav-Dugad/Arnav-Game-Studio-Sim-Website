@@ -4,13 +4,18 @@ import { RESEARCH } from '@/data/research';
 import { fromDay } from '@/sim/calendar';
 import { CHEAT_LIMITS, type CheatOp } from '@/sim/cheats';
 import { HIREABLE_ROLES, ROLE_NAMES } from '@/sim/systems/staff';
+import { ACHIEVEMENTS } from '@/sim/systems/achievements';
+import { TRAITS, TRAIT_BY_ID, type TraitId } from '@/data/traits';
+import { GENRE_BY_ID } from '@/data/genres';
+import { TOPIC_BY_ID } from '@/data/topics';
+import { availableGenres, availableTopics } from '../game/lib';
 import type { CheatSettings, Role } from '@/sim/types';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import { Button, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
 import { Icon } from '../icons';
 import { useGame } from '../store';
 
-type Tab = 'money' | 'staff' | 'games' | 'research' | 'world';
+type Tab = 'money' | 'staff' | 'games' | 'market' | 'research' | 'world';
 
 /** Run a cheat and report the outcome as a toast. */
 function useCheat() {
@@ -55,6 +60,7 @@ export default function CheatsPanel() {
           { value: 'money', label: 'Money' },
           { value: 'staff', label: 'Staff' },
           { value: 'games', label: 'Games' },
+          { value: 'market', label: 'Market' },
           { value: 'research', label: 'Research' },
           { value: 'world', label: 'World' },
         ]}
@@ -62,6 +68,7 @@ export default function CheatsPanel() {
       {tab === 'money' && <MoneyCheats />}
       {tab === 'staff' && <StaffCheats />}
       {tab === 'games' && <GameCheats />}
+      {tab === 'market' && <MarketCheats />}
       {tab === 'research' && <ResearchCheats />}
       {tab === 'world' && <WorldCheats />}
     </div>
@@ -294,6 +301,7 @@ function StaffCheats() {
           Apply to {target}
         </Button>
       </Card>
+      {who && s.staff[who] && <TraitEditor key={who} staffId={who} />}
       <Card title="Summon a hire" desc="Adds someone straight to your team (office capacity still applies; they need a desk to work).">
         <div className="grid gap-2 sm:grid-cols-2">
           <select className={inputCls} value={role} onChange={(e) => setRole(e.target.value as Role)} aria-label="Role">
@@ -411,7 +419,10 @@ function GameCheats() {
             </select>
             <NumberInput label="Fans" value={frFans} onChange={setFrFans} min={0} className="w-36" />
             <Button size="sm" onClick={() => cheat({ op: 'franchiseFans', franchiseId: frId || undefined, fans: frFans }, 'Fans updated')}>
-              Set
+              Set fans
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => cheat({ op: 'franchiseFatigue', franchiseId: frId || undefined, value: 0 }, 'Sequel fatigue cleared')}>
+              Clear sequel fatigue
             </Button>
           </div>
         )}
@@ -504,6 +515,11 @@ function WorldCheats() {
       </Card>
       <Toggle k="freeBuild" label="Free building" desc="Furniture costs nothing and office moves ignore cost and reputation." />
       <Toggle k="noEvents" label="No random events" desc="A quiet world: no surprise choices, disasters or windfalls." />
+      <Card title="Achievements" desc={`${Object.keys(s.progress.achievements).length} of ${ACHIEVEMENTS.length} unlocked.`}>
+        <Button size="sm" icon="trophy" disabled={Object.keys(s.progress.achievements).length >= ACHIEVEMENTS.length} onClick={() => cheat({ op: 'unlockAchievements' }, 'Every achievement unlocked')}>
+          Unlock all achievements
+        </Button>
+      </Card>
       <Section title="Active switches">
         <ActiveList />
       </Section>
@@ -538,3 +554,157 @@ function ActiveList() {
     <p className="text-xs text-ink3">None — the world runs by the normal rules.</p>
   );
 }
+
+function TraitEditor({ staffId }: { staffId: string }) {
+  const s = useGame((g) => g.s)!;
+  const cheat = useCheat();
+  const st = s.staff[staffId]!;
+  const [sel, setSel] = useState<TraitId[]>(st.traits);
+  const toggle = (id: TraitId) => setSel((x) => (x.includes(id) ? x.filter((y) => y !== id) : x.length >= 4 ? x : [...x, id]));
+  const clash = sel.flatMap((id) => (TRAIT_BY_ID[id].excludes ?? []).filter((x) => sel.includes(x)).map((x) => `${TRAIT_BY_ID[id].name} / ${TRAIT_BY_ID[x].name}`))[0];
+  return (
+    <Card title={`${st.name}’s traits`} desc="Pick up to four. Some traits rule each other out.">
+      <div className="flex flex-wrap gap-1.5">
+        {TRAITS.map((tr) => {
+          const on = sel.includes(tr.id);
+          return (
+            <button
+              key={tr.id}
+              type="button"
+              title={tr.desc}
+              aria-pressed={on}
+              onClick={() => toggle(tr.id)}
+              className={cx(
+                'rounded-full border px-2.5 py-1 text-xs font-medium transition',
+                on ? (tr.good === false ? 'border-bad bg-bad/15' : tr.good ? 'border-good bg-good/15' : 'border-accent bg-accent/15') : 'border-line hover:bg-bg2',
+              )}
+            >
+              {tr.name}
+            </button>
+          );
+        })}
+      </div>
+      {clash && <p className="mt-2 text-xs text-warn">{clash} can’t go together.</p>}
+      <Button size="sm" className="mt-2" disabled={!!clash} onClick={() => cheat({ op: 'staffTraits', staffId, traits: sel }, `${st.name}’s traits updated`)}>
+        Save traits
+      </Button>
+    </Card>
+  );
+}
+
+// ── Market & rivals ─────────────────────────────────────────────────────────
+
+function MarketCheats() {
+  const s = useGame((g) => g.s)!;
+  const cheat = useCheat();
+  const rivals = Object.values(s.rivals)
+    .filter((r) => r.alive && !r.ownedByPlayer)
+    .sort((a, b) => b.revenue12m - a.revenue12m);
+  const [rid, setRid] = useState(rivals[0]?.id ?? '');
+  const r = s.rivals[rid];
+  const [rep, setRep] = useState(r ? Math.round(r.reputation) : 50);
+  const [quality, setQuality] = useState(r ? Math.round(r.quality * 100) : 50);
+  const [staff, setStaff] = useState(r?.staff ?? 50);
+  const [cash, setCash] = useState(r ? Math.round(r.cash) : 0);
+  const pickRival = (id: string) => {
+    setRid(id);
+    const x = s.rivals[id];
+    if (x) {
+      setRep(Math.round(x.reputation));
+      setQuality(Math.round(x.quality * 100));
+      setStaff(x.staff);
+      setCash(Math.round(x.cash));
+    }
+  };
+  const genres = availableGenres(s).filter((g) => g.ok);
+  const topics = availableTopics(s).filter((x) => x.ok);
+  const [kind, setKind] = useState<'genre' | 'topic'>('genre');
+  const [tid, setTid] = useState<string>(genres[0]?.g.id ?? '');
+  const [tv, setTv] = useState(0.6);
+  const current = kind === 'genre' ? (s.market.genreTrend[tid as keyof typeof s.market.genreTrend] ?? 0) : (s.market.topicTrend[tid] ?? 0);
+  const trendLabel = (v: number) => (v >= 0.4 ? 'red-hot' : v >= 0.15 ? 'rising' : v <= -0.3 ? 'dead' : v <= -0.1 ? 'cooling' : 'steady');
+  return (
+    <div className="space-y-3">
+      <Card title="Rival studios" desc="Strengthen a friend or cripple a competitor. Indie studios can be shut down; real companies follow history.">
+        {rivals.length === 0 ? (
+          <p className="text-xs text-ink3">No active rivals.</p>
+        ) : (
+          <>
+            <select className={inputCls} value={rid} onChange={(e) => pickRival(e.target.value)} aria-label="Rival">
+              {rivals.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name} · {x.staff} staff · rep {Math.round(x.reputation)}
+                  {x.procedural ? ' · indie' : ''}
+                </option>
+              ))}
+            </select>
+            <div className="mt-2 space-y-1.5">
+              <Slider label="Reputation" value={rep} onChange={setRep} min={0} max={100} />
+              <Slider label="Game quality" value={quality} onChange={setQuality} min={10} max={100} format={(v) => `${v}%`} />
+              <Slider label="Staff" value={staff} onChange={setStaff} min={3} max={8000} step={1} />
+              <label className="flex items-center gap-2 text-xs">
+                <span className="w-20 shrink-0 text-ink2">Cash</span>
+                <NumberInput label="Rival cash" value={cash} onChange={setCash} className="min-w-0 flex-1" />
+              </label>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => cheat({ op: 'rival', rivalId: rid, reputation: rep, quality: quality / 100, staff, cash: Number.isFinite(cash) ? cash : undefined }, `${r?.name ?? 'Rival'} updated`)}>
+                Apply
+              </Button>
+              {r?.procedural && (
+                <Button size="sm" variant="danger" onClick={() => cheat({ op: 'rival', rivalId: rid, close: true }, `${r.name} has closed`)}>
+                  Shut them down
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+      </Card>
+      <Card title="Market trends" desc="Make a genre or topic the next big thing — or kill it.">
+        <div className="flex flex-wrap gap-2">
+          <Segmented<'genre' | 'topic'>
+            ariaLabel="Trend kind"
+            value={kind}
+            onChange={(k) => {
+              setKind(k);
+              setTid(k === 'genre' ? (genres[0]?.g.id ?? '') : (topics[0]?.t.id ?? ''));
+            }}
+            options={[
+              { value: 'genre', label: 'Genre' },
+              { value: 'topic', label: 'Topic' },
+            ]}
+          />
+          <select className={cx(inputCls, 'min-w-0 flex-1')} value={tid} onChange={(e) => setTid(e.target.value)} aria-label="Which">
+            {kind === 'genre'
+              ? genres.map(({ g }) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))
+              : topics.map(({ t: tp }) => (
+                  <option key={tp.id} value={tp.id}>
+                    {tp.name}
+                  </option>
+                ))}
+          </select>
+        </div>
+        <p className="mt-2 text-xs text-ink3">
+          {kind === 'genre' ? GENRE_BY_ID[tid as keyof typeof GENRE_BY_ID]?.name : TOPIC_BY_ID[tid]?.name} is {trendLabel(current)} right now ({current >= 0 ? '+' : ''}
+          {Math.round(current * 100)}%).
+        </p>
+        <div className="mt-1">
+          <Slider label="Set to" value={tv} onChange={setTv} min={-0.5} max={0.8} step={0.05} format={(v) => `${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`} />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button size="sm" disabled={!tid} onClick={() => cheat({ op: 'trend', kind, id: tid, value: tv }, 'Trend set — the market will drift from here')}>
+            Set trend
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => cheat({ op: 'resetTrends' }, 'Every trend reset to neutral')}>
+            Reset all trends
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
