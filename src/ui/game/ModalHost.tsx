@@ -707,6 +707,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
               </div>
             </Section>
           )}
+          {(st.eotmCount ?? 0) > 0 && <div className="mb-1 text-[11px] text-gold">⭐ Employee of the Month ×{st.eotmCount}{s.eotm?.id === st.id ? ' (this month)' : ''}</div>}
           {(st.dreamsMet ?? 0) > 0 && <div className="mb-2 text-[11px] text-gold">★ {st.dreamsMet} ambition{st.dreamsMet === 1 ? '' : 's'} fulfilled here</div>}
           <Relationships staffId={staffId} />
           {st.role !== 'founder' && (

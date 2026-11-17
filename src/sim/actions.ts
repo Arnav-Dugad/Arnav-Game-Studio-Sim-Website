@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { teamRetreat } from './systems/studioLife';
 import type { CultureId } from '../data/culture';
 import { setValues } from './systems/culture';
 import { LOC_COST, LOC_YEAR, REGION_BY_ID, type RegionId } from '../data/regions';
@@ -95,6 +96,7 @@ export type Action =
   | { type: 'ipo'; pct: number }
   | { type: 'buyback'; shares: number }
   | { type: 'setValues'; values: CultureId[] }
+  | { type: 'teamRetreat' }
   | { type: 'acquire'; targetId: string }
   | { type: 'setSubsidiary'; id: string; budget: 'low' | 'normal' | 'high'; focusGenre?: GenreId }
   | { type: 'sellFranchise'; franchiseId: string }
@@ -773,6 +775,8 @@ function apply(c: Ctx, a: Action): string | null {
       pushNews(s, { category: 'studio', headline: `${s.company.name} goes public!`, tone: 'good' });
       return null;
     }
+    case 'teamRetreat':
+      return teamRetreat(s);
     case 'setValues':
       if (!Array.isArray(a.values)) return 'Invalid values';
       return setValues(s, a.values);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RETREAT_MORALE, retreatBlocked, retreatCost } from '@/sim/systems/studioLife';
 import { PERSON_BY_ID } from '@/data/people';
 import { fmtMoney, money } from '@/sim/util';
 import { tierDef, freeDesks } from '@/sim/systems/office';
@@ -250,6 +251,24 @@ function Policies() {
           </span>
           <input type="checkbox" checked={p.fourDayWeek} onChange={(e) => act({ type: 'setPolicy', fourDayWeek: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
+      </Section>
+      <Section title="Team retreat">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span>
+            <b>A few days away together</b>
+            <span className="block text-xs text-ink3">
+              +{RETREAT_MORALE.v} morale for {RETREAT_MORALE.days} days, everyone rested, burnout −15, friendships grow. Once a year · {fmtMoney(retreatCost(s))}
+            </span>
+          </span>
+          <Button size="sm" disabled={!!retreatBlocked(s)} title={retreatBlocked(s) ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'teamRetreat' }, 'Off on a retreat! 🏕️')}>
+            Book it
+          </Button>
+        </div>
+        {s.eotm && s.staff[s.eotm.id] && (
+          <p className="mt-2 text-xs text-ink2">
+            ⭐ Employee of the Month: <b>{s.staff[s.eotm.id]!.name}</b>
+          </p>
+        )}
       </Section>
     </div>
   );

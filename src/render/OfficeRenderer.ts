@@ -89,6 +89,7 @@ interface Agent {
   speech: Container | null;
   speechT: number;
   thinkT: number;
+  medal?: Graphics;
 }
 
 const pickOne = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
@@ -865,6 +866,18 @@ export class OfficeRenderer {
       a.c.position.set(a.x, a.y);
       a.c.zIndex = a.y + 1;
       a.rig.root.tint = st.activity === 'burnout' ? 0x9a9a9a : 0xffffff;
+      const star = s.eotm?.id === st.id;
+      if (star && !a.medal) {
+        a.medal = new Graphics();
+        a.medal.poly([-1.6, -4, 1.6, -4, 0.9, -1, -0.9, -1]).fill(0x3d85c6);
+        a.medal.circle(0, 0.6, 2.1).fill(0xf2c450);
+        a.medal.star(0, 0.6, 5, 1.3, 0.6).fill(0xfff3c4);
+        a.rig.root.addChildAt(a.medal, a.rig.root.getChildIndex(a.rig.armL));
+      }
+      if (a.medal) {
+        a.medal.visible = star;
+        a.medal.position.set(-3.5, (a.pose === 'stand' ? -14 : -12) - 4);
+      }
       const bday = birthdayOf(st.id) === doy;
       setHat(a.rig, bday ? 'party' : hatSeason, bday ? 0xf2c450 : a.look.top);
       a.ring.visible = ui.selectedStaff === st.id || this.hoverStaff === st.id;

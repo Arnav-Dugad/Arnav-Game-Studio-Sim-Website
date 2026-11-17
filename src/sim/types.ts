@@ -82,6 +82,9 @@ export interface Staff {
   dreamsMet?: number;
   /** A raise granted for an ambition: cutting below it before `until` breaks the promise. */
   promise?: { salary: number; until: number };
+  /** Contribution points at the last monthly check, and Employee of the Month wins. */
+  contribMark?: number;
+  eotmCount?: number;
 }
 
 export type Assignment =
@@ -659,6 +662,7 @@ export interface Company {
   /** Studio culture (data/culture.ts) and when it last changed. */
   values?: CultureId[];
   valuesDay?: number;
+  lastRetreatDay?: number;
   founderName: string;
   color: string;
   /** Studio emblem (an icon id) and badge shape; the monogram is used without one. */
@@ -702,6 +706,8 @@ export type GameStatus = 'running' | 'bankrupt' | 'acquired' | 'retired';
 export interface GameState {
   /** Relationships between colleagues (pair key 'a|b' → −100..100; systems/relations.ts). */
   relations?: Record<string, number>;
+  /** This month's Employee of the Month. */
+  eotm?: { id: string; day: number };
   schemaVersion: number;
   seed: number;
   rng: RngState;
