@@ -4,7 +4,7 @@
  * a party, and staff birthdays. Everything is derived from the date and the studio, so it needs no state.
  */
 import { Container, Graphics } from 'pixi.js';
-import { fromDay } from '@/sim/calendar';
+import { fromDay, toDay } from '@/sim/calendar';
 import { occupancy, tierDef } from '@/sim/systems/office';
 import type { GameState } from '@/sim/types';
 import type { ScenePalette } from './palette';
@@ -26,6 +26,9 @@ export interface Season {
   flowers: boolean;
   party: boolean;
   newYear: boolean;
+  /** Lunar New Year lanterns and Diwali lamps (dates follow the moon). */
+  lanterns: boolean;
+  diyas: boolean;
   hat: Hat;
   rain: boolean;
 }
@@ -47,10 +50,38 @@ export function seasonOf(s: GameState): Season {
     flowers: month >= 3 && month <= 5,
     party,
     newYear,
+    lanterns: lunarNewYear(s.day),
+    diyas: diwali(s.day),
     hat: halloween && dom >= 28 ? 'witch' : month === 12 && dom >= 15 ? 'santa' : party || newYear ? 'party' : 'none',
   };
 }
 
+
+// ── Moon-dated festivals ─────────────────────────────────────────────
+const LUNATION = 29.530588853;
+/** A known new moon: 6 January 2000, 18:14 UTC. */
+const NEW_MOON_2000 = toDay(2000, 1, 6) + 0.76;
+
+/** The first new moon on or after `day` (fractional day index). */
+function newMoonAfter(day: number): number {
+  return NEW_MOON_2000 + Math.ceil((day - NEW_MOON_2000) / LUNATION) * LUNATION;
+}
+
+/** Lunar New Year: the new moon (China time) that falls between 21 January and 20 February; lanterns for about a week. */
+export function lunarNewYear(day: number): boolean {
+  const { year, month } = fromDay(day);
+  const y = month >= 6 ? year + 1 : year;
+  const CHINA = 8 / 24;
+  const lny = Math.floor(newMoonAfter(toDay(y, 1, 21) - CHINA) + CHINA);
+  return day >= lny - 2 && day <= lny + 7;
+}
+
+/** Diwali: the new moon between mid-October and mid-November; lamps for the festival days. */
+export function diwali(day: number): boolean {
+  const { year } = fromDay(day);
+  const d = Math.floor(newMoonAfter(toDay(year, 10, 18))) - 1; // celebrated on the eve of the new moon (India time)
+  return day >= d - 2 && day <= d + 2;
+}
 
 /** Day of year a staff member celebrates their birthday (stable per person). */
 export function birthdayOf(id: string): number {
@@ -107,7 +138,7 @@ export class SeasonDecor {
   }
 
   update(s: GameState, floor: number, dt: number, se: Season, P: ScenePalette, reducedMotion: boolean): void {
-    const key = [floor, s.office.tier, s.office.rev ?? 0, s.office.items.length, P.night, se.snow, se.lights, se.tree, se.pumpkins, se.leaves, se.flowers, se.party, se.newYear, se.rain].join('|');
+    const key = [floor, s.office.tier, s.office.rev ?? 0, s.office.items.length, P.night, se.snow, se.lights, se.tree, se.pumpkins, se.leaves, se.flowers, se.party, se.newYear, se.rain, se.lanterns, se.diyas].join('|');
     if (key !== this.key) {
       this.key = key;
       this.build(s, floor, se, P);
@@ -265,6 +296,41 @@ export class SeasonDecor {
         face.zIndex = (py + 1) * T + 1;
         this.put(face);
         this.glows.push(face);
+      }
+    }
+    if (se.lanterns) {
+      // red paper lanterns with gold caps and tassels
+      for (const [px, py] of this.wallSpots(s, floor, 4, 3)) {
+        const cx = px * T + T / 2 + ((px * 7) % 7) - 3;
+        const by = py * T + T * 0.5;
+        const cord = new Graphics().moveTo(cx, by - 52).lineTo(cx, by - 40).stroke({ width: 0.8, color: 0x6b4430 });
+        const g = new Graphics();
+        g.ellipse(cx, by - 32, 8, 9).fill(0xd8323c);
+        for (const dx of [-4, 0, 4]) g.moveTo(cx + dx, by - 40).quadraticCurveTo(cx + dx * 1.8, by - 32, cx + dx, by - 24).stroke({ width: 0.6, color: 0x9e1f28, alpha: 0.8 });
+        g.rect(cx - 4, by - 42, 8, 2.5).fill(0xf2c450);
+        g.rect(cx - 4, by - 24.5, 8, 2.5).fill(0xf2c450);
+        g.rect(cx - 0.6, by - 22, 1.2, 6).fill(0xf2c450);
+        cord.zIndex = g.zIndex = (py + 1) * T;
+        this.put(cord, g);
+        this.bobbers.push({ g, y: 0, phase: px * 1.3 + py });
+      }
+    }
+    if (se.diyas) {
+      // clay lamps along the walls, flames flickering
+      for (const [px, py] of this.wallSpots(s, floor, 6, 4)) {
+        const cx = px * T + T / 2 + ((px * 11) % 9) - 4;
+        const by = py * T + T * 0.82;
+        const lamp = new Graphics();
+        lamp.ellipse(cx, by, 7, 2.4).fill({ color: 0x000000, alpha: 0.15 });
+        lamp.moveTo(cx - 6, by - 4).quadraticCurveTo(cx, by + 2, cx + 6, by - 4).lineTo(cx + 8, by - 5).lineTo(cx - 6, by - 4).fill(0xb5652e);
+        lamp.ellipse(cx, by - 4, 6, 1.6).fill(0x8a4a22);
+        lamp.zIndex = (py + 1) * T;
+        const flame = new Graphics();
+        flame.circle(cx + 4, by - 7.5, 4).fill({ color: 0xf2c450, alpha: 0.25 });
+        flame.moveTo(cx + 4, by - 12).quadraticCurveTo(cx + 6.2, by - 7, cx + 4, by - 5.5).quadraticCurveTo(cx + 1.8, by - 7, cx + 4, by - 12).fill(0xffb43c);
+        flame.zIndex = (py + 1) * T + 1;
+        this.put(lamp, flame);
+        this.glows.push(flame);
       }
     }
     if (se.party || se.newYear) {

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-19d';
+export const WHATS_NEW_VERSION = '2026-11-19e';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'sparkle', title: 'Lunar New Year & Diwali', body: 'The office now celebrates more of the world’s festivals: red lanterns for Lunar New Year and flickering clay lamps for Diwali — on the right dates every year, worked out from the moon — with festive chatter to match.' },
   { icon: 'sparkle', title: 'Four new signature features', body: 'Full voice acting (1996) for RPGs and adventures, dynamic music (2001), motion controls (2006) for sports and family games, and a speedrun mode (2010) the platformer crowd will love.' },
   { icon: 'lightbulb', title: 'Decisions during development', body: 'Making a game now throws up real choices: your designer pitches one more feature, a programmer finds a risky rendering trick, a hard drive dies (keep backups!), a famous composer offers a score, or playtesters fall in love with something you never planned.' },
   { icon: 'handshake', title: 'Platform partners', body: 'Platform holders now keep score (Market → Platforms). Great games on their hardware — exclusives most of all — win their favour: at 75+ your launches are featured on their storefront (+12% sales there), and devkits get up to 50% cheaper. Flops cool things off, and favour fades without new games. Interns now wear a lanyard, too.' },
