@@ -695,6 +695,8 @@ export interface Company {
   values?: CultureId[];
   valuesDay?: number;
   lastRetreatDay?: number;
+  /** Staff are unionised (recognised after a union drive). */
+  union?: boolean;
   founderName: string;
   color: string;
   /** Studio emblem (an icon id) and badge shape; the monogram is used without one. */

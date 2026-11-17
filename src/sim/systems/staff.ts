@@ -322,7 +322,8 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
     bd.add(desk.energyDist === Infinity ? 'No break area' : 'Break area', desk.energyDist === Infinity ? -8 : 3);
   }
   if (L.trophies > 0) bd.add('Trophy shelf', Math.min(8, s.progress.stats.awardsWon * 1.5));
-  if (isCrunching(s, st)) bd.add('Crunch', hasTrait(st, 'workaholic') ? -7 : -16);
+  if (isCrunching(s, st)) bd.add(s.company.union ? 'Crunch (union overtime)' : 'Crunch', (hasTrait(st, 'workaholic') ? -7 : -16) * (s.company.union ? 0.5 : 1));
+  if (s.company.union && st.role !== 'founder') bd.add('Union contract', 4);
   // momentum: last two releases
   const last = s.releaseOrder.slice(-2).map((id) => s.releases[id]!.score);
   if (last.length) bd.add('Recent reviews', clamp((avg(last) - 65) / 2.5, -10, 10));

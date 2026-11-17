@@ -252,6 +252,11 @@ function Policies() {
           <input type="checkbox" checked={p.fourDayWeek} onChange={(e) => act({ type: 'setPolicy', fourDayWeek: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
       </Section>
+      {s.company.union && (
+        <div className="rounded-xl bg-good/10 p-2.5 text-xs text-ink2">
+          <b className="text-good">Unionised.</b> Morale +4 for everyone, and crunch overtime protections halve its morale cost.
+        </div>
+      )}
       <Section title="Team retreat">
         <div className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
           <span>

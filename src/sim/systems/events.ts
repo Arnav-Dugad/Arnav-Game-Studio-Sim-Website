@@ -55,6 +55,50 @@ function staffById(s: GameState, id: string | number | undefined): Staff | undef
 
 export const EVENT_DEFS: EventDef[] = [
   {
+    id: 'union_drive',
+    art: 'crowd',
+    cooldown: 365,
+    weight: (s) => {
+      const l = staffList(s);
+      if (s.company.union || yr(s) < 2005 || l.length < 15) return 0;
+      const avg = l.reduce((t, x) => t + x.morale, 0) / l.length;
+      const crunching = s.day - s.progress.stats.noCrunchSince < 30 && s.progress.stats.crunchDays >= 60;
+      return crunching && avg < 52 ? (yr(s) >= 2018 ? 1.2 : 0.6) : 0;
+    },
+    make: ({ s }) => {
+      const payroll = staffList(s).reduce((t, x) => t + x.salary, 0) / 12;
+      return {
+        title: 'The team wants a union',
+        body: 'After months of crunch, a majority of your staff have signed union cards. They’re asking you to recognise the union voluntarily.',
+        options: [
+          { id: 'recognise', label: 'Recognise the union', preview: 'Everyone +5% pay; morale +4 for good; crunch hurts morale half as much' },
+          { id: 'bonus', label: `Offer a retention bonus instead (${fmtMoney(payroll / 2)})`, preview: 'Morale +6 for 3 months; they may try again next year', disabled: s.company.cash < payroll / 2 },
+          { id: 'fight', label: 'Fight it', preview: 'Reputation −3, morale −8 for 4 months, and maybe a walkout' },
+        ],
+        ctx: { payroll },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      if (opt === 'recognise') {
+        s.company.union = true;
+        for (const st of staffList(s)) st.salary = Math.round(st.salary * 1.05);
+        for (const st of Object.values(s.staff)) st.moraleWhy = undefined;
+        pushNews(s, { category: 'studio', headline: `${s.company.name} recognises its workers’ union`, tone: 'good' });
+      } else if (opt === 'bonus' && s.company.cash >= Number(e.ctx.payroll) / 2) {
+        spend(s, 'salaries', Number(e.ctx.payroll) / 2);
+        mod(s, 6, 90, 'Retention bonus');
+      } else {
+        addRep(s, -3, 'Fought a union drive');
+        mod(s, -8, 120, 'Union busting');
+        if (rng.chance(0.35)) {
+          mod(s, -10, 30, 'Walkout');
+          for (const st of staffList(s)) st.energy = clamp(st.energy - 30, 0, 100);
+          pushNews(s, { category: 'studio', headline: `${s.company.name} staff stage a walkout`, tone: 'bad' });
+        }
+      }
+    },
+  },
+  {
     id: 'heat_wave',
     art: 'smoke',
     cooldown: 300,
