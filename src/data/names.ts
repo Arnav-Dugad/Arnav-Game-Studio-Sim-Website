@@ -43,6 +43,10 @@ export const TITLE_ADJ = [
   'Galactic', 'Tiny', 'Brave', 'Dark', 'Bright', 'Ancient', 'Electric',
 ];
 export const TITLE_NOUN: Record<string, string[]> = {
+  trains: ['Express', 'Railway', 'Junction', 'Locomotive', 'Line', 'Station'],
+  witches: ['Coven', 'Spellbook', 'Broom', 'Cauldron', 'Academy', 'Hex'],
+  kaiju: ['Titan', 'Colossus', 'Monster', 'Rampage', 'Behemoth', 'Leviathan'],
+  cozy_village: ['Village', 'Meadow', 'Harvest', 'Hollow', 'Valley', 'Cottage'],
   default: ['Quest', 'Legends', 'Saga', 'Odyssey', 'Chronicles', 'Frontier', 'Horizon', 'Kingdom', 'Empire', 'Echoes', 'Dawn', 'Storm', 'Protocol', 'Rush', 'Heroes', 'Tactics', 'Arena', 'Story', 'Tycoon', 'Island'],
   fantasy: ['Dragons', 'Crowns', 'Realms', 'Swords', 'Wizards', 'Runes', 'Spells'],
   scifi: ['Stars', 'Nebula', 'Signal', 'Colony', 'Drift', 'Cortex', 'Vanguard'],

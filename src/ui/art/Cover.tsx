@@ -563,6 +563,53 @@ const M = {
       <circle cx={22} cy={80} r={4} fill={p.accent} />
     </>
   ),
+  train: (p) => (
+    <>
+      <path d="M8 80H92" stroke={p.accent} strokeWidth={3} strokeLinecap="round" />
+      <rect x={18} y={40} width={44} height={30} rx={4} fill={p.ink} />
+      <rect x={60} y={28} width={20} height={42} rx={3} fill={p.ink} />
+      <rect x={64} y={33} width={12} height={10} rx={2} fill={p.accent} />
+      <rect x={24} y={24} width={8} height={18} rx={2} fill={p.ink} />
+      <circle cx={28} cy={16} r={5} fill={p.detail} opacity={0.7} />
+      <circle cx={36} cy={9} r={4} fill={p.detail} opacity={0.5} />
+      <circle cx={30} cy={74} r={7} fill={p.detail} />
+      <circle cx={52} cy={74} r={7} fill={p.detail} />
+      <circle cx={72} cy={74} r={6} fill={p.detail} />
+      <path d="M80 62L90 70V72H80Z" fill={p.accent} />
+    </>
+  ),
+  witch_hat: (p) => (
+    <>
+      <ellipse cx={50} cy={74} rx={38} ry={8} fill={p.ink} />
+      <path d="M30 72Q40 40 50 20Q56 12 66 14Q58 22 60 40Q62 56 70 72Z" fill={p.ink} />
+      <rect x={32} y={62} width={36} height={6} rx={2} fill={p.accent} />
+      <path d="M78 22L80 28L86 30L80 32L78 38L76 32L70 30L76 28Z" fill={p.accent} />
+      <circle cx={22} cy={36} r={2.5} fill={p.accent} />
+    </>
+  ),
+  kaiju: (p) => (
+    <>
+      <path d="M8 86H92" stroke={p.accent} strokeWidth={2.5} opacity={0.6} />
+      <rect x={14} y={58} width={10} height={28} fill={p.detail} />
+      <rect x={76} y={50} width={12} height={36} fill={p.detail} />
+      <path d="M30 86Q28 60 38 46Q36 30 48 22Q60 16 68 26Q74 34 66 40Q72 50 70 64Q72 76 66 86H56V72H44V86Z" fill={p.ink} />
+      <path d="M48 22L46 12L52 18L56 10L58 20" fill={p.ink} />
+      <circle cx={60} cy={28} r={2.5} fill={p.accent} />
+      <path d="M66 36L80 32" stroke={p.accent} strokeWidth={3} strokeLinecap="round" />
+    </>
+  ),
+  cottage: (p) => (
+    <>
+      <path d="M8 82Q50 72 92 82V92H8Z" fill={p.detail} opacity={0.7} />
+      <path d="M24 50L50 26L76 50V80H24Z" fill={p.ink} />
+      <path d="M18 52L50 22L82 52" stroke={p.accent} strokeWidth={5} strokeLinejoin="round" fill="none" />
+      <rect x={44} y={60} width={12} height={20} rx={2} fill={p.accent} />
+      <rect x={30} y={56} width={9} height={9} rx={1.5} fill={p.detail} />
+      <rect x={61} y={56} width={9} height={9} rx={1.5} fill={p.detail} />
+      <rect x={64} y={28} width={6} height={12} fill={p.ink} />
+      <circle cx={70} cy={20} r={3.5} fill={p.detail} opacity={0.6} />
+    </>
+  ),
 } satisfies Record<string, Motif>;
 
 const TOPIC_MOTIF: Record<string, keyof typeof M> = {
@@ -611,6 +658,10 @@ const TOPIC_MOTIF: Record<string, keyof typeof M> = {
   esports_topic: 'trophy',
   battle_royale: 'crosshair',
   ai_robots: 'chip',
+  trains: 'train',
+  witches: 'witch_hat',
+  kaiju: 'kaiju',
+  cozy_village: 'cottage',
 };
 
 // ── Layout templates (300×400) ────────────────────────────────────

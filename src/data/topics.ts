@@ -46,6 +46,10 @@ export const TOPICS: readonly TopicDef[] = [
   { id: 'pets', name: 'Virtual Pets', year: 1996, genreFit: { simulation: 3, casual: 3, rpg: 2, shooter: 0, fighting: 0 }, audience: { kids: 1.5, mature: 0.5 }, popularity: [[1996, 1.4], [2001, 0.9], [2005, 1.3], [2012, 0.8], [2026, 0.8]] },
   { id: 'esports_topic', name: 'Esports Arena', year: 2009, research: 'biz_esports', genreFit: { shooter: 3, strategy: 3, fighting: 3, sports: 2, mmo: 2 }, audience: { teen: 1.3 } },
   { id: 'battle_royale', name: 'Battle Royale', year: 2017, genreFit: { shooter: 3, action: 3, sandbox: 2, casual: 1 }, audience: { teen: 1.4 }, popularity: [[2017, 1.6], [2019, 2.0], [2022, 1.4], [2026, 1.1]] },
+  { id: 'trains', name: 'Trains', year: 1980, genreFit: { simulation: 3, strategy: 3, puzzle: 2, casual: 2, shooter: 0, fighting: 0 }, audience: { everyone: 1.2, kids: 1.1 } },
+  { id: 'witches', name: 'Witches & Wizards', year: 1985, genreFit: { rpg: 3, adventure: 3, action: 2, puzzle: 2, casual: 2, sports: 0 }, audience: { teen: 1.2, kids: 1.1 }, popularity: [[1985, 0.9], [1999, 1.3], [2005, 1.1], [2023, 1.3], [2026, 1.1]] },
+  { id: 'kaiju', name: 'Giant Monsters', year: 1982, genreFit: { action: 3, fighting: 3, strategy: 2, sandbox: 2, puzzle: 0 }, audience: { teen: 1.3 } },
+  { id: 'cozy_village', name: 'Cozy Village', year: 2001, genreFit: { simulation: 3, casual: 3, rpg: 2, sandbox: 2, shooter: 0, fighting: 0 }, audience: { everyone: 1.3, mature: 0.8 }, popularity: [[2001, 1.1], [2012, 0.9], [2016, 1.4], [2020, 1.8], [2026, 1.3]] },
   { id: 'ai_robots', name: 'Artificial Intelligence', year: 2015, genreFit: { adventure: 3, strategy: 3, rpg: 2, puzzle: 2, simulation: 2 }, audience: { mature: 1.1 } },
 ];
 
