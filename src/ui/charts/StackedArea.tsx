@@ -11,7 +11,7 @@ import {
   formatX,
   innerTicks,
   nearestIndex,
-  niceTicks,
+  distinctTicks,
   seriesColor,
 } from './palette';
 
@@ -82,7 +82,7 @@ function buildStackModel(
   });
 
   const yMax = normalize ? 1 : Math.max(0, ...totals);
-  const yt = normalize ? { min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1] } : niceTicks(0, yMax, 5);
+  const yt = normalize ? { min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1] } : distinctTicks(0, yMax, fy);
   const yLabels = yt.ticks.map((v) => (normalize ? formatPct(v, 0) : fy(v)));
   const left = Math.ceil(Math.max(24, ...yLabels.map((l) => estimateTextWidth(l))) + 10);
   const innerW = Math.max(10, width - left - M_RIGHT);

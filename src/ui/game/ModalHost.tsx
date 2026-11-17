@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MascotAcc, MascotDesign, MascotKind } from '@/sim/types';
 import { Mascot } from '../art/Mascot';
 import { StudioStory } from './StudioStory';
@@ -31,6 +31,7 @@ import type { BadgeShape, Focus3, Specialisation } from '@/sim/types';
 import { addHallOfFame, type SlotId } from '@/services/saves';
 import { useAuth } from '@/services/auth';
 import { Button, BreakdownList, Meter, Modal, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
+import { postMortem } from './postmortem';
 import { EventArt } from '../art/EventArt';
 import { Cover } from '../art/Cover';
 import { LineChart } from '../charts';
@@ -449,7 +450,8 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
           </div>
         </div>
       </div>
-      <Section title="Weekly sales" className="mt-4">
+      <PostMortemCard releaseId={releaseId} />
+      <Section title="Weekly sales" className="mt-3">
         <LineChart ariaLabel={`${r.name} weekly sales`} height={160} area series={[{ name: 'Units', points: series }]} xFormat={(w) => `wk ${w}`} yFormat={(v) => fmtUnits(v)} />
       </Section>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -539,6 +541,40 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         )}
       </div>
     </Modal>
+  );
+}
+
+function PostMortemCard({ releaseId }: { releaseId: string }) {
+  const r = useGame((g) => g.s!.releases[releaseId]);
+  const pm = useMemo(() => (r ? postMortem(r) : null), [r]);
+  if (!pm) return null;
+  const col = (title: string, pts: typeof pm.right, good: boolean) => (
+    <div className="min-w-0">
+      <div className={cx('mb-1 text-[11px] font-bold uppercase tracking-wide', good ? 'text-good' : 'text-bad')}>{title}</div>
+      {pts.length ? (
+        <ul className="space-y-1.5">
+          {pts.map((p) => (
+            <li key={p.text} className="flex gap-1.5 text-xs leading-snug">
+              <span aria-hidden className={cx('mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full', good ? 'bg-good' : 'bg-bad')} />
+              <span className="min-w-0">
+                <span className="text-ink">{p.text}</span>
+                {p.lesson && <span className="block text-ink3">Next time: {p.lesson}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-ink3">{good ? 'Nothing stood out.' : 'Nothing worth worrying about.'}</p>
+      )}
+    </div>
+  );
+  return (
+    <Section title="Post-mortem" className="mt-4" right={<Pill tone={pm.tone === 'good' ? 'good' : pm.tone === 'bad' ? 'bad' : 'neutral'}>{pm.verdict}</Pill>}>
+      <div className="grid gap-3 rounded-xl border border-line bg-bg2/40 p-3 sm:grid-cols-2">
+        {col('What went right', pm.right, true)}
+        {col('What went wrong', pm.wrong, false)}
+      </div>
+    </Section>
   );
 }
 

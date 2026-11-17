@@ -202,3 +202,14 @@ export function nearestIndex(sorted: readonly number[], target: number): number 
   }
   return Math.abs(sorted[lo]! - target) <= Math.abs(sorted[hi]! - target) ? lo : hi;
 }
+
+/** Nice ticks whose formatted labels are all different (small ranges can otherwise read "0 1 1 2 2"). */
+export function distinctTicks(min: number, max: number, fmt: (v: number) => string, count = 5): { min: number; max: number; step: number; ticks: number[] } {
+  let yt = niceTicks(min, max, count);
+  for (let c = count - 1; c >= 2; c--) {
+    const labels = yt.ticks.map(fmt);
+    if (new Set(labels).size === labels.length) break;
+    yt = niceTicks(min, max, c);
+  }
+  return yt;
+}

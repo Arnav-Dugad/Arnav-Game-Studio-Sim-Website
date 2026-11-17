@@ -9,7 +9,7 @@ import {
   formatX,
   innerTicks,
   nearestIndex,
-  niceTicks,
+  distinctTicks,
   seriesColor,
   svgSafeId,
 } from './palette';
@@ -216,7 +216,7 @@ function buildLineModel(
   let hi = yMax;
   if (lo >= 0) lo = 0;
   else if (hi <= 0) hi = 0;
-  const yt = niceTicks(lo, hi, 5);
+  const yt = distinctTicks(lo, hi, fy);
   const yLabels = yt.ticks.map((v) => fy(v));
   const left = Math.ceil(Math.max(24, ...yLabels.map((l) => estimateTextWidth(l))) + 10);
   const innerW = Math.max(10, width - left - M_RIGHT);

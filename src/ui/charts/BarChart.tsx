@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { useElementSize } from './useSize';
 import { ChartEmpty, ChartLegend, ChartTooltip, LiveRegion, TooltipRow } from './LineChart';
-import { AXIS_TEXT_STYLE as axisTextStyle, cursorStep, estimateTextWidth, formatCompact, niceTicks, seriesColor } from './palette';
+import { AXIS_TEXT_STYLE as axisTextStyle, cursorStep, estimateTextWidth, formatCompact, distinctTicks, seriesColor } from './palette';
 
 export interface BarSegment {
   key: string;
@@ -88,7 +88,7 @@ function buildBarModel(data: BarDatum[], width: number, height: number, stacked:
     hi = Math.max(hi, pos);
     lo = Math.min(lo, neg);
   }
-  const yt = niceTicks(lo, hi, 5);
+  const yt = distinctTicks(lo, hi, fy);
   const yLabels = yt.ticks.map((v) => fy(v));
   const left = Math.ceil(Math.max(24, ...yLabels.map((l) => estimateTextWidth(l))) + 10);
   const innerW = Math.max(10, width - left - M_RIGHT);
