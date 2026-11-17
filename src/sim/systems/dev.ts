@@ -207,6 +207,7 @@ function progressGame(c: Ctx, p: GameProject): void {
     }
     fix *= 1 + L.qa;
     if (s.research.done.includes('ai_ml_tools')) fix *= 1.1;
+    if (p.earlyAccess) fix *= 1.15; // players file bug reports
     const fixed = Math.min(p.bugs, fix * BALANCE.QA_FIX_RATE * 10);
     p.bugs -= fixed;
     p.bugsFixed += fixed;
@@ -365,12 +366,20 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
     if (c.franchiseId || orig || base) bd.mul('Culture: Innovation (a sequel, not something new)', CULTURE_FX.innovationSequel);
     else bd.mul('Culture: Innovation (new IP)', CULTURE_FX.innovationNewIp);
   }
+  if (p.earlyAccess) bd.mul(`Early Access feedback (${Math.floor((s.day - p.earlyAccess.day) / 7)} weeks)`, earlyAccessQuality(p, s.day));
   if (p.cut) bd.mul('Cut features', BALANCE.CUT_FEATURES_PENALTY);
   // bugs
   const density = total > 0 ? (p.bugs * scale) / total : 0;
   bd.mul(project ? `Bugs (~${Math.round(p.bugs * scale)} expected)` : `Bugs (${Math.round(p.bugs)} remaining)`, 1 - Math.min(0.45, density * 1.6));
   bd.clamp(0, 1.2);
   return bd.done();
+}
+
+/** Quality bonus from Early Access feedback: grows over the first six months on sale. */
+export function earlyAccessQuality(p: GameProject, day: number): number {
+  if (!p.earlyAccess) return 1;
+  const weeks = Math.max(0, (day - p.earlyAccess.day) / 7);
+  return 1 + Math.min(0.03, weeks * 0.0012);
 }
 
 function interpAvg(s: GameState): number {

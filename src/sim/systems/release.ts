@@ -325,6 +325,10 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   }
   const modded = moddable(s, p.concept);
   if (modded) ub.add('Mod support', 2);
+  const ea = p.earlyAccess;
+  const eaWeeks = ea ? Math.floor((s.day - ea.day) / 7) : 0;
+  if (ea && eaWeeks >= 78) ub.add('Took years to leave Early Access', -4);
+  else if (ea && eaWeeks >= 8 && ea.rating >= 55) ub.add('Shaped by Early Access players', 2);
   ub.add('Players vary', rng.normal(0, 3));
   ub.clamp(1, 100);
   const userScore = Math.round(ub.value);
@@ -332,7 +336,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
 
   // Sales potential
   const effScore = score * 0.7 + userScore * 0.3;
-  const pot = salesPotential(s, p.concept, effScore, p.hype);
+  // a 1.0 launch after Early Access is old news to part of the audience
+  const pot = salesPotential(s, p.concept, effScore, ea ? p.hype * 0.8 : p.hype);
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
@@ -342,6 +347,12 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const pcOnly = p.concept.platforms.every((pid) => platformInfo(s, pid)?.kind === 'computer');
   const decay = modded && pcOnly ? 1 - (1 - baseDecay) * 0.8 : baseDecay;
   if (modded) for (const pp of plats) if (pp.pl.kind === 'computer') pp.potential *= 1.1;
+  if (ea && ea.units > 0) {
+    // Early Access buyers already own it: fewer new PC customers at 1.0
+    const pcs = plats.filter((pp) => pp.pl.kind === 'computer');
+    const pcPot = pcs.reduce((t, pp) => t + pp.potential, 0);
+    for (const pp of pcs) pp.potential = Math.max(pp.potential * 0.5, pp.potential - ea.units * (pp.potential / Math.max(1, pcPot)));
+  }
   const id = newId(s, 'r');
   const rel: Release = {
     id,
@@ -371,8 +382,14 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     serverLoad: ['mmo'].includes(p.concept.genre) || ['subscription', 'f2p', 'live_service'].includes(p.concept.monetization) ? 1 : 0,
     why: { sales: salesWhy, user: ub.done() },
     ...(p.beta ? { betaTested: true } : {}),
+    ...(ea ? { earlyAccess: { weeks: eaWeeks, units: ea.units, net: Math.round(ea.net) } } : {}),
     ...(modded ? { modded: true } : {}),
   };
+  if (ea) {
+    rel.units += ea.units;
+    rel.gross += Math.round(ea.gross);
+    rel.net += Math.round(ea.net);
+  }
   rel.credits = p.team.map((sid) => s.staff[sid]).filter((x): x is NonNullable<typeof x> => !!x).map((x) => ({ id: x.id, name: x.name, role: x.role, level: x.level }));
   s.releases[id] = rel;
   s.releaseOrder.push(id);
@@ -436,7 +453,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   }
   pushNews(s, {
     category: 'studio',
-    headline: `${rel.name} launches to ${score >= 85 ? 'rave' : score >= 70 ? 'positive' : score >= 50 ? 'mixed' : 'poor'} reviews (${score})`,
+    headline: `${rel.name}${ea ? ' leaves Early Access and' : ''} launches to ${score >= 85 ? 'rave' : score >= 70 ? 'positive' : score >= 50 ? 'mixed' : 'poor'} reviews (${score})`,
     body: `${GENRE_BY_ID[p.concept.genre].name} · ${TOPIC_BY_ID[p.concept.topic]?.name ?? p.concept.topic}. Users rate it ${userScore}.`,
     tone: score >= 70 ? 'good' : score >= 50 ? 'neutral' : 'bad',
   });

@@ -253,6 +253,8 @@ export interface GameProject {
   focusTest?: { phase: number; predicted: number; wantMore?: string };
   /** A bug bash has been run (once per game). */
   bugBashed?: boolean;
+  /** On sale in Early Access since `day`: the players' current rating and what it has sold so far. */
+  earlyAccess?: { day: number; rating: number; units: number; gross: number; net: number; stale?: boolean };
 }
 
 export interface ContractProject {
@@ -354,6 +356,8 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Spent time in Early Access before its 1.0 launch (already counted in units/gross/net). */
+  earlyAccess?: { weeks: number; units: number; net: number };
   /** Re-released on a modern storefront (once), and when. */
   rereleased?: boolean;
   rereleaseDay?: number;

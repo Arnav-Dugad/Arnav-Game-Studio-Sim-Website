@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { startEarlyAccess } from './systems/earlyAccess';
 import { PHASE_AREAS } from '../data/types';
 import { COMPANY_BY_ID } from '../data/companies';
 import { runLiveEvent } from './systems/liveEvents';
@@ -143,6 +144,7 @@ export type Action =
   | { type: 'focusTest'; projectId: string }
   | { type: 'copyFloor'; from: number; to: number }
   | { type: 'raiseFunding' }
+  | { type: 'earlyAccess'; projectId: string }
   | { type: 'negotiateDeal'; dealId: string; ask: 'advance' | 'royalty' }
   | { type: 'sabbatical'; staffId: string }
   | { type: 'undoPlace' }
@@ -245,6 +247,7 @@ export function betaCost(s: GameState, p: GameProject): number {
 export function betaBlocked(s: GameState, p: GameProject): string | null {
   if (fromDay(s.day).year < 2005) return 'Public betas take off with online distribution (2005+)';
   if (p.beta) return 'Already ran a beta';
+  if (p.earlyAccess) return 'It’s already in players’ hands (Early Access)';
   if (p.phase !== 2) return 'Betas happen during polish';
   if (p.announcedDay === undefined) return 'Announce the game first';
   if (s.company.cash < betaCost(s, p)) return `Needs ${fmtMoney(betaCost(s, p))} for servers`;
@@ -512,6 +515,11 @@ function apply(c: Ctx, a: Action): string | null {
       }
       delete s.projects[a.projectId];
       if (p.kind === 'game' && p.announcedDay !== undefined) addRep(s, -(2), 'Cancelled an announced game');
+      if (p.kind === 'game' && p.earlyAccess) {
+        addRep(s, -6, 'Abandoned an Early Access game');
+        s.company.fans = Math.round(s.company.fans * 0.96);
+        pushNews(s, { category: 'studio', headline: `${p.concept.name} abandoned in Early Access`, body: `${fmtUnits(p.earlyAccess.units)} players paid for a game that will never be finished. Refund requests are pouring in.`, tone: 'bad' });
+      }
       if (p.kind === 'game' && p.concept.deal) {
         // the publisher wants its advance back
         spend(s, 'other_expense', p.concept.deal.advance);
@@ -925,6 +933,11 @@ function apply(c: Ctx, a: Action): string | null {
         pushNews(s, { category: 'studio', headline: `${COMPANY_BY_ID[d.publisherId]?.name ?? 'The publisher'} walks away from the table`, tone: 'bad' });
       }
       return null;
+    }
+    case 'earlyAccess': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      return startEarlyAccess(s, p);
     }
     case 'raiseFunding':
       return raiseFunding(s);

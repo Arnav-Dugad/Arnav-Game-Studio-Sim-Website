@@ -96,6 +96,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'endless_2050', name: 'Future Proof', desc: 'Reach 2050 in endless mode.', icon: 'satellite', check: (s) => fromDay(s.day).year >= 2050 },
   { id: 'revenue_100m', name: 'Nine Figures', desc: 'Earn $100M in lifetime revenue.', icon: 'money', check: (s) => s.progress.stats.totalRevenue >= 100_000_000 },
   { id: 'genre_master', name: 'Jack of All Genres', desc: 'Release games in 10 different genres.', icon: 'palette', check: (s) => new Set(rels(s).map((r) => r.concept.genre)).size >= 10 },
+  { id: 'ea_graduate', name: 'Out of the Oven', desc: 'Release a game scoring 80+ after Early Access.', icon: 'rocket', check: (s) => rels(s).some((r) => !!r.earlyAccess && r.score >= 80) },
   { id: 'garage_hit', name: 'Garage Miracle', desc: 'Score 85+ while still in the garage.', icon: 'wrench', check: (s) => s.office.tier === 1 && s.progress.stats.bestScore >= 85 },
 ];
 

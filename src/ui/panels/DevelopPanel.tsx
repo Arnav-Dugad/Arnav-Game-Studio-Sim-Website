@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { EA_PRICE, EA_STALE_WEEKS, EA_YEAR, earlyAccessBlocked, earlyAccessCost } from '@/sim/systems/earlyAccess';
 import { LOC_COST, LOC_WORK, LOC_YEAR, REGIONS, REGION_BY_ID, regionMix, regionShares, type RegionId } from '@/data/regions';
 import { BALANCE } from '@/data/balance';
 import { GENRE_BY_ID } from '@/data/genres';
@@ -157,6 +158,15 @@ function GameCard({ p }: { p: GameProject }) {
           {p.team.length > 8 && <span className="grid size-6 place-items-center rounded-full bg-bg2 text-[10px] ring-2 ring-[var(--panel)]">+{p.team.length - 8}</span>}
         </div>
         <span>
+          {p.earlyAccess && (
+            <>
+              <span title={`On sale for ${Math.floor((s.day - p.earlyAccess.day) / 7)} weeks · ${fmtMoney(p.earlyAccess.net)} earned so far${p.earlyAccess.stale ? ' · players are losing patience' : ''}`}>
+                Early Access <b className={`num ${p.earlyAccess.rating >= 70 ? 'text-good' : p.earlyAccess.rating < 50 ? 'text-bad' : 'text-ink'}`}>{p.earlyAccess.rating}</b> · <b className="num text-ink">{fmtUnits(p.earlyAccess.units)}</b> sold
+                {p.earlyAccess.stale && <b className="text-bad"> · overdue</b>}
+              </span>{' '}
+              ·{' '}
+            </>
+          )}
           {p.beta && (
             <>
               Beta says <b className="num text-ink">~{p.beta.predicted}</b> ·{' '}
@@ -211,6 +221,11 @@ function GameCard({ p }: { p: GameProject }) {
         {p.phase === 2 && !p.beta && fromDay(s.day).year >= 2005 && (
           <Button size="sm" icon="people" disabled={!!betaBlocked(s, p)} onClick={() => run({ type: 'openBeta', projectId: p.id })} title={betaBlocked(s, p) ?? `Two more weeks of polish with real players: a quarter of the bugs found, +0.15 hype and an early read on the score (${fmtMoney(betaCost(s, p))})`}>
             Open beta
+          </Button>
+        )}
+        {!p.earlyAccess && p.phase >= 1 && p.phase <= 2 && !p.concept.deal && fromDay(s.day).year >= EA_YEAR && (
+          <Button size="sm" icon="coin" disabled={!!earlyAccessBlocked(s, p)} onClick={() => run({ type: 'earlyAccess', projectId: p.id })} title={earlyAccessBlocked(s, p) ?? `Sell it on PC now at ${Math.round((1 - EA_PRICE) * 100)}% off while you keep building. Players file bugs and shape the design (up to +3% quality), and a good build spreads the word. Early Access buyers won't buy again at launch, and after ${Math.round((EA_STALE_WEEKS / 52) * 12)} months players lose patience. Storefront launch ${fmtMoney(earlyAccessCost(s, p))}.`}>
+            Early Access
           </Button>
         )}
         {!p.cut && p.phase < 3 && (

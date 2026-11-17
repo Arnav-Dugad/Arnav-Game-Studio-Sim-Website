@@ -388,6 +388,11 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             {r.concept.expansionOf && s.releases[r.concept.expansionOf] && <Pill tone="tech">Expansion for {s.releases[r.concept.expansionOf]!.name}</Pill>}
             {r.concept.remasterOf && <Pill tone="gold">Remaster</Pill>}
             {r.modded && <Pill tone="tech">Mod support</Pill>}
+            {r.earlyAccess && (
+              <span title={`${r.earlyAccess.weeks} weeks in Early Access · ${fmtUnits(r.earlyAccess.units)} copies sold before 1.0`}>
+                <Pill tone="tech">Early Access graduate</Pill>
+              </span>
+            )}
             {r.numberOne && <Pill tone="gold">#1 chart-topper</Pill>}
             {(r.copycats ?? 0) > 0 && (
               <span title={s.rivalGames.filter((g) => g.copycatOf === r.id).map((g) => `${g.name} (${s.rivals[g.company]?.name ?? g.company})`).join(', ') || undefined}>

@@ -1,6 +1,7 @@
 /**
  * The fixed-step simulation loop: 1 tick = 1 day. Subsystems run at their own cadence.
  */
+import { earlyAccessWeekly } from './systems/earlyAccess';
 import { objectivesDaily, objectivesQuarterly } from './systems/objectives';
 import { scenarioMonthly } from './systems/scenarios';
 import { employeeOfTheMonth } from './systems/studioLife';
@@ -130,6 +131,7 @@ export function tick(c: Ctx): void {
     if (relationsWeekly(c) && !s.cheats?.noEvents) fireEvent(c, 'feud');
     autoQueueResearch(s);
     updateSalesWeekly(c);
+    earlyAccessWeekly(c);
     stockWeekly(c);
     hypeWeekly(s);
     expireEvents(c);
