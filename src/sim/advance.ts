@@ -1,6 +1,7 @@
 /**
  * The fixed-step simulation loop: 1 tick = 1 day. Subsystems run at their own cadence.
  */
+import { mediaMonthly } from './systems/media';
 import { takeYearbookPhoto } from './systems/yearbook';
 import { fanMailMonthly } from './systems/fanMail';
 import { crowdfundDaily } from './systems/crowdfunding';
@@ -107,6 +108,7 @@ export function tick(c: Ctx): void {
     employeeOfTheMonth(c);
     lifeEventsMonthly(c);
     fanMailMonthly(c);
+    mediaMonthly(c);
     refreshCandidates(c);
     refreshOffers(c);
     if (d.month % 3 === 1) quarterlyEarnings(c);

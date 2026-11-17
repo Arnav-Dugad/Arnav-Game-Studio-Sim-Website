@@ -140,6 +140,23 @@ export interface PlacedItem {
 
 export type FloorStyle = 'auto' | 'wood' | 'carpet' | 'concrete' | 'tiles' | 'checker';
 
+export type MediaKind = 'comic' | 'board' | 'toys' | 'animated' | 'tv' | 'movie' | 'ride';
+
+export interface MediaDeal {
+  id: string;
+  franchiseId: string;
+  /** The series' name when signed. */
+  name: string;
+  kind: MediaKind;
+  control: 'licensed' | 'involved';
+  startDay: number;
+  releaseDay: number;
+  fee: number;
+  quality?: number;
+  outcome?: 'hit' | 'fine' | 'flop';
+  bonus?: number;
+}
+
 export interface YearbookPhoto {
   year: number;
   people: number;
@@ -765,6 +782,7 @@ export interface LifetimeStats {
   crowdfunded?: number;
   fanMail?: number;
   talks?: number;
+  mediaHits?: number;
   ovations?: number;
   /** Games that topped the weekly chart. */
   numberOnes?: number;
@@ -851,6 +869,8 @@ export interface GameState {
   fanMail?: FanMail[];
   /** A team photo every New Year's Day (systems/yearbook.ts). */
   yearbook?: YearbookPhoto[];
+  /** Licensed comics, toys, shows, films and rides (systems/media.ts). */
+  mediaDeals?: MediaDeal[];
   schemaVersion: number;
   seed: number;
   rng: RngState;

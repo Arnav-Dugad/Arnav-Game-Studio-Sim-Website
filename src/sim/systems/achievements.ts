@@ -102,6 +102,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'crowd_million', name: 'The Crowd Provides', desc: 'Raise $1M+ in one crowdfunding campaign.', icon: 'crowd', check: (s) => Object.values(s.releases).some((r) => (r.crowdfund?.raised ?? 0) >= 1_000_000) || Object.values(s.projects).some((p) => p.kind === 'game' && !!p.crowdfund?.success && p.crowdfund.raised >= 1_000_000) },
   { id: 'fridge_worthy', name: 'Fridge-Worthy', desc: 'Pin eight fan drawings to your Fan Art Wall.', icon: 'palette', check: (s) => (s.fanMail ?? []).filter((m) => m.pinned).length >= 8 },
   { id: 'thought_leader', name: 'Thought Leader', desc: 'Earn three standing ovations at the Developers Summit.', icon: 'star', check: (s) => (s.progress.stats.ovations ?? 0) >= 3 },
+  { id: 'multimedia', name: 'Multimedia Empire', desc: 'Have hits in four different media (comics, toys, TV, film…).', icon: 'crown', check: (s) => new Set((s.mediaDeals ?? []).filter((d) => d.outcome === 'hit').map((d) => d.kind)).size >= 4 },
   { id: 'garage_hit', name: 'Garage Miracle', desc: 'Score 85+ while still in the garage.', icon: 'wrench', check: (s) => s.office.tier === 1 && s.progress.stats.bestScore >= 85 },
 ];
 

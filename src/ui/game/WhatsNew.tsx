@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18t';
+export const WHATS_NEW_VERSION = '2026-11-18u';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'sparkle', title: 'Media & licensing', body: 'Company → IP → Licensing: turn your series into comics, board games, toy lines, cartoons, TV shows, films and theme-park rides. Take the money and run, or keep creative control for half the fee and a much better shot at a hit. Hits grow the fan base and send viewers back to your games; flops embarrass the series.' },
   { icon: 'megaphone', title: 'Conference talks', body: 'From 1988 the studio gets one speaking slot a year at the Developers Summit (open a senior’s or lead’s card). They talk about a game they made — or give an honest post-mortem of a flop. A great talk builds reputation and brings better applicants for three months… and puts your star in front of rival recruiters.' },
   { icon: 'people', title: 'Studio yearbook', body: 'Every New Year’s Day your team lines up for a class photo (Company → Yearbook) — the founder in front, the old guard behind, with the year’s games and awards in the caption. Their faces show how the year went. Watch the garage crew grow into an empire.' },
   { icon: 'palette', title: 'Fan mail & fan art', body: 'Players now write in about the games they love — thank-yous, funny stories, sequel requests — and kids send crayon drawings of your games (News → Fan mail). Every letter cheers up the people who made that game. Build a Fan Art Wall and pin your favourite drawings up in the office.' },

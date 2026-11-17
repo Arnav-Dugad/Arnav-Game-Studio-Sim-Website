@@ -1400,6 +1400,7 @@ export const EVENT_DEFS: EventDef[] = [
     make: ({ s }) => {
       const fr = bigFranchise(s);
       if (!fr) return null;
+      if ((s.mediaDeals ?? []).some((d) => d.franchiseId === fr.id && d.kind === 'movie' && s.day - d.startDay < 365 * 4)) return null; // already making one
       const fee = Math.round(money(500_000, s.day) * Math.min(4, fr.fans / 1_000_000));
       const coCost = money(800_000, s.day);
       return {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MEDIA, MEDIA_KINDS, mediaBlocked, mediaFee } from '@/sim/systems/media';
 import { fanConBlocked, fanConCost, negotiateOdds } from '@/sim/actions';
 import { COMPANY_BY_ID } from '@/data/companies';
 import { GENRE_BY_ID } from '@/data/genres';
@@ -423,9 +424,12 @@ function IP() {
   const s = useGame((g) => g.s)!;
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
+  const [openMedia, setOpenMedia] = useState<string | null>(null);
   const fr = Object.values(s.franchises).sort((a, b) => b.fans - a.fans);
   if (!fr.length) return <Empty icon="chain" title="No IP yet">Every game you ship becomes an IP you can build sequels on.</Empty>;
   return (
+    <div className="space-y-3">
+    <MediaList />
     <ul className="space-y-1.5">
       {fr.map((f) => {
         const price = Math.max(money(5_000, s.day), f.fans * 4 * (f.bestScore / 100) * inflation(s.day) * 0.8);
@@ -440,6 +444,9 @@ function IP() {
                 {f.fatigue > 0.15 && ` · fatigue ${Math.round(f.fatigue * 100)}%`}
               </div>
             </div>
+            <Button size="sm" icon="sparkle" variant={openMedia === f.id ? 'primary' : 'secondary'} onClick={() => setOpenMedia((x) => (x === f.id ? null : f.id))} aria-expanded={openMedia === f.id}>
+              Licensing
+            </Button>
             {f.fans >= 300_000 && (
               <Button size="sm" icon="people" disabled={!!fanConBlocked(s, f)} title={fanConBlocked(s, f) ?? 'Fans +8%, morale up, hype for any sequel in development'} onClick={() => useGame.getState().actOrToast({ type: 'fanCon', franchiseId: f.id }, `${f.name} Con is a hit!`)}>
                 Fan con · {fmtMoney(fanConCost(s, f))}
@@ -459,5 +466,74 @@ function IP() {
         );
       })}
     </ul>
+    {openMedia && s.franchises[openMedia] && <MediaPicker franchiseId={openMedia} />}
+    </div>
+  );
+}
+
+/** What licensing deals a series can sign, and on what terms. */
+function MediaPicker({ franchiseId }: { franchiseId: string }) {
+  const s = useGame((g) => g.s)!;
+  const f = s.franchises[franchiseId]!;
+  return (
+    <div className="rounded-2xl border border-line p-3 text-xs">
+      <div className="text-sm font-semibold">License {f.name}</div>
+      <p className="mt-0.5 text-ink3">
+        A licensee pays up front and makes it; it comes out months later. A hit grows the fan base (screen adaptations send people back to the latest game) and pays royalties; a flop embarrasses the series. Hands-off pays the full fee; keeping creative control pays half but makes a hit far likelier. Better games make better adaptations.
+      </p>
+      <ul className="mt-2 space-y-1">
+        {MEDIA_KINDS.map((k) => {
+          const d = MEDIA[k];
+          const why = mediaBlocked(s, f, k);
+          const locked = fromDay(s.day).year < d.year;
+          if (locked) return null;
+          return (
+            <li key={k} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2">
+              <span>
+                <b>{d.name}</b> <span className="text-ink3">· {d.months} months · fans +{Math.round(d.boost * 100)}% on a hit</span>
+                {why && <span className="block text-ink3">{why}</span>}
+              </span>
+              {!why && (
+                <span className="flex gap-1.5">
+                  <Button size="sm" onClick={() => useGame.getState().actOrToast({ type: 'mediaDeal', franchiseId, kind: k, control: 'licensed' }, `Deal signed: the ${f.name} ${d.noun}`)}>
+                    Hands-off {fmtMoney(mediaFee(s, f, k, 'licensed'))}
+                  </Button>
+                  <Button size="sm" variant="primary" onClick={() => useGame.getState().actOrToast({ type: 'mediaDeal', franchiseId, kind: k, control: 'involved' }, `Deal signed: the ${f.name} ${d.noun}`)}>
+                    Creative control {fmtMoney(mediaFee(s, f, k, 'involved'))}
+                  </Button>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** Deals in production and how past ones did. */
+function MediaList() {
+  const s = useGame((g) => g.s)!;
+  const deals = [...(s.mediaDeals ?? [])].reverse().slice(0, 12);
+  if (!deals.length) return null;
+  return (
+    <div className="rounded-2xl border border-line p-3 text-xs">
+      <div className="mb-1.5 text-sm font-semibold">Media & licensing</div>
+      <ul className="space-y-1">
+        {deals.map((d) => (
+          <li key={d.id} className="flex items-center justify-between gap-2">
+            <span>
+              <b>{d.name}</b> {MEDIA[d.kind].noun}
+              <span className="text-ink3"> · {d.control === 'involved' ? 'creative control' : 'hands-off'} · {fmtMoney(d.fee + (d.bonus ?? 0))}</span>
+            </span>
+            {d.outcome === undefined ? (
+              <span className="text-ink3">out {formatDate(d.releaseDay, false)}</span>
+            ) : (
+              <Pill tone={d.outcome === 'hit' ? 'good' : d.outcome === 'flop' ? 'bad' : 'neutral'}>{d.outcome === 'hit' ? 'Hit' : d.outcome === 'flop' ? 'Flop' : 'Fine'}</Pill>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
