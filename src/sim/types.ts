@@ -332,6 +332,8 @@ export interface GameProject {
   reviewPolicy?: 'early' | 'launch' | 'none';
   /** This sequel resolves the series' cliffhanger. */
   paysCliffhanger?: boolean;
+  /** Someone's passion project (they pitched it): their staff id. */
+  passion?: string;
   /** A documentary crew is filming its making (systems/documentary.ts): since when, and crunch days caught on camera. */
   documentary?: { day: number; crunchDays: number };
   /** A co-development partner: their contribution and revenue share. */
@@ -449,6 +451,8 @@ export interface Release {
   liveMul?: number;
   /** Archived by a preservation society. */
   archived?: boolean;
+  /** It was someone's passion project (their staff id). */
+  passion?: string;
   /** Licensed content (systems/licences.ts): renewed until this day; once delisted it never sells again. */
   licenceUntil?: number;
   delisted?: boolean;
@@ -922,6 +926,8 @@ export interface Company {
   lastLayoffDay?: number;
   /** The no-crunch pledge (systems/crunchPledge.ts): active since, ever taken, last broken. */
   crunchPledge?: { since?: number; ever?: boolean; brokenDay?: number; withdrawnDay?: number };
+  /** A greenlit staff pitch waiting to be made (systems/pitches.ts). */
+  pitch?: { staffId: string; genre: GenreId; topic: string; until: number };
   /** The year's awards campaign (systems/awardsCampaign.ts). */
   awardsCampaign?: { year: number; releaseId: string };
   /** Recruitment spend level 0..3 (job ads/headhunting). */

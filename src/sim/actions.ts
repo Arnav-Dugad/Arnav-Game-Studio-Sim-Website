@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { claimPitch } from './systems/pitches';
 import { runCampaign } from './systems/awardsCampaign';
 import { breakPledge, takePledge, withdrawPledge } from './systems/crunchPledge';
 import type { PriceTier, Release } from './types';
@@ -480,6 +481,7 @@ function apply(c: Ctx, a: Action): string | null {
         s.franchises[g.franchiseId]!.openCliffhanger = undefined;
       }
       assignTeam(s, id, g.team);
+      claimPitch(s, proj);
       if (deal) {
         earn(s, 'advances', proj.concept.deal!.advance);
         s.offers.deals = s.offers.deals.filter((d) => d.id !== deal.id);

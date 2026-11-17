@@ -439,6 +439,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     ...(ea ? { earlyAccess: { weeks: eaWeeks, units: ea.units, net: Math.round(ea.net) } } : {}),
     ...(cf ? { crowdfund: { raised: cf.raised, backers: cf.backers, late: cfLate } } : {}),
     ...(modded ? { modded: true } : {}),
+    ...(p.passion ? { passion: p.passion } : {}),
   };
   if (ea) {
     rel.units += ea.units;

@@ -2,6 +2,8 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import type { GenreId } from '../../data/types';
+import { PITCH_DAYS, makePitch, pitchers, pitchText } from './pitches';
 import { LICENCE_YEARS, delist, licenceDecisionDue, licensedParts, renewalCost } from './licences';
 import { docEligible } from './documentary';
 import { communityNudge } from './community';
@@ -852,6 +854,38 @@ export const EVENT_DEFS: EventDef[] = [
         p.bugs *= 1.05;
       } else if (p.phase <= 2) p.phaseDays[Math.min(2, p.phase) as 0 | 1 | 2] += 14;
       else p.extraDays += 14;
+    },
+  },
+  {
+    id: 'staff_pitch',
+    art: 'letters',
+    cooldown: 300,
+    weight: (s) => (!s.company.pitch && s.releaseOrder.length >= 1 && pitchers(s).length ? 0.22 : 0),
+    make: ({ s, rng }) => {
+      const pool = pitchers(s);
+      const st = pool.length ? rng.pick(pool) : undefined;
+      if (!st) return null;
+      const idea = makePitch(s, rng, st);
+      if (!idea) return null;
+      const first = st.name.split(' ')[0];
+      return {
+        title: `${first} has a pitch`,
+        body: `${st.name} corners you by the coffee machine with a sketchbook: a ${pitchText(idea)}. “I’ve wanted to make this since I was a kid.”`,
+        options: [
+          { id: 'yes', label: 'Greenlight it', preview: `It waits in the new-game screen for six months. Make it with ${first} on the team: a passion project (fresh ideas, a very happy ${first}).` },
+          { id: 'no', label: 'Not right now', preview: `${first} is a little deflated (a small mood dip)` },
+        ],
+        ctx: { staff: st.id, genre: idea.genre, topic: idea.topic },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const st = s.staff[String(e.ctx.staff)];
+      if (!st) return;
+      if (opt === 'yes') {
+        s.company.pitch = { staffId: st.id, genre: String(e.ctx.genre) as GenreId, topic: String(e.ctx.topic), until: s.day + PITCH_DAYS };
+        st.mood = { v: 3, until: s.day + 60, label: 'Pitch greenlit' };
+      } else if (!st.mood || st.mood.until <= s.day) st.mood = { v: -2, until: s.day + 30, label: 'Pitch turned down' };
+      st.moraleWhy = undefined;
     },
   },
   {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { pitchText } from '@/sim/systems/pitches';
 import { pledged } from '@/sim/systems/crunchPledge';
 import { knownFor } from '@/sim/systems/renown';
 import { priceTierAllowed } from '@/sim/systems/pricing';
@@ -460,6 +461,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const toast = useGame((g) => g.toast);
   const yr = fromDay(s.day).year;
   const genres = availableGenres(s);
+  const pitch = s.company.pitch && s.company.pitch.until >= s.day ? s.company.pitch : undefined;
+  const pitchStaff = pitch ? s.staff[pitch.staffId] : undefined;
   const renowned = new Set(knownFor(s).map((k) => k.genre));
   // genre cards: where the market is heading and how your studio has done there
   const genreStats = useMemo(() => {
@@ -627,6 +630,25 @@ function NewGame({ onDone }: { onDone: () => void }) {
             }}
           >
             Make a new game instead
+          </Button>
+        </div>
+      )}
+      {pitch && pitchStaff && !baseRel && !locked && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/40 bg-accent/5 px-3 py-2.5 text-xs">
+          <span className="min-w-0 flex-1 text-ink2">
+            ✨ <b className="text-ink">{pitchStaff.name.split(' ')[0]}’s pitch:</b> a {pitchText(pitch)}. Make it with {pitchStaff.name.split(' ')[0]} on the team before {formatDate(pitch.until)} and it’s their passion project.
+          </span>
+          <Button
+            size="sm"
+            onClick={() => {
+              if (genres.some((x) => x.ok && x.g.id === pitch.genre)) setGenre(pitch.genre);
+              if (topics.some((x) => x.ok && x.t.id === pitch.topic)) setTopic(pitch.topic);
+              if (idle.some((x) => x.id === pitch.staffId)) setTeam((tm) => (tm.includes(pitch.staffId) ? tm : [pitch.staffId, ...tm]));
+              setFranchiseId('');
+              sound.play('click');
+            }}
+          >
+            Use the pitch
           </Button>
         </div>
       )}

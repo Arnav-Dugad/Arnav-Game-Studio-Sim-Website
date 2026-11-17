@@ -107,6 +107,8 @@ export function postMortem(r: Release): PostMortem {
   else if (r.hypeAtLaunch < 0.15 && !r.shadowDrop && !r.concept.expansionOf) push(false, { text: 'Few people knew it was coming', lesson: 'Announce it and run some marketing before launch', weight: 0.1 });
   if (r.crowdfund && r.crowdfund.late > 0) push(false, { text: `Backers waited ${Math.ceil(r.crowdfund.late / 30)} month(s) longer than promised`, lesson: 'Promise backers a date you can keep', weight: 0.1 });
   if (r.numberOne) push(true, { text: 'It topped the sales chart', weight: 0.2 });
+  const passion = r.passion ? r.credits?.find((c) => c.id === r.passion) : undefined;
+  if (passion) push(true, { text: `It was ${passion.name.split(' ')[0]}’s passion project`, weight: 0.07 });
   if (r.awards.length) push(true, { text: `It won ${r.awards.length === 1 ? 'an award' : `${r.awards.length} awards`}`, weight: 0.2 });
 
   right.sort((a, b) => b.weight - a.weight);
