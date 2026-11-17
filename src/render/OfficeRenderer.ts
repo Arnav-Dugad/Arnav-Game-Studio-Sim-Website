@@ -869,6 +869,17 @@ export class OfficeRenderer {
     }
   }
 
+  /** A flop: the team sighs. */
+  sulk(): void {
+    const GLYPHS_SAD = ['😞', '😩', '💧', '🙃'];
+    for (const a of [...this.agents.values()].filter((x) => x.c.visible).slice(0, 80)) {
+      if (Math.random() < 0.6) {
+        this.showBubble(a, GLYPHS_SAD[Math.floor(Math.random() * GLYPHS_SAD.length)]!);
+        a.bubbleT = 2 + Math.random();
+      }
+    }
+  }
+
   /** Coin burst at a world position (sales pops). */
   burst(count = 8): void {
     const s = this.cb.getState();

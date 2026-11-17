@@ -110,6 +110,10 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
   useEffect(() => {
     if (cheer > 0) rendererRef.current?.celebrate(!prefersReducedMotion(useSettings.getState()));
   }, [cheer]);
+  const gloom = useGame((g) => g.gloom);
+  useEffect(() => {
+    if (gloom > 0) rendererRef.current?.sulk();
+  }, [gloom]);
 
   if (!s) return null;
   const tier = tierDef(s.office.tier);

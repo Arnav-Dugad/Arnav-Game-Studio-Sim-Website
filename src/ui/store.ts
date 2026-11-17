@@ -69,8 +69,9 @@ interface GameStore {
   modals: Modal[];
   toasts: Toast[];
   pops: Pop[];
-  /** Bumped when the office should celebrate (a hit launch, an award). */
+  /** Bumped when the office should celebrate (a hit launch, an award) or sulk (a flop). */
   cheer: number;
+  gloom: number;
   build: BuildState | null;
   heat: HeatKind;
   floor: number;
@@ -116,6 +117,7 @@ export const useGame = create<GameStore>((set, get) => ({
   toasts: [],
   pops: [],
   cheer: 0,
+  gloom: 0,
   build: null,
   heat: 'none',
   floor: 0,
@@ -198,9 +200,12 @@ export function handleEvents(events: SimEvent[]): void {
   let cheer = false;
   for (const e of events) {
     switch (e.type) {
-      case 'release':
-        if ((s.releases[e.releaseId]?.score ?? 0) >= 75) cheer = true;
+      case 'release': {
+        const sc = s.releases[e.releaseId]?.score ?? 60;
+        if (sc >= 75) cheer = true;
+        else if (sc < 45) useGame.setState((st) => ({ gloom: st.gloom + 1 }));
         break;
+      }
       case 'income':
         if (e.source === 'sales') income += e.amount;
         else g.toast({ text: `Contract paid ${fmtMoney(e.amount)}`, tone: 'good', icon: 'cash' });
