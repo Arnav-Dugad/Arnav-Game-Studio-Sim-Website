@@ -538,6 +538,13 @@ export class OfficeRenderer {
     this.alumni = al.map((a) => ({ color: GENRE_POSTER[Math.abs(hashStr(a.name)) % GENRE_POSTER.length]!, legend: a.legend }));
     const mc = s.company.mascot;
     this.mascot = mc ? { kind: mc.kind, color: parseInt(mc.color.slice(1), 16), acc: mc.acc } : undefined;
+    if (this.alumni.length !== this.lastAlumni) {
+      this.lastAlumni = this.alumni.length;
+      for (const [k, tex] of this.textures) if (k.startsWith('alumni_wall|')) {
+        tex.destroy(true);
+        this.textures.delete(k);
+      }
+    }
     if (this.wallKey !== this.lastWallKey) {
       this.lastWallKey = this.wallKey;
       for (const [k, tex] of this.textures) if (k.startsWith('release_wall|')) {
@@ -676,6 +683,7 @@ export class OfficeRenderer {
   private mascot?: { kind: string; color: number; acc: string };
   private lastFanKey = '';
   private lastWallKey = '';
+  private lastAlumni = -1;
   private agentColor: number | undefined;
 
   private texFor(id: ItemId, rot: 0 | 1, era: number): { tex: Texture; ox: number; oy: number } {
