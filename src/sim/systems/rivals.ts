@@ -206,7 +206,7 @@ export function rivalsMonthly(c: Ctx): void {
     const units = Math.round(rel.units * rng.range(0.05, 0.25));
     const plats = rel.concept.platforms.filter((p) => live.some((l) => l.id === p));
     const name = rng.chance(0.5) ? `${genTitle(rng, rel.concept.topic)}` : `${rel.name.split(/[:\s]/)[0]} ${rng.pick(['Rush', 'Legends', 'Mania', 'Heroes', 'World', 'Tycoon', 'Blitz'])}`;
-    addRivalGame(s, { name, company: r.id, genre: rel.concept.genre, topic: rel.concept.topic, platforms: plats.length ? plats : [live[0]!.id], day: s.day, score, units, copycatOf: rel.id });
+    addRivalGame(s, { name, company: r.id, genre: rel.concept.genre, topic: rel.concept.topic, platforms: plats.length ? plats : [live[0]!.id], day: s.day, score, units, copycatOf: rel.id, contested: true });
     rel.copycats = (rel.copycats ?? 0) + 1;
     addRep(s, 0.5, 'Imitated by rivals');
     pushNews(s, { category: 'rival', headline: `${r.name} rushes out ${name}`, body: `It’s… very inspired by ${rel.name}. Critics give it ${score}.`, tone: 'neutral' });

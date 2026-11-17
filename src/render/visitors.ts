@@ -121,6 +121,7 @@ export class VisitorSystem {
     // a rival's headhunter calls on whoever they're trying to poach
     const poach = s.pendingEvents.find((e) => e.defId === 'poach_offer' && !this.poachSeen.has(e.uid));
     const target = poach ? people.find((p) => p.id === String(poach.ctx.staff)) : undefined;
+    if (poach && !target) return; // the person they want isn't here: no random visitors in the meantime
     if (poach && target && !this.list.some((v) => v.kind === 'headhunter')) {
       this.poachSeen.add(poach.uid);
       this.spawn(s, floor, 'headhunter', target, [pick(['Ever thought about moving on?', 'Got a minute? Off the record.', 'They’d double your salary…']), pick(['I’m happy here… I think.', 'Let me think about it.', 'Not in front of my boss!'])]);
@@ -219,7 +220,8 @@ export class VisitorSystem {
       for (const v of [...this.list]) this.remove(v);
       this.floor = floor;
     }
-    if (s.pendingEvents.some((e) => e.defId === 'poach_offer' && !this.poachSeen.has(e.uid))) this.nextT = Math.min(this.nextT, 2);
+    const waiting = s.pendingEvents.find((e) => e.defId === 'poach_offer' && !this.poachSeen.has(e.uid));
+    if (waiting && host.people().some((p) => p.id === String(waiting.ctx.staff))) this.nextT = Math.min(this.nextT, 2);
     this.nextT -= dt;
     if (this.nextT <= 0 && !reducedMotion) {
       this.nextT = 35 + Math.random() * 45;

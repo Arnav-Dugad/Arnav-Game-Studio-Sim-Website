@@ -16,11 +16,12 @@ export class NightShift {
   private key = '';
   private acc = 0;
 
-  constructor(layer: Container) {
-    this.shade.zIndex = 9_999_000;
+  constructor(below: Container, items: Container) {
+    // the shade sits under furniture and people; lamp glows go among them
     this.lamps.zIndex = 9_999_001;
     this.lamps.blendMode = 'add';
-    layer.addChild(this.shade, this.lamps);
+    below.addChild(this.shade);
+    items.addChild(this.lamps);
   }
 
   update(s: GameState, floor: number, dt: number, crunchers: { x: number; y: number }[], night: boolean, reducedMotion: boolean): void {
@@ -33,7 +34,7 @@ export class NightShift {
       this.shade.clear();
       this.shade.rect(-20, -1.6 * T, t.w * T + 40, (t.h + 1.6) * T + 30).fill(0x1b2440);
     }
-    this.shade.alpha = this.level * 0.22;
+    this.shade.alpha = this.level * 0.3;
     this.shade.visible = this.level > 0.01;
     this.lamps.visible = this.level > 0.01;
     this.acc += dt;

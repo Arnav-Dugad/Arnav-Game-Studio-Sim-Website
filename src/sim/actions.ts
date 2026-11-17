@@ -63,7 +63,7 @@ export interface StartGamePayload {
 
 /** Fan conventions for a big series (once every two years). */
 export function fanConCost(s: GameState, f: { fans: number }): number {
-  return Math.round(Math.max(money(40_000, s.day), f.fans * 0.04 * inflation(s.day)));
+  return Math.round(Math.max(money(60_000, s.day), f.fans * 0.6 * inflation(s.day)));
 }
 export function fanConBlocked(s: GameState, f: { fans: number; lastCon?: number }): string | null {
   if (f.fans < 300_000) return 'Needs 300k fans';
@@ -864,7 +864,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (p.bugBashed) return 'Already bashed this one';
       if (!finite(a.hits) || a.hits < 0) return 'Invalid result';
       p.bugBashed = true;
-      s.progress.stats.bestBash = Math.max(s.progress.stats.bestBash ?? 0, Math.min(40, Math.floor(a.hits)));
+      s.progress.stats.bestBash = Math.max(s.progress.stats.bestBash ?? 0, Math.min(45, Math.floor(a.hits)));
       p.bugs *= 1 - Math.min(0.25, Math.floor(a.hits) * 0.01);
       s.company.moraleMods.push({ v: 2, until: s.day + 21, label: 'Bug bash' });
       return null;
@@ -876,9 +876,9 @@ function apply(c: Ctx, a: Action): string | null {
       if (why) return why;
       spend(s, 'marketing', fanConCost(s, f));
       f.lastCon = s.day;
-      f.fans = Math.round(f.fans * 1.08);
-      s.company.moraleMods.push({ v: 3, until: s.day + 45, label: `${f.name} Con` });
-      for (const p of Object.values(s.projects)) if (p.kind === 'game' && p.concept.franchiseId === f.id) p.hype = Math.min(2, p.hype + 0.3);
+      f.fans = Math.round(f.fans + Math.min(f.fans * 0.08, 400_000));
+      if (!s.company.moraleMods.some((m) => m.label.endsWith(' Con') && m.until > s.day)) s.company.moraleMods.push({ v: 3, until: s.day + 45, label: `${f.name} Con` });
+      for (const p of Object.values(s.projects)) if (p.kind === 'game' && p.concept.franchiseId === f.id) p.hype = Math.max(p.hype, Math.min(BALANCE.HYPE_MAX, p.hype + 0.3));
       pushNews(s, { category: 'studio', headline: `Thousands of fans pack ${f.name} Con`, body: 'Cosplay, panels, a surprise announcement — and a very long merch queue.', tone: 'good' });
       return null;
     }

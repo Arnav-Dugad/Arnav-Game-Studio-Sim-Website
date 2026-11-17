@@ -252,7 +252,7 @@ export function mentorBlocked(s: GameState, mentee: Staff, mentor: Staff): strin
   if (mentor.role !== 'founder' && mentor.level !== 'senior' && mentor.level !== 'lead') return `${mentor.name} isn’t senior enough`;
   if (mentor.role !== 'founder' && mentor.role !== mentee.role) return 'Mentors teach their own craft';
   if (mentor.mentorId) return `${mentor.name} has a mentor of their own`;
-  if (menteesOf(s, mentor.id).length >= MAX_MENTEES) return `${mentor.name} already mentors ${MAX_MENTEES} people`;
+  if ((menteeCounts(s).get(mentor.id) ?? 0) >= MAX_MENTEES) return `${mentor.name} already mentors ${MAX_MENTEES} people`;
   return null;
 }
 
@@ -496,6 +496,7 @@ export function updateStaffMonthly(c: Ctx): void {
           if (m) {
             pushNews(s, { category: 'staff', headline: `${st.name} graduates from ${m.name}’s mentorship`, tone: 'good' });
             s.progress.stats.graduates = (s.progress.stats.graduates ?? 0) + 1;
+            invalidateMentees(s);
           }
         }
       }
@@ -568,6 +569,7 @@ function retirements(c: Ctx): void {
 }
 
 export function removeStaff(s: GameState, id: string): void {
+  invalidateMentees(s);
   for (const x of Object.values(s.staff)) if (x.mentorId === id) x.mentorId = undefined;
   const st = s.staff[id];
   if (!st) return;

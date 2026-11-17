@@ -145,7 +145,9 @@ export class OfficeRenderer {
   private seasonDecor = new SeasonDecor(this.itemLayer);
   private visitors = new VisitorSystem(this.itemLayer);
   private monitors = new ScreenSystem(this.itemLayer);
-  private nightShift = new NightShift(this.itemLayer);
+  /** Dims the floor and walls during crunch (below items and people, so bubbles stay readable). */
+  private dusk = new Container();
+  private nightShift = new NightShift(this.dusk, this.itemLayer);
   private season: Season | null = null;
   private lastDay = -1;
   private bdayGreeted = new Set<string>();
@@ -171,7 +173,7 @@ export class OfficeRenderer {
     this.app.canvas.style.touchAction = 'none';
     this.app.canvas.style.display = 'block';
     this.itemLayer.sortableChildren = true;
-    this.world.addChild(this.staticLayer, this.heatLayer, this.itemLayer, this.ghost, this.fxLayer);
+    this.world.addChild(this.staticLayer, this.dusk, this.heatLayer, this.itemLayer, this.ghost, this.fxLayer);
     this.app.stage.addChild(this.world);
     this.readTheme();
     this.themeObserver = new MutationObserver(() => this.readTheme());
@@ -811,6 +813,7 @@ export class OfficeRenderer {
       a.c.visible = agentFloor === floor && !away;
       a.floor = agentFloor;
       if (!a.c.visible) {
+        a.level = st.level; // promoted off-screen: no belated party
         a.path = [];
         a.mode = 'desk';
         continue;

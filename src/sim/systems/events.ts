@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { BALANCE } from '../../data/balance';
 import { pairKey, worstFeud } from './relations';
 import { COMPANY_BY_ID } from '../../data/companies';
 import { clamp } from '../breakdown';
@@ -76,10 +77,11 @@ export const EVENT_DEFS: EventDef[] = [
     },
     resolve: ({ s }, e, opt) => {
       const cost = Number(e.ctx.cost);
-      if (opt === 'ac') {
+      if (opt === 'ac' && s.company.cash >= cost) {
         spend(s, 'office', cost);
         mod(s, 2, 30, 'New air conditioning');
-      } else if (opt === 'icecream') {
+        s.eventCooldowns.heat_wave = s.day + 365 * 200; // proper AC: no more heat waves
+      } else if (opt === 'icecream' || opt === 'ac') {
         spend(s, 'other_expense', cost / 6);
         for (const st of Object.values(s.staff)) st.energy = clamp(st.energy - 10, 0, 100);
       } else mod(s, -6, 30, 'Heat wave');
@@ -103,7 +105,7 @@ export const EVENT_DEFS: EventDef[] = [
       };
     },
     resolve: ({ s }, e, opt) => {
-      if (opt === 'ups') {
+      if (opt === 'ups' && s.company.cash >= Number(e.ctx.ups)) {
         spend(s, 'office', Number(e.ctx.ups));
         s.eventCooldowns.power_outage = s.day + 365 * 200; // backup power: no more blackouts
       }
@@ -131,7 +133,7 @@ export const EVENT_DEFS: EventDef[] = [
       };
     },
     resolve: ({ s }, e, opt) => {
-      if (opt === 'match') {
+      if (opt === 'match' && s.company.cash >= Number(e.ctx.gift)) {
         spend(s, 'other_expense', Number(e.ctx.gift));
         addRep(s, 3, 'Charity marathon');
         s.company.fans += 20_000;
@@ -163,7 +165,7 @@ export const EVENT_DEFS: EventDef[] = [
     resolve: ({ s }, e, opt) => {
       const r = s.releases[String(e.ctx.rel)];
       if (opt === 'invite') {
-        for (const p of activeGames(s)) p.hype = Math.min(2, p.hype + 0.25);
+        for (const p of activeGames(s)) p.hype = Math.max(p.hype, Math.min(BALANCE.HYPE_MAX, p.hype + 0.25));
         mod(s, 4, 30, 'A celebrity visited');
       } else if (r?.concept.franchiseId && s.franchises[r.concept.franchiseId]) s.franchises[r.concept.franchiseId]!.fans += Math.round(r.units * 0.05);
       else s.company.fans += 10_000;

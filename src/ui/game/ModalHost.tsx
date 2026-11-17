@@ -54,6 +54,7 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       (modal.kind === 'majorNews' && !s.news.some((n) => n.id === modal.newsId)) ||
       (modal.kind === 'rival' && !s.rivals[modal.rivalId]) ||
       (modal.kind === 'gala' && ![...(s.awardHistory ?? [])].reverse().find((y) => y.year === modal.year)?.winners.some((w) => w.mine)) ||
+      (modal.kind === 'bugBash' && s.projects[modal.projectId]?.kind !== 'game') ||
       (modal.kind === 'event' && !s.pendingEvents.some((e) => e.uid === modal.uid)));
   useEffect(() => {
     if (stale) pop();

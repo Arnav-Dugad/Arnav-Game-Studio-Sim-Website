@@ -191,7 +191,9 @@ function GameCard({ p }: { p: GameProject }) {
           Polish +2w
         </Button>
         {p.phase >= 2 && !p.bugBashed && (
-          <Button size="sm" icon="bug" onClick={() => useGame.getState().pushModal({ kind: 'bugBash', projectId: p.id })} title="A 20-second mini-game: squash bugs to fix up to 25% of them (once per game)">
+          <Button size="sm" icon="bug" onClick={() => {
+              if (!useGame.getState().modals.some((m) => m.kind === 'bugBash')) useGame.getState().openModalNow({ kind: 'bugBash', projectId: p.id });
+            }} title="A 20-second mini-game: squash bugs to fix up to 25% of them (once per game)">
             Bug bash
           </Button>
         )}
