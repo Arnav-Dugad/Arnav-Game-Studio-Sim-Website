@@ -174,6 +174,7 @@ export class OfficeRenderer {
   private lastDay = -1;
   private bdayGreeted = new Set<string>();
   private checkInSeen = new Map<string, number>();
+  private bonusSeen = new Set<string>();
   private themeObserver: MutationObserver | null = null;
 
   constructor(private cb: RendererCallbacks) {}
@@ -1156,6 +1157,19 @@ export class OfficeRenderer {
 
   /** Right after a one-on-one, the person says (a short version of) what's on their mind. */
   private checkInMoments(s: GameState, floor: number): void {
+    // launch bonuses: everyone who got a cheque waves it about
+    for (const id of s.releaseOrder.slice(-3)) {
+      const r = s.releases[id];
+      if (!r?.bonusPaid || this.bonusSeen.has(r.id) || s.day - r.day > 70) continue;
+      this.bonusSeen.add(r.id);
+      for (const c of r.credits ?? []) {
+        const a = this.agents.get(c.id);
+        if (!a || !a.c.visible || a.floor !== floor) continue;
+        this.showBubble(a, '💸');
+        a.bubbleT = 3;
+        a.anim.joy = 1.2;
+      }
+    }
     for (const id of s.company.checkInLog?.length ? Object.keys(s.staff) : []) {
       const st = s.staff[id];
       const ci = st?.checkIn;
