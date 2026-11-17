@@ -130,7 +130,7 @@ export function StudioHQ({ tier, name, month = 6, accent = '#e07a5f', width = 32
       );
   }
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: width, height: 'auto' }} role="img" aria-label={`${name}’s headquarters`} className="block">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: width, height: 'auto' }} role="img" aria-label={`${name}’s headquarters`} className="mx-auto block">
       <defs>
         <linearGradient id={`sky${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={sky[0]} />

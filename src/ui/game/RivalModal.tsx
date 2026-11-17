@@ -1,4 +1,5 @@
 import { COMPANY_BY_ID } from '@/data/companies';
+import { StudioHQ } from '../art/StudioHQ';
 import { FRANCHISES } from '@/data/franchises';
 import { GENRE_BY_ID } from '@/data/genres';
 import { PERSON_BY_ID } from '@/data/people';
@@ -28,6 +29,11 @@ export function RivalModal({ rivalId, onClose }: { rivalId: string; onClose: () 
   const nem = nemesis(s);
   return (
     <Modal open onClose={onClose} title={r.name} wide>
+      {r.alive && (
+        <div className="mb-3 flex justify-center overflow-hidden rounded-xl">
+          <StudioHQ tier={r.staff < 8 ? 1 : r.staff < 25 ? 2 : r.staff < 70 ? 3 : r.staff < 180 ? 4 : r.staff < 450 ? 5 : 6} name={r.name} month={fromDay(s.day).month} accent={r.color} width={360} />
+        </div>
+      )}
       <div className="flex items-start gap-4">
         <CompanyBadge name={r.name} color={r.color} size={64} />
         <div className="min-w-0 flex-1">
