@@ -16,7 +16,7 @@ const toDayFn = (year: number) => toDay(year, 1, 1);
 import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
 import type { Candidate, GameState, Level, Role, Staff } from '../types';
-import { avg, inflation, pushNews, year } from '../util';
+import { avg, inflation, money, pushNews, year } from '../util';
 import { layout } from './office';
 import { talentMultiplier } from './market';
 
@@ -541,6 +541,32 @@ export function updateStaffMonthly(c: Ctx): void {
       const reason = st.burnout > 92 ? 'burnout' : 'low morale';
       c.out.push({ type: 'staffQuit', name: st.name, reason });
       pushNews(s, { category: 'staff', headline: `${st.name} has resigned`, body: `Citing ${reason}. Morale was ${Math.round(st.morale)}%.`, tone: 'bad' });
+      // a star who walks out may start their own studio — and become a rival
+      const [primary] = ROLE_SKILLS[st.role];
+      if ((st.level === 'lead' || st.skills[primary] >= 80) && rng.chance(0.3)) {
+        const last = st.name.split(' ').slice(-1)[0] ?? st.name;
+        const id = `proc_${s.nextId++}`;
+        s.rivals[id] = {
+          id,
+          name: `${last} ${rng.pick(['Games', 'Studios', 'Interactive', 'Works'])}`,
+          color: `#${Math.floor(rng.range(0x303030, 0xd0d0d0)).toString(16).padStart(6, '0')}`,
+          procedural: true,
+          alive: true,
+          ownedByPlayer: false,
+          cash: money(rng.range(150_000, 500_000), s.day),
+          reputation: clamp(s.company.reputation * 0.4, 5, 40),
+          staff: rng.int(3, 9),
+          quality: clamp(st.skills[primary] / 100, 0.4, 0.95),
+          genres: [...new Set(s.releaseOrder.slice(-4).map((rid) => s.releases[rid]!.concept.genre))].slice(0, 2),
+          aggression: rng.range(0.2, 0.6),
+          output: rng.range(0.7, 1.6),
+          lastRelease: s.day,
+          revenue12m: 0,
+          enteredDay: s.day,
+        };
+        if (!s.rivals[id]!.genres.length) s.rivals[id]!.genres = ['action'];
+        pushNews(s, { category: 'rival', headline: `${st.name} founds ${s.rivals[id]!.name}`, body: 'A former star of yours is now a competitor.', tone: 'neutral' });
+      }
     }
   }
   retirements(c);
