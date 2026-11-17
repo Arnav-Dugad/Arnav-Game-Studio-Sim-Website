@@ -10,7 +10,7 @@ import { animate, createRig, newAnim, setHat, type Anim, type Prop, type Rig } f
 import type { ScenePalette } from './palette';
 import { T, drawPerson, lookFor, type Look } from './sprites';
 
-export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver' | 'headhunter' | 'guide' | 'kid';
+export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver' | 'headhunter' | 'guide' | 'kid' | 'fan';
 
 export interface VisitorPerson {
   id: string;
@@ -51,8 +51,8 @@ interface Visitor {
   carry: Prop;
 }
 
-const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888, headhunter: 0x1f2328, guide: 0x2eb5a8, kid: 0xf2c450 };
-const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box', headhunter: 'briefcase', guide: 'notepad', kid: 'none' };
+const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888, headhunter: 0x1f2328, guide: 0x2eb5a8, kid: 0xf2c450, fan: 0xd1495b };
+const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box', headhunter: 'briefcase', guide: 'notepad', kid: 'none', fan: 'none' };
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
 const first = (n: string) => n.split(' ')[0] ?? n;
 
@@ -62,6 +62,8 @@ export class VisitorSystem {
   private floor = -1;
   /** Poach offers a headhunter has already visited for. */
   private poachSeen = new Set<number>();
+  /** The last launch a fan queue turned up for. */
+  private queuedFor = '';
   private P: ScenePalette | null = null;
 
   constructor(private layer: Container) {}
@@ -89,7 +91,7 @@ export class VisitorSystem {
   private spawn(s: GameState, floor: number, kind: VisitorKind, target: VisitorPerson, lines: [string, string], offset = 0): Visitor {
     const c = new Container();
     const fig = new Graphics();
-    const look = { ...lookFor(Math.floor(Math.random() * 1e6), 'visitor'), top: kind === 'kid' ? [0xf2c450, 0xe07a5f, 0x3d85c6, 0x5f9e6e][Math.floor(Math.random() * 4)]! : TOPS[kind] };
+    const look = { ...lookFor(Math.floor(Math.random() * 1e6), 'visitor'), top: kind === 'kid' || kind === 'fan' ? [0xf2c450, 0xe07a5f, 0x3d85c6, 0x5f9e6e][Math.floor(Math.random() * 4)]! : TOPS[kind] };
     if (kind === 'investor' || kind === 'headhunter') look.glasses = Math.random() < 0.5;
     look.headphones = false;
     drawPerson(fig, look, 'stand', this.P!);
@@ -165,6 +167,32 @@ export class VisitorSystem {
     }
   }
 
+  /** A queue of fans outside the door on launch day: they cheer, then head home with their copies. */
+  private fanQueue(s: GameState, game: string): void {
+    if (!this.P) return;
+    const ent = entrance(s);
+    const [ex, ey] = this.tileCenter(ent.x, ent.y);
+    const n = 7;
+    for (let i = 0; i < n; i++) {
+      const c = new Container();
+      const fig = new Graphics();
+      const look = { ...lookFor(Math.floor(Math.random() * 1e6), 'visitor'), top: [0xd1495b, 0x3d85c6, 0xf2c450, 0x5f9e6e, 0x9b6bd3][i % 5]!, headphones: false };
+      drawPerson(fig, look, 'stand', this.P);
+      const legL = new Graphics().roundRect(-5, -8, 4, 8, 2).fill(0x3a3f4a);
+      const legR = new Graphics().roundRect(1, -8, 4, 8, 2).fill(0x3a3f4a);
+      const rig = createRig(fig, look);
+      c.addChild(legL, legR, rig.root);
+      this.layer.addChild(c);
+      const x = ex + (i - (n - 1) / 2) * 16;
+      const y = ey + T * 1.35 + (i % 2) * 6;
+      const v: Visitor = { kind: 'fan', c, rig, anim: newAnim(), legL, legR, x, y, t: Math.random() * 10, face: i < n / 2 ? 1 : -1, path: [], phase: 'visit', wait: 7 + Math.random() * 3, target: '', lines: ['', ''], replied: true, speech: null, speechT: 0, carry: 'none' };
+      v.anim.joy = 3 + Math.random() * 2;
+      v.anim.party = i % 3;
+      this.list.push(v);
+      if (i === 1 || i === 4) this.say(v, i === 1 ? `${game.slice(0, 18)}! 🎉` : pick(['Day one!', 'Been waiting all year!', 'Take my money!']), 3);
+    }
+  }
+
   /** Someone is leaving the studio: they pack a box, say goodbye and walk out. */
   farewell(s: GameState, floor: number, at: { x: number; y: number }, look: Look, P: ScenePalette, host: VisitorHost): void {
     if (floor !== this.floor || this.list.filter((x) => x.kind === 'leaver').length >= 12) return;
@@ -222,6 +250,12 @@ export class VisitorSystem {
     }
     const waiting = s.pendingEvents.find((e) => e.defId === 'poach_offer' && !this.poachSeen.has(e.uid));
     if (waiting && host.people().some((p) => p.id === String(waiting.ctx.staff))) this.nextT = Math.min(this.nextT, 2);
+    // launch day for a hyped game: fans queue outside the door
+    const last = s.releaseOrder.length ? s.releases[s.releaseOrder[s.releaseOrder.length - 1]!] : undefined;
+    if (last && last.id !== this.queuedFor && s.day - last.day <= 1 && last.hypeAtLaunch >= 0.8 && !reducedMotion) {
+      this.queuedFor = last.id;
+      this.fanQueue(s, last.name);
+    }
     this.nextT -= dt;
     if (this.nextT <= 0 && !reducedMotion) {
       this.nextT = 35 + Math.random() * 45;
@@ -266,7 +300,7 @@ export class VisitorSystem {
           v.phase = 'out';
           const ent = entrance(s);
           const [ex, ey] = this.tileCenter(ent.x, ent.y);
-          v.path = [...this.route(s, floor, v.x, v.y, ex, ey), [ex, ey + T * 0.6]];
+          v.path = v.kind === 'fan' ? [[v.x + (v.face > 0 ? 1 : -1) * (300 + Math.random() * 100), v.y]] : [...this.route(s, floor, v.x, v.y, ex, ey), [ex, ey + T * 0.6]];
           if (Math.random() < 0.5) this.say(v, pick(['Bye!', 'See you!', 'Thanks!', 'Have a good one!']), 1.6);
         }
       } else {
@@ -283,7 +317,7 @@ export class VisitorSystem {
       // fade in/out at the door
       const ent = entrance(s);
       const doorY = (ent.y + 1) * T;
-      v.c.alpha = Math.max(0, Math.min(1, (doorY + T * 0.4 - v.y) / (T * 0.5)));
+      v.c.alpha = v.kind === 'fan' ? Math.max(0, Math.min(1, 1 - (Math.abs(v.x - this.tileCenter(ent.x, ent.y)[0]) - 200) / 120)) : Math.max(0, Math.min(1, (doorY + T * 0.4 - v.y) / (T * 0.5)));
     }
   }
 }
