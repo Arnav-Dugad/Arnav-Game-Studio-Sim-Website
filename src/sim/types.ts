@@ -342,6 +342,8 @@ export interface GameProject {
   delayedWeeks?: number;
   /** Passed (or was fixed after failing) platform certification. */
   certified?: boolean;
+  /** A public demo (systems/demos.ts): when, and the score players saw. */
+  demo?: { day: number; score: number };
   /** A secret someone hid in it (systems/easterEggs.ts). */
   easterEgg?: { by: string; name: string; what: string };
   /** A documentary crew is filming its making (systems/documentary.ts): since when, and crunch days caught on camera. */

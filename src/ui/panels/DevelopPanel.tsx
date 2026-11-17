@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { DEMO_YEAR, demoBlocked, demoCost } from '@/sim/systems/demos';
 import { pitchText } from '@/sim/systems/pitches';
 import { pledged } from '@/sim/systems/crunchPledge';
 import { knownFor } from '@/sim/systems/renown';
@@ -233,6 +234,11 @@ function GameCard({ p }: { p: GameProject }) {
               if (!useGame.getState().modals.some((m) => m.kind === 'trailerCut')) useGame.getState().openModalNow({ kind: 'trailerCut', projectId: p.id });
             }} title="A 25-second mini-game: cut a trailer from four shots for up to +0.4 hype (once per game)">
             Cut trailer
+          </Button>
+        )}
+        {!p.demo && p.announcedDay !== undefined && p.phase >= 2 && fromDay(s.day).year >= DEMO_YEAR && (
+          <Button size="sm" icon="play" disabled={!!demoBlocked(s, p)} onClick={() => run({ type: 'releaseDemo', projectId: p.id })} title={demoBlocked(s, p) ?? `Let players try it now (${fmtMoney(demoCost(s))}). A demo tells the truth: a great game (75+) wins people over, a weak one (under 60) puts them off. Once per game.`}>
+            Release a demo
           </Button>
         )}
         {p.phase >= 2 && !p.bugBashed && (

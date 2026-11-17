@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21j';
+export const WHATS_NEW_VERSION = '2026-11-21k';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'play', title: 'Public demos', body: 'From 1990, an announced game in polish can release a playable demo (once). A demo tells the truth: a great game (75+) wins players over, a weak one (under 60) puts them off. Plus new events: accessibility requests and charity streams.' },
   { icon: 'sparkle', title: 'Easter eggs', body: 'Now and then someone on the team hides a secret in a game — a cow level, a dancing developer behind a waterfall. Leave it in and players may find it a few months after launch: a little buzz for the game, and one proud developer.' },
   { icon: 'heart', title: 'Team pulse', body: 'Staff → Team now has a Team pulse: everything lifting and dragging morale across the whole studio, how many people each thing touches, and what you could do about it.' },
   { icon: 'calendar', title: 'Daily challenge', body: 'A new mode when founding a studio: one scenario and one world a day, the same for every player. Compare your run with a friend’s — daily runs are marked in the Hall of Fame.' },
