@@ -339,7 +339,7 @@ function WeeklyChart() {
     for (const id of s.releaseOrder.slice(-30)) {
       const r = s.releases[id];
       if (!r || !r.active) continue;
-      const weekly = r.weekly.length ? r.weekly[r.weekly.length - 1]! : 0;
+      const weekly = r.lastWeekUnits ?? 0;
       if (weekly > 0) out.push({ name: r.name, company: s.company.name, weekly, weeks: Math.floor((s.day - r.day) / 7), mine: true, id });
     }
     for (const g of s.rivalGames) {

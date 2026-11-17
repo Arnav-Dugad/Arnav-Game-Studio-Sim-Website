@@ -11,7 +11,7 @@ import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
 import { addRep, aOrAn, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from '../util';
 import { valuation } from './finance';
-import { generateCandidate, candidateToStaff, marketSalary, removeStaff } from './staff';
+import { candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, removeStaff } from './staff';
 import { assignDesks, freeDesks } from './office';
 
 interface EventDef {
@@ -390,6 +390,7 @@ export const EVENT_DEFS: EventDef[] = [
         rel[k] = clamp((rel[k] ?? 0) - 10, -100, 100);
         const quitter = a.traits.includes('hothead') ? a : b;
         if (quitter.role !== 'founder' && rng.chance(0.12)) {
+          maybeSpinOff(s, rng, quitter, 0.3);
           removeStaff(s, quitter.id);
           s.progress.stats.staffLost += 1;
           pushNews(s, { category: 'staff', headline: `${quitter.name} quits over a feud`, tone: 'bad' });
@@ -578,6 +579,7 @@ export const EVENT_DEFS: EventDef[] = [
       } else {
         both(-10);
         if (a && rng.chance(0.15)) {
+          maybeSpinOff(s, rng, a, 0.3);
           removeStaff(s, a.id);
           s.progress.stats.staffLost += 1;
           pushNews(s, { category: 'staff', headline: `${a.name} quits after the argument`, tone: 'bad' });

@@ -32,7 +32,7 @@ import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering,
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost } from './systems/research';
-import { SABBATICAL, candidateToStaff, invalidateMentees, marketSalary, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
+import { SABBATICAL, candidateToStaff, invalidateMentees, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
@@ -575,6 +575,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!st) return 'No such staff';
       if (st.role === 'founder') return 'You can’t fire yourself';
       spend(s, 'salaries', st.salary / 12); // severance: one month
+      maybeSpinOff(s, c.rng, st, 0.2);
       removeStaff(s, st.id);
       const recent = (s.eventCooldowns.__fires ?? 0) > s.day - 30 ? (s.eventCooldowns.__fireCount ?? 0) + 1 : 1;
       s.eventCooldowns.__fires = s.day;
@@ -590,6 +591,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!gone.length) return 'Nobody to let go';
       for (const st of gone) {
         spend(s, 'salaries', st.salary / 12); // severance: one month each
+        maybeSpinOff(s, c.rng, st, 0.2);
         removeStaff(s, st.id);
       }
       s.company.lastLayoffDay = s.day;
@@ -895,6 +897,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!d) return 'That offer is gone';
       if (d.negotiated) return 'You already negotiated this one';
       if (a.ask !== 'advance' && a.ask !== 'royalty') return 'Ask for a bigger advance or a better royalty';
+      if (a.ask === 'royalty' && d.royalty >= 0.6) return 'That royalty is already as high as they go';
       d.negotiated = true;
       if (c.rng.chance(negotiateOdds(s))) {
         if (a.ask === 'advance') d.advance = Math.round(d.advance * 1.25);
@@ -902,6 +905,7 @@ function apply(c: Ctx, a: Action): string | null {
         pushNews(s, { category: 'studio', headline: `${COMPANY_BY_ID[d.publisherId]?.name ?? 'The publisher'} improves its offer`, tone: 'good' });
       } else {
         s.offers.deals = s.offers.deals.filter((x) => x.id !== d.id);
+        (s.offers.snubbed ??= {})[d.publisherId] = s.day + 270; // they won't call for a while
         pushNews(s, { category: 'studio', headline: `${COMPANY_BY_ID[d.publisherId]?.name ?? 'The publisher'} walks away from the table`, tone: 'bad' });
       }
       return null;

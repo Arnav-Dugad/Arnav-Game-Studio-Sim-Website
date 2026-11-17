@@ -477,8 +477,8 @@ function chartTopper(s: GameState): void {
   let bestWeekly = 0;
   for (const id of s.releaseOrder.slice(-30)) {
     const r = s.releases[id];
-    if (!r?.active || !r.weekly.length) continue;
-    const w = r.weekly[r.weekly.length - 1]!;
+    if (!r?.active) continue;
+    const w = r.lastWeekUnits ?? 0;
     if (w > bestWeekly) {
       bestWeekly = w;
       best = r;
@@ -573,6 +573,7 @@ export function updateSalesWeekly(c: Ctx): void {
       s.company.fans += units * fresh * 0.04 * liked;
     }
     s.progress.stats.totalUnits += units;
+    rel.lastWeekUnits = units;
     s.progress.stats.totalRevenue += toPlayer;
     const tiny = units < 1 && rel.week > 6;
     if (tiny && rel.liveIncome < 50) {

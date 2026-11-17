@@ -339,6 +339,8 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Copies sold in the most recent week. */
+  lastWeekUnits?: number;
   /** Topped the weekly sales chart. */
   numberOne?: boolean;
   /** Rival knock-offs it has inspired so far. */
@@ -788,7 +790,13 @@ export interface GameState {
     revenue12m: number[]; // last 12 monthly revenues
     profitYTD: number;
   };
-  offers: { contracts: ContractOffer[]; deals: DealOffer[]; acquisitions: AcquisitionTarget[] };
+  offers: {
+    contracts: ContractOffer[];
+    deals: DealOffer[];
+    acquisitions: AcquisitionTarget[];
+    /** Publishers who walked away from a negotiation, and until when they won't make offers. */
+    snubbed?: Record<string, number>;
+  };
   devkits: Id[]; // platforms licensed
   /** Player-made consoles (hardware division). */
   hardware: PlayerConsole[];

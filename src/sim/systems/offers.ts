@@ -56,7 +56,7 @@ export function refreshOffers(c: Ctx): void {
   // Publisher deals
   const publishers = alive.filter((r) => {
     const d = COMPANY_BY_ID[r.id];
-    return d && (d.kind === 'publisher' || d.kind === 'platform_holder') && r.reputation >= 30;
+    return d && (d.kind === 'publisher' || d.kind === 'platform_holder') && r.reputation >= 30 && (s.offers.snubbed?.[r.id] ?? 0) <= s.day;
   });
   while (s.offers.deals.length < 3 && publishers.length) {
     const pub = rng.pick(publishers);

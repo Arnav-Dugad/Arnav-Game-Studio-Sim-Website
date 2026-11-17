@@ -174,10 +174,10 @@ function Publishing() {
                   </div>
                   {!o.negotiated && (
                     <div className="flex shrink-0 flex-col gap-1">
-                      <Button size="sm" variant="ghost" title={`${Math.round(negotiateOdds(s) * 100)}% chance they agree to +25% advance; otherwise they walk away`} onClick={() => useGame.getState().actOrToast({ type: 'negotiateDeal', dealId: o.id, ask: 'advance' }, 'You made your pitch')}>
+                      <Button size="sm" variant="ghost" title={`${Math.round(negotiateOdds(s) * 100)}% chance they agree to +25% advance; otherwise they walk away (and won’t call for months)`} onClick={() => useGame.getState().actOrToast({ type: 'negotiateDeal', dealId: o.id, ask: 'advance' }, 'You made your pitch')}>
                         Ask +25% advance
                       </Button>
-                      <Button size="sm" variant="ghost" title={`${Math.round(negotiateOdds(s) * 100)}% chance they agree to +5 points of royalty; otherwise they walk away`} onClick={() => useGame.getState().actOrToast({ type: 'negotiateDeal', dealId: o.id, ask: 'royalty' }, 'You made your pitch')}>
+                      <Button size="sm" variant="ghost" disabled={o.royalty >= 0.6} title={o.royalty >= 0.6 ? 'Already the best royalty they offer' : `${Math.round(negotiateOdds(s) * 100)}% chance they agree to +5 points of royalty; otherwise they walk away (and won’t call for months)`} onClick={() => useGame.getState().actOrToast({ type: 'negotiateDeal', dealId: o.id, ask: 'royalty' }, 'You made your pitch')}>
                         Ask +5% royalty
                       </Button>
                     </div>

@@ -350,6 +350,45 @@ export function isAway(st: Staff): boolean {
   return st.sickDays > 0 || (st.vacationDays ?? 0) > 0;
 }
 
+/** A star who leaves (quits, is let go, storms out) may found their own studio and become a rival. */
+export function maybeSpinOff(s: GameState, rng: Rng, st: Staff, chance: number): void {
+  if (st.role === 'founder') return;
+  const [primary] = ROLE_SKILLS[st.role];
+  if (!(st.level === 'lead' || st.skills[primary] >= 80) || !rng.chance(chance)) return;
+  const last = st.name.split(' ').slice(-1)[0] ?? st.name;
+  const id = `proc_${s.nextId++}`;
+  s.rivals[id] = {
+    id,
+    name: `${last} ${rng.pick(['Games', 'Studios', 'Interactive', 'Works'])}`,
+    founder: st.name,
+    color: `#${Math.floor(rng.range(0x303030, 0xd0d0d0)).toString(16).padStart(6, '0')}`,
+    procedural: true,
+    alive: true,
+    ownedByPlayer: false,
+    cash: money(rng.range(150_000, 500_000), s.day),
+    reputation: clamp(s.company.reputation * 0.4, 5, 40),
+    staff: rng.int(3, 9),
+    quality: clamp(st.skills[primary] / 100, 0.4, 0.95),
+    genres: [...new Set(s.releaseOrder.slice(-4).map((rid) => s.releases[rid]!.concept.genre))].slice(0, 2),
+    aggression: rng.range(0.2, 0.6),
+    output: rng.range(0.7, 1.6),
+    lastRelease: s.day,
+    revenue12m: 0,
+    enteredDay: s.day,
+  };
+  if (!s.rivals[id]!.genres.length) s.rivals[id]!.genres = ['action'];
+  pushNews(s, { category: 'rival', headline: `${st.name} founds ${s.rivals[id]!.name}`, body: 'A former star of yours is now a competitor.', tone: 'neutral' });
+}
+
+/** Whole years since `since` if today is its anniversary (Feb 29 counts on Feb 28), else 0. */
+export function workAnniversary(day: number, since: number): number {
+  if (day <= since) return 0;
+  const a = fromDay(day);
+  const b = fromDay(since);
+  const leapFix = b.month === 2 && b.day === 29 && a.day === 28 && a.month === 2;
+  return a.month === b.month && (a.day === b.day || leapFix) ? a.year - b.year : 0;
+}
+
 export const VACATION_COOLDOWN_DAYS = 120;
 export const SABBATICAL = { days: 60, tenureYears: 8, cooldownYears: 5 };
 
@@ -414,6 +453,12 @@ export function updateStaffDaily(c: Ctx): void {
   const L = layout(s);
   for (const st of Object.values(s.staff)) {
     if (st.poachCooldown > 0) st.poachCooldown -= 1;
+    // work anniversaries: 10, 20, 30 years (on the calendar date)
+    const yrs = workAnniversary(s.day, st.hiredDay);
+    if (yrs && yrs % 10 === 0 && st.role !== 'founder') {
+      st.loyalty = clamp(st.loyalty + 5, 0, 100);
+      pushNews(s, { category: 'staff', headline: `${st.name} celebrates ${yrs} years at ${s.company.name}`, tone: 'good' });
+    }
     // Sick leave
     if (st.sickDays > 0) {
       st.sickDays -= 1;
@@ -422,15 +467,6 @@ export function updateStaffDaily(c: Ctx): void {
       st.burnout = clamp(st.burnout - 2.5, 0, 100);
       continue;
     }
-    // work anniversaries: 10, 20, 30 years
-    const served = s.day - st.hiredDay;
-    if (served > 0 && served % 365 === 0 && st.role !== 'founder') {
-      const yrs = served / 365;
-      if (yrs % 10 === 0) {
-        st.loyalty = clamp(st.loyalty + 5, 0, 100);
-        pushNews(s, { category: 'staff', headline: `${st.name} celebrates ${yrs} years at ${s.company.name}`, tone: 'good' });
-      }
-    }
     // Vacation: away from the office, recharging fast
     if ((st.vacationDays ?? 0) > 0) {
       st.vacationDays = st.vacationDays! - 1;
@@ -438,8 +474,8 @@ export function updateStaffDaily(c: Ctx): void {
         // back from a sabbatical: refreshed and a little wiser
         st.sabbatical = undefined;
         const [primary] = ROLE_SKILLS[st.role];
-        st.skills[primary] = clamp(st.skills[primary] + 4, 0, 100);
         st.potential = clamp(st.potential + 3, 0, 100);
+        st.skills[primary] = clamp(st.skills[primary] + 4, 0, Math.max(st.skills[primary], st.potential));
         st.loyalty = clamp(st.loyalty + 10, 0, 100);
         pushNews(s, { category: 'staff', headline: `${st.name} is back from a sabbatical`, body: 'Rested, inspired and full of ideas.', tone: 'good' });
       }
@@ -541,33 +577,7 @@ export function updateStaffMonthly(c: Ctx): void {
       const reason = st.burnout > 92 ? 'burnout' : 'low morale';
       c.out.push({ type: 'staffQuit', name: st.name, reason });
       pushNews(s, { category: 'staff', headline: `${st.name} has resigned`, body: `Citing ${reason}. Morale was ${Math.round(st.morale)}%.`, tone: 'bad' });
-      // a star who walks out may start their own studio — and become a rival
-      const [primary] = ROLE_SKILLS[st.role];
-      if ((st.level === 'lead' || st.skills[primary] >= 80) && rng.chance(0.3)) {
-        const last = st.name.split(' ').slice(-1)[0] ?? st.name;
-        const id = `proc_${s.nextId++}`;
-        s.rivals[id] = {
-          id,
-          name: `${last} ${rng.pick(['Games', 'Studios', 'Interactive', 'Works'])}`,
-          founder: st.name,
-          color: `#${Math.floor(rng.range(0x303030, 0xd0d0d0)).toString(16).padStart(6, '0')}`,
-          procedural: true,
-          alive: true,
-          ownedByPlayer: false,
-          cash: money(rng.range(150_000, 500_000), s.day),
-          reputation: clamp(s.company.reputation * 0.4, 5, 40),
-          staff: rng.int(3, 9),
-          quality: clamp(st.skills[primary] / 100, 0.4, 0.95),
-          genres: [...new Set(s.releaseOrder.slice(-4).map((rid) => s.releases[rid]!.concept.genre))].slice(0, 2),
-          aggression: rng.range(0.2, 0.6),
-          output: rng.range(0.7, 1.6),
-          lastRelease: s.day,
-          revenue12m: 0,
-          enteredDay: s.day,
-        };
-        if (!s.rivals[id]!.genres.length) s.rivals[id]!.genres = ['action'];
-        pushNews(s, { category: 'rival', headline: `${st.name} founds ${s.rivals[id]!.name}`, body: 'A former star of yours is now a competitor.', tone: 'neutral' });
-      }
+      maybeSpinOff(s, rng, st, 0.3);
     }
   }
   retirements(c);

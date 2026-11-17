@@ -116,7 +116,7 @@ export class VisitorSystem {
   }
 
   private choose(s: GameState, floor: number, host: VisitorHost): void {
-    if (this.list.length >= 2) return;
+    if (this.list.filter((v) => v.kind !== 'fan').length >= 2) return;
     const people = host.people();
     if (!people.length) return;
     const projects = Object.values(s.projects);
@@ -251,8 +251,12 @@ export class VisitorSystem {
     const waiting = s.pendingEvents.find((e) => e.defId === 'poach_offer' && !this.poachSeen.has(e.uid));
     if (waiting && host.people().some((p) => p.id === String(waiting.ctx.staff))) this.nextT = Math.min(this.nextT, 2);
     // launch day for a hyped game: fans queue outside the door
-    const last = s.releaseOrder.length ? s.releases[s.releaseOrder[s.releaseOrder.length - 1]!] : undefined;
-    if (last && last.id !== this.queuedFor && s.day - last.day <= 1 && last.hypeAtLaunch >= 0.8 && !reducedMotion) {
+    const last = s.releaseOrder
+      .slice(-4)
+      .map((id) => s.releases[id]!)
+      .filter((r) => r && s.day - r.day <= 1 && r.hypeAtLaunch >= 0.8)
+      .sort((a, b) => b.hypeAtLaunch - a.hypeAtLaunch)[0];
+    if (last && last.id !== this.queuedFor && floor === 0 && !reducedMotion) {
       this.queuedFor = last.id;
       this.fanQueue(s, last.name);
     }
@@ -300,7 +304,7 @@ export class VisitorSystem {
           v.phase = 'out';
           const ent = entrance(s);
           const [ex, ey] = this.tileCenter(ent.x, ent.y);
-          v.path = v.kind === 'fan' ? [[v.x + (v.face > 0 ? 1 : -1) * (300 + Math.random() * 100), v.y]] : [...this.route(s, floor, v.x, v.y, ex, ey), [ex, ey + T * 0.6]];
+          v.path = v.kind === 'fan' ? [[ex + Math.sign(v.x - ex || 1) * (360 + Math.abs(v.x - ex)), v.y]] : [...this.route(s, floor, v.x, v.y, ex, ey), [ex, ey + T * 0.6]];
           if (Math.random() < 0.5) this.say(v, pick(['Bye!', 'See you!', 'Thanks!', 'Have a good one!']), 1.6);
         }
       } else {
@@ -318,6 +322,10 @@ export class VisitorSystem {
       const ent = entrance(s);
       const doorY = (ent.y + 1) * T;
       v.c.alpha = v.kind === 'fan' ? Math.max(0, Math.min(1, 1 - (Math.abs(v.x - this.tileCenter(ent.x, ent.y)[0]) - 200) / 120)) : Math.max(0, Math.min(1, (doorY + T * 0.4 - v.y) / (T * 0.5)));
+      if (v.kind === 'fan' && v.phase === 'out' && v.c.alpha <= 0.01) {
+        this.remove(v);
+        continue;
+      }
     }
   }
 }
