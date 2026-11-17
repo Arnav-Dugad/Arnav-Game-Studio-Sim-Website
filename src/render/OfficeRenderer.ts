@@ -10,6 +10,7 @@ import { canPlace, entrance, findPath, footprint, heatField, occupancy, tierDef 
 import type { GameState, PlacedItem, Staff } from '@/sim/types';
 import { DARK, LIGHT, hexToNum, mix, shade, type ScenePalette } from './palette';
 import { T, drawItem, drawPerson, itemLift, lookFor, type Look } from './sprites';
+import { animate, createRig, newAnim, reskinRig, type Anim, type Rig } from './animation';
 import { LEISURE, RESEARCH_SPOTS, chatExchange, workExchange, workThought } from './officeLife';
 
 export interface RendererUI {
@@ -54,6 +55,8 @@ interface Agent {
   id: string;
   c: Container;
   fig: Graphics;
+  rig: Rig;
+  anim: Anim;
   look: Look;
   pose: 'stand' | 'sit' | 'slump';
   x: number;
@@ -639,9 +642,10 @@ export class OfficeRenderer {
     drawPerson(fig, look, 'sit', this.P);
     const legL = new Graphics().roundRect(-5, -8, 4, 8, 2).fill(0x3a3f4a);
     const legR = new Graphics().roundRect(1, -8, 4, 8, 2).fill(0x3a3f4a);
-    c.addChild(ring, legL, legR, fig);
+    const rig = createRig(fig, look);
+    c.addChild(ring, legL, legR, rig.root);
     this.itemLayer.addChild(c);
-    return { id: st.id, c, fig, look, pose: 'sit', x: 0, y: 0, path: [], mode: 'desk', next: 'desk', wait: 0, cooldown: 3 + Math.random() * 8, bubble: null, bubbleT: 0, icon: null, t: Math.random() * 10, floor: 0, sweat: 0, label: null, ring, legL, legR, face: 1, talk: null, speech: null, speechT: 0, thinkT: 4 + Math.random() * 10 };
+    return { id: st.id, c, fig, rig, anim: newAnim(), look, pose: 'sit', x: 0, y: 0, path: [], mode: 'desk', next: 'desk', wait: 0, cooldown: 3 + Math.random() * 8, bubble: null, bubbleT: 0, icon: null, t: Math.random() * 10, floor: 0, sweat: 0, label: null, ring, legL, legR, face: 1, talk: null, speech: null, speechT: 0, thinkT: 4 + Math.random() * 10 };
   }
 
   private setPose(a: Agent, pose: Agent['pose']): void {
@@ -666,12 +670,14 @@ export class OfficeRenderer {
         a.look = lookFor(st.look, st.role, color);
         a.fig.clear();
         drawPerson(a.fig, a.look, a.pose, this.P);
+        reskinRig(a.rig, a.look);
       }
     }
     this.agentColor = color;
     const t = tierDef(s.office.tier);
     const ent = entrance(s);
     const speedMul = ui.reducedMotion ? 0.5 : ui.speed === 0 ? 0.6 : 1;
+    const era = fromDay(s.day).year;
     for (const st of Object.values(s.staff)) {
       seen.add(st.id);
       let a = this.agents.get(st.id);
@@ -810,8 +816,25 @@ export class OfficeRenderer {
         bob = Math.abs(Math.sin(a.t * typing)) * (0.8 + (st.productivityWhy?.total ?? 1) * 0.6);
       }
       if (st.morale > 82 && atDesk && Math.sin(a.t * 1.3) > 0.995) bob += 5;
-      a.fig.position.set(0, -bob);
-      a.fig.scale.x = a.face;
+      const funGlyph = (a as Agent & { funGlyph?: string }).funGlyph;
+      const speaking = a.speechT > 0;
+      animate(a.rig, a.anim, {
+        dt: dt * speedMul,
+        t: a.t,
+        pose: a.pose,
+        mode: a.mode,
+        face: a.face,
+        bob,
+        speaking,
+        listening: a.mode === 'talk' && !speaking,
+        morale: st.morale,
+        energy: st.energy,
+        working: atDesk && (st.activity === 'work' || st.activity === 'research'),
+        sleepy: st.activity === 'burnout' || (atDesk && st.energy < 12) || (a.mode === 'fun' && funGlyph === '😴'),
+        leisure: a.mode === 'station' ? '☕' : a.mode === 'fun' ? funGlyph : atDesk && st.activity === 'training' ? '📖' : undefined,
+        era,
+        reducedMotion: ui.reducedMotion,
+      });
       const standing = a.pose !== 'sit' && a.pose !== 'slump';
       a.legL.visible = a.legR.visible = standing;
       if (standing) {
@@ -821,7 +844,7 @@ export class OfficeRenderer {
       }
       a.c.position.set(a.x, a.y);
       a.c.zIndex = a.y + 1;
-      a.fig.tint = st.activity === 'burnout' ? 0x9a9a9a : 0xffffff;
+      a.rig.root.tint = st.activity === 'burnout' ? 0x9a9a9a : 0xffffff;
       a.ring.visible = ui.selectedStaff === st.id || this.hoverStaff === st.id;
       // crunch sweat
       if (atDesk && st.activity === 'work' && s.projects[st.assignment.kind === 'project' ? st.assignment.id : '']?.kind === 'game') {
@@ -1129,6 +1152,7 @@ export class OfficeRenderer {
     tx.position.set(0, -1);
     a.speechT = secs;
     a.speech.visible = true;
+    if (/\b(Hi|Hey|Morning|Bye)\b|👋/.test(text)) a.anim.wave = 1.6;
   }
 
   private route(s: GameState, floor: number, a: Agent, wx: number, wy: number): [number, number][] {
@@ -1200,6 +1224,7 @@ export class OfficeRenderer {
     for (const a of agents) {
       this.showBubble(a, GLYPHS_PARTY[Math.floor(Math.random() * GLYPHS_PARTY.length)]!);
       a.bubbleT = 2.5 + Math.random();
+      a.anim.joy = 1.8 + Math.random() * 1.4;
     }
     if (!confetti) return;
     const COLORS = [0xe07a5f, 0xf2c450, 0x5f9e6e, 0x3d85c6, 0x9b6bd3];
@@ -1223,6 +1248,7 @@ export class OfficeRenderer {
       if (Math.random() < 0.6) {
         this.showBubble(a, GLYPHS_SAD[Math.floor(Math.random() * GLYPHS_SAD.length)]!);
         a.bubbleT = 2 + Math.random();
+        a.anim.sad = 2.5 + Math.random() * 2;
       }
     }
   }
