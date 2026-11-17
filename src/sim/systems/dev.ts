@@ -148,6 +148,7 @@ function progressGame(c: Ctx, p: GameProject): void {
     p.spent += dc;
   }
   if (crunch) s.progress.stats.crunchDays += 1;
+  if (crunch) s.progress.stats.crunchRecent = (s.progress.stats.crunchRecent ?? 0) + 1;
   if (crunch) s.progress.stats.noCrunchSince = s.day;
   const phase = Math.min(2, p.phase) as 0 | 1 | 2;
   const areas = PHASE_AREAS[phase]!;

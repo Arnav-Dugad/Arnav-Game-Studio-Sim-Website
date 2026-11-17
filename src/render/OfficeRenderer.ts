@@ -101,6 +101,9 @@ interface Agent {
 const pickOne = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
 const firstName = (n: string) => n.split(' ')[0] ?? n;
 
+/** What a break at this kind of station looks like. */
+const stationGlyph = (item?: string) => (item === 'gym' ? '🏋️' : item === 'hammock' || item === 'bean_bag' || item === 'nap_pod' ? '😴' : item === 'lounge_sofa' ? '😌' : item === 'foosball' ? '⚽' : item === 'ping_pong' ? '🏓' : '☕');
+
 const GLYPHS = ['♪', '!', '?', '☕', '💡', '…', '★', '♥'];
 
 export class OfficeRenderer {
@@ -844,6 +847,7 @@ export class OfficeRenderer {
         } else
         if (wantsBreak && !(free && Math.random() < 0.5)) {
           const target = this.nearestStation(s, floor, a.seat!);
+          (a as Agent & { station?: string }).station = this.lastStation;
           if (target) {
             const [tx, ty] = this.tileCenter(target[0], target[1]);
             a.path = this.route(s, floor, a, tx, ty);
@@ -958,7 +962,7 @@ export class OfficeRenderer {
         working: atDesk && (st.activity === 'work' || st.activity === 'research'),
         idle: atDesk && st.assignment.kind === 'idle',
         sleepy: st.activity === 'burnout' || (atDesk && st.energy < 12) || (a.mode === 'fun' && funGlyph === '😴'),
-        leisure: a.mode === 'station' ? '☕' : a.mode === 'fun' ? funGlyph : atDesk && st.activity === 'training' ? '📖' : undefined,
+        leisure: a.mode === 'station' ? stationGlyph((a as Agent & { station?: string }).station) : a.mode === 'fun' ? funGlyph : atDesk && st.activity === 'training' ? '📖' : undefined,
         era,
         reducedMotion: ui.reducedMotion,
       });
@@ -1022,7 +1026,7 @@ export class OfficeRenderer {
         a.speech.position.set(0, -58 - (a.mode === 'desk' ? 0 : 4));
       }
       if ((st.activity === 'chat' && a.bubbleT < -2 && Math.random() < dt * 2) || ((a.mode === 'station' || a.mode === 'meeting') && a.bubbleT < -4 && Math.random() < dt * 1.5)) {
-        this.showBubble(a, a.mode === 'station' ? '☕' : a.mode === 'meeting' ? (Math.random() < 0.5 ? '💡' : '📋') : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!);
+        this.showBubble(a, a.mode === 'station' ? stationGlyph((a as Agent & { station?: string }).station) : a.mode === 'meeting' ? (Math.random() < 0.5 ? '💡' : '📋') : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!);
       }
       if (a.mode === 'fun' && a.bubbleT < 0.5) {
         const g = (a as Agent & { funGlyph?: string }).funGlyph;
@@ -1428,6 +1432,9 @@ export class OfficeRenderer {
     return p.slice(1).map(([x, y]) => this.tileCenter(x, y));
   }
 
+  /** The item kind the last nearestStation() call picked. */
+  private lastStation: string | undefined;
+
   private nearestStation(s: GameState, floor: number, seat: [number, number], kind: 'energy' | 'meeting' = 'energy'): [number, number] | null {
     const t = tierDef(s.office.tier);
     const occ = occupancy(s, floor);
@@ -1446,6 +1453,7 @@ export class OfficeRenderer {
           if (d < bd) {
             bd = d;
             best = [x, y];
+            this.lastStation = it.item;
           }
         }
     }

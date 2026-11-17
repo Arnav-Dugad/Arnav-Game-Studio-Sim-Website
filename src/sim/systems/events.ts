@@ -62,7 +62,7 @@ export const EVENT_DEFS: EventDef[] = [
       const l = staffList(s);
       if (s.company.union || yr(s) < 2005 || l.length < 15) return 0;
       const avg = l.reduce((t, x) => t + x.morale, 0) / l.length;
-      const crunching = s.day - s.progress.stats.noCrunchSince < 30 && s.progress.stats.crunchDays >= 60;
+      const crunching = s.day - s.progress.stats.noCrunchSince < 30 && (s.progress.stats.crunchRecent ?? 0) >= 35;
       return crunching && avg < 52 ? (yr(s) >= 2018 ? 1.2 : 0.6) : 0;
     },
     make: ({ s }) => {
@@ -71,9 +71,10 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'The team wants a union',
         body: 'After months of crunch, a majority of your staff have signed union cards. They’re asking you to recognise the union voluntarily.',
         options: [
+          { id: 'fight', label: 'Fight it', preview: 'Reputation −3, morale −8 for 4 months, and maybe a walkout' },
           { id: 'recognise', label: 'Recognise the union', preview: 'Everyone +5% pay; morale +4 for good; crunch hurts morale half as much' },
           { id: 'bonus', label: `Offer a retention bonus instead (${fmtMoney(payroll / 2)})`, preview: 'Morale +6 for 3 months; they may try again next year', disabled: s.company.cash < payroll / 2 },
-          { id: 'fight', label: 'Fight it', preview: 'Reputation −3, morale −8 for 4 months, and maybe a walkout' },
+          { id: 'stall', label: 'Ask for time to think', preview: 'Morale −3 for a month; they’ll ask again' },
         ],
         ctx: { payroll },
       };
@@ -87,7 +88,9 @@ export const EVENT_DEFS: EventDef[] = [
       } else if (opt === 'bonus' && s.company.cash >= Number(e.ctx.payroll) / 2) {
         spend(s, 'salaries', Number(e.ctx.payroll) / 2);
         mod(s, 6, 90, 'Retention bonus');
-      } else {
+      } else if (opt === 'bonus' || opt === 'stall') {
+        mod(s, -3, 30, 'Union talks stalled');
+      } else if (opt === 'fight') {
         addRep(s, -3, 'Fought a union drive');
         mod(s, -8, 120, 'Union busting');
         if (rng.chance(0.35)) {

@@ -190,7 +190,8 @@ export function rivalsMonthly(c: Ctx): void {
       r.alive = false;
       pushNews(s, { category: 'rival', headline: `${r.name} closes its doors`, body: 'Some of its developers are looking for work (Staff → Hire).', tone: 'neutral' });
       // a few of their people come looking for jobs
-      for (let i = 0; i < rng.int(2, 3); i++) {
+      const n = s.candidates.length < 18 ? rng.int(2, 3) : 0;
+      for (let i = 0; i < n; i++) {
         const cand = generateCandidate(s, rng, { quality: clamp(r.quality * 100, 10, 90) });
         s.candidates.push({ ...cand, formerly: r.name, expiresDay: s.day + 40 });
       }

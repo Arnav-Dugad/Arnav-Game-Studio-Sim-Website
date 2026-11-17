@@ -684,6 +684,8 @@ export interface LifetimeStats {
   noCrunchSince: number; // day of last crunch (or start)
   /** Staff ambitions fulfilled. */
   dreamsMet?: number;
+  /** Crunch over roughly the last few months (decays daily). */
+  crunchRecent?: number;
   /** Best bug-bash result, and mentees who graduated. */
   bestBash?: number;
   graduates?: number;

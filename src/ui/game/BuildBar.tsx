@@ -21,7 +21,7 @@ export function BuildBar() {
   if (!build && !floors) return null;
   const deskFloor = new Map(s.office.items.map((it) => [it.id, it.floor]));
   const perFloor = Array.from({ length: t.floors }, () => 0);
-  for (const st of Object.values(s.staff)) perFloor[st.deskId ? (deskFloor.get(st.deskId) ?? 0) : 0]! += 1;
+  for (const st of Object.values(s.staff)) if (st.activity !== 'sick' && st.activity !== 'vacation') perFloor[st.deskId ? (deskFloor.get(st.deskId) ?? 0) : 0]! += 1;
   return (
     <div className={`pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center px-2 sm:bottom-4 ${panelOpen ? 'lg:pl-[600px]' : ''}`}>
       <div className="glass pointer-events-auto flex max-w-full flex-wrap items-center gap-2 rounded-2xl px-3 py-2">

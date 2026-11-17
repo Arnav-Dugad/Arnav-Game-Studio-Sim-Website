@@ -114,6 +114,7 @@ export function tick(c: Ctx): void {
   }
 
   updateStaffDaily(c);
+  if (s.progress.stats.crunchRecent) s.progress.stats.crunchRecent *= 0.985; // ~two-month memory
   ambitionsDaily(s);
   trainingDaily(s);
   updateProjectsDaily(c);
