@@ -94,7 +94,7 @@ export default function GoalsPanel() {
             const done = s.progress.milestones.includes(m.id);
             return (
               <li key={m.id} className={cx('flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs', done ? 'text-ink' : 'text-ink3')}>
-                <Icon name={done ? 'check' : 'target'} size={14} className={done ? 'text-good' : ''} />
+                <Icon name={done ? 'check' : 'target'} size={14} className={cx('shrink-0', done && 'text-good')} />
                 {m.text}
               </li>
             );

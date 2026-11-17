@@ -42,6 +42,28 @@ export function ambitionText(st: Staff, a: Ambition): string {
   }
 }
 
+/** The ambition as a verb phrase ("…wanted to ship a racing game"), without progress numbers. */
+export function ambitionGoal(a: Ambition): string {
+  switch (a.kind) {
+    case 'genre':
+      return `ship a ${GENRE_BY_ID[a.genre!]?.name ?? 'new'} game`;
+    case 'hit':
+      return 'ship a game that scores 80+';
+    case 'first':
+      return 'ship their first game';
+    case 'raise':
+      return `get a raise to ${Math.round(a.target! / 1000)}k a year`;
+    case 'research':
+      return 'spend a month on research';
+    case 'skill':
+      return `reach ${a.target} ${a.skill}`;
+    case 'desk':
+      return 'get a better desk';
+    case 'holiday':
+      return 'take a proper holiday';
+  }
+}
+
 /** How the player can help, for the UI. */
 export function ambitionHint(a: Ambition): string {
   switch (a.kind) {
@@ -87,7 +109,7 @@ function lapse(c: Ctx, st: Staff, a: Ambition): void {
   st.ambition = undefined;
   st.loyalty = clamp(st.loyalty + AMBITION_PENALTY.loyalty, 0, 100);
   setMood(s, st, AMBITION_PENALTY.morale, AMBITION_PENALTY.moraleDays, 'Ambition ignored');
-  pushNews(s, { category: 'staff', headline: `${st.name} feels overlooked`, body: `They wanted to ${ambitionText(st, a).replace(/^./, (x) => x.toLowerCase())}, and it never happened.`, tone: 'bad' });
+  pushNews(s, { category: 'staff', headline: `${st.name} feels overlooked`, body: `They wanted to ${ambitionGoal(a)}, and it never happened.`, tone: 'bad' });
 }
 
 /** Called for each team member when a game ships. */
