@@ -54,6 +54,9 @@ export const TOPICS: readonly TopicDef[] = [
   { id: 'steampunk', name: 'Steampunk', year: 1990, genreFit: { adventure: 3, rpg: 3, strategy: 2, puzzle: 2, shooter: 2, sports: 0 }, audience: { teen: 1.1, mature: 1.1 } },
   { id: 'ancient_egypt', name: 'Ancient Egypt', year: 1982, genreFit: { adventure: 3, puzzle: 3, strategy: 3, simulation: 2, action: 2, racing: 0, cards: 2 }, audience: { everyone: 1.1 } },
   { id: 'fishing', name: 'Fishing', year: 1985, genreFit: { sports: 3, simulation: 3, casual: 3, rpg: 1, shooter: 0, fighting: 0, mmo: 1, cards: 1 }, audience: { everyone: 1.3, kids: 1.1, teen: 0.8 }, popularity: [[1985, 0.9], [1998, 1.3], [2010, 1.0], [2020, 1.2]] },
+  { id: 'archaeology', name: 'Archaeology', year: 1984, genreFit: { adventure: 3, puzzle: 3, action: 2, rpg: 2, simulation: 1, visual_novel: 2, sports: 0, racing: 0 }, audience: { everyone: 1.15, teen: 1.05 }, popularity: [[1984, 0.9], [1996, 1.3], [2006, 1.1], [2026, 1.0]] },
+  { id: 'extreme_sports', name: 'Extreme Sports', year: 1995, genreFit: { sports: 3, racing: 3, action: 2, casual: 2, rhythm: 1, rpg: 0, strategy: 0, visual_novel: 0 }, audience: { teen: 1.35, kids: 1.05, mature: 0.8 }, popularity: [[1995, 0.8], [1999, 1.6], [2003, 1.4], [2010, 0.7], [2026, 0.8]] },
+  { id: 'insects', name: 'Insects', year: 1985, genreFit: { strategy: 3, simulation: 3, platformer: 2, puzzle: 2, casual: 2, shooter: 1, sports: 0, visual_novel: 0 }, audience: { kids: 1.2, everyone: 1.1 } },
   { id: 'ai_robots', name: 'Artificial Intelligence', year: 2015, genreFit: { adventure: 3, strategy: 3, rpg: 2, puzzle: 2, simulation: 2, visual_novel: 3 }, audience: { mature: 1.1 } },
 ];
 

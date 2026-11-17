@@ -627,6 +627,41 @@ const M = {
       <path d="M6 86H96" stroke={p.accent} strokeWidth={3} opacity={0.6} />
     </>
   ),
+  dig: (p) => (
+    <>
+      <path d="M6 70H94V92H6Z" fill={p.detail} opacity={0.55} />
+      <path d="M6 70H94" stroke={p.ink} strokeWidth={2} strokeDasharray="5 4" />
+      <circle cx={46} cy={80} r={9} fill={p.ink} />
+      <rect x={40} y={84} width={12} height={6} rx={2} fill={p.ink} />
+      <circle cx={43} cy={79} r={2} fill={p.accent} />
+      <circle cx={50} cy={79} r={2} fill={p.accent} />
+      <path d="M62 66L82 18" stroke={p.ink} strokeWidth={5} strokeLinecap="round" />
+      <path d="M74 14L92 22L86 30Z" fill={p.ink} />
+      <circle cx={24} cy={30} r={11} fill={p.accent} />
+    </>
+  ),
+  skate: (p) => (
+    <>
+      <path d="M4 40Q4 88 50 88Q96 88 96 40V92H4Z" fill={p.detail} opacity={0.55} />
+      <circle cx={52} cy={22} r={7} fill={p.ink} />
+      <path d="M52 30L48 52L60 64M48 52L36 62M50 38L64 30M50 38L36 44" stroke={p.ink} strokeWidth={5} strokeLinecap="round" fill="none" />
+      <rect x={28} y={66} width={40} height={5} rx={2.5} fill={p.accent} transform="rotate(-14 48 68)" />
+      <circle cx={34} cy={74} r={3} fill={p.ink} />
+      <circle cx={60} cy={68} r={3} fill={p.ink} />
+    </>
+  ),
+  beetle: (p) => (
+    <>
+      <circle cx={78} cy={22} r={9} fill={p.accent} opacity={0.8} />
+      <path d="M34 40L22 30M66 40L78 30M30 54L14 52M70 54L86 52M32 68L18 78M68 68L82 78" stroke={p.ink} strokeWidth={3} strokeLinecap="round" />
+      <ellipse cx={50} cy={58} rx={20} ry={26} fill={p.ink} />
+      <path d="M50 34V84" stroke={p.accent} strokeWidth={2} />
+      <circle cx={50} cy={30} r={9} fill={p.ink} />
+      <path d="M46 22L40 10M54 22L60 10" stroke={p.ink} strokeWidth={2.5} strokeLinecap="round" />
+      <circle cx={40} cy={50} r={3} fill={p.accent} opacity={0.8} />
+      <circle cx={60} cy={62} r={3} fill={p.accent} opacity={0.8} />
+    </>
+  ),
   hook: (p) => (
     <>
       <path d="M8 74Q28 66 50 74T92 74V92H8Z" fill={p.detail} opacity={0.6} />
@@ -703,6 +738,9 @@ const TOPIC_MOTIF: Record<string, keyof typeof M> = {
   steampunk: 'cog',
   ancient_egypt: 'pyramid',
   fishing: 'hook',
+  archaeology: 'dig',
+  extreme_sports: 'skate',
+  insects: 'beetle',
   cozy_village: 'cottage',
 };
 

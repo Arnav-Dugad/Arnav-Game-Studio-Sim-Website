@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20z';
+export const WHATS_NEW_VERSION = '2026-11-21a';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'library', title: 'Three new topics', body: 'Archaeology (1984 — tombs, relics and expeditions), Extreme Sports (1995, peaking around 1999) and Insects (1985, a family favourite for strategy and sim games), each with its own cover art and title ideas.' },
   { icon: 'leaf', title: 'The no-crunch pledge', body: 'Staff → Policies (2005+): promise publicly never to crunch. Everyone works happier for it (+3 morale) and the world notices — but crunch on any game afterwards and the pledge breaks in public: reputation −5, a bitter team, and nobody believes a new pledge for three years. Plus a Release Wall (Build → Decor): framed posters of your six latest games.' },
   { icon: 'stack', title: 'Classics collections', body: 'Re-releasing a classic? Bundle up to four more of your old favourites into a collection: each loved game brings more buyers, and they all count as re-released. Plus a searchable How to play guide, licences that expire, three new marketing channels and clearer market charts.' },
   { icon: 'calendar', title: 'Licences expire', body: 'Games with an official league licence or a licensed soundtrack can only be sold while the licence lasts — seven years at a time. When it runs out on a game that still sells, renew it (half the original fees) or let it be delisted for good. Expiries show on the Coming up calendar.' },
