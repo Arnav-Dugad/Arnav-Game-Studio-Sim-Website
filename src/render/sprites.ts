@@ -150,6 +150,62 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       }
       break;
     }
+    case 'foosball': {
+      shadow(g, 4, 6, W - 8, H - 8);
+      box(g, { x: 6, y: 6, w: W - 12, h: H - 14, height: 14, top: 0x2f8a63, front: 0x6b4a2e, r: 4 });
+      g.rect(W / 2 - 0.8, 7, 1.6, H - 16).fill({ color: 0xffffff, alpha: 0.7 });
+      for (let i = 0; i < 4; i++) {
+        const x = 12 + i * ((W - 24) / 3);
+        g.rect(x - 0.8, 1, 1.6, H - 6).fill(0xc9ccd1);
+        g.circle(x, 6 + (i % 2) * 8, 2.2).fill(i < 2 ? P.accentDesign : P.accentTech);
+      }
+      g.circle(W / 2 + 4, H / 2 - 4, 1.8).fill(0xffffff);
+      break;
+    }
+    case 'claw_machine': {
+      shadow(g, 5, 4, W - 10, H - 4);
+      box(g, { x: 6, y: 8, w: W - 12, h: H - 12, height: 18, top: 0xf28fb0, front: 0xd1495b, r: 4 });
+      g.roundRect(8, -26, W - 16, 30, 3).fill({ color: 0xbfe6ff, alpha: 0.75 });
+      g.roundRect(8, -30, W - 16, 6, 2).fill(0xd1495b);
+      g.rect(W / 2 - 0.5, -24, 1, 10).fill(0x6d7685);
+      g.moveTo(W / 2 - 4, -12).lineTo(W / 2, -14).lineTo(W / 2 + 4, -12).stroke({ width: 1.2, color: 0x6d7685 });
+      for (let i = 0; i < 4; i++) g.circle(12 + i * ((W - 24) / 3), 0, 3).fill([P.accentArt, P.accentBiz, P.accentAudio, P.accentTech][i]!);
+      break;
+    }
+    case 'guitar_corner': {
+      shadow(g, 8, 6, W - 16, H - 8);
+      g.roundRect(W / 2 - 9, H - 16, 18, 6, 2).fill(0x3a3f4a);
+      g.ellipse(W / 2, H - 20, 7, 8).fill(0xb98957);
+      g.ellipse(W / 2, H - 30, 5, 6).fill(0xb98957);
+      g.circle(W / 2, H - 22, 2.2).fill(0x2a2018);
+      g.rect(W / 2 - 1, -12, 2, H - 14).fill(0x6b4a2e);
+      g.roundRect(W / 2 - 2.5, -16, 5, 6, 1.5).fill(0x4a3426);
+      break;
+    }
+    case 'globe': {
+      shadow(g, 8, 6, W - 16, H - 8);
+      g.roundRect(W / 2 - 7, H - 12, 14, 4, 2).fill(P.woodDark);
+      g.rect(W / 2 - 1, H - 22, 2, 10).fill(P.woodDark);
+      g.circle(W / 2, H - 30, 10).fill(0x5fb4e0);
+      g.ellipse(W / 2 - 3, H - 33, 4, 3).fill(0x5f9e6e);
+      g.ellipse(W / 2 + 4, H - 27, 3, 4).fill(0x5f9e6e);
+      g.arc(W / 2, H - 30, 12, Math.PI * 0.7, Math.PI * 2.3).stroke({ width: 1.4, color: 0xe3b23c });
+      break;
+    }
+    case 'mascot_statue': {
+      shadow(g, 6, 4, W - 12, H - 4);
+      box(g, { x: 8, y: 10, w: W - 16, h: H - 14, height: 12, top: 0xe9e4dc, front: 0xb8b0a4, r: 3 });
+      const c = P.accentDesign;
+      g.ellipse(W / 2, -2, 9, 11).fill(c);
+      g.circle(W / 2, -16, 7).fill(c);
+      g.circle(W / 2 - 6, -22, 3).fill(c);
+      g.circle(W / 2 + 6, -22, 3).fill(c);
+      g.circle(W / 2 - 2.5, -17, 1.4).fill(0xffffff);
+      g.circle(W / 2 + 2.5, -17, 1.4).fill(0xffffff);
+      g.moveTo(W / 2 - 9, -4).lineTo(W / 2 - 15, -14).stroke({ width: 3, color: c, cap: 'round' });
+      g.star(W / 2 - 15, -16, 5, 3, 1.4).fill(0xe3b23c);
+      break;
+    }
     case 'pet_cat':
     case 'pet_dog': {
       const dog = id === 'pet_dog';
@@ -400,6 +456,12 @@ export function itemLift(id: ItemId): number {
     case 'pet_cat':
     case 'pet_dog':
       return 8;
+    case 'claw_machine':
+    case 'mascot_statue':
+      return 38;
+    case 'globe':
+    case 'guitar_corner':
+      return 30;
     default:
       return 26;
   }

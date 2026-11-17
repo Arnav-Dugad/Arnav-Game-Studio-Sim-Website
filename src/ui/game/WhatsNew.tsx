@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18a';
+export const WHATS_NEW_VERSION = '2026-11-18b';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'build', title: 'New things to build', body: 'Foosball table, claw machine (1985), guitar corner, antique globe — and a Mascot Statue once a franchise has three games. Staff play foosball, try the claw, jam on the guitar and pose for photos with your mascot. People who leave now pack a box and say goodbye.' },
   { icon: 'eye', title: 'Cinematic mode & live monitors', body: 'Press V (or Menu → Cinematic mode) to hide the interface and let the camera wander between conversations, breaks and busy desks. Screens at working desks now show code, art, waveforms, game tests and charts.' },
   { icon: 'building', title: 'Branch offices abroad', body: 'Market → World: from 1985, open a studio in Europe, Japan or the rest of the world. Every game is localised there for free and the local team lifts sales a little — for monthly rent.' },
   { icon: 'flag', title: 'Scenarios', body: 'Found a studio in Scenario mode: seven challenges from Garage Days to Empire — survive the 1983 crash, build Japan’s greatest RPG house, bet on 3D, win Game of the Year as a two-person indie. Goals and the deadline live in the Goals panel.' },

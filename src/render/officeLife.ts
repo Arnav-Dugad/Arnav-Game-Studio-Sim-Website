@@ -133,6 +133,11 @@ export const LEISURE: Record<string, { glyph: string; secs: [number, number] }> 
   game_library: { glyph: '🎮', secs: [4, 8] },
   console_museum: { glyph: '👀', secs: [3, 6] },
   plant_large: { glyph: '🌿', secs: [2, 4] },
+  foosball: { glyph: '⚽', secs: [5, 9] },
+  claw_machine: { glyph: '🧸', secs: [3, 6] },
+  guitar_corner: { glyph: '🎸', secs: [5, 9] },
+  globe: { glyph: '🌍', secs: [2, 4] },
+  mascot_statue: { glyph: '📸', secs: [2, 4] },
 };
 
 /** Places researchers think at. */

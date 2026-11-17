@@ -6,7 +6,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Look } from './sprites';
 
-export type Prop = 'none' | 'cup' | 'phone' | 'book' | 'paddle' | 'box' | 'pizza' | 'briefcase' | 'notepad';
+export type Prop = 'none' | 'cup' | 'phone' | 'book' | 'paddle' | 'box' | 'pizza' | 'briefcase' | 'notepad' | 'guitar';
 
 export interface Rig {
   root: Container;
@@ -131,6 +131,10 @@ function setProp(r: Rig, kind: Prop): void {
   } else if (kind === 'book') {
     g.roundRect(-3.2, -1.5, 6.4, 4.6, 0.8).fill(0xc2563a);
     g.rect(-0.2, -1.5, 0.4, 4.6).fill(0xf4efe7);
+  } else if (kind === 'guitar') {
+    g.rect(-0.6, -12, 1.2, 12).fill(0x6b4a2e);
+    g.ellipse(-0.5, 2, 4.5, 5).fill(0xb98957);
+    g.circle(-0.5, 1.5, 1.4).fill(0x2a2018);
   } else if (kind === 'box') {
     g.roundRect(-5, -4, 10, 8, 1).fill(0xc49a6c);
     g.rect(-5, -1, 10, 1.4).fill(0xa87d52);
@@ -314,7 +318,12 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
     const sip = (t + ph) % 3.4 < 1.1;
     rr = sip ? 2.35 : 0.65;
     prop = 'cup';
-  } else if (i.leisure === '🎮' || i.leisure === '🕹️') {
+  } else if (i.leisure === '🎸') {
+    // fretting with the left hand, strumming with the right
+    l = -0.75;
+    rr = 0.55 + Math.sin(t * 13) * 0.22;
+    prop = 'guitar';
+  } else if (i.leisure === '🎮' || i.leisure === '🕹️' || i.leisure === '⚽' || i.leisure === '🧸') {
     l = -0.5 + Math.sin(t * 18) * 0.15;
     rr = 0.5 + Math.sin(t * 17 + 1) * 0.15;
   } else if (i.leisure === '🏓') {
@@ -354,7 +363,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   r.armR.rotation = rr;
   setProp(r, prop);
   // keep held things roughly upright (a cup tips a little when sipping)
-  r.prop.rotation = prop === 'paddle' || prop === 'briefcase' ? -rr : -rr * 0.85;
+  r.prop.rotation = prop === 'paddle' || prop === 'briefcase' ? -rr : prop === 'guitar' ? -rr - 0.9 : -rr * 0.85;
 
   // whole-body: breathing, leaning, nodding while listening, sulking droop, desk head-turns
   const breathe = i.reducedMotion ? 0 : Math.sin(t * 2.4 + ph) * 0.018;

@@ -27,6 +27,12 @@ export function occupancy(s: GameState, floor: number): Map<number, string> {
 }
 
 /** The doorway/stairs tile on each floor (kept clear so the floor stays reachable). */
+/** Extra unlock conditions beyond year and research (or null when met). */
+export function itemRequirement(s: GameState, def: { requires?: 'franchise3' }): string | null {
+  if (def.requires === 'franchise3' && !Object.values(s.franchises).some((f) => f.entries.length >= 3)) return 'Needs a franchise with three games';
+  return null;
+}
+
 export function entrance(s: GameState): { x: number; y: number } {
   const t = tierDef(s.office.tier);
   return { x: Math.floor(t.w / 2), y: t.h - 1 };

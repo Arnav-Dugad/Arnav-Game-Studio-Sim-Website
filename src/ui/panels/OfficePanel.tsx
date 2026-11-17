@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { itemRequirement } from '@/sim/systems/office';
 import { ITEMS, OFFICE_TIERS, type ItemCategory } from '@/data/facilities';
 import { RESEARCH_BY_ID } from '@/data/research';
 import { fromDay } from '@/sim/calendar';
@@ -102,7 +103,8 @@ export default function OfficePanel() {
           {ITEMS.filter((i) => cat === 'all' || i.category === cat).map((it) => {
             const lockedYear = yr < it.year;
             const lockedRes = it.research && !s.research.done.includes(it.research);
-            const locked = lockedYear || lockedRes;
+            const lockedReq = itemRequirement(s, it);
+            const locked = lockedYear || lockedRes || !!lockedReq;
             const cost = money(it.cost, s.day);
             const active = build?.item === it.id;
             return (
@@ -118,7 +120,7 @@ export default function OfficePanel() {
                   <span className="font-semibold">{it.name}</span>
                   <span className={cx('num font-semibold', cost > s.company.cash && 'text-bad')}>{fmtMoney(cost)}</span>
                 </div>
-                <div className="mt-0.5 text-ink3">{locked ? (lockedYear ? `Available in ${it.year}` : `Research ${RESEARCH_BY_ID[it.research!]?.name}`) : it.desc}</div>
+                <div className="mt-0.5 text-ink3">{locked ? (lockedYear ? `Available in ${it.year}` : lockedRes ? `Research ${RESEARCH_BY_ID[it.research!]?.name}` : lockedReq) : it.desc}</div>
                 <div className="mt-1 flex gap-1 text-[10px] text-ink3">
                   <span>
                     {it.w}×{it.h}

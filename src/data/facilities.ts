@@ -37,7 +37,12 @@ export type ItemId =
   | 'ping_pong'
   | 'neon_sign'
   | 'pet_cat'
-  | 'pet_dog';
+  | 'pet_dog'
+  | 'foosball'
+  | 'claw_machine'
+  | 'guitar_corner'
+  | 'globe'
+  | 'mascot_statue';
 
 export interface ItemDef {
   id: ItemId;
@@ -62,6 +67,8 @@ export interface ItemDef {
   effect?: 'qa' | 'servers' | 'audio' | 'mocap' | 'training' | 'research' | 'marketing' | 'meeting' | 'trophies';
   /** Effect strength. */
   power?: number;
+  /** Extra unlock condition: a franchise with three games. */
+  requires?: 'franchise3';
   desc: string;
 }
 
@@ -90,6 +97,11 @@ export const ITEMS: readonly ItemDef[] = [
   { id: 'bookshelf', name: 'Bookshelf', category: 'decor', w: 2, h: 1, cost: 500, upkeep: 0, year: 1980, aura: 3, radius: 2, noise: -1, effect: 'training', power: 0.1, desc: 'Reference books. Small learning boost nearby.' },
   { id: 'pet_cat', name: 'Studio Cat', category: 'decor', w: 1, h: 1, cost: 300, upkeep: 30, year: 1980, aura: 6, radius: 4, noise: -0.5, desc: 'A cat bed — and the cat that comes with it. Naps, roams, sits on keyboards. Wide morale aura (pets don’t stack: the best one nearby counts).' },
   { id: 'pet_dog', name: 'Office Dog', category: 'decor', w: 1, h: 1, cost: 650, upkeep: 50, year: 1980, aura: 8, radius: 4, noise: 1, desc: 'A dog bed and a very good dog. Follows people around and greets everyone. Big morale aura, a little noisy (pets don’t stack).' },
+  { id: 'foosball', name: 'Foosball Table', category: 'energy', w: 2, h: 1, cost: 1_800, upkeep: 5, year: 1980, energy: 32, aura: 5, radius: 2, noise: 2.5, desc: 'Spin to win. Breaks restore 32 energy; loud.' },
+  { id: 'claw_machine', name: 'Claw Machine', category: 'decor', w: 1, h: 1, cost: 2_200, upkeep: 15, year: 1985, aura: 6, radius: 3, noise: 1, desc: 'Nobody has ever won the plushie. Everybody keeps trying.' },
+  { id: 'guitar_corner', name: 'Guitar Corner', category: 'decor', w: 1, h: 1, cost: 900, upkeep: 0, year: 1980, aura: 4, radius: 2, noise: 1, desc: 'An acoustic on a stand for impromptu jam sessions.' },
+  { id: 'globe', name: 'Antique Globe', category: 'decor', w: 1, h: 1, cost: 600, upkeep: 0, year: 1980, aura: 3, radius: 2, noise: -0.5, desc: 'For planning world domination (and localisation).' },
+  { id: 'mascot_statue', name: 'Mascot Statue', category: 'decor', w: 1, h: 1, cost: 15_000, upkeep: 20, year: 1980, aura: 10, radius: 4, requires: 'franchise3', desc: 'A statue of your series’ hero in the lobby. Unlocks with a three-game franchise. Huge morale aura.' },
   { id: 'neon_sign', name: 'Neon Sign', category: 'decor', w: 1, h: 1, cost: 1_200, upkeep: 10, year: 1984, aura: 5, radius: 3, desc: 'Your studio name in glowing glass.' },
   { id: 'trophy_shelf', name: 'Trophy Shelf', category: 'decor', w: 2, h: 1, cost: 1_000, upkeep: 0, year: 1980, aura: 2, radius: 3, effect: 'trophies', power: 1, desc: 'Shows the awards you have actually won (up to eight on display). Each award adds morale.' },
   { id: 'whiteboard', name: 'Whiteboard', category: 'room', w: 2, h: 1, cost: 300, upkeep: 0, year: 1980, aura: 1, radius: 2, effect: 'meeting', power: 0.03, desc: 'Brainstorm space. Small synergy boost nearby.' },

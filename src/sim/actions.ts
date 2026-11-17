@@ -29,7 +29,7 @@ import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projec
 import { applyPatch, applyPort, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, SALE_DISCOUNTS, type SaleDiscount } from './systems/release';
 import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
-import { assignDesks, canPlace, freeDesks, tierDef, touchOffice } from './systems/office';
+import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost } from './systems/research';
 import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
@@ -627,6 +627,8 @@ function apply(c: Ctx, a: Action): string | null {
       if (!def) return 'Unknown item';
       if (fromDay(s.day).year < def.year) return `Available from ${def.year}`;
       if (def.research && !s.research.done.includes(def.research)) return `Research ${RESEARCH_BY_ID[def.research]?.name} first`;
+      const req = itemRequirement(s, def);
+      if (req) return req;
       const cost = s.cheats?.freeBuild ? 0 : money(def.cost, s.day);
       if (s.company.cash < cost) return 'Not enough cash';
       const ok = canPlace(s, def, a.floor, a.x, a.y, a.rot);
