@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { StudioStory } from './StudioStory';
 import { TrailerCutModal } from './TrailerCut';
 import { hobbyOf } from '@/data/hobbies';
 import { StudioCardModal } from './StudioCard';
@@ -1043,6 +1044,9 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
           </div>
         </div>
         <EndingHighlights />
+        <div className="mt-3">
+          <StudioStory open />
+        </div>
         <p className="mt-2 text-xs text-ink3">Recorded in your Hall of Fame.</p>
       </div>
       <div className="mt-5 flex flex-wrap justify-center gap-2">

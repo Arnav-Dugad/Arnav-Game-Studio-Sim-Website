@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
+import { StudioStory } from '../game/StudioStory';
 import { ACHIEVEMENTS } from '@/sim/systems/achievements';
 import { formatDate, fromDay, toDay } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
@@ -91,6 +92,7 @@ export function HistoryTab() {
           Studio card
         </Button>
       </div>
+      <StudioStory />
       <Records />
       <ol className="ml-3 border-l border-line">{rows}</ol>
     </div>
