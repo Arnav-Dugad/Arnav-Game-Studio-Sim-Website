@@ -3,6 +3,7 @@
  * density, and multi-select with bulk actions (assign to a project, research, idle, vacation, training,
  * raises, letting people go).
  */
+import { ambitionText } from '@/sim/systems/ambitions';
 import { useMemo, useState, type ReactNode } from 'react';
 import { SKILLS, type Skill } from '@/data/types';
 import { BALANCE } from '@/data/balance';
@@ -18,7 +19,7 @@ import { useGame } from '../store';
 import { Face } from './staffBits';
 import { atRisk, matchesQuery, statusOf, topSkill, type StaffStatus } from './staffTools';
 
-type Filter = 'all' | StaffStatus | 'risk';
+type Filter = 'all' | StaffStatus | 'risk' | 'ambition';
 type Sort = 'skill' | 'morale' | 'burnout' | 'salary' | 'name' | 'role' | 'tenure';
 type Group = 'none' | 'role' | 'assignment';
 
@@ -55,7 +56,7 @@ export function TeamTab() {
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<Filter>(() => {
     const t = useGame.getState().panelTab;
-    return t === 'idle' ? 'idle' : t === 'risk' ? 'risk' : 'all';
+    return t === 'idle' ? 'idle' : t === 'risk' ? 'risk' : t === 'ambition' ? 'ambition' : 'all';
   });
   const [role, setRole] = useState<Role | 'all'>('all');
   const [sort, setSort] = useState<Sort>('skill');
@@ -74,10 +75,12 @@ export function TeamTab() {
       training: 0,
       away: 0,
       risk: 0,
+      ambition: 0,
     };
     for (const st of all) {
       c[statusOf(st)] += 1;
       if (atRisk(st)) c.risk += 1;
+      if (st.ambition) c.ambition += 1;
     }
     return c;
   }, [all]);
@@ -87,7 +90,7 @@ export function TeamTab() {
   );
 
   const list = all
-    .filter((st) => (filter === 'all' ? true : filter === 'risk' ? atRisk(st) : statusOf(st) === filter))
+    .filter((st) => (filter === 'all' ? true : filter === 'risk' ? atRisk(st) : filter === 'ambition' ? !!st.ambition : statusOf(st) === filter))
     .filter((st) => role === 'all' || st.role === role)
     .filter((st) => matchesQuery(st, q))
     .sort((a, b) => {
@@ -196,6 +199,7 @@ export function TeamTab() {
         {chip('training', 'Training')}
         {chip('away', 'Away')}
         {chip('risk', 'Needs attention', 'bad')}
+        {chip('ambition', 'Ambitions')}
       </div>
 
       <div className="mb-2 space-y-2">
@@ -387,6 +391,8 @@ function DenseRow({
       </span>
       {atRisk(st) ? (
         <Icon name="warning" size={13} className="shrink-0 text-bad" title="Needs attention" />
+      ) : st.ambition ? (
+        <Icon name="star" size={13} className="shrink-0 text-gold" title={`Ambition: ${ambitionText(st, st.ambition)}`} />
       ) : (
         <span className="w-[13px]" />
       )}
@@ -422,6 +428,7 @@ function CardRow({
             <span className="truncate text-sm font-semibold">{st.name}</span>
             {st.personId && <Pill tone="gold">Legend</Pill>}
             {atRisk(st) && <Pill tone="bad">Needs attention</Pill>}
+            {st.ambition && <Pill tone="gold">★ {ambitionText(st, st.ambition)}</Pill>}
           </div>
           <div className="truncate text-xs text-ink3">
             {st.level} {ROLE_NAMES[st.role]} · {assignmentLabel(s, st)} · since {fromDay(st.hiredDay).year}

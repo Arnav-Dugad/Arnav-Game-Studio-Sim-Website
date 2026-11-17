@@ -292,6 +292,7 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
   if (s.company.lastLayoffDay !== undefined && s.day - s.company.lastLayoffDay < 120) bd.add('Recent layoffs', -12);
   for (const m of s.company.moraleMods) if (m.until > s.day) bd.add(m.label, m.v);
   if (hasTrait(st, 'ambitious') && st.level !== 'junior' && st.salary < market) bd.add('Wants a raise', -6);
+  if (st.mood && st.mood.until > s.day) bd.add(st.mood.label, st.mood.v);
   bd.clamp(0, 100);
   return bd.done();
 }

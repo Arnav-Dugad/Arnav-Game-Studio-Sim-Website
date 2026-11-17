@@ -21,6 +21,21 @@ export type Specialisation =
 
 export type Activity = 'work' | 'break' | 'meeting' | 'chat' | 'idle' | 'sick' | 'training' | 'research' | 'burnout' | 'vacation';
 
+/** A personal goal (systems/ambitions.ts). */
+export type AmbitionKind = 'genre' | 'hit' | 'first' | 'raise' | 'research' | 'skill' | 'desk' | 'holiday';
+
+export interface Ambition {
+  kind: AmbitionKind;
+  since: number;
+  until: number;
+  genre?: GenreId;
+  skill?: Skill;
+  /** Salary for 'raise', skill level for 'skill', desk tier for 'desk'. */
+  target?: number;
+  /** Days spent so far (research). */
+  progress?: number;
+}
+
 export interface Staff {
   id: Id;
   name: string;
@@ -57,6 +72,12 @@ export interface Staff {
   trainingDaysLeft?: number;
   /** Days remaining on a raise promise / poach cooldown. */
   poachCooldown: number;
+  /** A personal goal (systems/ambitions.ts), and no new one before this day. */
+  ambition?: Ambition;
+  ambitionCooldown?: number;
+  /** A personal morale term (a fulfilled or ignored ambition). */
+  mood?: { v: number; until: number; label: string };
+  dreamsMet?: number;
 }
 
 export type Assignment =
@@ -619,6 +640,8 @@ export interface LifetimeStats {
   recoveredFromInsolvency: number;
   acquisitions: number;
   noCrunchSince: number; // day of last crunch (or start)
+  /** Staff ambitions fulfilled. */
+  dreamsMet?: number;
 }
 
 export interface Company {

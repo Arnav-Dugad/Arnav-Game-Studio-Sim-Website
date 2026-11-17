@@ -15,7 +15,7 @@ export default function StaffPanel() {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
   const raw = useGame((g) => g.panelTab) ?? 'team';
-  const tab = raw === 'idle' || raw === 'risk' ? 'team' : raw;
+  const tab = raw === 'idle' || raw === 'risk' || raw === 'ambition' ? 'team' : raw;
   const setTab = (t: string) => useGame.setState({ panelTab: t });
   return (
     <div>

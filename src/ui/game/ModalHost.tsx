@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AMBITION_PENALTY, AMBITION_REWARD, ambitionHint, ambitionText } from '@/sim/systems/ambitions';
 import { GENRE_BY_ID } from '@/data/genres';
 import { TOPIC_BY_ID } from '@/data/topics';
 import { PERSON_BY_ID } from '@/data/people';
@@ -611,6 +612,38 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
           </Section>
         </div>
         <div>
+          {st.ambition && (
+            <Section title="Ambition">
+              <div className="rounded-xl border border-gold/40 bg-gold/10 p-2.5 text-xs">
+                <div className="flex items-start gap-2">
+                  <Icon name="star" size={15} className="mt-0.5 shrink-0 text-gold" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold">{ambitionText(st, st.ambition)}</div>
+                    <div className="text-ink2">{ambitionHint(st.ambition)}</div>
+                    <div className={cx('num mt-0.5', st.ambition.until - s.day < 30 ? 'font-semibold text-bad' : 'text-ink3')}>
+                      {Math.max(0, st.ambition.until - s.day)} days left · fulfilled: loyalty +{AMBITION_REWARD.loyalty}, morale +{AMBITION_REWARD.morale} · ignored: loyalty {AMBITION_PENALTY.loyalty}
+                    </div>
+                  </div>
+                </div>
+                {st.ambition.kind === 'raise' && (
+                  <Button size="sm" className="mt-2" onClick={() => run({ type: 'setSalary', staffId, salary: st.ambition!.target! }, 'Raise given')}>
+                    Give the raise ({fmtMoney(st.ambition.target!)}/yr)
+                  </Button>
+                )}
+                {st.ambition.kind === 'research' && st.assignment.kind !== 'research' && (
+                  <Button size="sm" className="mt-2" onClick={() => run({ type: 'assign', staffId, to: 'research' }, `${st.name} joins research`)}>
+                    Move to research
+                  </Button>
+                )}
+                {st.ambition.kind === 'holiday' && (
+                  <Button size="sm" className="mt-2" disabled={!!vacationBlocked(s, st)} title={vacationBlocked(s, st) ?? undefined} onClick={() => run({ type: 'vacation', staffId, days: 14 }, `${st.name} is off for two weeks`)}>
+                    Two weeks off
+                  </Button>
+                )}
+              </div>
+            </Section>
+          )}
+          {(st.dreamsMet ?? 0) > 0 && <div className="mb-2 text-[11px] text-gold">★ {st.dreamsMet} ambition{st.dreamsMet === 1 ? '' : 's'} fulfilled here</div>}
           {st.role !== 'founder' && (
             <Section title="Pay">
               <div className="text-sm">

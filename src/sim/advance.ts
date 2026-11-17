@@ -1,6 +1,7 @@
 /**
  * The fixed-step simulation loop: 1 tick = 1 day. Subsystems run at their own cadence.
  */
+import { ambitionsWeekly } from './systems/ambitions';
 import { BALANCE } from '../data/balance';
 import { fromDay, toDay, weekday } from './calendar';
 import type { Ctx, SimEvent } from './ctx';
@@ -107,6 +108,7 @@ export function tick(c: Ctx): void {
 
   if (weekday(s.day) === 0) {
     staffAutomationWeekly(s);
+    ambitionsWeekly(c);
     autoQueueResearch(s);
     updateSalesWeekly(c);
     stockWeekly(c);

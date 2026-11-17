@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17o';
+export const WHATS_NEW_VERSION = '2026-11-17p';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'star', title: 'Staff ambitions', body: 'People now form personal goals — make a game in a genre they love, ship a hit, earn a raise, do research, master their craft, get a better desk, take a holiday. Help them before the deadline for a big loyalty and morale boost; ignore them and they feel overlooked. Staff → Team → Ambitions.' },
   { icon: 'camera', title: 'Office photo', body: 'Menu → Office photo saves a captioned picture of your studio floor — pets, holiday lights and all.' },
   { icon: 'news', title: 'Player buzz', body: 'News → Buzz: what players say about your games — magazine letters in the 80s, bulletin boards, forums, then social posts and streams. Each game’s page shows its sentiment and top posts.' },
   { icon: 'calendar', title: 'Seasons & holidays', body: 'Snow on the windows, string lights and a tree in December, Santa hats, pumpkins and witch hats at Halloween, autumn leaves and spring flowers, balloons after a party, New Year cheers — and everyone has a birthday (party hat and cake).' },

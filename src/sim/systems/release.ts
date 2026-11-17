@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { ambitionOnShip } from './ambitions';
 import { exclusiveBuzz } from './hardware';
 import { catalogSalesMul } from './subscription';
 import { leagueOnRelease, leagueSalesMul } from './esports';
@@ -374,6 +375,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     if (!st) continue;
     st.gamesShipped += 1;
     st.morale = clamp(st.morale + (score - 60) / 4, 0, 100);
+    ambitionOnShip(c, st, score, p.concept.genre);
   }
   // Franchise bookkeeping
   let frId = p.concept.franchiseId;
