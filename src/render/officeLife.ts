@@ -71,6 +71,18 @@ export function chatExchange(s: GameState, a: Staff, b: Staff): Exchange {
   if (diwali(s.day)) topics.push({ w: 4, make: () => pick<Exchange>([['Happy Diwali! 🪔', 'Happy Diwali!'], ['Brought sweets for everyone!', 'Ladoo! 😋'], ['The lamps look lovely.', 'Festival of lights ✨']]) });
   if (isRainy(s.day, month)) topics.push({ w: 3, make: () => pick<Exchange>([['It’s pouring out there.', 'Forgot my umbrella…'], ['Rainy day = crunch day?', 'Don’t jinx it.'], ['Listen to that rain.', 'So cosy.']]) });
   if (month >= 3 && month <= 5) topics.push({ w: 1.5, make: () => pick<Exchange>([['Spring at last!', 'Finally!'], ['Allergies…', 'Achoo!']]) });
+  // The studio's other stories
+  const cm = s.community;
+  if (cm && cm.health >= 70) topics.push({ w: 1.5, make: () => pick<Exchange>([['The forums love us right now.', 'Don’t jinx it!'], ['Fan made a guide on our forums!', 'So cool.']]) });
+  if (cm && cm.health < 35) topics.push({ w: 2.5, make: () => pick<Exchange>([['Don’t read the forums today.', 'Too late… 😬'], ['The community is furious.', 'Patch. Now.']]) });
+  const cf = Object.values(s.projects).find((p) => p.kind === 'game' && p.crowdfund && p.crowdfund.end === undefined);
+  if (cf && cf.kind === 'game') topics.push({ w: 3, make: () => pick<Exchange>([[`${cf.crowdfund!.raised >= cf.crowdfund!.goal ? 'We’re funded!' : 'Pledges coming in!'}`, 'Refreshing every minute…'], ['Stretch goals, here we come!', '🤞']]) });
+  if (Object.values(s.projects).some((p) => p.kind === 'game' && p.earlyAccess)) topics.push({ w: 2, make: () => pick<Exchange>([['Early Access players found another bug.', 'Bless them.'], ['Read the Early Access feedback?', 'Some good ideas!']]) });
+  if ((s.fanMail ?? []).some((m) => s.day - m.day < 14)) topics.push({ w: 2.5, make: () => pick<Exchange>([['We got fan mail!', 'Pin it up! 📌'], ['A kid drew our game!', 'Aww! 🖍️']]) });
+  if (Object.values(s.staff).some((x) => x.intern)) topics.push({ w: 1.5, make: () => pick<Exchange>([['The interns are sharp.', 'Hire them!'], ['Intern asked a great question.', 'Fresh eyes!']]) });
+  if ((s.mediaDeals ?? []).some((d) => d.outcome === undefined)) topics.push({ w: 1.5, make: () => pick<Exchange>([['Can’t wait for the adaptation!', 'Hope they do it justice.'], ['Our game, as a cartoon?!', 'Wild.']]) });
+  if (Object.values(s.partners ?? {}).some((v) => v >= 75)) topics.push({ w: 1, make: () => ['We’re featured on the storefront!', 'Big deal!'] });
+  if (fromDay(s.day).month === 12 && (fromDay(s.day).day >= 20)) topics.push({ w: 1.5, make: () => ['Think we’ll win at the Gala?', 'Fingers crossed! 🏆'] });
   // Studio life
   if (s.office.tier >= 3) topics.push({ w: 1, make: () => ['This office is so nice.', pick(REPLIES_POS)] });
   topics.push({ w: 2, make: () => pick<Exchange>([['Coffee?', 'Always.'], ['Lunch at the usual?', 'Yes please.'], ['Weekend plans?', 'Sleeping in.'], ['Seen my stapler?', 'Nope!'], ['Nice shirt!', 'Thanks!'], [`Morning, ${first(b.name)}!`, 'Morning!']]) });
