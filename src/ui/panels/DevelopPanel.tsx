@@ -687,7 +687,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
 
       <Section title="2 · Genre">
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-          {genres.map(({ g, ok, why }) => (
+          {[...genres].sort((a, b) => Number(b.ok) - Number(a.ok)).map(({ g, ok, why }) => (
             <button
               key={g.id}
               type="button"

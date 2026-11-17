@@ -711,6 +711,8 @@ const TOPIC_MOTIF: Record<string, keyof typeof M> = {
 type Template = 'slash' | 'emblem' | 'grid' | 'speed' | 'bubbly' | 'globe' | 'sunburst';
 
 const GENRE_TEMPLATE: Record<string, Template> = {
+  cards: 'grid',
+  visual_novel: 'bubbly',
   action: 'slash',
   shooter: 'slash',
   fighting: 'slash',
@@ -728,7 +730,7 @@ const GENRE_TEMPLATE: Record<string, Template> = {
   sandbox: 'globe',
 };
 
-const GENRE_LABEL: Record<string, string> = { rpg: 'RPG', mmo: 'MMO' };
+const GENRE_LABEL: Record<string, string> = { rpg: 'RPG', mmo: 'MMO', cards: 'Card & Board' };
 
 function genreLabel(genre: string): string {
   return GENRE_LABEL[genre] ?? genre.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());

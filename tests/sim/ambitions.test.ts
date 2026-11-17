@@ -14,8 +14,10 @@ function game() {
 describe('staff ambitions', () => {
   it('appear over time, never for the founder, and stay under the cap', () => {
     const s = game();
+    s.company.cash = 1e9; // stay solvent: this is about ambitions, not payroll
     for (let i = 0; i < 25; i++) dispatch(s, { type: 'cheat', cheat: { op: 'spawnStaff', role: i % 2 ? 'programmer' : 'artist', skill: 40, salary: 30_000 } });
     advance(s, 365 * 2);
+    expect(s.status).toBe('running');
     const staff = Object.values(s.staff);
     expect(staff.find((x) => x.role === 'founder')?.ambition).toBeUndefined();
     const active = staff.filter((x) => x.ambition).length;

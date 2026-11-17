@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20s';
+export const WHATS_NEW_VERSION = '2026-11-20t';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'library', title: 'Two new genres', body: 'Card & Board (1980) — chess, solitaire, collectible cards and deckbuilders; mobile and PC players love them, and history gives them a few big moments. Visual Novel (1983) — story, characters and choices in pictures and words: huge in Japan, a hard sell untranslated. Plus a post-mortem on every release and a friendlier start for brand-new studios.' },
   { icon: 'camera', title: 'Making-of documentaries', body: 'From 1995 a film crew may ask to follow one of your games from early development to launch. The cameras bring hype now — and six months after launch the film premieres: a great game makes it a festival favourite, a flop makes it a cautionary tale, and crunch on camera always makes the cut.' },
   { icon: 'book', title: 'Post-mortems', body: 'Every release now gets a post-mortem: what went right, what went wrong and what to try next time — in plain words, straight from how the game was made. And the genre picker shows which genres are hot, which are rising or cooling, and your best score in each.' },
   { icon: 'people', title: 'New personalities', body: 'Three new traits: Industry Names (their fame keeps your announced games in the news), Quick Workers (faster, buggier) and Tinkerers (engines and research go 20% faster). Plus a Collector’s Edition feature and rain you can hear on the office windows.' },

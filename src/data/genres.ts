@@ -185,6 +185,28 @@ export const GENRES: readonly GenreDef[] = [
     popularity: [[2006, 0.5], [2011, 1.2], [2017, 1.5], [2026, 1.3]],
     blurb: 'Survival, crafting and emergent play. Systems over scripts.',
   },
+  {
+    id: 'cards',
+    name: 'Card & Board',
+    year: 1980,
+    designRatio: 0.65,
+    ideal: I(1, 3, 1, 2, 1, 3, 1, 2, 1),
+    audience: { kids: 1.0, everyone: 1.2, teen: 1.0, mature: 0.9 },
+    kinds: { computer: 1.2, mobile: 1.35, handheld: 1.05, console: 0.75, vr: 0.6 },
+    popularity: [[1980, 0.7], [1990, 1.0], [1996, 1.1], [2005, 0.8], [2014, 1.25], [2019, 1.35], [2026, 1.2]],
+    blurb: 'Chess, solitaire, collectible cards and deckbuilders. Clean rules and a clever AI beat spectacle.',
+  },
+  {
+    id: 'visual_novel',
+    name: 'Visual Novel',
+    year: 1983,
+    designRatio: 0.8,
+    ideal: I(1, 1, 3, 1, 3, 1, 2, 3, 2),
+    audience: { kids: 0.6, everyone: 0.9, teen: 1.2, mature: 1.15 },
+    kinds: { computer: 1.2, handheld: 1.15, mobile: 1.1, console: 0.9, vr: 0.7 },
+    popularity: [[1983, 0.45], [1995, 0.7], [2005, 0.85], [2015, 0.9], [2026, 0.95]],
+    blurb: 'Story, characters and choices, told in pictures and words. Huge in Japan; needs translating everywhere else.',
+  },
 ];
 
 export const GENRE_BY_ID: Record<GenreId, GenreDef> = Object.fromEntries(GENRES.map((g) => [g.id, g])) as Record<

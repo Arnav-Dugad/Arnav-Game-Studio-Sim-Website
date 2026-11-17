@@ -106,6 +106,14 @@ export const HISTORICAL_EVENTS: readonly HistoricalEventDef[] = [
     ],
   },
   {
+    id: 'portopia_visual_novel',
+    date: '1983-06',
+    headline: 'A Murder Mystery Told in Pictures and Words',
+    body: 'Enix’s The Portopia Serial Murder Case lets players question suspects through menus of text and still images. Japanese developers are calling it a new kind of game: the visual novel.',
+    category: 'market',
+    effects: [{ kind: 'genreTrend', genre: 'visual_novel', delta: 0.2 }],
+  },
+  {
     id: 'famicom_japan',
     date: '1983-07',
     headline: 'Nintendo Launches the Family Computer in Japan',
@@ -260,6 +268,14 @@ export const HISTORICAL_EVENTS: readonly HistoricalEventDef[] = [
     body: 'Sega has launched the Genesis in North America with aggressive advertising aimed at older players. The 16-bit console war has begun.',
     category: 'platform',
     effects: [{ kind: 'demand', target: 'console', mul: 1.1, months: 12 }],
+  },
+  {
+    id: 'solitaire_bundled',
+    date: '1990-05',
+    headline: 'Every New PC Now Comes With a Card Game',
+    body: 'Microsoft ships Solitaire with Windows 3.0. Millions of office workers are learning to use a mouse by dragging cards, and card and board games are suddenly everywhere.',
+    category: 'market',
+    effects: [{ kind: 'genreTrend', genre: 'cards', delta: 0.25 }],
   },
   {
     id: 'super_famicom_japan',
@@ -636,6 +652,14 @@ export const HISTORICAL_EVENTS: readonly HistoricalEventDef[] = [
     effects: [{ kind: 'demand', target: 'handheld', mul: 1.15, months: 18 }],
   },
   {
+    id: 'visual_novel_boom',
+    date: '2004-11',
+    headline: 'Visual Novels Top the Japanese PC Charts',
+    body: 'Story-driven visual novels are some of Japan’s best-selling PC games, and the most popular are being adapted into anime. Fan translations are spreading them overseas.',
+    category: 'market',
+    effects: [{ kind: 'genreTrend', genre: 'visual_novel', delta: 0.2 }],
+  },
+  {
     id: 'brain_training_casual',
     date: '2005-05',
     headline: 'Brain-Training Games Reach Non-Gamers',
@@ -936,6 +960,14 @@ export const HISTORICAL_EVENTS: readonly HistoricalEventDef[] = [
     effects: [],
   },
   {
+    id: 'digital_card_boom',
+    date: '2014-03',
+    headline: 'Digital Card Games Go Mainstream',
+    body: 'Blizzard’s free-to-play Hearthstone has drawn millions of players in its first weeks. Every publisher wants a collectible card game of its own.',
+    category: 'market',
+    effects: [{ kind: 'genreTrend', genre: 'cards', delta: 0.3 }],
+  },
+  {
     id: 'amazon_buys_twitch',
     date: '2014-08',
     headline: 'Amazon Buys Twitch',
@@ -1051,6 +1083,14 @@ export const HISTORICAL_EVENTS: readonly HistoricalEventDef[] = [
     body: 'Epic Games has opened a PC storefront that takes 12% of revenue and is paying for timed exclusives. Valve recently introduced lower revenue shares for its biggest sellers.',
     category: 'industry',
     effects: [],
+  },
+  {
+    id: 'deckbuilder_craze',
+    date: '2019-01',
+    headline: 'Deckbuilders Are the New Roguelikes',
+    body: 'Slay the Spire leaves Early Access to rave reviews. Its mix of card battles and procedural runs is being copied by dozens of independent studios.',
+    category: 'market',
+    effects: [{ kind: 'genreTrend', genre: 'cards', delta: 0.2 }],
   },
   {
     id: 'oculus_quest_launch',

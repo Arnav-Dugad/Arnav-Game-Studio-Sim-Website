@@ -44,6 +44,8 @@ export type GenreId =
   | 'fighting'
   | 'casual'
   | 'rhythm'
+  | 'cards'
+  | 'visual_novel'
   | 'mmo'
   | 'sandbox';
 

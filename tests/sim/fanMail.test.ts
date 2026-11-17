@@ -22,9 +22,9 @@ describe('fan mail', () => {
     const s = withHit();
     const rel = Object.values(s.releases)[0]!;
     expect(rel.score).toBeGreaterThanOrEqual(80);
-    advance(s, 365 * 2);
+    advance(s, 365 * 4); // ~2 letters a year for an 80: look over a few years so one seed can't make it flaky
     const box = s.fanMail ?? [];
-    expect(box.length).toBeGreaterThan(2);
+    expect(box.length).toBeGreaterThanOrEqual(3);
     expect(box.every((m) => m.releaseId === rel.id && m.text.length > 5)).toBe(true);
     expect(unreadFanMail(s)).toBe(box.length);
     dispatch(s, { type: 'readFanMail' });

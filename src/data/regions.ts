@@ -27,7 +27,7 @@ export const REGIONS: RegionDef[] = [
     name: 'North America',
     short: 'NA',
     share: [[1980, 0.55], [1995, 0.42], [2010, 0.33], [2030, 0.26]],
-    taste: { shooter: 1.35, sports: 1.35, action: 1.15, racing: 1.05, rpg: 0.9, strategy: 0.85, rhythm: 0.9, mmo: 0.95 },
+    taste: { shooter: 1.35, sports: 1.35, action: 1.15, racing: 1.05, rpg: 0.9, strategy: 0.85, rhythm: 0.9, mmo: 0.95, visual_novel: 0.55, cards: 1.05 },
     unlocalized: 0.7,
     blurb: 'The biggest market for most of history. Loves shooters, sports and action.',
   },
@@ -36,7 +36,7 @@ export const REGIONS: RegionDef[] = [
     name: 'Europe',
     short: 'EU',
     share: [[1980, 0.2], [1995, 0.3], [2010, 0.3], [2030, 0.24]],
-    taste: { strategy: 1.35, simulation: 1.35, racing: 1.2, sports: 1.15, puzzle: 1.05, platformer: 0.95, fighting: 0.85 },
+    taste: { strategy: 1.35, simulation: 1.35, racing: 1.2, sports: 1.15, puzzle: 1.05, platformer: 0.95, fighting: 0.85, cards: 1.15, visual_novel: 0.6 },
     unlocalized: 0.75,
     blurb: 'A strong computer scene: strategy, simulation, racing and football.',
   },
@@ -45,16 +45,16 @@ export const REGIONS: RegionDef[] = [
     name: 'Japan',
     short: 'JP',
     share: [[1980, 0.22], [1990, 0.24], [2000, 0.18], [2015, 0.1], [2030, 0.07]],
-    taste: { rpg: 1.6, fighting: 1.45, rhythm: 1.5, platformer: 1.2, puzzle: 1.15, shooter: 0.5, sports: 0.65, strategy: 0.8, sandbox: 0.85 },
+    taste: { rpg: 1.6, fighting: 1.45, rhythm: 1.5, platformer: 1.2, puzzle: 1.15, shooter: 0.5, sports: 0.65, strategy: 0.8, sandbox: 0.85, visual_novel: 2.2, cards: 1.1 },
     unlocalized: 0.45,
-    blurb: 'Console-first and choosy: RPGs, fighting and rhythm games rule. Little English.',
+    blurb: 'Console-first and choosy: RPGs, fighting, rhythm games and visual novels rule. Little English.',
   },
   {
     id: 'row',
     name: 'Rest of the world',
     short: 'World',
     share: [[1980, 0.03], [1995, 0.06], [2005, 0.14], [2015, 0.3], [2030, 0.43]],
-    taste: { mmo: 1.6, casual: 1.4, shooter: 1.15, strategy: 1.1, sports: 1.05, rpg: 1.05, simulation: 0.8, adventure: 0.85 },
+    taste: { mmo: 1.6, casual: 1.4, shooter: 1.15, strategy: 1.1, sports: 1.05, rpg: 1.05, simulation: 0.8, adventure: 0.85, cards: 1.2, visual_novel: 0.8 },
     unlocalized: 0.55,
     blurb: 'Latin America, China, South-East Asia and beyond: online, mobile and fast-growing.',
   },
@@ -63,7 +63,7 @@ export const REGIONS: RegionDef[] = [
 export const REGION_BY_ID: Record<RegionId, RegionDef> = Object.fromEntries(REGIONS.map((r) => [r.id, r])) as Record<RegionId, RegionDef>;
 
 /** How much a genre leans on text (dialogue, menus): light genres travel without translation. */
-const TEXT_HEAVY: Partial<Record<GenreId, number>> = { rpg: 1, adventure: 1, strategy: 0.9, simulation: 0.85, mmo: 0.9, sandbox: 0.6, action: 0.5, shooter: 0.45, sports: 0.4, racing: 0.3, fighting: 0.3, platformer: 0.3, puzzle: 0.35, casual: 0.35, rhythm: 0.4 };
+const TEXT_HEAVY: Partial<Record<GenreId, number>> = { rpg: 1, adventure: 1, strategy: 0.9, simulation: 0.85, mmo: 0.9, sandbox: 0.6, action: 0.5, shooter: 0.45, sports: 0.4, racing: 0.3, fighting: 0.3, platformer: 0.3, puzzle: 0.35, casual: 0.35, rhythm: 0.4, cards: 0.5, visual_novel: 1 };
 
 /** Localisation cost per region, in 1980 dollars, and extra work (share of the game). */
 export const LOC_COST: Record<Size, number> = { small: 4_000, medium: 12_000, large: 35_000, aaa: 90_000 };
