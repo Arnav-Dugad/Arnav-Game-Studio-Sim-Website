@@ -21,6 +21,9 @@ export const CHANNELS: readonly ChannelDef[] = [
   { id: 'trailer', name: 'Cinematic Trailer', from: 2000, cost: 60_000, hype: 0.7, audience: { kids: 0.9, everyone: 1, teen: 1.2, mature: 1.25 }, desc: 'A trailer that gets people talking.' },
   { id: 'social', name: 'Social Media Campaign', from: 2008, cost: 20_000, hype: 0.45, audience: { kids: 0.8, everyone: 1.1, teen: 1.3, mature: 1 }, desc: 'Viral moments, memes, community.' },
   { id: 'influencers', name: 'Streamers & Influencers', from: 2013, cost: 45_000, hype: 0.85, audience: { kids: 1.1, everyone: 1, teen: 1.4, mature: 1 }, desc: 'Get the game in front of big streamers.' },
+  { id: 'radio', name: 'Radio Spots', from: 1980, to: 2002, cost: 5_000, hype: 0.15, audience: { kids: 0.8, everyone: 1.2, teen: 1.1, mature: 1 }, desc: 'A catchy jingle on drive-time radio.' },
+  { id: 'mobile_ads', name: 'Mobile App Ads', from: 2010, cost: 18_000, hype: 0.4, audience: { kids: 1.1, everyone: 1.35, teen: 1.1, mature: 0.8 }, desc: 'Ads inside other apps and games — great for casual players.' },
+  { id: 'podcasts', name: 'Podcast Sponsorships', from: 2014, cost: 15_000, hype: 0.3, audience: { kids: 0.5, everyone: 0.9, teen: 1.1, mature: 1.35 }, desc: 'A host reads your ad between interviews. Grown-up players listen.' },
   { id: 'open_beta', name: 'Playtest Weekend', from: 2005, research: 'online_basic', cost: 35_000, hype: 0.6, audience: { kids: 0.8, everyone: 1, teen: 1.3, mature: 1.2 }, desc: 'A free-to-play weekend for core players: big buzz. (For bug hunting, run an Open beta from the project card.)' },
 ];
 
