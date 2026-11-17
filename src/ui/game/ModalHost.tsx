@@ -446,9 +446,15 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
               </span>
             )}
             {expansionsOf(s, r).released.length > 0 && <Pill tone="tech">{expansionsOf(s, r).released.length} expansion{expansionsOf(s, r).released.length > 1 ? 's' : ''}</Pill>}
-            <Pill tone={profit >= 0 ? 'good' : 'bad'}>
-              {profit >= 0 ? 'Profit' : 'Loss'} {fmtMoney(Math.abs(profit))}
-            </Pill>
+            {profit < 0 && r.active && r.week < 26 ? (
+              <span title={`Still selling: ${fmtMoney(r.net)} earned of a ${fmtMoney(r.devCost)} budget so far`}>
+                <Pill>{Math.floor((r.net / Math.max(1, r.devCost)) * 100)}% of budget recouped</Pill>
+              </span>
+            ) : (
+              <Pill tone={profit >= 0 ? 'good' : 'bad'}>
+                {profit >= 0 ? 'Profit' : 'Loss'} {fmtMoney(Math.abs(profit))}
+              </Pill>
+            )}
             {r.awards.map((a) => (
               <Pill key={a} tone="gold">
                 🏆 {a}

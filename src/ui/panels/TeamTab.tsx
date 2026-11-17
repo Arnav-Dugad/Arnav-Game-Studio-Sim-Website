@@ -19,6 +19,9 @@ import { useGame } from '../store';
 import { Face } from './staffBits';
 import { atRisk, matchesQuery, statusOf, topSkill, type StaffStatus } from './staffTools';
 
+/** Filters, search and sorting appear once the team is this big. */
+const TOOLS_FROM = 6;
+
 type Filter = 'all' | StaffStatus | 'risk' | 'ambition';
 type Sort = 'skill' | 'morale' | 'burnout' | 'salary' | 'name' | 'role' | 'tenure';
 type Group = 'none' | 'role' | 'assignment';
@@ -34,7 +37,8 @@ function projectCap(p: Project): number {
 
 function assignmentLabel(s: GameState, st: Staff): string {
   if (st.sickDays > 0) return `Sick (${st.sickDays}d)`;
-  if ((st.vacationDays ?? 0) > 0) return `${st.leave === 'parental' ? 'Parental leave' : st.leave === 'honeymoon' ? 'Honeymoon' : st.leave === 'conference' ? 'At a conference' : st.sabbatical ? 'Sabbatical' : 'On vacation'} (${st.vacationDays}d)`;
+  if ((st.vacationDays ?? 0) > 0)
+    return `${st.leave === 'parental' ? 'Parental leave' : st.leave === 'honeymoon' ? 'Honeymoon' : st.leave === 'conference' ? 'At a conference' : st.sabbatical ? 'Sabbatical' : 'On vacation'} (${st.vacationDays}d)`;
   switch (st.assignment.kind) {
     case 'idle':
       return 'Idle';
@@ -89,10 +93,20 @@ export function TeamTab() {
     [all],
   );
 
+  // a small team doesn't need the big-studio tools (and hidden filters must not hide anyone)
+  const tools = all.length >= TOOLS_FROM;
   const list = all
-    .filter((st) => (filter === 'all' ? true : filter === 'risk' ? atRisk(st) : filter === 'ambition' ? !!st.ambition : statusOf(st) === filter))
-    .filter((st) => role === 'all' || st.role === role)
-    .filter((st) => matchesQuery(st, q))
+    .filter((st) =>
+      !tools || filter === 'all'
+        ? true
+        : filter === 'risk'
+          ? atRisk(st)
+          : filter === 'ambition'
+            ? !!st.ambition
+            : statusOf(st) === filter,
+    )
+    .filter((st) => !tools || role === 'all' || st.role === role)
+    .filter((st) => !tools || matchesQuery(st, q))
     .sort((a, b) => {
       switch (sort) {
         case 'name':
@@ -191,84 +205,102 @@ export function TeamTab() {
         </div>
       </div>
 
-      <div className="mb-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Filter by status">
-        {chip('all', 'Everyone')}
-        {chip('idle', 'Idle')}
-        {chip('project', 'On projects')}
-        {chip('research', 'Research')}
-        {chip('training', 'Training')}
-        {chip('away', 'Away')}
-        {chip('risk', 'Needs attention', 'bad')}
-        {chip('ambition', 'Ambitions')}
-      </div>
-
-      <div className="mb-2 space-y-2">
-        <label className="relative block">
-          <Icon
-            name="search"
-            size={14}
-            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink3"
-          />
-          <input
-            className={cx(inputCls, 'h-8 pl-8 text-xs')}
-            placeholder="Search name, role, trait…"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setLimit(PAGE);
-            }}
-            aria-label="Search staff"
-          />
-        </label>
-        <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
-          <select
-            className={cx(inputCls, 'h-8 min-w-0 text-xs')}
-            value={role}
-            onChange={(e) => setRole(e.target.value as Role | 'all')}
-            aria-label="Role"
-          >
-            <option value="all">All roles</option>
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_NAMES[r]}
-              </option>
-            ))}
-          </select>
-          <select
-            className={cx(inputCls, 'h-8 min-w-0 text-xs')}
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-            aria-label="Sort"
-          >
-            <option value="skill">Top skill</option>
-            <option value="morale">Lowest morale</option>
-            <option value="burnout">Most burnt out</option>
-            <option value="salary">Salary</option>
-            <option value="tenure">Longest serving</option>
-            <option value="role">Role</option>
-            <option value="name">Name</option>
-          </select>
-          <select
-            className={cx(inputCls, 'h-8 min-w-0 text-xs')}
-            value={group}
-            onChange={(e) => setGroup(e.target.value as Group)}
-            aria-label="Group"
-          >
-            <option value="none">No grouping</option>
-            <option value="assignment">Group by assignment</option>
-            <option value="role">Group by role</option>
-          </select>
-          <button
-            type="button"
-            onClick={() => setDense((d) => !d)}
-            className="grid size-8 place-items-center rounded-lg border border-line hover:bg-bg2"
-            title={dense ? 'Comfortable rows' : 'Compact rows'}
-            aria-label={dense ? 'Comfortable rows' : 'Compact rows'}
-          >
-            <Icon name={dense ? 'grid' : 'menu'} size={14} />
-          </button>
+      {all.length < 3 && (
+        <div className="mb-3 flex items-center gap-3 rounded-xl border border-dashed border-line p-3 text-xs">
+          <Icon name="people" size={18} className="shrink-0 text-accent" />
+          <p className="min-w-0 flex-1 text-ink2">
+            {all.length === 1 ? 'A studio of one.' : 'A small but mighty team.'} More people means bigger games, faster — and someone to keep researching between projects.
+            {' '}
+            <span className="text-ink3">{s.candidates.length} candidate{s.candidates.length === 1 ? ' is' : 's are'} waiting.</span>
+          </p>
+          <Button size="sm" variant="primary" onClick={() => useGame.setState({ panelTab: 'hire' })}>
+            Hire
+          </Button>
         </div>
-      </div>
+      )}
+
+      {tools && (
+        <>
+          <div className="mb-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Filter by status">
+            {chip('all', 'Everyone')}
+            {chip('idle', 'Idle')}
+            {chip('project', 'On projects')}
+            {chip('research', 'Research')}
+            {chip('training', 'Training')}
+            {chip('away', 'Away')}
+            {chip('risk', 'Needs attention', 'bad')}
+            {chip('ambition', 'Ambitions')}
+          </div>
+
+          <div className="mb-2 space-y-2">
+            <label className="relative block">
+              <Icon
+                name="search"
+                size={14}
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink3"
+              />
+              <input
+                className={cx(inputCls, 'h-8 pl-8 text-xs')}
+                placeholder="Search name, role, trait…"
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setLimit(PAGE);
+                }}
+                aria-label="Search staff"
+              />
+            </label>
+            <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+              <select
+                className={cx(inputCls, 'h-8 min-w-0 text-xs')}
+                value={role}
+                onChange={(e) => setRole(e.target.value as Role | 'all')}
+                aria-label="Role"
+              >
+                <option value="all">All roles</option>
+                {roles.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_NAMES[r]}
+                  </option>
+                ))}
+              </select>
+              <select
+                className={cx(inputCls, 'h-8 min-w-0 text-xs')}
+                value={sort}
+                onChange={(e) => setSort(e.target.value as Sort)}
+                aria-label="Sort"
+              >
+                <option value="skill">Top skill</option>
+                <option value="morale">Lowest morale</option>
+                <option value="burnout">Most burnt out</option>
+                <option value="salary">Salary</option>
+                <option value="tenure">Longest serving</option>
+                <option value="role">Role</option>
+                <option value="name">Name</option>
+              </select>
+              <select
+                className={cx(inputCls, 'h-8 min-w-0 text-xs')}
+                value={group}
+                onChange={(e) => setGroup(e.target.value as Group)}
+                aria-label="Group"
+              >
+                <option value="none">No grouping</option>
+                <option value="assignment">Group by assignment</option>
+                <option value="role">Group by role</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setDense((d) => !d)}
+                className="grid size-8 place-items-center rounded-lg border border-line hover:bg-bg2"
+                title={dense ? 'Comfortable rows' : 'Compact rows'}
+                aria-label={dense ? 'Comfortable rows' : 'Compact rows'}
+              >
+                <Icon name={dense ? 'grid' : 'menu'} size={14} />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="mb-1.5 flex items-center justify-between text-xs text-ink3">
         <label className="flex cursor-pointer items-center gap-1.5">
@@ -392,7 +424,12 @@ function DenseRow({
       {atRisk(st) ? (
         <Icon name="warning" size={13} className="shrink-0 text-bad" title="Needs attention" />
       ) : st.ambition ? (
-        <Icon name="star" size={13} className="shrink-0 text-gold" title={`Ambition: ${ambitionText(st, st.ambition)}`} />
+        <Icon
+          name="star"
+          size={13}
+          className="shrink-0 text-gold"
+          title={`Ambition: ${ambitionText(st, st.ambition)}`}
+        />
       ) : (
         <span className="w-[13px]" />
       )}
@@ -431,7 +468,8 @@ function CardRow({
             {st.ambition && <Pill tone="gold">★ {ambitionText(st, st.ambition)}</Pill>}
           </div>
           <div className="truncate text-xs text-ink3">
-            {st.intern ? 'intern' : st.level} {ROLE_NAMES[st.role]} · {assignmentLabel(s, st)} · since {fromDay(st.hiredDay).year}
+            {st.intern ? 'intern' : st.level} {ROLE_NAMES[st.role]} · {assignmentLabel(s, st)} · since{' '}
+            {fromDay(st.hiredDay).year}
           </div>
         </div>
         <div className="w-24 space-y-1 text-[10px]">
@@ -493,7 +531,10 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
     if (p.team.length && p.team.every((id) => ids.includes(id))) keepers.add(p.team[0]!);
   }
   const leaving = (st: Staff) => st.assignment.kind === 'project' && keepers.has(st.id);
-  const kept = () => (keepers.size ? ` · kept ${keepers.size} on ${keepers.size === 1 ? 'a project' : 'projects'} so ${keepers.size === 1 ? 'it keeps' : 'they keep'} moving` : '');
+  const kept = () =>
+    keepers.size
+      ? ` · kept ${keepers.size} on ${keepers.size === 1 ? 'a project' : 'projects'} so ${keepers.size === 1 ? 'it keeps' : 'they keep'} moving`
+      : '';
   const trainCost = money(2_500, s.day);
 
   const assignTo = (pid: string) => {
@@ -569,7 +610,14 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
         size="sm"
         icon="research"
         onClick={() =>
-          runEach('Research', (st) => (leaving(st) || st.assignment.kind === 'training' || st.assignment.kind === 'research' ? null : res(act({ type: 'assign', staffId: st.id, to: 'research' }))), kept())
+          runEach(
+            'Research',
+            (st) =>
+              leaving(st) || st.assignment.kind === 'training' || st.assignment.kind === 'research'
+                ? null
+                : res(act({ type: 'assign', staffId: st.id, to: 'research' })),
+            kept(),
+          )
         }
       >
         Research
@@ -579,7 +627,10 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
         onClick={() =>
           runEach(
             'Made idle',
-            (st) => (st.assignment.kind === 'idle' || leaving(st) || st.assignment.kind === 'training' ? null : res(act({ type: 'assign', staffId: st.id, to: 'idle' }))),
+            (st) =>
+              st.assignment.kind === 'idle' || leaving(st) || st.assignment.kind === 'training'
+                ? null
+                : res(act({ type: 'assign', staffId: st.id, to: 'idle' })),
             kept(),
           )
         }
@@ -608,7 +659,8 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
                 // Check first, so nobody is pulled off a project for a course that won't start.
                 if (st.assignment.kind === 'training') return { ok: false, error: 'already training' };
                 if (isAway(st)) return { ok: false, error: 'away' };
-                if (useGame.getState().s!.company.cash < trainCost) return { ok: false, error: 'not enough cash' };
+                if (useGame.getState().s!.company.cash < trainCost)
+                  return { ok: false, error: 'not enough cash' };
                 if (st.assignment.kind === 'project') act({ type: 'assign', staffId: st.id, to: 'idle' });
                 return res(act({ type: 'train', staffId: st.id, skill }));
               },
@@ -646,14 +698,23 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
           onClick={() => {
             const n = people.filter((p) => p.role !== 'founder').length;
             const r = act({ type: 'fireMany', staffIds: people.map((p) => p.id) });
-            toast(r.ok ? { text: `Let ${n} go · morale −${layoffMoraleHit(n)} for everyone`, tone: 'neutral', icon: 'staff' } : { text: r.error, tone: 'bad' });
+            toast(
+              r.ok
+                ? {
+                    text: `Let ${n} go · morale −${layoffMoraleHit(n)} for everyone`,
+                    tone: 'neutral',
+                    icon: 'staff',
+                  }
+                : { text: r.error, tone: 'bad' },
+            );
             setConfirmFire(false);
             clear();
           }}
           onBlur={() => setConfirmFire(false)}
           autoFocus
         >
-          Really let {people.filter((p) => p.role !== 'founder').length} go? (morale −{layoffMoraleHit(people.filter((p) => p.role !== 'founder').length)})
+          Really let {people.filter((p) => p.role !== 'founder').length} go? (morale −
+          {layoffMoraleHit(people.filter((p) => p.role !== 'founder').length)})
         </Button>
       ) : (
         <Button
