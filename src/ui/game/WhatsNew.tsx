@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18g';
+export const WHATS_NEW_VERSION = '2026-11-18h';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'sparkle', title: 'Little things', body: 'Lo-fi beats from 2012, Ctrl+Z to undo today’s last placement in build mode, school tours for famous studios, Monday-morning arrivals, starry night windows, a dice button for studio names, and knock-off counts on your hits.' },
   { icon: 'people', title: 'Fan conventions & seasonal sales', body: 'Company → IP: a series with 300k+ fans can host its own convention every two years (fans +8%, hype for the sequel). In June and December, put your whole catalogue on sale in one click.' },
   { icon: 'bug', title: 'Bug bash & copycats', body: 'During polish, run a 20-second bug bash (Develop → the project): squash bugs to fix up to a quarter of them, once per game. And your big hits now inspire rival knock-offs.' },
   { icon: 'people', title: 'Mentorship', body: 'Pair a junior with a senior in the same craft (open the junior’s card): they learn 40% faster and grow close; the mentor gives up 3% output per mentee. Plus: late-night crunch lighting, headhunters, anniversaries, promotions and welcome-backs in the office.' },
