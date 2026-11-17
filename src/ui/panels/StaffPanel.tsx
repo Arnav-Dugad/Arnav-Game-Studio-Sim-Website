@@ -162,6 +162,7 @@ function CandidateCard({ c, onHire, disabled, picked, onPick }: { c: Candidate; 
             <span className="font-semibold">{c.name}</span>
             {person && <Pill tone="gold">Industry legend</Pill>}
             {c.fromRival && <Pill tone="tech">Poach from {s.rivals[c.fromRival]?.name ?? 'rival'}</Pill>}
+            {c.formerly && <Pill tone="neutral">ex-{c.formerly}</Pill>}
           </div>
           <div className="text-xs text-ink3">
             {c.level} {ROLE_NAMES[c.role]} · potential {c.potential}

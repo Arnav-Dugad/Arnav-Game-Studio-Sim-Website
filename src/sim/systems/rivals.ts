@@ -2,6 +2,7 @@
  * Rival companies: historical entry/exit, real flagship franchise releases on real dates, procedural
  * releases, finances, procedural indie studios, and acquisition targets.
  */
+import { generateCandidate } from './staff';
 import { COMPANIES, COMPANY_BY_ID } from '../../data/companies';
 import { FRANCHISES } from '../../data/franchises';
 import { BALANCE } from '../../data/balance';
@@ -187,7 +188,12 @@ export function rivalsMonthly(c: Ctx): void {
     // procedural studios can fail
     if (r.procedural && r.cash < -money(400_000, s.day)) {
       r.alive = false;
-      pushNews(s, { category: 'rival', headline: `${r.name} closes its doors`, tone: 'neutral' });
+      pushNews(s, { category: 'rival', headline: `${r.name} closes its doors`, body: 'Some of its developers are looking for work (Staff → Hire).', tone: 'neutral' });
+      // a few of their people come looking for jobs
+      for (let i = 0; i < rng.int(2, 3); i++) {
+        const cand = generateCandidate(s, rng, { quality: clamp(r.quality * 100, 10, 90) });
+        s.candidates.push({ ...cand, formerly: r.name, expiresDay: s.day + 40 });
+      }
     }
     // grow/shrink
     if (r.cash > money(r.staff * 120_000, s.day)) r.staff = Math.min(8_000, Math.round(r.staff * 1.008 + 1));

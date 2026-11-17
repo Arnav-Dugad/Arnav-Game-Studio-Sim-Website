@@ -100,6 +100,8 @@ export interface Candidate extends Omit<Staff, 'assignment' | 'deskId' | 'activi
   expiresDay: number;
   /** Poachable: currently employed by this rival (company id). */
   fromRival?: string;
+  /** Looking for work after their studio closed (its name). */
+  formerly?: string;
 }
 
 export interface PlacedItem {
