@@ -231,6 +231,13 @@ export function updateMarketMonthly(c: Ctx): void {
     const v = s.market.genreTrend[g.id] ?? 0;
     s.market.genreTrend[g.id] = clamp(v + rng.normal(0, 0.035) - 0.05 * v, -0.5, 0.6);
   }
+  // football World Cup summers (1982, 1986, …): everyone wants a sports game
+  const d = fromDay(s.day);
+  if (d.year >= 1982 && (d.year - 1982) % 4 === 0 && d.month === 5) {
+    s.market.genreTrend.sports = clamp((s.market.genreTrend.sports ?? 0) + 0.15, -0.5, 0.6);
+    s.market.topicTrend.sports_topic = clamp((s.market.topicTrend.sports_topic ?? 0) + 0.12, -0.5, 0.6);
+    pushNews(s, { category: 'industry', headline: `World Cup fever, ${d.year}`, body: 'The football World Cup kicks off next month, and players everywhere are hungry for sports games.', tone: 'neutral' });
+  }
   for (const t of TOPICS) {
     const v = s.market.topicTrend[t.id] ?? 0;
     s.market.topicTrend[t.id] = clamp(v + rng.normal(0, 0.03) - 0.05 * v, -0.5, 0.7);
