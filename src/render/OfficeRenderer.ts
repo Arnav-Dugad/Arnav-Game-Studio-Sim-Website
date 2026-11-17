@@ -536,10 +536,11 @@ export class OfficeRenderer {
     this.wallKey = recent.map((r) => r.id + ':' + Math.round(r.score)).join(',');
     const al = (s.alumni ?? []).slice(-6);
     this.alumni = al.map((a) => ({ color: GENRE_POSTER[Math.abs(hashStr(a.name)) % GENRE_POSTER.length]!, legend: a.legend }));
+    this.alumniKey = al.map((a) => a.name + a.day + (a.legend ? '*' : '')).join(',');
     const mc = s.company.mascot;
     this.mascot = mc ? { kind: mc.kind, color: parseInt(mc.color.slice(1), 16), acc: mc.acc } : undefined;
-    if (this.alumni.length !== this.lastAlumni) {
-      this.lastAlumni = this.alumni.length;
+    if (this.alumniKey !== this.lastAlumni) {
+      this.lastAlumni = this.alumniKey;
       for (const [k, tex] of this.textures) if (k.startsWith('alumni_wall|')) {
         tex.destroy(true);
         this.textures.delete(k);
@@ -559,7 +560,7 @@ export class OfficeRenderer {
         this.textures.delete(k);
       }
     }
-    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}|${this.wallKey}|${this.alumni.length}|${mc ? mc.kind + mc.color + mc.acc : ''}`;
+    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}|${this.wallKey}|${this.alumniKey}|${mc ? mc.kind + mc.color + mc.acc : ''}`;
     if (iKey !== this.itemsKey) {
       this.itemsKey = iKey;
       this.syncItems(s, floor, era);
@@ -680,17 +681,18 @@ export class OfficeRenderer {
   private wallGames: { color: number; score: number; seed: number }[] = [];
   private wallKey = '';
   private alumni: { color: number; legend: boolean }[] = [];
+  private alumniKey = '';
   private mascot?: { kind: string; color: number; acc: string };
   private lastFanKey = '';
   private lastWallKey = '';
-  private lastAlumni = -1;
+  private lastAlumni = '\u0000';
   private agentColor: number | undefined;
 
   private texFor(id: ItemId, rot: 0 | 1, era: number): { tex: Texture; ox: number; oy: number } {
     const def = ITEM_BY_ID[id];
     const w = rot ? def.h : def.w;
     const h = rot ? def.w : def.h;
-    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}${id === 'release_wall' ? `|r${this.wallKey}` : ''}${id === 'alumni_wall' ? `|a${this.alumni.length}` : ''}${id === 'mascot_statue' && this.mascot ? `|m${this.mascot.kind}${this.mascot.color}${this.mascot.acc}` : ''}`;
+    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}${id === 'release_wall' ? `|r${this.wallKey}` : ''}${id === 'alumni_wall' ? `|a${this.alumniKey}` : ''}${id === 'mascot_statue' && this.mascot ? `|m${this.mascot.kind}${this.mascot.color}${this.mascot.acc}` : ''}`;
     const lift = itemLift(id) + 12;
     let tex = this.textures.get(key);
     if (!tex) {

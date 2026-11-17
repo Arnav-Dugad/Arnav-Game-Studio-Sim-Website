@@ -486,11 +486,13 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       g.rect(W - 10, 4, 2, H - 8).fill(P.woodDark);
       g.roundRect(3, -25, W - 6, H + 4, 3).fill(0x4a3a2c); // a warm wooden panel
       g.roundRect(3, -25, W - 6, H + 4, 3).stroke({ width: 2, color: P.woodDark });
-      const people = (o.alumni ?? []).slice(0, 6);
-      const cols = 3;
-      const pw = (W - 14) / cols - 4;
-      const ph = Math.min(pw * 1.2, (H + 10) / 2 - 4);
-      for (let i = 0; i < 6; i++) {
+      const wide = W >= H;
+      const cols = wide ? 3 : 1;
+      const rows = wide ? 2 : 3;
+      const people = (o.alumni ?? []).slice(-cols * rows);
+      const pw = (W - 14 - (cols - 1) * 4) / cols;
+      const ph = Math.min(wide ? pw * 1.2 : pw * 0.75, (H - 2 - (rows - 1) * 4) / rows);
+      for (let i = 0; i < cols * rows; i++) {
         const cx = 7 + (i % cols) * (pw + 4);
         const cy = -22 + Math.floor(i / cols) * (ph + 4);
         const a = people[i];
@@ -516,8 +518,8 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       const cols = wide ? 3 : 1;
       const rows = wide ? 2 : 3;
       const games = (o.releases ?? []).slice(0, cols * rows);
-      const pw = (W - 14) / cols - 4;
-      const ph = Math.min(wide ? pw * 1.3 : pw * 0.75, (H + 10) / rows - 4);
+      const pw = (W - 14 - (cols - 1) * 4) / cols;
+      const ph = Math.min(wide ? pw * 1.3 : pw * 0.75, (H - 2 - (rows - 1) * 4) / rows); // rows fit inside the panel
       games.forEach((gm, i) => {
         const cx = 7 + (i % cols) * (pw + 4);
         const cy = -22 + Math.floor(i / cols) * (ph + 4);
