@@ -24,6 +24,7 @@ export interface Season {
   party: boolean;
   newYear: boolean;
   hat: Hat;
+  rain: boolean;
 }
 
 export function seasonOf(s: GameState): Season {
@@ -32,6 +33,7 @@ export function seasonOf(s: GameState): Season {
   const newYear = month === 1 && dom <= 4;
   const halloween = month === 10 && dom >= 18;
   return {
+    rain: isRainy(s.day, month),
     month,
     dom,
     snow: month === 12 || month <= 2,
@@ -44,6 +46,15 @@ export function seasonOf(s: GameState): Season {
     newYear,
     hat: halloween && dom >= 28 ? 'witch' : month === 12 && dom >= 15 ? 'santa' : party || newYear ? 'party' : 'none',
   };
+}
+
+/** Rainy days, stable per day: wettest in spring and autumn. */
+export function isRainy(day: number, month: number): boolean {
+  if (month === 12 || month <= 2) return false; // that's snow
+  let h = Math.imul(day ^ 0x9e3779b9, 2654435761) >>> 0;
+  h ^= h >>> 15;
+  const chance = month >= 3 && month <= 5 ? 0.35 : month >= 9 && month <= 11 ? 0.4 : 0.15;
+  return (h % 1000) / 1000 < chance;
 }
 
 /** Day of year a staff member celebrates their birthday (stable per person). */
@@ -76,6 +87,7 @@ export class SeasonDecor {
   private key = '';
   private bulbs: Graphics[] = [];
   private flakes: Flake[] = [];
+  private drops: Flake[] = [];
   private bobbers: { g: Graphics; y: number; phase: number }[] = [];
   private glows: Graphics[] = [];
   private t = 0;
@@ -94,12 +106,13 @@ export class SeasonDecor {
     this.placed = [];
     this.bulbs = [];
     this.flakes = [];
+    this.drops = [];
     this.bobbers = [];
     this.glows = [];
   }
 
   update(s: GameState, floor: number, dt: number, se: Season, P: ScenePalette, reducedMotion: boolean): void {
-    const key = [floor, s.office.tier, s.office.rev ?? 0, s.office.items.length, P.night, se.snow, se.lights, se.tree, se.pumpkins, se.leaves, se.flowers, se.party, se.newYear].join('|');
+    const key = [floor, s.office.tier, s.office.rev ?? 0, s.office.items.length, P.night, se.snow, se.lights, se.tree, se.pumpkins, se.leaves, se.flowers, se.party, se.newYear, se.rain].join('|');
     if (key !== this.key) {
       this.key = key;
       this.build(s, floor, se, P);
@@ -112,6 +125,10 @@ export class SeasonDecor {
     for (const f of this.flakes) {
       const y = (f.phase + this.t * f.speed) % f.h;
       f.g.position.set(f.x0 + ((f.phase * 7.3) % f.w) + Math.sin(this.t * 1.7 + f.phase) * 2, f.y0 + y);
+    }
+    for (const f of this.drops) {
+      const y = (f.phase + this.t * f.speed) % f.h;
+      f.g.position.set(f.x0 + ((f.phase * 13.7) % f.w) - y * 0.15, f.y0 + y);
     }
     for (const b of this.bobbers) b.g.position.y = b.y + Math.sin(this.t * 1.6 + b.phase) * 2.2;
     this.glows.forEach((g, i) => (g.alpha = 0.75 + Math.sin(this.t * 6 + i * 2.1) * 0.25));
@@ -155,6 +172,17 @@ export class SeasonDecor {
           const f = new Graphics().circle(0, 0, 1.1).fill({ color: 0xffffff, alpha: 0.9 });
           this.root.addChild(f);
           this.flakes.push({ g: f, x0: x + 2, y0: y + 1, w: w - 4, h: h - 7, phase: Math.random() * 40, speed: 5 + Math.random() * 5 });
+        }
+      }
+    }
+    if (se.rain) {
+      for (const [x, y, w, h] of panes) {
+        const tint = new Graphics().roundRect(x, y, w, h, 3).fill({ color: 0x5a6b80, alpha: 0.22 });
+        this.root.addChild(tint);
+        for (let i = 0; i < 7; i++) {
+          const d = new Graphics().moveTo(0, 0).lineTo(-1.2, 6).stroke({ width: 1, color: 0xdfeaf5, alpha: 0.75 });
+          this.root.addChild(d);
+          this.drops.push({ g: d, x0: x + 3, y0: y + 1, w: w - 6, h: h - 8, phase: Math.random() * 40, speed: 70 + Math.random() * 40 });
         }
       }
     }
