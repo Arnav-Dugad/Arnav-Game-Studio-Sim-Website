@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18z';
+export const WHATS_NEW_VERSION = '2026-11-19a';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'flag', title: 'Four new scenarios', body: 'Kickstarter Kid (raise $1M from fans), Early Access Odyssey (grow an Early Access game into an 85+ hit), Media Mogul (a two-million-fan series and three licensing hits) and Timeless (two games in the Hall of Classics). Pick Scenario when founding a studio.' },
   { icon: 'people', title: 'Summer internships', body: 'Staff → Policies (1985+): every June a few students join for the summer — cheap, green and full of potential, learning 50% faster. Pair them with mentors. On September 1 you can offer the standout intern a job; former interns are loyal for life.' },
   { icon: 'build', title: 'Bonsai, meditation & movie nights', body: 'Three new things to build: a Bonsai Tree (1984) the gardeners fuss over, a Meditation Corner (2005) that slows burnout nearby, and a Screening Room (1990) with a big screen and comfy seats — a big morale aura, and the retro gamers’ favourite hangout.' },
   { icon: 'heart', title: 'Hobbies', body: 'Everyone has a hobby now — baking, running, music, retro gaming, gardening, board games and more (shown on their card). It changes what they chat about and where they spend their breaks, and on Fridays the bakers bring in treats.' },
@@ -33,7 +34,7 @@ const ITEMS: { icon: IconName; title: string; body: string }[] = [
   { icon: 'build', title: 'New things to build', body: 'Foosball table, claw machine (1985), guitar corner, antique globe — and a Mascot Statue once a franchise has three games. Staff play foosball, try the claw, jam on the guitar and pose for photos with your mascot. People who leave now pack a box and say goodbye.' },
   { icon: 'eye', title: 'Cinematic mode & live monitors', body: 'Press V (or Menu → Cinematic mode) to hide the interface and let the camera wander between conversations, breaks and busy desks. Screens at working desks now show code, art, waveforms, game tests and charts.' },
   { icon: 'building', title: 'Branch offices abroad', body: 'Market → World: from 1985, open a studio in Europe, Japan or the rest of the world. Every game is localised there for free and the local team lifts sales a little — for monthly rent.' },
-  { icon: 'flag', title: 'Scenarios', body: 'Found a studio in Scenario mode: seven challenges from Garage Days to Empire — survive the 1983 crash, build Japan’s greatest RPG house, bet on 3D, win Game of the Year as a two-person indie. Goals and the deadline live in the Goals panel.' },
+  { icon: 'flag', title: 'Scenarios', body: 'Found a studio in Scenario mode: challenges from Garage Days to Empire — survive the 1983 crash, build Japan’s greatest RPG house, bet on 3D, win Game of the Year as a two-person indie. Goals and the deadline live in the Goals panel.' },
   { icon: 'sparkle', title: 'Live events', body: 'Run seasonal events in your subscription, free-to-play and live-service games (open the game → Post-launch): a Halloween Spooktacular or Winter Festival costs about a month of live income and lifts it for three months — most for well-loved games.' },
   { icon: 'trophy', title: 'Employee of the Month & team retreats', body: 'Each month your top contributor wins Employee of the Month (a medal on their shirt and a morale boost). Once a year, book a team retreat (Staff → Policies): everyone rested, morale up, friendships closer.' },
   { icon: 'people', title: 'Friendships & feuds', body: 'Colleagues on the same project grow close (or clash). Best friends on a team lift morale and team chemistry; feuds drag both down and need your call — mediate, split them up or let it ride. See who gets on with whom on each staff card.' },

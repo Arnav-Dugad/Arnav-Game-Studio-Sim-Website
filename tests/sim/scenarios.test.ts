@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createScenarioGame } from '@/sim/scenarioSetup';
-import { SCENARIOS } from '@/sim/systems/scenarios';
+import { SCENARIOS, goalProgress } from '@/sim/systems/scenarios';
 import { advance } from '@/sim/advance';
 import { dispatch } from '@/sim/actions';
 import { fromDay } from '@/sim/calendar';
@@ -47,5 +47,22 @@ describe('scenarios', () => {
     s.day = s.scenario!.deadlineDay - 2;
     advance(s, 5);
     expect(s.scenario?.result).toBe('failed');
+  });
+
+  it('the newer goal kinds measure the right things', () => {
+    const s = make('mogul');
+    const goals = [
+      { kind: 'crowdfunded', amount: 1_000_000 },
+      { kind: 'seriesFans', fans: 2_000_000 },
+      { kind: 'mediaHits', n: 3 },
+      { kind: 'classics', n: 2 },
+      { kind: 'eaHit', score: 85 },
+    ] as const;
+    for (const g of goals) expect(goalProgress(s, g).p).toBe(0);
+    s.progress.stats.crowdfunded = 1_200_000;
+    s.progress.stats.classics = 2;
+    s.franchises['f'] = { id: 'f', name: 'F', genre: 'action', topic: 'space', fans: 2_500_000, entries: [], fatigue: 0, lastDay: s.day, bestScore: 80 };
+    s.mediaDeals = [0, 1, 2].map((i) => ({ id: `m${i}`, franchiseId: 'f', name: 'F', kind: 'comic' as const, control: 'licensed' as const, startDay: 0, releaseDay: 0, fee: 1, outcome: 'hit' as const }));
+    for (const g of goals.slice(0, 4)) expect(goalProgress(s, g).p).toBeGreaterThanOrEqual(1);
   });
 });

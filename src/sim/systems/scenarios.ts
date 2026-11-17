@@ -22,7 +22,12 @@ export type GoalDef =
   | { kind: 'units'; units: number }
   | { kind: 'totalUnits'; units: number }
   | { kind: 'goty'; n: number; sizes?: Size[] }
-  | { kind: 'staff'; n: number };
+  | { kind: 'staff'; n: number }
+  | { kind: 'crowdfunded'; amount: number }
+  | { kind: 'eaHit'; score: number }
+  | { kind: 'seriesFans'; fans: number }
+  | { kind: 'mediaHits'; n: number }
+  | { kind: 'classics'; n: number };
 
 export interface ScenarioDef {
   id: string;
@@ -131,6 +136,64 @@ export const SCENARIOS: ScenarioDef[] = [
     goals: [{ kind: 'totalUnits', units: 25_000_000 }, { kind: 'valuation', amount: 500_000_000 }],
   },
   {
+    id: 'kickstarter',
+    name: 'Kickstarter Kid',
+    tagline: 'Let the fans fund your dream.',
+    blurb: '2012: crowdfunding has arrived. A two-person studio with more ideas than money — pitch your games to players, raise a million dollars and ship an 80+ game.',
+    difficulty: 'Medium',
+    year: 2012,
+    until: 2020,
+    cash: 12_000,
+    reputation: 14,
+    hires: 1,
+    hireQuality: 0.3,
+    research: ['biz_self_publishing'],
+    goals: [{ kind: 'crowdfunded', amount: 1_000_000 }, { kind: 'score', score: 80 }],
+  },
+  {
+    id: 'early_access',
+    name: 'Early Access Odyssey',
+    tagline: 'Build it with the players.',
+    blurb: '2013: sell your game while you make it. Grow an Early Access game into an 85+ hit and sell two million copies along the way.',
+    difficulty: 'Medium',
+    year: 2013,
+    until: 2022,
+    cash: 60_000,
+    reputation: 16,
+    hires: 3,
+    hireQuality: 0.25,
+    research: ['biz_self_publishing'],
+    goals: [{ kind: 'eaHit', score: 85 }, { kind: 'totalUnits', units: 2_000_000 }],
+  },
+  {
+    id: 'mogul',
+    name: 'Media Mogul',
+    tagline: 'Games are just the beginning.',
+    blurb: '1995: build a series the world adores — two million fans — then take it everywhere: toys, cartoons, films. Land three licensing hits.',
+    difficulty: 'Hard',
+    year: 1995,
+    until: 2012,
+    cash: 500_000,
+    reputation: 28,
+    tier: 3,
+    hires: 9,
+    hireQuality: 0.3,
+    goals: [{ kind: 'seriesFans', fans: 2_000_000 }, { kind: 'mediaHits', n: 3 }],
+  },
+  {
+    id: 'timeless',
+    name: 'Timeless',
+    tagline: 'Make games that outlive you.',
+    blurb: '1984: forget the quick buck. Make two games so good they’re inducted into the Golden Pixel Hall of Classics — ten years after release — before 2012.',
+    difficulty: 'Legendary',
+    year: 1984,
+    until: 2012,
+    cash: 30_000,
+    reputation: 10,
+    hires: 2,
+    goals: [{ kind: 'classics', n: 2 }],
+  },
+  {
     id: 'empire',
     name: 'Empire',
     tagline: 'From the garage to the biggest studio on Earth.',
@@ -186,6 +249,26 @@ export function goalProgress(s: GameState, g: GoalDef): { p: number; text: strin
     case 'staff': {
       const n = Object.keys(s.staff).length;
       return { p: n / g.n, text: `Employ ${g.n} people`, now: `${n}/${g.n}` };
+    }
+    case 'crowdfunded': {
+      const n = s.progress.stats.crowdfunded ?? 0;
+      return { p: n / g.amount, text: `Raise ${fmtMoney(g.amount)} from backers (crowdfunding)`, now: fmtMoney(n) };
+    }
+    case 'eaHit': {
+      const best = Math.max(0, ...rels(s).filter((r) => r.earlyAccess).map((r) => r.score));
+      return { p: best / g.score, text: `Ship a game out of Early Access scoring ${g.score}+`, now: best ? `best ${best}` : 'none yet' };
+    }
+    case 'seriesFans': {
+      const best = Math.max(0, ...Object.values(s.franchises).map((f) => f.fans));
+      return { p: best / g.fans, text: `Grow one series to ${fmtUnits(g.fans)} fans`, now: fmtUnits(best) };
+    }
+    case 'mediaHits': {
+      const n = (s.mediaDeals ?? []).filter((d) => d.outcome === 'hit').length;
+      return { p: n / g.n, text: `Land ${g.n} licensing hits (Company → IP)`, now: `${n}/${g.n}` };
+    }
+    case 'classics': {
+      const n = s.progress.stats.classics ?? 0;
+      return { p: n / g.n, text: `Get ${g.n} game${g.n > 1 ? 's' : ''} into the Hall of Classics`, now: `${n}/${g.n}` };
     }
   }
 }
