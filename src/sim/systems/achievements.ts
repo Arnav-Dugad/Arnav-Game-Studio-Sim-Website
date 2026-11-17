@@ -110,6 +110,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'open_book', name: 'Open Book', desc: 'Open-source one of your engines.', icon: 'gear', check: (s) => Object.values(s.engines).some((e) => e.openSourced) },
   { id: 'philanthropist', name: 'Philanthropist', desc: 'Give $1M to charity.', icon: 'heart', check: (s) => (s.progress.stats.donated ?? 0) >= 1_000_000 },
   { id: 'beloved_community', name: 'Wholesome', desc: 'Grow a community of 100k+ members with health 85+.', icon: 'people', check: (s) => !!s.community && s.community.members >= 100_000 && s.community.health >= 85 },
+  { id: 'studio_awards', name: 'And the Award Goes To…', desc: 'Hold your first in-house Studio Awards.', icon: 'trophy', check: (s) => (s.studioAwards ?? []).length > 0 },
   { id: 'garage_hit', name: 'Garage Miracle', desc: 'Score 85+ while still in the garage.', icon: 'wrench', check: (s) => s.office.tier === 1 && s.progress.stats.bestScore >= 85 },
 ];
 

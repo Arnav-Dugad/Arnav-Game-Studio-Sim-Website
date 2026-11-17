@@ -14,7 +14,7 @@ import { lifeEventsMonthly } from './systems/lifeEvents';
 import { earlyAccessWeekly } from './systems/earlyAccess';
 import { objectivesDaily, objectivesQuarterly } from './systems/objectives';
 import { scenarioMonthly } from './systems/scenarios';
-import { employeeOfTheMonth } from './systems/studioLife';
+import { employeeOfTheMonth, studioAwards } from './systems/studioLife';
 import { relationsWeekly } from './systems/relations';
 import { ambitionsDaily, ambitionsWeekly } from './systems/ambitions';
 import { BALANCE } from '../data/balance';
@@ -112,6 +112,7 @@ export function tick(c: Ctx): void {
     publishingMonthly(c);
     updateStaffMonthly(c);
     employeeOfTheMonth(c);
+    if (d.month === 12) studioAwards(c);
     lifeEventsMonthly(c);
     fanMailMonthly(c);
     mediaMonthly(c);

@@ -1172,6 +1172,18 @@ export class OfficeRenderer {
         for (const b of here.filter((x) => x !== chef && !x.talk && Math.hypot(x.x - chef.x, x.y - chef.y) < 180).slice(0, 2)) this.say(b, pickOne([`Thanks, ${st ? firstName(st.name) : 'chef'}! 😋`, 'Yum!', 'You’re the best!']), 2.4);
       }
     }
+    // Studio Awards night: winners hold up a trophy, colleagues cheer
+    const sa = s.studioAwards?.[s.studioAwards.length - 1];
+    if (sa && s.day - sa.day <= 1 && !firstFrame) {
+      for (const w of sa.winners) {
+        const a = this.agents.get(w.id);
+        if (!a || !a.c.visible || a.floor !== floor) continue;
+        this.showBubble(a, '🏆');
+        a.bubbleT = 3;
+        a.anim.joy = 1.6;
+        for (const b of here.filter((x) => x !== a && !x.talk && Math.hypot(x.x - a.x, x.y - a.y) < 150).slice(0, 2)) this.say(b, pickOne([`${w.category}! Go ${firstName(w.name)}! 🎉`, 'Well deserved!', 'Speech! Speech!']), 2.4);
+      }
+    }
     // love is in the air: a new couple, and wedding gossip while they're on honeymoon
     let gossip = 0;
     for (const st of Object.values(s.staff)) {

@@ -103,6 +103,9 @@ export interface Staff {
   /** Contribution points at the last monthly check, and Employee of the Month wins. */
   contribMark?: number;
   eotmCount?: number;
+  /** Contribution at the start of the year (Studio Awards), and the awards they've won. */
+  yearMark?: number;
+  honours?: string[];
   /** Life outside work (systems/lifeEvents.ts): partner (a colleague), marriage, kids, a move; and the latest event. */
   life?: { partnerId?: Id; married?: number; kids?: number; remote?: boolean; event?: { kind: 'romance' | 'wedding' | 'baby' | 'moved'; day: number } };
   /** Why they're away, when it isn't an ordinary vacation. */
@@ -905,6 +908,8 @@ export interface GameState {
   eotm?: { id: string; day: number };
   /** Letters and drawings from players (systems/fanMail.ts), newest last. */
   fanMail?: FanMail[];
+  /** In-house Studio Awards each December. */
+  studioAwards?: { year: number; day: number; winners: { category: string; id: string; name: string }[] }[];
   /** A team photo every New Year's Day (systems/yearbook.ts). */
   yearbook?: YearbookPhoto[];
   /** Licensed comics, toys, shows, films and rides (systems/media.ts). */

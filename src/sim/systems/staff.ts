@@ -261,7 +261,7 @@ export function mentorBlocked(s: GameState, mentee: Staff, mentor: Staff): strin
 
 // Mentee counts per mentor, cached per state and day (productivity runs for everyone, every day).
 const menteeCache = new WeakMap<GameState, { day: number; counts: Map<string, number> }>();
-function menteeCounts(s: GameState): Map<string, number> {
+export function menteeCounts(s: GameState): Map<string, number> {
   const hit = menteeCache.get(s);
   if (hit && hit.day === s.day) return hit.counts;
   const counts = new Map<string, number>();
