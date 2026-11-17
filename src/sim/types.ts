@@ -538,6 +538,8 @@ export interface ContractOffer {
 export interface DealOffer extends PublisherDeal {
   id: Id;
   expiresDay: number;
+  /** Already haggled over (once per offer). */
+  negotiated?: boolean;
 }
 
 export interface AcquisitionTarget {

@@ -1313,3 +1313,17 @@ describe('sabbaticals', () => {
     expect(dispatch(s, { type: 'sabbatical', staffId: st.id }).ok).toBe(false); // cooldown
   });
 });
+
+describe('deal negotiation', () => {
+  it('once per offer: better terms or the publisher walks', () => {
+    const s = game(1990, 71);
+    s.company.reputation = 60;
+    s.offers.deals = [{ id: 'd1', publisherId: Object.keys(s.rivals)[0]!, advance: 100_000, royalty: 0.2, minScore: 60, deadlineDay: s.day + 400, reach: 1.2, marketingBudget: 0, expiresDay: s.day + 30 }];
+    expect(dispatch(s, { type: 'negotiateDeal', dealId: 'd1', ask: 'advance' }).ok).toBe(true);
+    const d = s.offers.deals.find((x) => x.id === 'd1');
+    if (d) {
+      expect(d.advance).toBe(125_000);
+      expect(dispatch(s, { type: 'negotiateDeal', dealId: 'd1', ask: 'royalty' }).ok).toBe(false);
+    } else expect(s.offers.deals.length).toBe(0);
+  });
+});

@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { COMPANY_BY_ID } from '../data/companies';
 import { runLiveEvent } from './systems/liveEvents';
 import { teamRetreat } from './systems/studioLife';
 import type { CultureId } from '../data/culture';
@@ -59,6 +60,11 @@ export interface StartGamePayload {
   localized?: RegionId[];
   team: string[];
   focus?: [Focus3, Focus3, Focus3];
+}
+
+/** Chance a publisher agrees to better terms: your reputation is your leverage. */
+export function negotiateOdds(s: GameState): number {
+  return clamp(0.3 + s.company.reputation / 160, 0.3, 0.85);
 }
 
 /** Fan conventions for a big series (once every two years). */
@@ -121,6 +127,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'negotiateDeal'; dealId: string; ask: 'advance' | 'royalty' }
   | { type: 'sabbatical'; staffId: string }
   | { type: 'undoPlace' }
   | { type: 'fanCon'; franchiseId: string }
@@ -881,6 +888,22 @@ function apply(c: Ctx, a: Action): string | null {
       if (!s.company.moraleMods.some((m) => m.label.endsWith(' Con') && m.until > s.day)) s.company.moraleMods.push({ v: 3, until: s.day + 45, label: `${f.name} Con` });
       for (const p of Object.values(s.projects)) if (p.kind === 'game' && p.concept.franchiseId === f.id) p.hype = Math.max(p.hype, Math.min(BALANCE.HYPE_MAX, p.hype + 0.3));
       pushNews(s, { category: 'studio', headline: `Thousands of fans pack ${f.name} Con`, body: 'Cosplay, panels, a surprise announcement — and a very long merch queue.', tone: 'good' });
+      return null;
+    }
+    case 'negotiateDeal': {
+      const d = s.offers.deals.find((x) => x.id === a.dealId);
+      if (!d) return 'That offer is gone';
+      if (d.negotiated) return 'You already negotiated this one';
+      if (a.ask !== 'advance' && a.ask !== 'royalty') return 'Ask for a bigger advance or a better royalty';
+      d.negotiated = true;
+      if (c.rng.chance(negotiateOdds(s))) {
+        if (a.ask === 'advance') d.advance = Math.round(d.advance * 1.25);
+        else d.royalty = Math.min(0.6, d.royalty + 0.05);
+        pushNews(s, { category: 'studio', headline: `${COMPANY_BY_ID[d.publisherId]?.name ?? 'The publisher'} improves its offer`, tone: 'good' });
+      } else {
+        s.offers.deals = s.offers.deals.filter((x) => x.id !== d.id);
+        pushNews(s, { category: 'studio', headline: `${COMPANY_BY_ID[d.publisherId]?.name ?? 'The publisher'} walks away from the table`, tone: 'bad' });
+      }
       return null;
     }
     case 'liveEvent':

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fanConBlocked, fanConCost } from '@/sim/actions';
+import { fanConBlocked, fanConCost, negotiateOdds } from '@/sim/actions';
 import { COMPANY_BY_ID } from '@/data/companies';
 import { GENRE_BY_ID } from '@/data/genres';
 import { TRADE_SHOWS } from '@/data/marketing';
@@ -172,6 +172,16 @@ function Publishing() {
                       {fmtMoney(o.advance)} advance · {Math.round(o.royalty * 100)}% royalty · {Math.round(o.reach * 100)}% reach · {o.minScore}+ score · deadline {formatDate(o.deadlineDay, false)}
                     </div>
                   </div>
+                  {!o.negotiated && (
+                    <div className="flex shrink-0 flex-col gap-1">
+                      <Button size="sm" variant="ghost" title={`${Math.round(negotiateOdds(s) * 100)}% chance they agree to +25% advance; otherwise they walk away`} onClick={() => useGame.getState().actOrToast({ type: 'negotiateDeal', dealId: o.id, ask: 'advance' }, 'You made your pitch')}>
+                        Ask +25% advance
+                      </Button>
+                      <Button size="sm" variant="ghost" title={`${Math.round(negotiateOdds(s) * 100)}% chance they agree to +5 points of royalty; otherwise they walk away`} onClick={() => useGame.getState().actOrToast({ type: 'negotiateDeal', dealId: o.id, ask: 'royalty' }, 'You made your pitch')}>
+                        Ask +5% royalty
+                      </Button>
+                    </div>
+                  )}
                   <Pill>expires {formatDate(o.expiresDay, false)}</Pill>
                 </li>
               );
