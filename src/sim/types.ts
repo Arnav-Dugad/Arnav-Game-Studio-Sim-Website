@@ -138,6 +138,22 @@ export interface PlacedItem {
 
 export type FloorStyle = 'auto' | 'wood' | 'carpet' | 'concrete' | 'tiles' | 'checker';
 
+export interface FanMail {
+  id: string;
+  day: number;
+  releaseId: string;
+  game: string;
+  topic: string;
+  genre: string;
+  from: string;
+  age?: number;
+  kind: 'art' | 'letter';
+  text: string;
+  seed: number;
+  read?: boolean;
+  pinned?: boolean;
+}
+
 export interface Office {
   tier: number;
   /** Cosmetic: floor finish and wall colour (hex), chosen in the Office panel. */
@@ -177,6 +193,8 @@ export interface LayoutCache {
   research: number;
   marketing: number;
   trophies: number;
+  /** Fan Art Walls placed. */
+  fanart?: number;
   deskTierById: Record<Id, number>;
 }
 
@@ -733,6 +751,7 @@ export interface LifetimeStats {
   officeWeddings?: number;
   babies?: number;
   crowdfunded?: number;
+  fanMail?: number;
   /** Games that topped the weekly chart. */
   numberOnes?: number;
   /** Best bug-bash result, and mentees who graduated. */
@@ -809,6 +828,8 @@ export interface GameState {
   objectives?: Objective[];
   /** This month's Employee of the Month. */
   eotm?: { id: string; day: number };
+  /** Letters and drawings from players (systems/fanMail.ts), newest last. */
+  fanMail?: FanMail[];
   schemaVersion: number;
   seed: number;
   rng: RngState;

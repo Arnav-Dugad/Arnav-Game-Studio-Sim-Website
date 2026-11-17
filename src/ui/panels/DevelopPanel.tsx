@@ -284,7 +284,7 @@ function GameCard({ p }: { p: GameProject }) {
           <div className="relative mt-1.5 h-2 overflow-hidden rounded-full bg-bg2">
             <div className={cx('h-full rounded-full', p.crowdfund.raised >= p.crowdfund.goal ? 'bg-good' : 'bg-accent')} style={{ width: `${Math.min(100, (p.crowdfund.raised / (p.crowdfund.goal * STRETCH[STRETCH.length - 1]!)) * 100)}%` }} />
             {[1, ...STRETCH].map((m) => (
-              <span key={m} className="absolute top-0 h-full w-px bg-ink3/60" style={{ left: `${(m / STRETCH[STRETCH.length - 1]!) * 100}%` }} title={m === 1 ? 'Goal' : `Stretch: ${STRETCH_NAMES[STRETCH.indexOf(m)]}`} />
+              <span key={m} className="absolute top-0 h-full w-0.5 -translate-x-1/2" style={{ left: `${(m / STRETCH[STRETCH.length - 1]!) * 100}%`, background: m === 1 ? 'var(--ink)' : 'var(--panel)', opacity: 0.7 }} title={m === 1 ? 'Goal' : `Stretch: ${STRETCH_NAMES[STRETCH.indexOf(m)]}`} />
             ))}
           </div>
           <div className="mt-1 text-ink3">

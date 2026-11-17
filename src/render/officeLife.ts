@@ -135,6 +135,7 @@ export const LEISURE: Record<string, { glyph: string; secs: [number, number] }> 
   aquarium: { glyph: '🐠', secs: [3, 6] },
   game_library: { glyph: '🎮', secs: [4, 8] },
   console_museum: { glyph: '👀', secs: [3, 6] },
+  fan_wall: { glyph: '🖍️', secs: [3, 5] },
   plant_large: { glyph: '🌿', secs: [2, 4] },
   foosball: { glyph: '⚽', secs: [5, 9] },
   gym: { glyph: '🏋️', secs: [6, 10] },

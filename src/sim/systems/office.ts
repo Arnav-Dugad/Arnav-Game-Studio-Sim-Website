@@ -205,6 +205,7 @@ export function computeLayout(s: GameState): LayoutCache {
   cache.research = dim(powers.research);
   cache.marketing = dim(powers.marketing);
   cache.trophies = (powers.trophies ?? []).length;
+  cache.fanart = (powers.fanart ?? []).length;
 
   for (let floor = 0; floor < t.floors; floor++) {
     const items = s.office.items.filter((i) => i.floor === floor);

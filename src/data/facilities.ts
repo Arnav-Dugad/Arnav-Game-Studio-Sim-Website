@@ -46,7 +46,8 @@ export type ItemId =
   | 'gym'
   | 'hammock'
   | 'karaoke'
-  | 'robot_vacuum';
+  | 'robot_vacuum'
+  | 'fan_wall';
 
 export interface ItemDef {
   id: ItemId;
@@ -68,7 +69,7 @@ export interface ItemDef {
   /** Noise emitted (negative for focus-friendly items). */
   noise?: number;
   /** Special effect keys interpreted by the sim. */
-  effect?: 'qa' | 'servers' | 'audio' | 'mocap' | 'training' | 'research' | 'marketing' | 'meeting' | 'trophies' | 'wellness';
+  effect?: 'qa' | 'servers' | 'audio' | 'mocap' | 'training' | 'research' | 'marketing' | 'meeting' | 'trophies' | 'wellness' | 'fanart';
   /** Effect strength. */
   power?: number;
   /** Extra unlock condition: a franchise with three games. */
@@ -110,6 +111,7 @@ export const ITEMS: readonly ItemDef[] = [
   { id: 'hammock', name: 'Hammock', category: 'energy', w: 1, h: 2, cost: 1_100, upkeep: 6, year: 1980, energy: 24, aura: 2, radius: 1, noise: -1, desc: 'Swing gently. Breaks restore 24 energy; quiet.' },
   { id: 'karaoke', name: 'Karaoke Machine', category: 'decor', w: 1, h: 1, cost: 3_500, upkeep: 20, year: 1990, aura: 9, radius: 3, noise: 3.5, desc: 'Friday nights will never be the same. Big morale aura — and very loud.' },
   { id: 'robot_vacuum', name: 'Robot Vacuum', category: 'decor', w: 1, h: 1, cost: 350, upkeep: 4, year: 2002, aura: 1.5, radius: 3, noise: 0.5, desc: 'Trundles around keeping the floor spotless. Somehow everyone has named it.' },
+  { id: 'fan_wall', name: 'Fan Art Wall', category: 'decor', w: 2, h: 1, cost: 150, upkeep: 0, year: 1980, aura: 1.5, radius: 3, effect: 'fanart', power: 1, desc: 'A corkboard for the drawings fans send in (pin them from News → Fan mail). Each pinned drawing lifts morale a little.' },
   { id: 'neon_sign', name: 'Neon Sign', category: 'decor', w: 1, h: 1, cost: 1_200, upkeep: 10, year: 1984, aura: 5, radius: 3, desc: 'Your studio name in glowing glass.' },
   { id: 'trophy_shelf', name: 'Trophy Shelf', category: 'decor', w: 2, h: 1, cost: 1_000, upkeep: 0, year: 1980, aura: 2, radius: 3, effect: 'trophies', power: 1, desc: 'Shows the awards you have actually won (up to eight on display). Each award adds morale.' },
   { id: 'whiteboard', name: 'Whiteboard', category: 'room', w: 2, h: 1, cost: 300, upkeep: 0, year: 1980, aura: 1, radius: 2, effect: 'meeting', power: 0.03, desc: 'Brainstorm space. Small synergy boost nearby.' },

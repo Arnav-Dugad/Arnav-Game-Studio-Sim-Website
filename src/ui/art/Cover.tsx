@@ -997,3 +997,62 @@ export function Cover({
     </svg>
   );
 }
+
+// ── Fan art (a child's crayon drawing of one of your games) ──────────────
+
+const CRAYONS = ['#E4572E', '#3D85C6', '#F2C14E', '#8E5CC2', '#4CA65A', '#F28FB0', '#2A2622', '#F08A24'];
+
+/** A kid's drawing of a game: its motif in crayon, a sun, grass, a stick-figure "me", and a caption. */
+export function FanArt({ topic, seed, caption, by, size = 160 }: { topic: string; seed: number; caption: string; by: string; size?: number }) {
+  const uid = useId().replace(/:/g, '');
+  const rand = mulberry32(seed || 1);
+  const pick = () => CRAYONS[Math.floor(rand() * CRAYONS.length)]!;
+  const body = pick();
+  let accent = pick();
+  if (accent === body) accent = CRAYONS[(CRAYONS.indexOf(body) + 3) % CRAYONS.length]!;
+  const motif = M[TOPIC_MOTIF[topic] ?? 'planet'];
+  const pal: Pal = { a: '#fff', b: '#fff', accent, ink: body, detail: '#2A2622', dark: '#2A2622' };
+  const sunX = rand() < 0.5 ? 24 : 136;
+  const tilt = (rand() - 0.5) * 4;
+  const kidX = rand() < 0.5 ? 30 : 130;
+  const wave = Array.from({ length: 9 }, (_, i) => `${i === 0 ? 'M' : 'L'}${4 + i * 19.5} ${172 + Math.sin(i * 1.7 + seed) * 3}`).join(' ');
+  const hatch = Array.from({ length: 16 }, (_, i) => `M${6 + i * 10} 186L${12 + i * 10} 176`).join(' ');
+  const sky = Array.from({ length: 6 }, (_, i) => `M${10 + i * 26} ${10 + (i % 2) * 4}l14 -4`).join(' ');
+  return (
+    <svg viewBox="0 0 160 200" width={size} height={(size * 200) / 160} role="img" aria-label={`A crayon drawing by ${by}: ${caption}`} style={{ transform: `rotate(${tilt}deg)` }}>
+      <defs>
+        <filter id={`crayon${uid}`}>
+          <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed={seed % 97} result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" />
+        </filter>
+      </defs>
+      <rect x={0} y={0} width={160} height={200} rx={3} fill="#FFFDF6" stroke="#E6DCCB" />
+      <g filter={`url(#crayon${uid})`} strokeLinecap="round" strokeLinejoin="round">
+        <path d={sky} stroke="#7CC4EF" strokeWidth={3} opacity={0.7} fill="none" />
+        <circle cx={sunX} cy={26} r={11} fill="#F2C14E" opacity={0.9} />
+        {Array.from({ length: 8 }, (_, i) => {
+          const a = (i * Math.PI) / 4;
+          return <path key={i} d={`M${sunX + Math.cos(a) * 15} ${26 + Math.sin(a) * 15}L${sunX + Math.cos(a) * 21} ${26 + Math.sin(a) * 21}`} stroke="#F2C14E" strokeWidth={2.4} />;
+        })}
+        <g transform="translate(36 52) scale(0.9)" opacity={0.92}>
+          {motif(pal)}
+        </g>
+        <path d={wave} stroke="#4CA65A" strokeWidth={3.5} fill="none" />
+        <path d={hatch} stroke="#4CA65A" strokeWidth={2} opacity={0.55} />
+        {/* me */}
+        <g stroke="#2A2622" strokeWidth={2.2} fill="none">
+          <circle cx={kidX} cy={128} r={7} fill="#FFE0BD" />
+          <path d={`M${kidX} 135V156M${kidX} 156L${kidX - 7} 170M${kidX} 156L${kidX + 7} 170M${kidX} 142L${kidX - 10} 134M${kidX} 142L${kidX + 11} 136`} />
+          <path d={`M${kidX - 3} 129q3 3 6 0`} strokeWidth={1.4} />
+        </g>
+        <path d={`M${kidX + 11} 136l4 -6`} stroke={accent} strokeWidth={2.4} />
+      </g>
+      <text x={80} y={194} textAnchor="middle" fontSize={caption.length > 22 ? 9.5 : 11.5} fill="#2A2622" style={{ fontFamily: "'Comic Sans MS','Chalkboard SE','Comic Neue',cursive" }}>
+        {caption}
+      </text>
+      <text x={154} y={12} textAnchor="end" fontSize={8} fill="#8A7F72" style={{ fontFamily: "'Comic Sans MS','Chalkboard SE','Comic Neue',cursive" }}>
+        {by}
+      </text>
+    </svg>
+  );
+}

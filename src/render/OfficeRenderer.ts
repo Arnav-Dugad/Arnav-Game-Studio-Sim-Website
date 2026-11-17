@@ -3,6 +3,7 @@
  * Staff "life" (walking to the coffee machine, chatting, slumping when burnt out) mirrors the
  * sim's activity flags but uses its own non-deterministic timing, so visuals never affect the sim.
  */
+import { pinnedArt } from '@/sim/systems/fanMail';
 import { workAnniversary } from '@/sim/systems/staff';
 import { Application, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
 import { ITEM_BY_ID, type ItemId } from '@/data/facilities';
@@ -18,6 +19,8 @@ import { NightShift } from './nightShift';
 import { SeasonDecor, birthdayOf, dayOfYear, seasonOf, type Season } from './seasons';
 import { animate, createRig, newAnim, reskinRig, setHat, type Anim, type Rig } from './animation';
 import { LEISURE, RESEARCH_SPOTS, chatExchange, workExchange, workThought } from './officeLife';
+
+const FAN_COLORS = [0xe07a5f, 0x3d85c6, 0xf2c450, 0x9b6bd3, 0x5f9e6e, 0xf28fb0];
 
 export interface RendererUI {
   floor: number;
@@ -509,7 +512,9 @@ export class OfficeRenderer {
       this.drawStatic(s, floor);
     }
     this.trophies = Math.min(8, s.progress.stats.awardsWon ?? 0);
-    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}`;
+    this.fanArt = pinnedArt(s).slice(0, 8).map((m) => ({ seed: m.seed, color: FAN_COLORS[m.seed % FAN_COLORS.length]! }));
+    const fanKey = this.fanArt.map((a) => a.seed).join(',');
+    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}`;
     if (iKey !== this.itemsKey) {
       this.itemsKey = iKey;
       this.syncItems(s, floor, era);
@@ -624,20 +629,21 @@ export class OfficeRenderer {
   // ── Items ────────────────────────────────────────────────────────────────
 
   private trophies = 0;
+  private fanArt: { seed: number; color: number }[] = [];
   private agentColor: number | undefined;
 
   private texFor(id: ItemId, rot: 0 | 1, era: number): { tex: Texture; ox: number; oy: number } {
     const def = ITEM_BY_ID[id];
     const w = rot ? def.h : def.w;
     const h = rot ? def.w : def.h;
-    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}`;
+    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}`;
     const lift = itemLift(id) + 12;
     let tex = this.textures.get(key);
     if (!tex) {
       const g = new Graphics();
       // pad region so generateTexture includes lift and overhangs
       g.rect(-6, -lift, w * T + 12, h * T + lift + 10).fill({ color: 0x000000, alpha: 0.001 });
-      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies });
+      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies, fanArt: this.fanArt });
       tex = this.app.renderer.generateTexture({ target: g, resolution: 2, antialias: true });
       g.destroy();
       this.textures.set(key, tex);

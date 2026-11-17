@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { FanArt } from '../art/Cover';
+import { MAX_PINNED, unreadFanMail } from '@/sim/systems/fanMail';
+import { Button } from '../components/ui';
 import type { NewsCategory } from '@/data/types';
 import { formatDate } from '@/sim/calendar';
 import { BuzzList, BuzzMeter } from '../components/BuzzList';
@@ -21,13 +24,14 @@ export default function NewsPanel() {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
   const panelTab = useGame((g) => g.panelTab);
-  const [cat, setCat] = useState<NewsCategory | 'all' | 'awards' | 'buzz'>(() => (panelTab === 'awards' ? 'awards' : panelTab === 'buzz' ? 'buzz' : 'all'));
+  const [cat, setCat] = useState<NewsCategory | 'all' | 'awards' | 'buzz' | 'mail'>(() => (panelTab === 'awards' ? 'awards' : panelTab === 'buzz' ? 'buzz' : panelTab === 'mail' ? 'mail' : 'all'));
   // Follow requests to jump to a tab while the panel is already open (e.g. the gala's "All results").
   const [seenTab, setSeenTab] = useState(panelTab);
   if (panelTab !== seenTab) {
     setSeenTab(panelTab);
     if (panelTab === 'awards') setCat('awards');
     if (panelTab === 'buzz') setCat('buzz');
+    if (panelTab === 'mail') setCat('mail');
   }
   const news = [...s.news].reverse().filter((n) => cat === 'all' || n.category === cat);
   return (
@@ -47,9 +51,12 @@ export default function NewsPanel() {
           { value: 'staff', label: 'Staff' },
           { value: 'tech', label: 'Tech' },
           { value: 'awards', label: 'Awards' },
+          { value: 'mail', label: unreadFanMail(s) ? `Fan mail (${unreadFanMail(s)})` : 'Fan mail' },
         ]}
       />
-      {cat === 'awards' ? (
+      {cat === 'mail' ? (
+        <FanMailBox />
+      ) : cat === 'awards' ? (
         <Awards />
       ) : cat === 'buzz' ? (
         <Buzz />
@@ -122,6 +129,58 @@ function Awards() {
           </ul>
         </section>
       ))}
+    </div>
+  );
+}
+
+function FanMailBox() {
+  const s = useGame((g) => g.s)!;
+  const act = useGame((g) => g.act);
+  const unread = unreadFanMail(s);
+  useEffect(() => {
+    if (unread) act({ type: 'readFanMail' });
+  }, [unread, act]);
+  const mail = [...(s.fanMail ?? [])].reverse();
+  const hasWall = s.office.items.some((i) => i.item === 'fan_wall');
+  const pinned = mail.filter((m) => m.pinned).length;
+  if (!mail.length) return <Empty icon="heart" title="No fan mail yet">Players write in about games they love (72+). Kids send drawings, too.</Empty>;
+  return (
+    <div>
+      <p className="mb-2 text-xs text-ink3">
+        {s.progress.stats.fanMail ?? mail.length} letters and drawings so far. Each one lifts the morale of the people who made that game.{' '}
+        {hasWall ? `Pin drawings to your Fan Art Wall (${pinned}/${MAX_PINNED}): each adds a little morale.` : 'Build a Fan Art Wall (Build → Decor) to pin the drawings up.'}
+      </p>
+      <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-2">
+        {mail.map((m) =>
+          m.kind === 'art' ? (
+            <div key={m.id} className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-bg2/40 p-2.5">
+              <FanArt topic={m.topic} seed={m.seed} caption={m.text} by={`${m.from}${m.age ? `, ${m.age}` : ''}`} size={150} />
+              <div className="text-center text-[11px] text-ink3">
+                A drawing of <b className="text-ink2">{m.game}</b> · {formatDate(m.day)}
+              </div>
+              {hasWall && (
+                <Button size="sm" variant={m.pinned ? 'primary' : 'secondary'} onClick={() => useGame.getState().actOrToast({ type: 'pinFanArt', id: m.id, on: !m.pinned })}>
+                  {m.pinned ? 'Pinned 📌' : 'Pin to the wall'}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div key={m.id} className="rounded-xl border border-line bg-[#fffdf6] p-3 text-[#2a2622] dark:bg-[#2b2620] dark:text-[#f1ede6]">
+              <p className="text-sm leading-snug" style={{ fontFamily: "'Comic Sans MS','Chalkboard SE','Comic Neue',cursive" }}>
+                Dear {s.company.name},<br />
+                {m.text}
+              </p>
+              <p className="mt-1.5 text-right text-xs" style={{ fontFamily: "'Comic Sans MS','Chalkboard SE','Comic Neue',cursive" }}>
+                — {m.from}
+                {m.age ? `, age ${m.age}` : ''}
+              </p>
+              <div className="mt-1 text-[11px] opacity-60">
+                About {m.game} · {formatDate(m.day)}
+              </div>
+            </div>
+          ),
+        )}
+      </div>
     </div>
   );
 }

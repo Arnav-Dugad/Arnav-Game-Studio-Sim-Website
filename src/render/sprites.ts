@@ -78,6 +78,8 @@ export interface DrawOpts {
   P: ScenePalette;
   /** Awards to show on a trophy shelf (capped at 8). */
   trophies?: number;
+  /** Pinned fan drawings: a seed and a crayon colour each. */
+  fanArt?: { seed: number; color: number }[];
 }
 
 /**
@@ -387,6 +389,31 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       if (P.night) g.circle(W / 2, -8, 22).fill({ color: P.accentBiz, alpha: 0.08 });
       break;
     }
+    case 'fan_wall': {
+      shadow(g, 4, 4, W - 8, H - 4, 0.12);
+      g.rect(8, 4, 2, H - 8).fill(P.woodDark);
+      g.rect(W - 10, 4, 2, H - 8).fill(P.woodDark);
+      g.roundRect(4, -22, W - 8, H - 2, 3).fill(0xc79a63); // cork
+      g.roundRect(4, -22, W - 8, H - 2, 3).stroke({ width: 2.4, color: P.woodDark });
+      for (let i = 0; i < 14; i++) g.circle(10 + ((i * 37) % (W - 20)), -16 + ((i * 23) % (H - 10)), 0.6).fill({ color: 0x7a5530, alpha: 0.5 });
+      const art = (o.fanArt ?? []).slice(0, 8);
+      const cols = 4;
+      const pw = (W - 16) / cols - 3;
+      const ph = Math.min(pw * 1.25, (H - 8) / 2 - 3);
+      art.forEach((a, i) => {
+        const cx = 9 + (i % cols) * (pw + 3);
+        const cy = -19 + Math.floor(i / cols) * (ph + 3);
+        let r = a.seed;
+        const rnd = () => ((r = (r * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+        g.rect(cx, cy, pw, ph).fill(0xfffdf6);
+        // crayon scribbles: a sun or a creature, and a ground line
+        g.circle(cx + pw * (0.25 + rnd() * 0.5), cy + ph * (0.3 + rnd() * 0.2), pw * 0.18).fill({ color: a.color, alpha: 0.85 });
+        g.moveTo(cx + 1.5, cy + ph - 2.5).lineTo(cx + pw - 1.5, cy + ph - 2 - rnd() * 1.5).stroke({ width: 1, color: 0x5f9e6e });
+        g.moveTo(cx + pw * 0.2, cy + ph * 0.75).lineTo(cx + pw * 0.5, cy + ph * (0.45 + rnd() * 0.2)).lineTo(cx + pw * 0.8, cy + ph * 0.75).stroke({ width: 0.8, color: 0x2a2622, alpha: 0.7 });
+        g.circle(cx + pw / 2, cy + 0.8, 0.9).fill(0xd8323c); // pin
+      });
+      break;
+    }
     case 'whiteboard':
       shadow(g, 4, 4, W - 8, H - 4, 0.12);
       g.rect(8, 4, 2, H - 8).fill(P.metalDark);
@@ -487,6 +514,7 @@ export function itemLift(id: ItemId): number {
     case 'kitchen':
     case 'aquarium':
     case 'whiteboard':
+    case 'fan_wall':
     case 'sound_booth':
     case 'trophy_shelf':
     case 'marketing_board':
