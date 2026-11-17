@@ -566,7 +566,9 @@ export function updateSalesWeekly(c: Ctx): void {
       if (rv && rv.units < rv.potential) {
         const w = Math.max(0, rel.week - rv.week);
         const rate = rv.priceMul !== undefined ? SALE_RATE : REVIVAL_RATE;
-        const extra = Math.min(Math.floor(rv.potential - rv.units), Math.floor(rv.potential * rate * Math.pow(1 - rate, w) * life * (rv.priceMul !== undefined ? 1 : season) + c.rng.next()));
+        // the second wave also respects the addressable-market cap (with what the main wave sold this week)
+        const room = Math.max(0, Math.floor(ps.potential * 1.5 * Math.max(1, cheatMul) + (ps.extraPotential ?? 0)) - ps.units - u);
+        const extra = Math.min(room, Math.floor(rv.potential - rv.units), Math.floor(rv.potential * rate * Math.pow(1 - rate, w) * life * (rv.priceMul !== undefined ? 1 : season) + c.rng.next()));
         if (extra > 0) {
           rv.units += extra;
           u += extra;
