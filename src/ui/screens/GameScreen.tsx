@@ -31,6 +31,7 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ state: 'idle' });
   const saverRef = useRef<AutoSaver | null>(null);
   const rendererRef = useRef<OfficeRenderer | null>(null);
+  const paintRef = useRef({ placed: 0, lastError: '' });
   useGameLoop();
   // Era-aware generative soundtrack (starts on the first click/key if the browser blocks autoplay).
   useEffect(() => {
@@ -149,6 +150,23 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
               g.setBuild({ rot: it?.rot ?? 0, selected: b.moving });
             } else g.toast({ text: r.error, tone: 'bad' });
           } else g.setBuild({ rot: b.rot });
+        }}
+        onPaint={(x, y, floor) => {
+          const g = useGame.getState();
+          const b = g.build;
+          if (!b?.item) return;
+          const r = g.act({ type: 'placeItem', item: b.item, floor, x, y, rot: b.rot });
+          if (r.ok) {
+            paintRef.current.placed += 1;
+            sound.play('place');
+          } else paintRef.current.lastError = r.error;
+        }}
+        onPaintEnd={() => {
+          const p = paintRef.current;
+          const g = useGame.getState();
+          if (p.placed > 1) g.toast({ text: `Placed ${p.placed} items`, tone: 'good', icon: 'build' });
+          else if (!p.placed && p.lastError) g.toast({ text: p.lastError, tone: 'bad' });
+          paintRef.current = { placed: 0, lastError: '' };
         }}
         onItemClick={(it) => {
           const g = useGame.getState();

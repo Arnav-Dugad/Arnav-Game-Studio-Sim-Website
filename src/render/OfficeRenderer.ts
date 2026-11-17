@@ -32,6 +32,9 @@ export interface RendererCallbacks {
   onStaffClick?: (staffId: string) => void;
   onCancel?: () => void;
   onRotate?: () => void;
+  /** Drag-to-paint in build mode: one call per new tile under the pointer, then onPaintEnd. */
+  onPaint?: (x: number, y: number, floor: number) => void;
+  onPaintEnd?: () => void;
 }
 
 type Mode = 'desk' | 'walk' | 'station' | 'away' | 'wander' | 'meeting';
@@ -90,6 +93,7 @@ export class OfficeRenderer {
   private hoverTile: [number, number] | null = null;
   private hoverStaff: string | null = null;
   private drag: { x: number; y: number; camX: number; camY: number; moved: boolean; button: number } | null = null;
+  private painted: string | null = null;
   private pointers = new Map<number, { x: number; y: number }>();
   private pinch: { d: number; zoom: number } | null = null;
   private keys = new Set<string>();
@@ -218,7 +222,22 @@ export class OfficeRenderer {
       const dx = e.offsetX - this.drag.x;
       const dy = e.offsetY - this.drag.y;
       if (Math.abs(dx) + Math.abs(dy) > 5) this.drag.moved = true;
-      const panButton = this.drag.button === 1 || this.drag.button === 2 || !this.cb.getUI().build?.item;
+      const ui = this.cb.getUI();
+      const panButton = this.drag.button === 1 || this.drag.button === 2 || !ui.build?.item;
+      // Drag-to-paint: with an item in hand, a left-button drag places one on every tile it crosses.
+      if (this.drag.moved && !panButton && ui.build?.item && this.cb.onPaint) {
+        if (this.painted === null) {
+          const [sx, sy] = this.screenToTile(this.drag.x, this.drag.y);
+          this.painted = `${sx},${sy}`;
+          this.cb.onPaint(sx, sy, ui.floor);
+        }
+        const [tx, ty] = this.hoverTile;
+        const key = `${tx},${ty}`;
+        if (key !== this.painted) {
+          this.painted = key;
+          this.cb.onPaint(tx, ty, ui.floor);
+        }
+      }
       if (this.drag.moved && panButton) {
         this.cam.x = this.drag.camX + dx;
         this.cam.y = this.drag.camY + dy;
@@ -231,6 +250,11 @@ export class OfficeRenderer {
     if (this.pointers.size < 2) this.pinch = null;
     const d = this.drag;
     this.drag = null;
+    if (this.painted !== null) {
+      this.painted = null;
+      this.cb.onPaintEnd?.();
+      return;
+    }
     if (!d || d.moved) return;
     if (d.button === 2) {
       this.cb.onCancel?.();

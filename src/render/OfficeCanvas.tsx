@@ -10,6 +10,8 @@ export interface OfficeCanvasProps {
   onStaffClick?: RendererCallbacks['onStaffClick'];
   onCancel?: RendererCallbacks['onCancel'];
   onRotate?: RendererCallbacks['onRotate'];
+  onPaint?: RendererCallbacks['onPaint'];
+  onPaintEnd?: RendererCallbacks['onPaintEnd'];
   onReady?: (r: OfficeRenderer) => void;
   className?: string;
   ariaLabel?: string;
@@ -34,6 +36,8 @@ export function OfficeCanvas(props: OfficeCanvasProps) {
       onStaffClick: (id) => cbRef.current.onStaffClick?.(id),
       onCancel: () => cbRef.current.onCancel?.(),
       onRotate: () => cbRef.current.onRotate?.(),
+      onPaint: (x, y, f) => cbRef.current.onPaint?.(x, y, f),
+      onPaintEnd: () => cbRef.current.onPaintEnd?.(),
     });
     let alive = true;
     r.init(el)
