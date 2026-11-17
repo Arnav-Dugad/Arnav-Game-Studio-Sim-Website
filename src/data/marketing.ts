@@ -21,7 +21,7 @@ export const CHANNELS: readonly ChannelDef[] = [
   { id: 'trailer', name: 'Cinematic Trailer', from: 2000, cost: 60_000, hype: 0.7, audience: { kids: 0.9, everyone: 1, teen: 1.2, mature: 1.25 }, desc: 'A trailer that gets people talking.' },
   { id: 'social', name: 'Social Media Campaign', from: 2008, cost: 20_000, hype: 0.45, audience: { kids: 0.8, everyone: 1.1, teen: 1.3, mature: 1 }, desc: 'Viral moments, memes, community.' },
   { id: 'influencers', name: 'Streamers & Influencers', from: 2013, cost: 45_000, hype: 0.85, audience: { kids: 1.1, everyone: 1, teen: 1.4, mature: 1 }, desc: 'Get the game in front of big streamers.' },
-  { id: 'open_beta', name: 'Open Beta', from: 2005, research: 'online_basic', cost: 35_000, hype: 0.6, audience: { kids: 0.8, everyone: 1, teen: 1.3, mature: 1.2 }, desc: 'Let the world play early. Also finds bugs.' },
+  { id: 'open_beta', name: 'Playtest Weekend', from: 2005, research: 'online_basic', cost: 35_000, hype: 0.6, audience: { kids: 0.8, everyone: 1, teen: 1.3, mature: 1.2 }, desc: 'A free-to-play weekend for core players: big buzz. (For bug hunting, run an Open beta from the project card.)' },
 ];
 
 export interface TradeShowDef {
