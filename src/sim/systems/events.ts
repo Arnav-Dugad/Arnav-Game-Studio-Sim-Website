@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { gameRegions } from '../../data/regions';
 import type { GenreId } from '../../data/types';
 import { PITCH_DAYS, makePitch, pitchers, pitchText } from './pitches';
 import { LICENCE_YEARS, delist, licenceDecisionDue, licensedParts, renewalCost } from './licences';
@@ -58,11 +59,15 @@ const oldClassic = (s: GameState) =>
 /** Your best recent game in a genre (within `years`), if it scored at least `min`. */
 const genreHit = (s: GameState, genre: string, min: number, years: number) =>
   Object.values(s.releases)
-    .filter((r) => r.concept.genre === genre && r.score >= min && s.day - r.day < 365 * years && !r.concept.expansionOf)
+    .filter((r) => !r.delisted && r.concept.genre === genre && r.score >= min && s.day - r.day < 365 * years && !r.concept.expansionOf)
     .sort((a, b) => b.score - a.score)[0];
 /** A loved visual novel that was never translated for players in North America or Europe. */
 const untranslatedNovel = (s: GameState) =>
-  Object.values(s.releases).find((r) => r.concept.genre === 'visual_novel' && r.score >= 70 && !r.fanTranslated && s.day - r.day < 365 * 6 && !(r.concept.localized ?? []).some((x) => x === 'na' || x === 'eu'));
+  Object.values(s.releases).find((r) => {
+    if (r.delisted || r.concept.genre !== 'visual_novel' || r.score < 70 || r.fanTranslated || s.day - r.day >= 365 * 6) return false;
+    const reached = new Set([s.company.homeRegion ?? 'na', ...gameRegions(r.concept, s.company.branches ?? [])]);
+    return !reached.has('na') && !reached.has('eu');
+  });
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
@@ -917,9 +922,9 @@ export const EVENT_DEFS: EventDef[] = [
         title: `Fans want to translate ${r.name}`,
         body: `A group of volunteer translators abroad loves ${r.name} and wants to release an unofficial translation. They’ve asked for your blessing — and a copy of the script.`,
         options: [
-          { id: 'official', label: `Hire them to make it official (${fmtMoney(cost)})`, preview: 'Sales abroad (+15%), reputation +1, and a lot of goodwill', disabled: s.company.cash < cost },
-          { id: 'bless', label: 'Give them your blessing', preview: 'Free: a few more players abroad (+6%), reputation +0.5' },
+          { id: 'official', label: `Hire them to make it official (${fmtMoney(cost)})`, preview: 'Many more players find it (+15% sales), reputation +1, and a lot of goodwill', disabled: s.company.cash < cost },
           { id: 'no', label: 'Send a takedown notice', preview: 'Protects the IP — but fans are furious (reputation −1)' },
+          { id: 'bless', label: 'Give them your blessing', preview: 'Free: a few more players find it (+6% sales), reputation +0.5' },
         ],
         ctx: { rel: r.id, cost },
       };
@@ -939,12 +944,13 @@ export const EVENT_DEFS: EventDef[] = [
         boost(1.15);
         addRep(s, 1, `Official translation of ${r.name}`);
         pushNews(s, { category: 'studio', headline: `${r.name} gets an official translation`, body: 'The fans who wanted to translate it are now doing it for real.', tone: 'good' });
-      } else if (opt === 'bless') {
-        boost(1.06);
-        addRep(s, 0.5, `Blessed a fan translation of ${r.name}`);
-      } else {
+      } else if (opt === 'no') {
         addRep(s, -1, `Took down a fan translation of ${r.name}`);
         communityNudge(s, -6);
+      } else {
+        // a blessing (also what happens if you can no longer afford the official version, or never answer)
+        boost(1.06);
+        addRep(s, 0.5, `Blessed a fan translation of ${r.name}`);
       }
     },
   },

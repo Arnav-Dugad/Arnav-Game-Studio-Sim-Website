@@ -36,7 +36,8 @@ export function payLaunchBonus(s: GameState, releaseId: string): string | null {
   r.bonusPaid = true;
   for (const st of team) {
     st.loyalty = clamp(st.loyalty + 4, 0, 100);
-    if (!st.mood || st.mood.until <= s.day || st.mood.v < 6) st.mood = { v: 6, until: s.day + 90, label: 'Launch bonus' };
+    if (st.mood && st.mood.until > s.day && st.mood.v < 0) st.mood = { ...st.mood, v: Math.min(0, st.mood.v + 3) };
+    else if (!st.mood || st.mood.until <= s.day || st.mood.v < 6) st.mood = { v: 6, until: s.day + 90, label: 'Launch bonus' };
     st.moraleWhy = undefined;
   }
   pushNews(s, { category: 'staff', headline: `Launch bonuses for the ${r.name} team`, body: `${team.length} people who made ${r.name} find a cheque on their desk.`, tone: 'good' });

@@ -8,6 +8,7 @@ import type { GameState, Release } from '../../src/sim/types';
 function withGame(genre: string, year = 2005) {
   const s = createGame({ seed: 17, companyName: 'Genre Co', founderName: 'Ada Founder', startYear: year, autopause: false });
   s.company.cash = 1e8;
+  s.company.homeRegion = 'jp'; // a Japanese studio: its visual novel never reached the West
   const r = {
     id: 'g1', name: 'Royal Hand', day: s.day - 200, score: 82, userScore: 80, active: true, units: 1e5, net: 1e6, devCost: 1e5, awards: [], weekly: [], monthly: [], week: 30, why: {}, liveIncome: 0,
     concept: { genre, topic: 'fantasy', monetization: 'premium', platforms: ['pc'], size: 'small', audience: 'teen' },

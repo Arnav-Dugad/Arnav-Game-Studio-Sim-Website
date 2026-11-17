@@ -20,7 +20,7 @@ const labels = (r: ReturnType<typeof ship>) => (r.why.user?.parts ?? []).map((x)
 
 describe('public delays', () => {
   it('a great game is worth the wait', () => {
-    const r = ship(30, 2);
+    const r = ship(30, 4);
     expect(r.score).toBeGreaterThanOrEqual(80);
     expect(labels(r)).toContain('Worth the wait');
   });

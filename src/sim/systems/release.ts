@@ -347,8 +347,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   if (fr) ub.add('Franchise fatigue', -fr.fatigue * 12);
   if (p.paysCliffhanger) ub.add('Pays off the last game’s cliffhanger', 3);
   // players remember a public delay: forgiven for a great game, not for a weak one
-  if ((p.delayedWeeks ?? 0) >= 2 && score >= 80) ub.add('Worth the wait', 1);
-  else if ((p.delayedWeeks ?? 0) >= 6 && score < 65) ub.add('Delayed — and still disappointing', -2);
+  if ((p.delayedWeeks ?? 0) >= 4 && score >= 80) ub.add('Worth the wait', 1);
+  else if ((p.delayedWeeks ?? 0) >= 4 && score < 65) ub.add('Delayed — and still disappointing', -2);
   if (s.research.done.includes('ai_genai') && fromDay(s.day).year >= 2023) ub.add('Gen-AI backlash', -1.5);
   if (hasValue(s, 'players')) ub.add('Culture: Player Obsessed', CULTURE_FX.playersUser);
   if (hasValue(s, 'profit')) ub.add('Culture: Profit Driven', CULTURE_FX.profitUser);
