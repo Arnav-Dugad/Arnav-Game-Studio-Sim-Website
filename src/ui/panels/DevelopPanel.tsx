@@ -11,7 +11,7 @@ import { availablePlatforms } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore } from '@/sim/systems/dev';
-import { expansionPlatforms, expansionSizeOk, salesPotential } from '@/sim/systems/release';
+import { expansionPlatforms, expansionSizeOk, launchTitleMul, salesPotential } from '@/sim/systems/release';
 import { betaBlocked, betaCost, dealAdvanceFor, devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
@@ -608,6 +608,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                   </div>
                 </div>
                 <div className="text-right">
+                  {launchTitleMul(s, p) > 1.05 && <Pill tone="gold">Launch window</Pill>}
                   {fitG >= 1.15 && <Pill tone="good">Genre fit</Pill>}
                   {fitG < 0.9 && <Pill tone="bad">Weak fit</Pill>}
                   <div className="mt-0.5 text-[10px] text-ink3">{s.devkits.includes(p.id) ? 'Dev kit owned' : `Kit ${fmtMoney(devkitCost(s, p.id))}`}</div>

@@ -166,6 +166,15 @@ function crossplayEligible(s: GameState, concept: GameProject['concept'], platfo
   return s.research.done.includes('online_crossplay') && platformCount >= 2 && (CROSSPLAY_GENRES.has(concept.genre) || concept.monetization === 'live_service' || concept.monetization === 'f2p');
 }
 
+/** Games out in a platform's first months sell to early adopters starved for software. */
+export const LAUNCH_WINDOW_DAYS = 120;
+const LAUNCH_TITLE_BOOST = 1.35;
+export function launchTitleMul(s: GameState, pl: PlatformInfo): number {
+  const age = s.day - pl.launchDay;
+  if (age < 0 || age > LAUNCH_WINDOW_DAYS) return 1;
+  return 1 + (LAUNCH_TITLE_BOOST - 1) * (1 - age / LAUNCH_WINDOW_DAYS);
+}
+
 export function salesPotential(s: GameState, concept: GameProject['concept'], effScore: number, rawHype: number) {
   const fr = concept.franchiseId ? s.franchises[concept.franchiseId] : undefined;
   const crowd = BALANCE.ERA_BOOST / (1 + BALANCE.CROWDING * Math.max(0, fromDay(s.day).year - 1980));
@@ -190,6 +199,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   sb.mul('Monetization', monet.units);
   if (fr) sb.mul('Franchise fatigue', fr ? 1 - fr.fatigue * 0.45 : 1);
   let totalUsers = 0;
+  const launchTitles: string[] = [];
   const g = GENRE_BY_ID[concept.genre];
   const platforms = concept.platforms
     .map((pid) => ({ pid, pl: platformInfo(s, pid) }))
@@ -203,9 +213,12 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
         Math.sqrt(platformGenreFit(pl, concept.genre)) *
         Math.sqrt(platformAudienceFit(pl, concept.audience) * (g.audience[concept.audience] ?? 1) * (TOPIC_BY_ID[concept.topic]?.audience[concept.audience] ?? 1)) *
         Math.sqrt(topicPopularity(s, concept.topic));
-      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1);
+      const launch = launchTitleMul(s, pl);
+      if (launch > 1) launchTitles.push(pl.name);
+      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch;
       return { platform: pid, potential: Math.max(0, potential), units: 0, pl };
     });
+  if (launchTitles.length) sb.mul(`Launch title on ${launchTitles.join(', ')} (early adopters buy everything)`, LAUNCH_TITLE_BOOST);
   if (fr && fr.fans > 0) {
     const fanBuy = fr.fans * clamp((effScore - 40) / 50, 0.05, 1) * fatigueMul;
     for (const ps of platforms) ps.potential += fanBuy * (((s.market.users[ps.platform] ?? 0) * 1e6) / Math.max(1, totalUsers));
@@ -255,11 +268,17 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   ub.add('Bugs', -Math.min(20, density * 45));
   if (p.hype > 1 && score < 72) ub.add('Didn’t live up to the hype', -Math.min(15, (p.hype * (72 - score)) / 5));
   if (fr && score >= 75) ub.add('Fan favourite', 3);
+  // Series expectations: fans compare a new entry with the best one so far.
+  const sequel = fr && fr.bestScore > 0 && !p.concept.expansionOf && !p.concept.remasterOf;
+  const gap = sequel ? fr.bestScore - score : 0;
+  if (sequel && gap > 8) ub.add(`Not as good as the series’ best (${fr.bestScore})`, -Math.min(10, (gap - 8) * 0.6));
+  else if (sequel && fr.bestScore >= 70 && score >= fr.bestScore + 3) ub.add('Raises the bar for the series', 2);
   if (fr) ub.add('Franchise fatigue', -fr.fatigue * 12);
   if (s.research.done.includes('ai_genai') && fromDay(s.day).year >= 2023) ub.add('Gen-AI backlash', -1.5);
   ub.add('Players vary', rng.normal(0, 3));
   ub.clamp(1, 100);
   const userScore = Math.round(ub.value);
+  if (fr && gap > 8) fr.fans *= 1 - Math.min(0.15, (gap - 8) / 100); // some fans give up on the series
 
   // Sales potential
   const effScore = score * 0.7 + userScore * 0.3;

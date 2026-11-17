@@ -9,7 +9,7 @@ import { toDay } from '../../src/sim/calendar';
 import { Rng } from '../../src/sim/rng';
 import { productivity, moraleTarget, generateCandidate, topSkill } from '../../src/sim/systems/staff';
 import { gameQuality, engineTechFor, comboFit } from '../../src/sim/systems/dev';
-import { salesPotential, competition, canExpand, canRemaster, canRunSale, saleForecast, yearlyAwards } from '../../src/sim/systems/release';
+import { salesPotential, competition, canExpand, canRemaster, canRunSale, launchTitleMul, saleForecast, yearlyAwards } from '../../src/sim/systems/release';
 import { BALANCE } from '../../src/data/balance';
 import { demandMul, platformInfo, isPlatformAvailable, availablePlatforms } from '../../src/sim/systems/market';
 import { creditLimit, ipoEligible } from '../../src/sim/systems/finance';
@@ -622,6 +622,43 @@ describe('open betas', () => {
     q.phase = 2;
     q.announcedDay = old.day;
     expect(dispatch(old, { type: 'openBeta', projectId: q.id }).ok).toBe(false); // too early in history
+  });
+});
+
+describe('launch titles and series expectations', () => {
+  it('games in a platform’s first months get an early-adopter boost that fades', () => {
+    const s = game(1995, 3);
+    const pl = availablePlatforms(s)[0]!;
+    s.day = pl.launchDay;
+    expect(launchTitleMul(s, pl)).toBeCloseTo(1.35);
+    s.day = pl.launchDay + 60;
+    expect(launchTitleMul(s, pl)).toBeGreaterThan(1.1);
+    expect(launchTitleMul(s, pl)).toBeLessThan(1.35);
+    s.day = pl.launchDay + 200;
+    expect(launchTitleMul(s, pl)).toBe(1);
+  });
+  it('a sequel far below the series’ best disappoints players and loses fans', () => {
+    const s = game(1990, 5);
+    const p = startSmall(s);
+    for (let i = 0; i < 200 && !s.releaseOrder.length; i++) {
+      advance(s, 1);
+      if (p.awaitingGate) dispatch(s, { type: 'continueGate', projectId: p.id });
+      s.pendingEvents = [];
+    }
+    const first = s.releases[s.releaseOrder[0]!]!;
+    const fr = s.franchises[first.concept.franchiseId!]!;
+    fr.bestScore = 99; // a legendary original
+    fr.fans = 100_000;
+    s.research.done.push('biz_self_publishing');
+    const q = startSmall(s, { franchiseId: fr.id, name: 'G 2' });
+    for (let i = 0; i < 200 && s.releaseOrder.length < 2; i++) {
+      advance(s, 1);
+      if (q.awaitingGate) dispatch(s, { type: 'continueGate', projectId: q.id });
+      s.pendingEvents = [];
+    }
+    const seq = s.releases[s.releaseOrder[1]!]!;
+    expect(seq.why.user!.parts.some((x) => x.label.startsWith('Not as good as the series'))).toBe(true);
+    expect(fr.fans).toBeLessThan(100_000 + seq.units); // lost some before new buyers came in
   });
 });
 
