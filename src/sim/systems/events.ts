@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { MOD_BUY, MOD_FEATURE, MOD_HIRE, breakoutCandidate, modBuyScore, modRevival, modTopic, rollMod } from './mods';
 import { TOPIC_BY_ID } from '../../data/topics';
 import { GENRE_BY_ID } from '../../data/genres';
 import { EGGS } from './easterEggs';
@@ -24,7 +25,7 @@ import type { EventInstance, EventOption, Franchise, GameProject, GameState, Sta
 import { addRep, aOrAn, earn, fmtMoney, hasFlag, money, newId, pushNews, spend } from '../util';
 import { ownerValue } from './finance';
 import { ROLE_NAMES, ROLE_SKILLS, candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, rememberLeaver, removeStaff } from './staff';
-import { assignDesks, freeDesks } from './office';
+import { assignDesks, freeDesks, tierDef } from './office';
 
 interface EventDef {
   id: string;
@@ -927,6 +928,84 @@ export const EVENT_DEFS: EventDef[] = [
         if (fr) fr.fans *= 1.05;
         mod(s, 3, 60, 'Proud of the charity stream');
       } else s.company.fans = Math.round(s.company.fans * 1.01);
+    },
+  },
+  {
+    id: 'breakout_mod',
+    art: 'crowd',
+    cooldown: 540,
+    weight: (s) => (breakoutCandidate(s) ? 0.22 : 0),
+    make: ({ s, rng }) => {
+      const r = breakoutCandidate(s);
+      if (!r) return null;
+      const mod = rollMod(s, rng, r);
+      if (!mod) return null;
+      const players = Math.max(5_000, Math.round((r.units * rng.range(0.08, 0.2)) / 1000) * 1000);
+      const cand = generateCandidate(s, rng, { role: rng.pick(['designer', 'programmer'] as const), quality: 15 });
+      cand.potential = clamp(Math.max(cand.potential, 80) + rng.int(0, 12), 0, 100);
+      const salary = Math.round(marketSalary(s, cand.skills) * 1.1);
+      const signing = Math.round(salary / 4);
+      const pcPot = r.platforms.reduce((t, ps) => t + (platformInfo(s, ps.platform)?.kind === 'computer' ? ps.potential : 0), 0);
+      const buy = Math.round(Math.max(money(15_000, s.day), pcPot * MOD_BUY * r.price * 0.25));
+      const room = freeDesks(s) > 0 && Object.keys(s.staff).length < tierDef(s.office.tier).staffCap;
+      const first = cand.name.split(' ')[0];
+      return {
+        title: `A mod for ${r.name} is taking over`,
+        body: `“${mod.name}”, ${aOrAn(mod.style)} mod built on ${r.name}, has ${players.toLocaleString('en-US')} players — more than some full games. It’s the work of ${cand.name}, ${aOrAn(ROLE_NAMES[cand.role].toLowerCase())} with no studio behind them.`,
+        options: [
+          ...(room
+            ? [{ id: 'hire', label: `Hire ${first} (${fmtMoney(signing)} signing bonus)`, preview: `A gifted young ${ROLE_NAMES[cand.role].toLowerCase()} (potential ${cand.potential}) joins with a pitch to make ${mod.name} a full game; ${r.name} sells again`, cost: signing }]
+            : []),
+          { id: 'buy', label: `Buy it and ship it officially (${fmtMoney(buy)})`, preview: `A big second wave for ${r.name} on computers; player score +2`, cost: buy },
+          { id: 'feature', label: 'Feature it on the store page', preview: `${r.name} sells again to players who want the mod; fans +3%` },
+        ],
+        ctx: { rel: r.id, name: mod.name, style: mod.style, genre: mod.genre, cand: JSON.stringify(cand), salary, signing, buy },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (!r || r.breakoutMod) return;
+      const name = String(e.ctx.name);
+      const style = String(e.ctx.style);
+      let choice: 'hire' | 'buy' | 'feature' = opt === 'hire' ? 'hire' : opt === 'buy' ? 'buy' : 'feature';
+      if (choice === 'hire' && (freeDesks(s) <= 0 || Object.keys(s.staff).length >= tierDef(s.office.tier).staffCap)) {
+        choice = 'feature';
+        pushNews(s, { category: 'staff', headline: `No desk for the maker of ${name}`, body: 'The office is full, so you featured the mod instead.', tone: 'neutral' });
+      }
+      r.breakoutMod = { name, style, day: s.day, choice };
+      if (choice === 'hire') {
+        spend(s, 'recruiting', Number(e.ctx.signing));
+        const cand = JSON.parse(String(e.ctx.cand));
+        const id = newId(s, 's');
+        const st = candidateToStaff(s, cand, id, Number(e.ctx.salary));
+        st.loyalty = 80;
+        s.staff[id] = st;
+        s.progress.stats.staffHired += 1;
+        assignDesks(s);
+        r.breakoutMod.by = st.name;
+        modRevival(s, r, MOD_HIRE);
+        // they arrive wanting to make it properly (unless another pitch is already waiting)
+        const waiting = s.company.pitch && s.company.pitch.until >= s.day && s.staff[s.company.pitch.staffId];
+        if (!waiting) s.company.pitch = { staffId: id, genre: String(e.ctx.genre) as GenreId, topic: modTopic(s, rng, String(e.ctx.genre) as GenreId, r.concept.topic), until: s.day + PITCH_DAYS };
+        pushNews(s, {
+          category: 'staff',
+          headline: `${s.company.name} hires the creator of ${name}`,
+          body: waiting ? `${st.name} joins the studio. ${r.name} is selling again to players who want the mod.` : `${st.name} joins with one dream: ${name} as a full game. It’s waiting in New Game for six months — and ${r.name} is selling again.`,
+          tone: 'good',
+        });
+      } else if (choice === 'buy') {
+        spend(s, 'marketing', Number(e.ctx.buy));
+        modRevival(s, r, MOD_BUY);
+        r.userScore = modBuyScore(r);
+        addRep(s, 0.5, `Shipped ${name} officially`);
+        pushNews(s, { category: 'studio', headline: `${name} becomes official ${r.name} content`, body: `The ${style} mod is now part of the game, and players are pouring back in.`, tone: 'good' });
+      } else {
+        modRevival(s, r, MOD_FEATURE);
+        s.company.fans = Math.round(s.company.fans * 1.03);
+        const fr = r.concept.franchiseId ? s.franchises[r.concept.franchiseId] : undefined;
+        if (fr) fr.fans = Math.round(fr.fans * 1.03);
+        pushNews(s, { category: 'studio', headline: `${r.name}’s store page now features ${name}`, body: `Players are buying ${r.name} just to play the ${style} mod.`, tone: 'good' });
+      }
     },
   },
   {

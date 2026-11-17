@@ -457,6 +457,8 @@ export interface Release {
   patches?: number;
   /** Shipped with mod tools (a longer, bigger PC tail). */
   modded?: boolean;
+  /** A mod built on it became a phenomenon (systems/mods.ts): its name, style, when, and what the studio did. */
+  breakoutMod?: { name: string; style: string; day: number; choice: 'hire' | 'buy' | 'feature'; by?: string };
   /** The game ran an open beta before release. */
   betaTested?: boolean;
   /** A lasting multiplier on live income (e.g. after patching out loot boxes). */

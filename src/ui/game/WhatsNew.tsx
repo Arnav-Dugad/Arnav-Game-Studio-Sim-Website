@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21n';
+export const WHATS_NEW_VERSION = '2026-11-21o';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'crowd', title: 'Breakout mods', body: 'Games that ship with mod tools grow a modding scene — and now and then one mod becomes a phenomenon. Hire its creator (who arrives with a pitch to make it a full game), buy it and ship it officially, or feature it. Either way, players come back to the original.' },
   { icon: 'heart', title: 'Alumni Wall', body: 'A new decor item (Build → Decor): framed portraits of the people who retired from your studio, gold frames for the legends.' },
   { icon: 'crowd', title: 'Fan votes', body: 'From 2008, with two or more series, your community may ask fans to vote on which gets a sequel. The winner gains fans — and a sequel started within a year begins with extra hype.' },
   { icon: 'megaphone', title: 'April Fools’', body: 'Some years, late in March, the team can announce a joke game for April 1st. Players love a laugh — and now and then they beg for it to be real, and one of your designers takes it on as a pitch. Plus: Valentine’s and April Fools’ chatter in the office, the studio mascot greeting launch-day queues, and World Cup summers lifting sports games.' },

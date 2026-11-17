@@ -434,6 +434,11 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             {r.concept.expansionOf && s.releases[r.concept.expansionOf] && <Pill tone="tech">Expansion for {s.releases[r.concept.expansionOf]!.name}</Pill>}
             {r.concept.remasterOf && <Pill tone="gold">Remaster</Pill>}
             {r.modded && <Pill tone="tech">Mod support</Pill>}
+            {r.breakoutMod && (
+              <span title={`${r.breakoutMod.name} (${r.breakoutMod.style} mod) took off in ${formatDate(r.breakoutMod.day)}${r.breakoutMod.choice === 'hire' ? ` — you hired its creator${r.breakoutMod.by ? `, ${r.breakoutMod.by}` : ''}` : r.breakoutMod.choice === 'buy' ? ' — you bought it and shipped it officially' : ' — you featured it on the store page'}`}>
+                <Pill tone="good">Breakout mod: {r.breakoutMod.name}</Pill>
+              </span>
+            )}
             {r.crowdfund && (
               <span title={`${r.crowdfund.backers.toLocaleString('en-US')} backers pledged ${fmtMoney(r.crowdfund.raised)}${r.crowdfund.late > 0 ? ` · shipped ${Math.ceil(r.crowdfund.late / 30)} month(s) late` : ' · delivered on time'}`}>
                 <Pill tone={r.crowdfund.late > 0 ? 'bad' : 'good'}>Crowdfunded</Pill>
