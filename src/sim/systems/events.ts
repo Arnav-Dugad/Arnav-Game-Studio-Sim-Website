@@ -76,6 +76,7 @@ const certRisk = (s: GameState) =>
 /** A recent, loved game whose players haven't asked for accessibility options yet (and that didn't ship with them). */
 const accessibilityCandidate = (s: GameState) =>
   Object.values(s.releases).find((r) => !r.delisted && !r.accessibilityAsked && r.score >= 70 && s.day - r.day < 365 * 2 && !(r.concept.features ?? []).includes('accessibility'));
+const isAwayStaff = (x: Staff) => x.sickDays > 0 || (x.vacationDays ?? 0) > 0;
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
@@ -919,6 +920,46 @@ export const EVENT_DEFS: EventDef[] = [
         if (fr) fr.fans *= 1.05;
         mod(s, 3, 60, 'Proud of the charity stream');
       } else s.company.fans = Math.round(s.company.fans * 1.01);
+    },
+  },
+  {
+    id: 'april_fools',
+    art: 'megaphone',
+    cooldown: 300,
+    weight: (s) => {
+      const d = fromDay(s.day);
+      return d.year >= 1995 && d.month === 3 && d.day >= 25 && s.releaseOrder.length >= 2 ? 3 : 0;
+    },
+    make: ({ rng }) => {
+      const idea = rng.pick([
+        { name: 'Office Simulator: Printer Edition', genre: 'simulation', topic: 'business' },
+        { name: 'Cat Kart Deluxe', genre: 'racing', topic: 'animals' },
+        { name: 'Goat Tactics', genre: 'strategy', topic: 'farming' },
+        { name: 'Dungeon Café', genre: 'casual', topic: 'cooking' },
+        { name: 'Haunted Bowling', genre: 'sports', topic: 'horror' },
+      ] as const);
+      return {
+        title: 'April Fools’ Day is coming',
+        body: `The team has a joke announcement ready for April 1st: “${idea.name}”, complete with a fake trailer.`,
+        options: [
+          { id: 'go', label: 'Announce the joke game', preview: 'Players love a laugh (fans +2%, reputation +0.3) — and sometimes they beg for it to be real' },
+          { id: 'skip', label: 'Keep it professional', preview: 'No change' },
+        ],
+        ctx: { name: idea.name, genre: idea.genre, topic: idea.topic },
+      };
+    },
+    resolve: ({ s, rng }, e, opt) => {
+      if (opt !== 'go') return;
+      s.company.fans = Math.round(s.company.fans * 1.02);
+      addRep(s, 0.3, 'An April Fools’ joke');
+      const name = String(e.ctx.name);
+      // a third of the time players want it for real: it becomes a designer's pitch
+      const designers = Object.values(s.staff).filter((x) => x.role === 'designer' && !isAwayStaff(x));
+      if (!s.company.pitch && designers.length && rng.chance(0.35)) {
+        const st = rng.pick(designers);
+        s.company.pitch = { staffId: st.id, genre: String(e.ctx.genre) as GenreId, topic: String(e.ctx.topic), until: s.day + PITCH_DAYS };
+        pushNews(s, { category: 'studio', headline: `Players demand “${name}” be real`, body: `The April Fools’ joke went viral. ${st.name} says they could actually make it — the pitch is waiting in the new-game screen.`, tone: 'good' });
+      } else pushNews(s, { category: 'studio', headline: `${s.company.name} announces “${name}”`, body: 'Players are fairly sure it’s a joke. Fairly.', tone: 'good' });
     },
   },
   {
