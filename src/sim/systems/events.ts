@@ -18,7 +18,7 @@ import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
 import { addRep, aOrAn, earn, fmtMoney, hasFlag, money, newId, pushNews, spend } from '../util';
 import { ownerValue } from './finance';
-import { ROLE_NAMES, ROLE_SKILLS, candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, removeStaff } from './staff';
+import { ROLE_NAMES, ROLE_SKILLS, candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, rememberLeaver, removeStaff } from './staff';
 import { assignDesks, freeDesks } from './office';
 
 interface EventDef {
@@ -438,7 +438,10 @@ export const EVENT_DEFS: EventDef[] = [
         hireIntern(s, st);
         s.progress.stats.internsHired = (s.progress.stats.internsHired ?? 0) + 1;
         pushNews(s, { category: 'staff', headline: `${st.name} joins full-time after their internship`, tone: 'good' });
-      } else removeStaff(s, st.id);
+      } else {
+        rememberLeaver(s, st, 'their internship ended');
+        removeStaff(s, st.id);
+      }
     },
   },
   {
@@ -550,6 +553,7 @@ export const EVENT_DEFS: EventDef[] = [
       } else if (opt === 'promise') {
         st.loyalty = clamp(st.loyalty + 12, 0, 100);
       } else {
+        rememberLeaver(s, st, 'a rival made them an offer');
         removeStaff(s, st.id);
         s.progress.stats.staffLost += 1;
         const rv = s.rivals[String(e.ctx.rival)];

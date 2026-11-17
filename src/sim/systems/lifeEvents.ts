@@ -7,7 +7,7 @@ import { clamp } from '../breakdown';
 import type { Ctx } from '../ctx';
 import type { GameState, Staff } from '../types';
 import { pushNews } from '../util';
-import { removeStaff } from './staff';
+import { rememberLeaver, removeStaff } from './staff';
 
 export type ParentalLeave = 'minimal' | 'standard' | 'generous';
 
@@ -118,6 +118,7 @@ export function lifeEventsMonthly(c: Ctx): void {
       if (pol.quit && rng.chance(pol.quit)) {
         pushNews(s, { category: 'staff', headline: `${st.name} resigns to be with their newborn`, body: `Two weeks of parental leave wasn’t enough. ${first(st.name)} has left ${s.company.name}.`, tone: 'bad' });
         c.out.push({ type: 'staffQuit', name: st.name, reason: 'family' });
+        rememberLeaver(s, st, 'to be with their baby');
         removeStaff(s, st.id);
         stats.staffLost += 1;
         continue;
@@ -143,6 +144,7 @@ export function lifeEventsMonthly(c: Ctx): void {
       } else if (rng.chance(0.5)) {
         pushNews(s, { category: 'staff', headline: `${st.name} is moving away`, body: 'Their partner got a job across the country, and without a remote option they’ve resigned.', tone: 'bad' });
         c.out.push({ type: 'staffQuit', name: st.name, reason: 'moving away' });
+        rememberLeaver(s, st, 'they moved away');
         removeStaff(s, st.id);
         stats.staffLost += 1;
       } else {

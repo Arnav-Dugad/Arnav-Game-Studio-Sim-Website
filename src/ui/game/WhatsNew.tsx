@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21c';
+export const WHATS_NEW_VERSION = '2026-11-21d';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'Former colleagues come home', body: 'People who left on good terms — they moved away, a rival made them an offer, their internship ended — may ask to come back one to eight years later: a little more skilled, and starting out loyal. Look for “Former colleague” in the hiring pool.' },
   { icon: 'lightbulb', title: 'Staff pitches', body: 'Senior designers, producers and writers now pitch the games they’ve always wanted to make — their favourite genre, with a topic made for it. Greenlight one and it waits in the new-game screen for six months (“Use the pitch”); make it with them on the team and it’s their passion project: fresh ideas and one very happy person.' },
   { icon: 'trophy', title: 'Awards season', body: 'From September, open one of this year’s 78+ games and run an awards campaign: jury screenings and trade-press ads give it +2 with the Golden Pixel jury — enough to tip a close race, never to win a hopeless one. One a year, and the release screen shows the rivals to beat.' },
   { icon: 'library', title: 'Three new topics', body: 'Archaeology (1984 — tombs, relics and expeditions), Extreme Sports (1995, peaking around 1999) and Insects (1985, a family favourite for strategy and sim games), each with its own cover art and title ideas.' },

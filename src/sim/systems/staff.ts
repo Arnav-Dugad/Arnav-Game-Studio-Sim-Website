@@ -203,6 +203,7 @@ export function refreshCandidates(c: Ctx): void {
       s.candidates.unshift(c);
     }
   }
+  boomerang(c);
   if (s.company.reputation >= 35 && rng.chance(0.03 + s.company.reputation / 2500)) {
     const L = legendaryCandidate(s, rng);
     if (L) {
@@ -227,7 +228,7 @@ export function candidateToStaff(s: GameState, cand: Candidate, id: string, sala
     morale: clamp(65 + (salary / Math.max(1, cand.askSalary) - 1) * 60, 35, 95),
     energy: 100,
     burnout: 0,
-    loyalty: 50 + (hasTrait(cand, 'loyal') ? 15 : 0),
+    loyalty: (cand.returning ? 70 : 50) + (hasTrait(cand, 'loyal') ? 15 : 0), // a returning colleague knows what they're coming back to
     personId: cand.personId,
     assignment: { kind: 'idle' },
     activity: 'idle',
@@ -674,6 +675,34 @@ function retirements(c: Ctx): void {
       tone: 'good',
     });
   }
+}
+
+/** Someone leaves on good terms: remember them — they might want to come back one day. */
+export function rememberLeaver(s: GameState, st: Staff, reason: string): void {
+  if (st.role === 'founder') return;
+  const keep = (s.formerStaff ?? []).filter((x) => s.day - x.leftDay < 365 * 10).slice(-24);
+  keep.push({ name: st.name, look: st.look, role: st.role, skills: { ...st.skills }, potential: st.potential, traits: [...st.traits], ...(st.personId ? { personId: st.personId } : {}), salary: st.salary, leftDay: s.day, reason, ...(st.intern ? { wasIntern: true } : {}) });
+  s.formerStaff = keep;
+}
+
+/** Now and then a former colleague asks to come back — a little more experienced, and glad to be home. */
+function boomerang(c: Ctx): void {
+  const { s, rng } = c;
+  if (s.candidates.some((x) => x.returning) || !rng.chance(0.15)) return;
+  const f = (s.formerStaff ?? []).find((x) => !x.offered && s.day - x.leftDay >= 365 && s.day - x.leftDay < 365 * 8);
+  if (!f) return;
+  f.offered = true;
+  const years = (s.day - f.leftDay) / 365;
+  const cand = generateCandidate(s, rng, { role: f.role });
+  const skills = { ...f.skills };
+  for (const k of Object.keys(skills) as (keyof typeof skills)[]) skills[k] = Math.min(Math.max(f.potential, skills[k]), Math.round(skills[k] + (skills[k] > 20 ? Math.min(12, years * 2.5) : 0)));
+  Object.assign(cand, { name: f.name, look: f.look, role: f.role, skills, potential: f.potential, traits: [...f.traits], personId: f.personId, level: levelFor(topSkill(skills)) });
+  cand.askSalary = Math.max(cand.askSalary, Math.round((f.salary * 1.05) / 100) * 100);
+  cand.salary = cand.askSalary;
+  cand.expiresDay = s.day + 60;
+  cand.returning = { leftDay: f.leftDay, reason: f.reason };
+  s.candidates.unshift(cand);
+  pushNews(s, { category: 'staff', headline: `${f.name} would like to come back`, body: `${f.wasIntern ? 'Your former intern' : 'They left'} ${Math.round(years)} year${Math.round(years) === 1 ? '' : 's'} ago (${f.reason}) and ${f.wasIntern ? 'is a real developer now' : 'have missed the place'}. They’re in your hiring pool for two months.`, tone: 'good' });
 }
 
 export function removeStaff(s: GameState, id: string): void {

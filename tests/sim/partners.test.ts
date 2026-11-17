@@ -10,7 +10,7 @@ describe('platform partners', () => {
     const s = createGame({ seed: 3, companyName: 'Test', founderName: 'T', startYear: 1992, autopause: false });
     s.company.cash = 1e8;
     s.research.done.push('biz_self_publishing');
-    s.cheats = { ...(s.cheats ?? {}), workMul: 5, scoreBonus: 25 } as never;
+    s.cheats = { ...(s.cheats ?? {}), workMul: 5, scoreBonus: 30 } as never; // a reliably great game, whatever the seed's path
     const pl = availablePlatforms(s).find((p) => holderOf(s, p.id))!;
     const maker = holderOf(s, pl.id)!;
     const kit = devkitCost(s, pl.id);

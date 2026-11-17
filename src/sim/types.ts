@@ -132,6 +132,8 @@ export interface Candidate extends Omit<Staff, 'assignment' | 'deskId' | 'activi
   fromRival?: string;
   /** Looking for work after their studio closed (its name). */
   formerly?: string;
+  /** A former colleague asking to come back: when and why they left. */
+  returning?: { leftDay: number; reason: string };
 }
 
 export interface PlacedItem {
@@ -1017,6 +1019,8 @@ export interface GameState {
   retirementSince?: number;
   /** Veterans who retired from the studio. */
   alumni?: { name: string; role: Role; years: number; games: number; day: number; legend: boolean }[];
+  /** People who left on good terms (they may come back one day). */
+  formerStaff?: { name: string; look: Staff['look']; role: Role; skills: Staff['skills']; potential: number; traits: Staff['traits']; personId?: string; salary: number; leftDay: number; reason: string; wasIntern?: boolean; offered?: boolean }[];
   /** Head-to-head record against each rival (company id → record). */
   rivalry?: Record<Id, RivalryRecord>;
   /** Persistent cheat switches (see sim/cheats.ts). */
