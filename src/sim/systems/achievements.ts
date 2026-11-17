@@ -97,6 +97,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'revenue_100m', name: 'Nine Figures', desc: 'Earn $100M in lifetime revenue.', icon: 'money', check: (s) => s.progress.stats.totalRevenue >= 100_000_000 },
   { id: 'genre_master', name: 'Jack of All Genres', desc: 'Release games in 10 different genres.', icon: 'palette', check: (s) => new Set(rels(s).map((r) => r.concept.genre)).size >= 10 },
   { id: 'ea_graduate', name: 'Out of the Oven', desc: 'Release a game scoring 80+ after Early Access.', icon: 'rocket', check: (s) => rels(s).some((r) => !!r.earlyAccess && r.score >= 80) },
+  { id: 'office_wedding', name: 'Love at Work', desc: 'Two of your staff fall in love and marry each other.', icon: 'heart', check: (s) => (s.progress.stats.officeWeddings ?? 0) >= 1 },
+  { id: 'family_studio', name: 'Family Business', desc: 'Ten babies born to your staff.', icon: 'people', check: (s) => (s.progress.stats.babies ?? 0) >= 10 },
   { id: 'garage_hit', name: 'Garage Miracle', desc: 'Score 85+ while still in the garage.', icon: 'wrench', check: (s) => s.office.tier === 1 && s.progress.stats.bestScore >= 85 },
 ];
 

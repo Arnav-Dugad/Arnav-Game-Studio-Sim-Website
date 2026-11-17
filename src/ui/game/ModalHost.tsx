@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { lifeLine } from '@/sim/systems/lifeEvents';
 import { BugBashModal } from './BugBash';
 import { liveEventBlocked, liveEventBoost, liveEventCost, liveEventName } from '@/sim/systems/liveEvents';
 import { BEST_FRIENDS, FEUD, relationsOf } from '@/sim/systems/relations';
@@ -632,10 +633,11 @@ function Mentorship({ staffId }: { staffId: string }) {
 function Relationships({ staffId }: { staffId: string }) {
   const s = useGame((g) => g.s)!;
   const list = relationsOf(s, staffId).filter((r) => Math.abs(r.v) >= 15).slice(0, 5);
-  if (!list.length) return null;
+  if (!list.length && !(s.staff[staffId] && lifeLine(s, s.staff[staffId]!))) return null;
   const label = (v: number) => (v >= BEST_FRIENDS ? 'Best friends' : v >= 25 ? 'Friends' : v > -15 ? 'Colleagues' : v > FEUD ? 'Tension' : 'Feud');
   return (
     <Section title="Relationships">
+      {lifeLine(s, s.staff[staffId]!) && <p className="mb-1.5 text-xs text-ink2">❤️ {lifeLine(s, s.staff[staffId]!)}</p>}
       <ul className="space-y-1 text-xs">
         {list.map(({ other, v }) => (
           <li key={other.id} className="flex items-center gap-2">
@@ -885,7 +887,9 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
           </Section>
           <Section title="Time off">
             {(st.vacationDays ?? 0) > 0 ? (
-              <p className="text-xs text-ink2">On vacation — back in {st.vacationDays} day{st.vacationDays === 1 ? '' : 's'}.</p>
+              <p className="text-xs text-ink2">
+                {st.leave === 'parental' ? 'On parental leave 👶' : st.leave === 'honeymoon' ? 'On honeymoon 💍' : st.sabbatical ? 'On sabbatical' : 'On vacation'} — back in {st.vacationDays} day{st.vacationDays === 1 ? '' : 's'}.
+              </p>
             ) : (
               <>
                 <div className="flex gap-1.5">

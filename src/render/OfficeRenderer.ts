@@ -811,7 +811,13 @@ export class OfficeRenderer {
       if (away) a.awayWas = st.activity === 'sick' ? 'sick' : 'vacation';
       else if (a.awayWas && agentFloor === floor && this.agentsReady && !ui.reducedMotion) {
         const sabbatical = st.lastSabbaticalDay !== undefined && s.day - st.lastSabbaticalDay < 70;
-        this.say(a, sabbatical ? pickOne(['Back from my sabbatical! 🌍', 'I have SO many ideas.', 'Two months off — I’m a new person!']) : a.awayWas === 'vacation' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?']), 2.6);
+        const ev = st.life?.event;
+        const lifeBack = ev && ev.kind === 'baby' && s.day - ev.day < 130 ? pickOne(['Back from parental leave! 👶', 'Who knew babies were this loud?', 'I have 400 baby photos. Want to see?']) : ev && ev.kind === 'wedding' && s.day - ev.day < 20 ? pickOne(['Back from the honeymoon! 💍', 'Married life is great!', 'Thanks for the wedding gift!']) : null;
+        this.say(a, lifeBack ?? (sabbatical ? pickOne(['Back from my sabbatical! 🌍', 'I have SO many ideas.', 'Two months off — I’m a new person!']) : a.awayWas === 'vacation' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?'])), 2.6);
+        if (lifeBack) {
+          const near = [...this.agents.values()].filter((b) => b !== a && b.c.visible && b.floor === floor && !b.talk && Math.hypot(b.x - a.x, b.y - a.y) < 160).slice(0, 2);
+          for (const b of near) this.say(b, ev!.kind === 'baby' ? pickOne(['Congratulations! 🍼', 'How’s the little one?', 'Are you getting any sleep?']) : pickOne(['Congrats, newlyweds! 🎉', 'How was the honeymoon?', 'Welcome back! 💐']), 2.4);
+        }
         a.anim.wave = 1.4;
         a.awayWas = undefined;
       } else a.awayWas = undefined;
@@ -1124,6 +1130,32 @@ export class OfficeRenderer {
         a.anim.joy = 1.2;
         const near = here.filter((b) => b !== a && !b.talk && Math.hypot(b.x - a.x, b.y - a.y) < 160).slice(0, 2);
         for (const b of near) this.say(b, pickOne([`${yrs} years, ${firstName(st.name)}! 🎉`, 'Happy work anniversary!', 'Here’s to the next five!']), 2.4);
+      }
+    }
+    // love is in the air: a new couple, and wedding gossip while they're on honeymoon
+    let gossip = 0;
+    for (const st of Object.values(s.staff)) {
+      const ev = st.life?.event;
+      if (!ev) continue;
+      if (ev.kind === 'romance' && s.day - ev.day <= 2) {
+        const a = this.agents.get(st.id);
+        if (a && a.c.visible && a.floor === floor) {
+          this.showBubble(a, '❤️');
+          a.bubbleT = 3;
+          a.anim.joy = 1;
+        }
+      } else if (ev.kind === 'wedding' && s.day - ev.day <= 3 && gossip < 1 && !firstFrame) {
+        const b = here.find((x) => x.id !== st.id && x.id !== st.life?.partnerId && !x.talk);
+        if (b) {
+          gossip++;
+          this.say(b, pickOne([`Did you see ${firstName(st.name)}’s wedding photos? 💍`, `${firstName(st.name)} got married! 💐`, 'What a beautiful wedding!']), 2.6);
+        }
+      } else if (ev.kind === 'baby' && s.day - ev.day <= 2 && gossip < 1 && !firstFrame) {
+        const b = here.find((x) => x.id !== st.id && !x.talk);
+        if (b) {
+          gossip++;
+          this.say(b, pickOne([`${firstName(st.name)} had a baby! 👶`, 'We should send flowers 💐', `Baby photos from ${firstName(st.name)}! 🍼`]), 2.6);
+        }
       }
     }
     for (const a of here) {

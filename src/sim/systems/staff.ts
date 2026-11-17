@@ -335,6 +335,7 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
   if (s.company.policies.remote) bd.add('Remote-friendly', 4);
   if (s.company.policies.fourDayWeek) bd.add('Four-day week', 9);
   if (s.company.policies.wellness) bd.add('Wellness program', 2);
+  if (s.company.policies.parentalLeave === 'generous') bd.add('Family-friendly leave', 1);
   if (s.company.lastLayoffDay !== undefined && s.day - s.company.lastLayoffDay < 120) bd.add('Recent layoffs', -12);
   for (const m of s.company.moraleMods) if (m.until > s.day) bd.add(m.label, m.v);
   if (hasTrait(st, 'ambitious') && st.level !== 'junior' && st.salary < market) bd.add('Wants a raise', -6);
@@ -471,6 +472,11 @@ export function updateStaffDaily(c: Ctx): void {
     // Vacation: away from the office, recharging fast
     if ((st.vacationDays ?? 0) > 0) {
       st.vacationDays = st.vacationDays! - 1;
+      if (st.vacationDays === 0 && st.leave) {
+        // back from leave; a new parent comes back short on sleep
+        if (st.leave === 'parental') st.energy = Math.min(st.energy, 60);
+        st.leave = undefined;
+      }
       if (st.vacationDays === 0 && st.sabbatical) {
         // back from a sabbatical: refreshed and a little wiser
         st.sabbatical = undefined;

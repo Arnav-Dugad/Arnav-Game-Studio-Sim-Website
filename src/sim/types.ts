@@ -103,6 +103,10 @@ export interface Staff {
   /** Contribution points at the last monthly check, and Employee of the Month wins. */
   contribMark?: number;
   eotmCount?: number;
+  /** Life outside work (systems/lifeEvents.ts): partner (a colleague), marriage, kids, a move; and the latest event. */
+  life?: { partnerId?: Id; married?: number; kids?: number; remote?: boolean; event?: { kind: 'romance' | 'wedding' | 'baby' | 'moved'; day: number } };
+  /** Why they're away, when it isn't an ordinary vacation. */
+  leave?: 'honeymoon' | 'parental';
 }
 
 export type Assignment =
@@ -721,6 +725,9 @@ export interface LifetimeStats {
   crunchRecent?: number;
   /** Quarterly objectives met. */
   objectivesDone?: number;
+  weddings?: number;
+  officeWeddings?: number;
+  babies?: number;
   /** Games that topped the weekly chart. */
   numberOnes?: number;
   /** Best bug-bash result, and mentees who graduated. */
@@ -763,6 +770,8 @@ export interface Company {
     fourDayWeek: boolean;
     /** Wellness program: a monthly cost per head for morale and slower burnout. */
     wellness?: boolean;
+    /** Parental leave: two, six (default) or sixteen weeks. */
+    parentalLeave?: 'minimal' | 'standard' | 'generous';
     /** Automation: idle people go to research; burnt-out people take two weeks off. */
     autoResearch?: boolean;
     autoVacation?: boolean;

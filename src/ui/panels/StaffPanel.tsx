@@ -261,6 +261,26 @@ function Policies() {
           <input type="checkbox" checked={!!p.wellness} onChange={(e) => act({ type: 'setPolicy', wellness: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
       </Section>
+      <Section title="Parental leave">
+        <Segmented
+          ariaLabel="Parental leave"
+          value={p.parentalLeave ?? 'standard'}
+          onChange={(v) => act({ type: 'setPolicy', parentalLeave: v })}
+          options={[
+            { value: 'minimal', label: 'Two weeks' },
+            { value: 'standard', label: 'Six weeks' },
+            { value: 'generous', label: 'Sixteen weeks' },
+          ]}
+        />
+        <p className="mt-1 text-xs text-ink3">
+          {(p.parentalLeave ?? 'standard') === 'minimal'
+            ? 'New parents are back fast — but they resent it (−8 loyalty, a sour mood) and some quit to be with their baby.'
+            : (p.parentalLeave ?? 'standard') === 'generous'
+              ? 'Four months paid at home with the baby: +15 loyalty and a happy return, +1 morale for everyone. Their projects miss them for longer.'
+              : 'Six weeks paid: a fair deal, +4 loyalty.'}
+          {(s.progress.stats.babies ?? 0) > 0 && <> {s.progress.stats.babies} {s.progress.stats.babies === 1 ? 'baby' : 'babies'} born to the studio so far.</>}
+        </p>
+      </Section>
       {s.company.union && (
         <div className="rounded-xl bg-good/10 p-2.5 text-xs text-ink2">
           <b className="text-good">Unionised.</b> Morale +4 for everyone, and crunch overtime protections halve its morale cost.
