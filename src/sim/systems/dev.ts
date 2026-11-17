@@ -104,6 +104,9 @@ function mentorBoost(s: GameState, st: Staff, team: Staff[]): number {
   const L = layout(s);
   const d = st.deskId ? L.desks[st.deskId] : undefined;
   let b = d?.trainingBoost ?? 0;
+  // an assigned mentor teaches wherever they sit
+  const mentor = st.mentorId ? s.staff[st.mentorId] : undefined;
+  if (mentor && mentor.sickDays <= 0 && !(mentor.vacationDays ?? 0)) b += 0.4;
   for (const m of team) {
     if (m === st || !hasTrait(m, 'mentor')) continue;
     const md = m.deskId ? L.desks[m.deskId] : undefined;

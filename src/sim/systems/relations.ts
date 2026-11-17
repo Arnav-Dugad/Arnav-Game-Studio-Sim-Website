@@ -64,6 +64,14 @@ export function relationsWeekly(c: Ctx): boolean {
         if (before > FEUD && after <= FEUD) feud = true;
       }
   }
+  // mentors and mentees grow close
+  for (const st of Object.values(s.staff)) {
+    const m = st.mentorId ? s.staff[st.mentorId] : undefined;
+    if (!m) continue;
+    const k = pairKey(st.id, m.id);
+    rel[k] = clamp((rel[k] ?? 0) + 1.5, -100, 100);
+    touched.add(k);
+  }
   // fade and prune
   for (const k of Object.keys(rel)) {
     const [a, b] = k.split('|') as [string, string];

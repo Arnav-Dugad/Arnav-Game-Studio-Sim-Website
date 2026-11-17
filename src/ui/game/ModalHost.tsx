@@ -14,7 +14,7 @@ import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
 import { canExpand, canPatch, canRemaster, canRunSale, EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, expansionsOf, patchCost, portCost, SALE_DISCOUNTS, saleForecast } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
-import { marketSalary, productivity, moraleTarget, retirementDay, ROLE_NAMES, vacationBlocked } from '@/sim/systems/staff';
+import { marketSalary, menteesOf, mentorBlocked, productivity, moraleTarget, retirementDay, ROLE_NAMES, vacationBlocked } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
 import { runScore } from '@/sim/systems/achievements';
 import { qualityToScore } from '@/sim/systems/dev';
@@ -564,6 +564,54 @@ function Shipped({ staffId }: { staffId: string }) {
   );
 }
 
+function Mentorship({ staffId }: { staffId: string }) {
+  const s = useGame((g) => g.s)!;
+  const st = s.staff[staffId];
+  if (!st) return null;
+  const mentees = menteesOf(s, staffId);
+  const canHave = st.level === 'junior' || st.level === 'mid';
+  if (!canHave && !mentees.length) return null;
+  const mentor = st.mentorId ? s.staff[st.mentorId] : undefined;
+  const options = canHave ? Object.values(s.staff).filter((m) => !mentorBlocked(s, st, m) || m.id === st.mentorId) : [];
+  return (
+    <Section title="Mentorship">
+      {canHave && (
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-ink3">Mentor</span>
+          <select
+            className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-2"
+            value={mentor?.id ?? ''}
+            aria-label="Mentor"
+            onChange={(e) => useGame.getState().actOrToast({ type: 'setMentor', staffId, mentorId: e.target.value || null }, e.target.value ? 'Mentorship started' : 'Mentorship ended')}
+          >
+            <option value="">{options.length ? 'No mentor' : 'No one eligible yet'}</option>
+            {options.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name} ({m.level === 'lead' ? 'lead' : m.role === 'founder' ? 'founder' : 'senior'})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {mentees.length > 0 && (
+        <p className="text-xs text-ink2">
+          Mentoring{' '}
+          {mentees.map((m, i) => (
+            <span key={m.id}>
+              {i > 0 && ', '}
+              <button type="button" className="font-semibold hover:underline" onClick={() => useGame.getState().openModalNow({ kind: 'staff', staffId: m.id })}>
+                {m.name}
+              </button>
+            </span>
+          ))}{' '}
+          (−{mentees.length * 3}% output)
+        </p>
+      )}
+      <p className="mt-1 text-[11px] text-ink3">A senior in the same craft speeds up a junior’s growth (+40% learning) and they grow close; the mentor gives up 3% output per mentee (up to three).</p>
+    </Section>
+  );
+}
+
 function Relationships({ staffId }: { staffId: string }) {
   const s = useGame((g) => g.s)!;
   const list = relationsOf(s, staffId).filter((r) => Math.abs(r.v) >= 15).slice(0, 5);
@@ -770,6 +818,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
           )}
           {(st.eotmCount ?? 0) > 0 && <div className="mb-1 text-[11px] text-gold">⭐ Employee of the Month ×{st.eotmCount}{s.eotm?.id === st.id ? ' (this month)' : ''}</div>}
           {(st.dreamsMet ?? 0) > 0 && <div className="mb-2 text-[11px] text-gold">★ {st.dreamsMet} ambition{st.dreamsMet === 1 ? '' : 's'} fulfilled here</div>}
+          <Mentorship staffId={staffId} />
           <Relationships staffId={staffId} />
           <Shipped staffId={staffId} />
           {st.role !== 'founder' && (

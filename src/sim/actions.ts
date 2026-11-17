@@ -31,7 +31,7 @@ import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering,
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost } from './systems/research';
-import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacationBlocked } from './systems/staff';
+import { candidateToStaff, invalidateMentees, marketSalary, mentorBlocked, refreshCandidates, removeStaff, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
@@ -110,6 +110,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'setMentor'; staffId: string; mentorId: string | null }
   | { type: 'setOfficeStyle'; floor: FloorStyle; wall?: string }
   | { type: 'openBranch'; region: RegionId }
   | { type: 'closeBranch'; region: RegionId }
@@ -813,6 +814,22 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.wall !== undefined && !/^#[0-9a-fA-F]{6}$/.test(a.wall)) return 'Invalid colour';
       s.office.style = { floor: a.floor, ...(a.wall ? { wall: a.wall } : {}) };
       return null;
+    case 'setMentor': {
+      const st = s.staff[a.staffId];
+      if (!st) return 'No such staff';
+      if (a.mentorId === null) {
+        st.mentorId = undefined;
+        invalidateMentees(s);
+        return null;
+      }
+      const m = s.staff[a.mentorId];
+      if (!m) return 'No such mentor';
+      const why = mentorBlocked(s, st, m);
+      if (why) return why;
+      st.mentorId = m.id;
+      invalidateMentees(s);
+      return null;
+    }
     case 'liveEvent':
       return runLiveEvent(s, a.releaseId);
     case 'teamRetreat':

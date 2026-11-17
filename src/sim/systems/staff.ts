@@ -243,6 +243,39 @@ export function isCrunching(s: GameState, st: Staff): boolean {
 }
 
 /** Productivity multiplier with explanation. */
+export const MAX_MENTEES = 3;
+
+/** Why this pairing can't work (or null). */
+export function mentorBlocked(s: GameState, mentee: Staff, mentor: Staff): string | null {
+  if (mentee.id === mentor.id) return 'Nobody can mentor themselves';
+  if (mentee.level !== 'junior' && mentee.level !== 'mid') return `${mentee.name} is past needing a mentor`;
+  if (mentor.role !== 'founder' && mentor.level !== 'senior' && mentor.level !== 'lead') return `${mentor.name} isn’t senior enough`;
+  if (mentor.role !== 'founder' && mentor.role !== mentee.role) return 'Mentors teach their own craft';
+  if (mentor.mentorId) return `${mentor.name} has a mentor of their own`;
+  if (menteesOf(s, mentor.id).length >= MAX_MENTEES) return `${mentor.name} already mentors ${MAX_MENTEES} people`;
+  return null;
+}
+
+// Mentee counts per mentor, cached per state and day (productivity runs for everyone, every day).
+const menteeCache = new WeakMap<GameState, { day: number; counts: Map<string, number> }>();
+function menteeCounts(s: GameState): Map<string, number> {
+  const hit = menteeCache.get(s);
+  if (hit && hit.day === s.day) return hit.counts;
+  const counts = new Map<string, number>();
+  for (const x of Object.values(s.staff)) if (x.mentorId) counts.set(x.mentorId, (counts.get(x.mentorId) ?? 0) + 1);
+  menteeCache.set(s, { day: s.day, counts });
+  return counts;
+}
+
+/** Call after a mentorship changes. */
+export function invalidateMentees(s: GameState): void {
+  menteeCache.delete(s);
+}
+
+export function menteesOf(s: GameState, mentorId: string): Staff[] {
+  return Object.values(s.staff).filter((x) => x.mentorId === mentorId);
+}
+
 export function productivity(s: GameState, st: Staff): ReturnType<BD['done']> {
   const L = layout(s);
   const bd = new BD('Base', 1);
@@ -261,6 +294,8 @@ export function productivity(s: GameState, st: Staff): ReturnType<BD['done']> {
     const boost = BALANCE.CRUNCH_OUTPUT * (hasTrait(st, 'night_owl') ? 1.08 : 1);
     bd.mul('Crunch', hasValue(s, 'balance') ? 1 + (boost - 1) * CULTURE_FX.balanceCrunch : boost);
   }
+  const mentees = menteeCounts(s).get(st.id) ?? 0;
+  if (mentees) bd.mul(`Mentoring ${mentees}`, 1 - 0.03 * mentees);
   if (hasValue(s, 'craft')) bd.mul('Culture: Quality First', CULTURE_FX.craftOutput);
   if (hasValue(s, 'speed')) bd.mul('Culture: Ship Fast', CULTURE_FX.speedOutput);
   if (hasValue(s, 'balance')) bd.mul('Culture: Work-Life Balance', CULTURE_FX.balanceOutput);
@@ -455,6 +490,11 @@ export function updateStaffMonthly(c: Ctx): void {
       if (order.indexOf(lv) > order.indexOf(st.level)) {
         st.level = lv;
         pushNews(s, { category: 'staff', headline: `${st.name} grew into a ${lv} ${ROLE_NAMES[st.role].toLowerCase()}`, tone: 'good' });
+        if ((lv === 'senior' || lv === 'lead') && st.mentorId) {
+          const m = s.staff[st.mentorId];
+          st.mentorId = undefined;
+          if (m) pushNews(s, { category: 'staff', headline: `${st.name} graduates from ${m.name}’s mentorship`, tone: 'good' });
+        }
       }
     }
     // quitting
@@ -525,6 +565,7 @@ function retirements(c: Ctx): void {
 }
 
 export function removeStaff(s: GameState, id: string): void {
+  for (const x of Object.values(s.staff)) if (x.mentorId === id) x.mentorId = undefined;
   const st = s.staff[id];
   if (!st) return;
   for (const p of Object.values(s.projects)) p.team = p.team.filter((t) => t !== id);

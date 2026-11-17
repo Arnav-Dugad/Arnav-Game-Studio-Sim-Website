@@ -82,6 +82,8 @@ export interface Staff {
   dreamsMet?: number;
   /** A raise granted for an ambition: cutting below it before `until` breaks the promise. */
   promise?: { salary: number; until: number };
+  /** Their mentor (a senior colleague in the same role). */
+  mentorId?: Id;
   /** Contribution points at the last monthly check, and Employee of the Month wins. */
   contribMark?: number;
   eotmCount?: number;

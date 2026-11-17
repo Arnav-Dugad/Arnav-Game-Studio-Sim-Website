@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18d';
+export const WHATS_NEW_VERSION = '2026-11-18e';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'Mentorship', body: 'Pair a junior with a senior in the same craft (open the junior’s card): they learn 40% faster and grow close; the mentor gives up 3% output per mentee. Plus: late-night crunch lighting, headhunters, anniversaries, promotions and welcome-backs in the office.' },
   { icon: 'news', title: 'Front pages & credits', body: 'Big moments make the front page — a broadsheet in the 80s, a tabloid in the 90s, a news site later. Every game now ends with a credits roll, and staff cards list the games each person shipped.' },
   { icon: 'palette', title: 'Office style', body: 'Office panel → Style: pick the floor (wood, carpet, concrete, tiles, checkerboard) and the wall colour. Purely cosmetic — make the place yours.' },
   { icon: 'build', title: 'New things to build', body: 'Foosball table, claw machine (1985), guitar corner, antique globe — and a Mascot Statue once a franchise has three games. Staff play foosball, try the claw, jam on the guitar and pose for photos with your mascot. People who leave now pack a box and say goodbye.' },
