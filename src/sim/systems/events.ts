@@ -554,6 +554,153 @@ export const EVENT_DEFS: EventDef[] = [
       }
     },
   },
+  // ── Community & legacy ────────────────────────────────────────────────────
+  {
+    id: 'preservation_society',
+    art: 'letters',
+    cooldown: 900,
+    weight: (s) => (yr(s) >= 2000 && Object.values(s.releases).some((r) => s.day - r.day > 365 * 15 && r.score >= 70) ? 0.25 : 0),
+    make: ({ s }) => {
+      const r = Object.values(s.releases).filter((x) => s.day - x.day > 365 * 15 && x.score >= 70).sort((a, b) => b.score - a.score)[0];
+      if (!r) return null;
+      return {
+        title: 'A game preservation society writes',
+        body: `Historians want to archive ${r.name}’s source code, design documents and builds so it’s never lost. It costs you nothing but a little time.`,
+        options: [
+          { id: 'donate', label: 'Donate the archive', preview: 'Reputation +1.5, fans +1% — history will remember' },
+          { id: 'no', label: 'Keep it private', preview: 'No change' },
+        ],
+        ctx: { rel: r.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt !== 'donate') return;
+      const r = s.releases[String(e.ctx.rel)];
+      addRep(s, 1.5 * (1 - s.company.reputation / 130), 'Donated to game preservation');
+      s.company.fans = Math.round(s.company.fans * 1.01);
+      pushNews(s, { category: 'industry', headline: `${r?.name ?? 'A classic'}’s source code goes to the archive`, body: 'Preservationists call it “a gift to the history of games”.', tone: 'good' });
+    },
+  },
+  {
+    id: 'guest_lecture',
+    art: 'student',
+    cooldown: 400,
+    weight: (s) => (yr(s) >= 1990 && staffList(s).some((x) => x.level === 'senior' || x.level === 'lead') ? 0.3 : 0),
+    make: ({ s, rng }) => {
+      const pool = staffList(s).filter((x) => x.level === 'senior' || x.level === 'lead');
+      if (!pool.length) return null;
+      const st = rng.pick(pool);
+      return {
+        title: 'A university invites you to teach',
+        body: `A games course would love ${st.name} to give a guest lecture — and maybe spot some future hires.`,
+        options: [
+          { id: 'go', label: `Send ${st.name.split(' ')[0]}`, preview: 'Their morale +6; better job applicants for six weeks; two days away' },
+          { id: 'no', label: 'Too busy right now', preview: 'No change' },
+        ],
+        ctx: { staff: st.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt !== 'go') return;
+      const st = staffById(s, e.ctx.staff);
+      if (!st) return;
+      st.morale = clamp(st.morale + 6, 0, 100);
+      if (!(st.vacationDays ?? 0)) {
+        st.vacationDays = 2;
+        st.leave = 'conference';
+      }
+      s.company.talkBuzzUntil = Math.max(s.company.talkBuzzUntil ?? 0, s.day + 42);
+    },
+  },
+  {
+    id: 'childrens_hospital',
+    art: 'heart',
+    cooldown: 700,
+    weight: (s) => (yr(s) >= 1990 && Object.values(s.releases).some((r) => r.concept.audience === 'kids' || r.concept.audience === 'everyone') ? 0.25 : 0),
+    make: ({ s }) => {
+      const cost = money(5_000, s.day);
+      return {
+        title: 'A children’s hospital asks for games',
+        body: 'The children’s ward wants consoles and games to help young patients through long stays.',
+        options: [
+          { id: 'give', label: `Send consoles and games (${fmtMoney(cost)})`, preview: 'Reputation +1, fans +2%, morale +3 for a month', disabled: s.company.cash < cost },
+          { id: 'no', label: 'Not this time', preview: 'No change' },
+        ],
+        ctx: { cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt !== 'give' || s.company.cash < Number(e.ctx.cost)) return;
+      spend(s, 'other_expense', Number(e.ctx.cost));
+      addRep(s, 1 * (1 - s.company.reputation / 130), 'Gave games to a children’s hospital');
+      s.company.fans = Math.round(s.company.fans * 1.02);
+      mod(s, 3, 30, 'Children’s hospital donation');
+    },
+  },
+  {
+    id: 'fan_cover_song',
+    art: 'crowd',
+    cooldown: 500,
+    weight: (s) => (yr(s) >= 2008 && Object.values(s.releases).some((r) => r.score >= 80 && s.day - r.day < 365 * 3) ? 0.3 : 0),
+    make: ({ s }) => {
+      const r = Object.values(s.releases).filter((x) => x.score >= 80 && s.day - x.day < 365 * 3).sort((a, b) => b.score - a.score)[0];
+      if (!r) return null;
+      const fee = money(3_000, s.day);
+      return {
+        title: 'A fan’s cover goes viral',
+        body: `A fan’s orchestral cover of the ${r.name} theme has millions of views. Everyone’s waiting to see how you react.`,
+        options: [
+          { id: 'feature', label: `Hire them for the next trailer (${fmtMoney(fee)})`, preview: 'Fans +5%, reputation +0.5 — the internet loves it', disabled: s.company.cash < fee },
+          { id: 'share', label: 'Share it from the official account', preview: 'Fans +3%' },
+          { id: 'takedown', label: 'File a copyright takedown', preview: 'Fans −3%, reputation −1' },
+        ],
+        ctx: { rel: r.id, fee },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt === 'feature' && s.company.cash >= Number(e.ctx.fee)) {
+        spend(s, 'marketing', Number(e.ctx.fee));
+        s.company.fans = Math.round(s.company.fans * 1.05);
+        addRep(s, 0.5, 'Hired a fan musician');
+        communityNudge(s, 6);
+      } else if (opt === 'share') s.company.fans = Math.round(s.company.fans * 1.03);
+      else if (opt === 'takedown') {
+        s.company.fans = Math.round(s.company.fans * 0.97);
+        addRep(s, -1, 'Took down a fan cover');
+        communityNudge(s, -10);
+      }
+    },
+  },
+  {
+    id: 'tell_all_memoir',
+    art: 'press',
+    cooldown: 1200,
+    weight: (s) => (yr(s) >= 1995 && (s.alumni ?? []).length > 0 ? 0.2 : 0),
+    make: ({ s, rng }) => {
+      const who = rng.pick(s.alumni!);
+      const avg = staffList(s).reduce((t, x) => t + x.morale, 0) / Math.max(1, staffList(s).length);
+      return {
+        title: 'A former employee writes a memoir',
+        body: `${who.name}, who spent ${who.years} years at ${s.company.name}, has written a book about life at the studio. The press wants your comment.`,
+        options: [
+          { id: 'embrace', label: 'Read it and celebrate it', preview: avg >= 60 ? 'It’s mostly fond — reputation +1' : 'Risky: it may not be kind' },
+          { id: 'lawyers', label: 'Send the lawyers', preview: `Costs ${fmtMoney(money(20_000, s.day))}; reputation −1 for looking defensive` },
+          { id: 'ignore', label: 'No comment', preview: 'Let it pass' },
+        ],
+        ctx: { name: who.name, avg: Math.round(avg) },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const fond = Number(e.ctx.avg) >= 60;
+      if (opt === 'embrace') {
+        addRep(s, fond ? 1 : -1.5, fond ? 'A fond memoir' : 'An unflattering memoir');
+        pushNews(s, { category: 'industry', headline: fond ? `${e.ctx.name}’s memoir paints a warm picture of ${s.company.name}` : `${e.ctx.name}’s memoir lifts the lid on ${s.company.name}`, tone: fond ? 'good' : 'bad' });
+      } else if (opt === 'lawyers') {
+        spend(s, 'other_expense', money(20_000, s.day));
+        addRep(s, -1, 'Sued over a memoir');
+      } else if (!fond) addRep(s, -0.5, 'An unflattering memoir');
+    },
+  },
   // ── During development ────────────────────────────────────────────────────
   {
     id: 'feature_creep',
