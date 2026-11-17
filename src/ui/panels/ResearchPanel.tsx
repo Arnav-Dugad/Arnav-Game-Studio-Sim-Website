@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isAway } from '@/sim/systems/staff';
 import { OPEN_SOURCE_AGE_YEARS, openSourceBlocked } from '@/sim/systems/giving';
 import { RESEARCH, RESEARCH_BY_ID, type ResearchBranch } from '@/data/research';
 import { ENGINES } from '@/data/engines';
@@ -54,6 +55,7 @@ function Tree() {
   const rate = researchRate(s);
   const active = s.research.active ? RESEARCH_BY_ID[s.research.active] : undefined;
   const team = researchers(s);
+  const idleNow = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' && !isAway(x));
   const yr = fromDay(s.day).year;
   return (
     <div>
@@ -72,8 +74,21 @@ function Tree() {
         )}
         <div className="mt-2 flex items-center justify-between text-xs">
           <span className={cx(team.length ? 'text-ink3' : 'text-warn')}>
-            {team.length ? `${team.length} researcher${team.length > 1 ? 's' : ''} · ${rate.toFixed(2)} pts/day` : 'Assign staff to research in the Staff panel (select people → Research).'}
+            {team.length ? `${team.length} researcher${team.length > 1 ? 's' : ''} · ${rate.toFixed(2)} pts/day` : 'Nobody is researching. Idle staff can — or pick people in the Staff panel.'}
           </span>
+          {!team.length && idleNow.length > 0 && (
+            <Button
+              size="sm"
+              variant="primary"
+              icon="research"
+              onClick={() => {
+                for (const st of idleNow) act({ type: 'assign', staffId: st.id, to: 'research' });
+                toast({ text: `${idleNow.length === 1 ? idleNow[0]!.name.split(' ')[0] : `${idleNow.length} people`} started researching`, tone: 'good', icon: 'research' });
+              }}
+            >
+              Assign idle staff ({idleNow.length})
+            </Button>
+          )}
           {active && (
             <Button size="sm" variant="ghost" onClick={() => useGame.getState().actOrToast({ type: 'cancelResearch' }, 'Research stopped — half the budget refunded')} title="Stops this project and refunds half its cost">
               Stop (50% refund)
