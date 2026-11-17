@@ -88,6 +88,8 @@ interface YearSummary {
   rivalHit?: { name: string; score: number };
   goty?: { name: string; company: string; mine: boolean };
   staff: number;
+  joined: number;
+  friends: number;
 }
 
 /** Shows a dismissible recap card each January (does not pause the game). */
@@ -126,6 +128,8 @@ export function YearInReview() {
       rivalHit: rivalHit ? { name: rivalHit.name, score: rivalHit.score } : undefined,
       goty: gala ? { name: gala.name, company: gala.company, mine: gala.mine } : undefined,
       staff: Object.keys(s.staff).length,
+      joined: Object.values(s.staff).filter((x) => x.role !== 'founder' && fromDay(x.hiredDay).year === prev).length,
+      friends: Object.values(s.relations ?? {}).filter((x) => x >= 60).length,
     };
     // v: recompute when the sim ticks
   }, [s, shown, v]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -169,6 +173,13 @@ export function YearInReview() {
           ))}
           {summary.units > 0 && <li className="text-ink3">{fmtUnits(summary.units)} copies sold so far</li>}
         </ul>
+      )}
+      {(summary.joined > 0 || summary.friends > 0) && (
+        <p className="mt-2 text-[11px] text-ink3">
+          {summary.joined > 0 && `${summary.joined} ${summary.joined === 1 ? 'person' : 'people'} joined`}
+          {summary.joined > 0 && summary.friends > 0 && ' · '}
+          {summary.friends > 0 && `${summary.friends} best-friend pair${summary.friends === 1 ? '' : 's'}`}
+        </p>
       )}
       {summary.goty ? (
         <p className={cx('mt-2 flex items-center gap-1.5 text-[11px]', summary.goty.mine ? 'font-semibold text-gold' : 'text-ink3')}>

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18i';
+export const WHATS_NEW_VERSION = '2026-11-18j';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'leaf', title: 'Sabbaticals & work anniversaries', body: 'Veterans with 8+ years can take a two-month sabbatical and come back better at their craft. Work anniversaries bring cake every five years and loyalty at 10, 20 and 30.' },
   { icon: 'library', title: 'New topics, gym & unions', body: 'Four new topics with their own cover art — Trains, Witches & Wizards, Giant Monsters and Cozy Village (huge around 2020). A Studio Gym slows burnout nearby. Heavy crunch can spark a union drive. Personalities now show in the office.' },
   { icon: 'sparkle', title: 'Little things', body: 'Lo-fi beats from 2012, Ctrl+Z to undo today’s last placement in build mode, school tours for famous studios, Monday-morning arrivals, starry night windows, a dice button for studio names, and knock-off counts on your hits.' },
   { icon: 'people', title: 'Fan conventions & seasonal sales', body: 'Company → IP: a series with 300k+ fans can host its own convention every two years (fans +8%, hype for the sequel). In June and December, put your whole catalogue on sale in one click.' },
