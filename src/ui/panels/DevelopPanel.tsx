@@ -271,6 +271,22 @@ function GameCard({ p }: { p: GameProject }) {
           </Button>
         )}
       </div>
+      {p.phase >= 2 && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-ink3">Reviews go live:</span>
+          <Segmented
+            ariaLabel="Review policy"
+            value={p.reviewPolicy ?? 'launch'}
+            onChange={(v) => run({ type: 'setReviewPolicy', projectId: p.id, policy: v })}
+            options={[
+              { value: 'early', label: 'A week early' },
+              { value: 'launch', label: 'At launch' },
+              { value: 'none', label: 'No review copies' },
+            ]}
+          />
+          <span className="text-ink3">{(p.reviewPolicy ?? 'launch') === 'early' ? 'Confident: great reviews sell more, weak ones scare buyers off.' : (p.reviewPolicy ?? 'launch') === 'none' ? 'Hides a weak game a little longer — but the press notices (reputation −0.5).' : 'The usual: no surprises either way.'}</span>
+        </div>
+      )}
       {showTeam && <TeamEditor p={p} />}
       {showCo && !p.coDev && (
         <div className="mt-2 rounded-xl bg-bg2/60 p-2.5 text-xs">

@@ -159,6 +159,7 @@ export type Action =
   | { type: 'pinFanArt'; id: string; on: boolean }
   | { type: 'trailerCut'; projectId: string; points: number }
   | { type: 'foundCommunity' }
+  | { type: 'setReviewPolicy'; projectId: string; policy: 'early' | 'launch' | 'none' }
   | { type: 'setMascot'; mascot: MascotDesign }
   | { type: 'coDevelop'; projectId: string; rivalId: string }
   | { type: 'setModeration'; level: 0 | 1 | 2 }
@@ -953,6 +954,14 @@ function apply(c: Ctx, a: Action): string | null {
       const m = a.mascot;
       if (!m || !['bear', 'cat', 'robot', 'dragon', 'blob', 'bird'].includes(m.kind) || !['none', 'cap', 'headphones', 'star', 'crown'].includes(m.acc) || !/^#[0-9a-f]{6}$/i.test(m.color)) return 'Pick a mascot';
       s.company.mascot = { kind: m.kind, color: m.color, acc: m.acc };
+      return null;
+    }
+    case 'setReviewPolicy': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      if (!['early', 'launch', 'none'].includes(a.policy)) return 'Pick a review policy';
+      if (p.phase < 2) return 'Decide on review copies during polish';
+      p.reviewPolicy = a.policy;
       return null;
     }
     case 'foundCommunity':

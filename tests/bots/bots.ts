@@ -455,6 +455,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'sabbatical', staffId: rng.pick(st) } : null; },
   () => ({ type: 'undoPlace' }),
   () => ({ type: 'foundCommunity' }),
+  (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'setReviewPolicy', projectId: rng.pick(p), policy: rng.pick(['early', 'launch', 'none', 'never'] as never[]) } : null; },
   (_s, rng) => ({ type: 'setMascot', mascot: { kind: rng.pick(['bear', 'cat', 'robot', 'dragon', 'blob', 'bird', 'whale'] as never[]), color: rng.pick(['#e07a5f', 'red', '#123456'] as never[]), acc: rng.pick(['none', 'cap', 'crown', 'cape'] as never[]) } }),
   (s, rng) => { const p = Object.keys(s.projects); const r = Object.keys(s.rivals); return p.length && r.length ? { type: 'coDevelop', projectId: rng.pick(p), rivalId: rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
   (_s, rng) => ({ type: 'setModeration', level: rng.pick([0, 1, 2, 5] as never[]) }),

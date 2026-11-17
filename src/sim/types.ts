@@ -322,6 +322,8 @@ export interface GameProject {
   focusTest?: { phase: number; predicted: number; wantMore?: string };
   /** A bug bash has been run (once per game). */
   bugBashed?: boolean;
+  /** When critics' reviews go live: early (confident), at launch (default) or no review copies at all. */
+  reviewPolicy?: 'early' | 'launch' | 'none';
   /** This sequel resolves the series' cliffhanger. */
   paysCliffhanger?: boolean;
   /** A co-development partner: their contribution and revenue share. */

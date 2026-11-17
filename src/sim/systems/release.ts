@@ -349,6 +349,9 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   // a 1.0 launch after Early Access is old news to part of the audience
   // a shadow drop: never announced, released out of nowhere (2015+), the surprise is the marketing
   const shadowDrop = p.announcedDay === undefined && !ea && !p.crowdfund && !p.concept.expansionOf && fromDay(s.day).year >= 2015;
+  // when the reviews went live
+  const rp = p.reviewPolicy ?? 'launch';
+  const reviewMul = rp === 'early' ? (score >= 80 ? 1.07 : score < 65 ? 0.9 : 1) : rp === 'none' ? (score < 60 ? 1.05 : 0.96) : 1;
   const pot = salesPotential(s, p.concept, effScore, (ea && ea.units > 0 ? p.hype * 0.85 : p.hype) + (shadowDrop ? Math.max(0, 0.6 * clamp((score - 60) / 25, 0, 1) * clamp(0.3 + s.company.reputation / 60, 0.3, 1) - p.hype) : 0));
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
@@ -359,6 +362,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const pcOnly = p.concept.platforms.every((pid) => platformInfo(s, pid)?.kind === 'computer');
   const decay = modded && pcOnly ? 1 - (1 - baseDecay) * 0.8 : baseDecay;
   if (modded) for (const pp of plats) if (pp.pl.kind === 'computer') pp.potential *= 1.1;
+  if (reviewMul !== 1) for (const pp of plats) pp.potential *= reviewMul;
+  if (rp === 'none') addRep(s, -0.5, 'No review copies');
   if (ea && ea.units > 0) {
     // Early Access buyers already own it: fewer new PC customers at 1.0
     const pcs = plats.filter((pp) => pp.pl.kind === 'computer');
