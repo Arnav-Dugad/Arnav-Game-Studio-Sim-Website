@@ -541,6 +541,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
       setTeam((x) => x.slice(0, BALANCE.SIZE[c.size].teamCap));
     }
     if (!monetizationAllowed(s, c.monetization, genreOk ? c.genre : genre)) setMonet(c.monetization);
+    setPriceTier(c.priceTier ?? 'standard');
     const still = c.platforms.filter((pid) => plats.some((p) => p.id === pid));
     if (still.length) setPlatforms(still.slice(0, 6));
     if (s.engines[c.engineId]) setEngineId(c.engineId);
@@ -648,7 +649,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           <span className="min-w-0 truncate text-ink2">
             Last game: <b className="text-ink">{lastGame.name}</b> · {GENRE_BY_ID[lastGame.concept.genre].name} · {TOPIC_BY_ID[lastGame.concept.topic]?.name ?? lastGame.concept.topic} · {SIZE_LABEL[lastGame.concept.size]}
           </span>
-          <Button size="sm" icon="refresh" onClick={copyLast} title="Copy the genre, topic, audience, size, business model, platforms and engine (where still available)">
+          <Button size="sm" icon="refresh" onClick={copyLast} title="Copy the genre, topic, audience, size, business model, price, platforms and engine (where still available)">
             Same setup
           </Button>
         </div>
