@@ -988,13 +988,31 @@ export function rereleaseCost(s: GameState, rel: Release): number {
   return Math.round(portCost(s, rel) * 0.35);
 }
 
-/** Emulated re-release on a modern platform: a nostalgic niche (40% of a normal port). */
-export function applyRerelease(s: GameState, rel: Release, platform: string): void {
+export const MAX_BUNDLE = 4;
+
+/** Extra appeal of a classics collection: each bundled game adds buyers, more if it was loved. */
+export function bundleMul(bundled: Release[]): number {
+  return 1 + bundled.reduce((t, b) => t + 0.35 * Math.min(1.2, b.score / 80), 0);
+}
+
+export function bundleCost(s: GameState, bundled: Release[]): number {
+  return Math.round(bundled.reduce((t, b) => t + rereleaseCost(s, b) * 0.4, 0));
+}
+
+/** Emulated re-release on a modern platform: a nostalgic niche (40% of a normal port) — optionally as a collection. */
+export function applyRerelease(s: GameState, rel: Release, platform: string, bundled: Release[] = []): void {
   applyPort(s, rel, platform);
   const ps = rel.platforms[rel.platforms.length - 1];
-  if (ps) ps.potential *= 0.4;
+  if (ps) ps.potential *= 0.4 * bundleMul(bundled);
   rel.rereleaseDay = s.day;
   rel.rereleased = true;
+  if (bundled.length) {
+    rel.collection = bundled.map((b) => b.name);
+    for (const b of bundled) {
+      b.rereleased = true;
+      b.rereleaseDay = s.day;
+    }
+  }
 }
 
 export function portCost(s: GameState, rel: Release): number {

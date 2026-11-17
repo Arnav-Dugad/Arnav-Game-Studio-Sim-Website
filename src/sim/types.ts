@@ -468,6 +468,8 @@ export interface Release {
   exclusiveBonus?: { maker: string; amount: number };
   /** Inducted into the Golden Pixel Hall of Classics (the year). */
   classic?: number;
+  /** Re-released as a classics collection: the other games bundled with it. */
+  collection?: string[];
   /** Re-released on a modern storefront (once), and when. */
   rereleased?: boolean;
   rereleaseDay?: number;

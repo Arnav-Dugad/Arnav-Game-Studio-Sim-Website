@@ -2,7 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
-import type { PriceTier } from './types';
+import type { PriceTier, Release } from './types';
 import { priceTierAllowed } from './systems/pricing';
 import { checkIn } from './systems/checkIns';
 import { docOnCancel } from './systems/documentary';
@@ -44,7 +44,7 @@ import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
-import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount } from './systems/release';
+import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount, bundleCost, MAX_BUNDLE } from './systems/release';
 import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
@@ -157,7 +157,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
-  | { type: 'rerelease'; releaseId: string; platform: string }
+  | { type: 'rerelease'; releaseId: string; platform: string; bundle?: string[] }
   | { type: 'focusTest'; projectId: string }
   | { type: 'copyFloor'; from: number; to: number }
   | { type: 'raiseFunding' }
@@ -1439,11 +1439,22 @@ function apply(c: Ctx, a: Action): string | null {
       if (rel.concept.platforms.includes(a.platform)) return 'Already on that platform';
       const pl = platformInfo(s, a.platform);
       if (!pl || !isPlatformAvailable(s, pl)) return 'Platform not available';
-      const cost = rereleaseCost(s, rel);
+      const ids = [...new Set(a.bundle ?? [])].filter((id) => id !== rel.id);
+      if (ids.length > MAX_BUNDLE) return `A collection holds up to ${MAX_BUNDLE + 1} games`;
+      const bundled: Release[] = [];
+      for (const id of ids) {
+        const b = s.releases[id];
+        if (!b) return 'No such game to bundle';
+        const bw = rereleaseBlocked(s, b);
+        if (bw) return `${b.name}: ${bw}`;
+        bundled.push(b);
+      }
+      const cost = rereleaseCost(s, rel) + bundleCost(s, bundled);
       if (s.company.cash < cost) return 'Not enough cash';
       spend(s, 'other_expense', cost);
-      applyRerelease(s, rel, a.platform);
-      pushNews(s, { category: 'studio', headline: `Classic ${rel.name} returns on ${pl.name}`, body: 'A whole new generation discovers it — and old fans buy it again.', tone: 'good' });
+      applyRerelease(s, rel, a.platform, bundled);
+      if (bundled.length) pushNews(s, { category: 'studio', headline: `The ${rel.name} Collection arrives on ${pl.name}`, body: `${rel.name} and ${bundled.length} more classics in one package: ${bundled.map((b) => b.name).join(', ')}.`, tone: 'good' });
+      else pushNews(s, { category: 'studio', headline: `Classic ${rel.name} returns on ${pl.name}`, body: 'A whole new generation discovers it — and old fans buy it again.', tone: 'good' });
       return null;
     }
     case 'designConsole': {

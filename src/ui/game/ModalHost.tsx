@@ -23,7 +23,7 @@ import { SKILLS, type Skill } from '@/data/types';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
-import { EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, SALE_DISCOUNTS, canExpand, canPatch, canRemaster, canRunSale, expansionsOf, patchCost, portCost, rereleaseBlocked, rereleaseCost, saleForecast } from '@/sim/systems/release';
+import { EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, SALE_DISCOUNTS, canExpand, canPatch, canRemaster, canRunSale, expansionsOf, patchCost, portCost, rereleaseBlocked, rereleaseCost, saleForecast, bundleCost, bundleMul, MAX_BUNDLE } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
 import { ROLE_NAMES, SABBATICAL, favouriteGenre, marketSalary, menteesOf, mentorBlocked, moraleTarget, productivity, retirementDay, sabbaticalBlocked, vacationBlocked } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
@@ -431,6 +431,11 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             {r.numberOne && <Pill tone="gold">#1 chart-topper</Pill>}
             {r.classic && <Pill tone="gold">Hall of Classics {r.classic}</Pill>}
             {r.shadowDrop && <Pill tone="tech">Shadow drop</Pill>}
+            {r.collection && (
+              <span title={`Re-released together with ${r.collection.join(', ')}`}>
+                <Pill tone="gold">Collection of {r.collection.length + 1}</Pill>
+              </span>
+            )}
             {r.delisted && <Pill tone="bad">Delisted</Pill>}
             {!r.delisted && licenceDue(r) !== null && (
               <span title="Licensed content: renew or let it be delisted when the licence runs out">
@@ -1344,6 +1349,9 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
   const r = s.releases[releaseId]!;
   const ports = availablePlatforms(s).filter((p) => !r.concept.platforms.includes(p.id));
   const [portChoice, setPort] = useState(ports[0]?.id ?? '');
+  const [bundle, setBundle] = useState<string[]>([]);
+  const classics = Object.values(s.releases).filter((b) => b.id !== releaseId && !rereleaseBlocked(s, b)).sort((a, b) => b.score - a.score);
+  const bundled = bundle.map((id) => s.releases[id]).filter((b): b is NonNullable<typeof b> => !!b && classics.includes(b));
   const port = ports.some((p) => p.id === portChoice) ? portChoice : (ports[0]?.id ?? '');
   const patchWhy = canPatch(s, r);
   const saleWhy = canRunSale(s, r);
@@ -1380,10 +1388,33 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
                     </option>
                   ))}
                 </select>
-                <Button size="sm" icon="sparkle" disabled={!port} onClick={() => run({ type: 'rerelease', releaseId, platform: port }, `${r.name} is back!`)}>
-                  Re-release · {fmtMoney(rereleaseCost(s, r))}
+                <Button size="sm" icon="sparkle" disabled={!port} onClick={() => run({ type: 'rerelease', releaseId, platform: port, bundle: bundled.map((b) => b.id) }, bundled.length ? `The ${r.name} Collection is out!` : `${r.name} is back!`)}>
+                  {bundled.length ? 'Release collection' : 'Re-release'} · {fmtMoney(rereleaseCost(s, r) + bundleCost(s, bundled))}
                 </Button>
               </div>
+              {classics.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-ink3">Or bundle other classics into a collection (up to {MAX_BUNDLE}): more buyers for each loved game added — and they all count as re-released.</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {classics.slice(0, 10).map((b) => {
+                      const on = bundle.includes(b.id);
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          aria-pressed={on}
+                          disabled={!on && bundled.length >= MAX_BUNDLE}
+                          onClick={() => setBundle((x) => (on ? x.filter((y) => y !== b.id) : [...x, b.id]))}
+                          className={cx('rounded-full border px-2 py-0.5 text-[11px] transition disabled:opacity-40', on ? 'border-accent bg-accent text-accent-ink' : 'border-line hover:bg-bg2')}
+                        >
+                          {b.name} ({Math.round(b.score)})
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {bundled.length > 0 && <p className="mt-1 text-ink3">About {Math.round((bundleMul(bundled) - 1) * 100)}% more buyers than {r.name} alone.</p>}
+                </div>
+              )}
             </div>
           ) : tooOld || !ports.length || r.concept.monetization === 'subscription' ? (
             <p className="mt-2 text-ink3">{r.concept.monetization === 'subscription' ? 'Subscription games can’t be ported.' : tooOld ? (r.rereleased ? 'Already re-released as a classic.' : rereleaseBlocked(s, r) ?? 'Too old to port profitably.') : 'No other platforms available.'}</p>
