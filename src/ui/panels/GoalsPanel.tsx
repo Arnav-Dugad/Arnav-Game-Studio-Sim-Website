@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS, MILESTONES, nextMilestone, runScore } from '@/sim/systems/achievements';
+import { SCENARIO_BY_ID, goalProgress, yearsLeft } from '@/sim/systems/scenarios';
 import { formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import { useState } from 'react';
@@ -14,8 +15,41 @@ export default function GoalsPanel() {
   const next = nextMilestone(s);
   const st = s.progress.stats;
   const unlocked = Object.keys(s.progress.achievements).length;
+  const sc = s.scenario ? SCENARIO_BY_ID[s.scenario.id] : undefined;
   return (
     <div>
+      {sc && s.scenario && (
+        <section className="mb-4 rounded-2xl border border-gold/50 bg-gold/10 p-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gold">Scenario · {sc.difficulty}</div>
+            <div className="num text-xs text-ink2">
+              {s.scenario.result === 'won' ? 'Complete!' : s.scenario.result === 'failed' ? 'Failed' : `Deadline ${formatDate(s.scenario.deadlineDay, false)} · ${yearsLeft(s)} yr left`}
+            </div>
+          </div>
+          <div className="font-display text-lg font-semibold">{sc.name}</div>
+          <p className="text-xs text-ink2">{sc.blurb}</p>
+          <ul className="mt-2 space-y-1.5">
+            {sc.goals.map((g, i) => {
+              const pr = goalProgress(s, g);
+              const met = s.scenario!.met[i] !== undefined;
+              return (
+                <li key={i} className="text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Icon name={met ? 'check' : 'target'} size={13} className={met ? 'text-good' : 'text-ink3'} />
+                    <span className={cx('flex-1', met && 'text-good')}>{pr.text}</span>
+                    <span className="num text-ink3">{met ? `done ${formatDate(s.scenario!.met[i]!, false)}` : pr.now}</span>
+                  </div>
+                  {!met && (
+                    <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-bg2">
+                      <div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, Math.max(2, pr.p * 100))}%` }} />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       {next && (
         <div className="mb-4 flex items-center gap-3 rounded-2xl border border-accent/50 bg-accent/10 p-3">
           <Icon name="target" size={22} className="text-accent" />

@@ -1,6 +1,7 @@
 /**
  * The fixed-step simulation loop: 1 tick = 1 day. Subsystems run at their own cadence.
  */
+import { scenarioMonthly } from './systems/scenarios';
 import { employeeOfTheMonth } from './systems/studioLife';
 import { relationsWeekly } from './systems/relations';
 import { ambitionsDaily, ambitionsWeekly } from './systems/ambitions';
@@ -93,6 +94,8 @@ export function tick(c: Ctx): void {
     refreshCandidates(c);
     refreshOffers(c);
     if (d.month % 3 === 1) quarterlyEarnings(c);
+    scenarioMonthly(c);
+    if (s.status !== 'running') return;
     if (d.month === 5 && s.finance.stock && s.day - s.finance.stock.ipoDay > 300) fireEvent(c, 'agm');
     s.progress.stats.peakCash = Math.max(s.progress.stats.peakCash, s.company.cash);
     const v = valuation(s);

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17x';
+export const WHATS_NEW_VERSION = '2026-11-17y';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'flag', title: 'Scenarios', body: 'Found a studio in Scenario mode: seven challenges from Garage Days to Empire — survive the 1983 crash, build Japan’s greatest RPG house, bet on 3D, win Game of the Year as a two-person indie. Goals and the deadline live in the Goals panel.' },
   { icon: 'sparkle', title: 'Live events', body: 'Run seasonal events in your subscription, free-to-play and live-service games (open the game → Post-launch): a Halloween Spooktacular or Winter Festival costs about a month of live income and lifts it for three months — most for well-loved games.' },
   { icon: 'trophy', title: 'Employee of the Month & team retreats', body: 'Each month your top contributor wins Employee of the Month (a medal on their shirt and a morale boost). Once a year, book a team retreat (Staff → Policies): everyone rested, morale up, friendships closer.' },
   { icon: 'people', title: 'Friendships & feuds', body: 'Colleagues on the same project grow close (or clash). Best friends on a team lift morale and team chemistry; feuds drag both down and need your call — mediate, split them up or let it ride. See who gets on with whom on each staff card.' },
@@ -38,6 +39,7 @@ function seen(): boolean {
 
 export function WhatsNew() {
   const [open, setOpen] = useState(() => !seen());
+  const [all, setAll] = useState(false);
   if (!open) return null;
   const close = () => {
     try {
@@ -59,7 +61,7 @@ export function WhatsNew() {
         </button>
       </div>
       <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-        {ITEMS.map((it) => (
+        {(all ? ITEMS : ITEMS.slice(0, 8)).map((it) => (
           <li key={it.title} className="flex gap-2.5 text-xs">
             <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent/15 text-accent">
               <Icon name={it.icon} size={14} />
@@ -71,6 +73,11 @@ export function WhatsNew() {
           </li>
         ))}
       </ul>
+      {ITEMS.length > 8 && (
+        <button type="button" className="mt-2 text-xs font-semibold text-accent hover:underline" onClick={() => setAll((x) => !x)}>
+          {all ? 'Show fewer' : `Show all ${ITEMS.length} updates`}
+        </button>
+      )}
     </section>
   );
 }

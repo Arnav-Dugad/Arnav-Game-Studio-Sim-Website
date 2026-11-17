@@ -816,7 +816,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
   const user = useAuth((a) => a.user);
   const recorded = useRef(false);
   const score = runScore(s);
-  const ending = s.status === 'bankrupt' ? 'Bankrupt' : s.status === 'acquired' ? 'Sold' : 'Retired';
+  const ending = s.scenario?.result === 'won' ? 'Scenario won' : s.scenario?.result === 'failed' ? 'Scenario failed' : s.status === 'bankrupt' ? 'Bankrupt' : s.status === 'acquired' ? 'Sold' : 'Retired';
   useEffect(() => {
     if (recorded.current || !user || s.status === 'running') return;
     recorded.current = true;
@@ -833,14 +833,14 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
       ...(s.cheatsUsed ? { cheats: true } : {}),
     });
   }, [user, s, ending, score]);
-  const storyEnd = s.status === 'retired' && s.endReason?.startsWith('The story');
+  const storyEnd = s.status === 'retired' && (s.endReason?.startsWith('The story') || s.endReason?.startsWith('Scenario'));
   return (
     <Modal open title="The end" dismissable={false}>
       <div className="text-center">
         <div className={cx('mx-auto grid size-16 place-items-center rounded-2xl', s.status === 'bankrupt' ? 'bg-bad/15 text-bad' : 'bg-gold/20 text-gold')}>
           <Icon name={s.status === 'bankrupt' ? 'skull' : 'trophy'} size={32} />
         </div>
-        <h2 className="mt-3 font-display text-2xl font-semibold">{storyEnd ? 'You made it to the present day!' : ending}</h2>
+        <h2 className="mt-3 font-display text-2xl font-semibold">{s.scenario?.result === 'won' ? 'Scenario complete!' : s.scenario?.result === 'failed' ? 'Out of time' : storyEnd ? 'You made it to the present day!' : ending}</h2>
         <p className="mt-1 text-sm text-ink2">{s.endReason}</p>
         <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
           <div className="rounded-xl bg-bg2 p-2">
@@ -866,7 +866,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
               onClose();
             }}
           >
-            Continue in endless mode
+            {s.scenario?.result ? 'Keep playing' : 'Continue in endless mode'}
           </Button>
         )}
         <Button

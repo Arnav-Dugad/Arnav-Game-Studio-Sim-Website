@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { SCENARIOS, SCENARIO_BY_ID } from '@/sim/systems/scenarios';
+import { createScenarioGame } from '@/sim/scenarioSetup';
 import { REGIONS, REGION_BY_ID, type RegionId } from '@/data/regions';
 import { createGame } from '@/sim/create';
 import { fmtMoney } from '@/sim/util';
@@ -272,7 +274,8 @@ export function SlotsScreen() {
         <NewStudioModal
           onClose={() => setCreating(null)}
           onCreate={async (opts) => {
-            const s = createGame({ seed: Math.floor(Math.random() * 2 ** 31), ...opts });
+            const seed = Math.floor(Math.random() * 2 ** 31);
+            const s = opts.scenario ? createScenarioGame({ seed, ...opts, scenario: opts.scenario }) : createGame({ seed, ...opts });
             // A stale list could show a slot as empty that another device has since filled.
             if ((await cloudSlotStatus(user.uid, creating)) === 'taken') {
               setError('That slot already has a save in the cloud (maybe from another device). Refreshing the list — pick an empty slot.');
@@ -309,6 +312,7 @@ interface NewOpts {
   startYear: number;
   founderFocus: 'design' | 'programming' | 'balanced';
   homeRegion: RegionId;
+  scenario: string;
   endless: boolean;
   tutorial: boolean;
   sandbox: boolean;
@@ -325,6 +329,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
     startYear: 1980,
     founderFocus: 'balanced',
     homeRegion: 'na',
+    scenario: '',
     endless: false,
     tutorial: true,
     sandbox: false,
@@ -382,12 +387,43 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
             ]}
           />
         </Field>
+        <Field label="Mode" hint={o.scenario ? SCENARIO_BY_ID[o.scenario]?.blurb : 'The full sandbox story: play as long as you like.'}>
+          <Segmented ariaLabel="Mode" value={o.scenario ? 'scenario' : 'free'} onChange={(v) => set('scenario', v === 'scenario' ? (SCENARIOS[0]?.id ?? '') : '')} options={[{ value: 'free', label: 'Free play' }, { value: 'scenario', label: 'Scenario' }]} />
+        </Field>
+        {o.scenario && (
+          <div className="grid gap-1.5 sm:grid-cols-2" role="radiogroup" aria-label="Scenario">
+            {SCENARIOS.map((sc) => (
+              <button
+                key={sc.id}
+                type="button"
+                role="radio"
+                aria-checked={o.scenario === sc.id}
+                onClick={() => set('scenario', sc.id)}
+                className={cx('rounded-xl border p-2.5 text-left text-xs transition', o.scenario === sc.id ? 'border-accent bg-accent/10' : 'border-line hover:bg-bg2')}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{sc.name}</span>
+                  <span className={cx('rounded-full px-1.5 py-0.5 text-[10px] font-bold', sc.difficulty === 'Easy' ? 'bg-good/15 text-good' : sc.difficulty === 'Medium' ? 'bg-warn/15 text-warn' : 'bg-bad/15 text-bad')}>{sc.difficulty}</span>
+                </div>
+                <div className="text-ink2">{sc.tagline}</div>
+                <div className="num text-ink3">
+                  {sc.year}–{sc.until}
+                  {sc.home && sc.home !== 'na' ? ` · ${REGION_BY_ID[sc.home].name}` : ''}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+        {!o.scenario && (
         <Field label="Home region" hint={`${REGION_BY_ID[o.homeRegion].blurb} Your games ship in its language; translating for other regions is optional.`}>
           <Segmented<RegionId> ariaLabel="Home region" value={o.homeRegion} onChange={(v) => set('homeRegion', v)} options={REGIONS.map((r) => ({ value: r.id, label: r.id === 'row' ? 'Elsewhere' : r.name }))} />
         </Field>
+        )}
+        {!o.scenario && (
         <Field label="Start year" hint={o.startYear === 1980 ? 'The full story — recommended.' : 'Later starts give you the era’s standard tech but tougher, more crowded markets.'}>
           <Segmented ariaLabel="Start year" value={o.startYear} onChange={(v) => set('startYear', v)} options={[1980, 1985, 1995, 2005, 2015].map((y) => ({ value: y, label: String(y) }))} />
         </Field>
+        )}
         <Field label="Difficulty">
           <Segmented<Difficulty>
             ariaLabel="Difficulty"
