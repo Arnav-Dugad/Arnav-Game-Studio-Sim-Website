@@ -8,7 +8,7 @@ import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
 import { canExpand, canPatch, canRemaster, canRunSale, EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, expansionsOf, patchCost, portCost, SALE_DISCOUNTS, saleForecast } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
-import { marketSalary, productivity, moraleTarget, ROLE_NAMES, vacationBlocked } from '@/sim/systems/staff';
+import { marketSalary, productivity, moraleTarget, retirementDay, ROLE_NAMES, vacationBlocked } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
 import { runScore } from '@/sim/systems/achievements';
 import { qualityToScore } from '@/sim/systems/dev';
@@ -489,6 +489,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
           <div className="text-sm text-ink2">
             {st.level} {ROLE_NAMES[st.role]}
             {st.spec && ` · ${SPECS.find((x) => x.id === st.spec)?.label}`} · since {fromDay(st.hiredDay).year} · {st.gamesShipped} games shipped
+            {retirementDay(st) !== null && retirementDay(st)! - s.day < 5 * 365 && ` · retires around ${fromDay(retirementDay(st)!).year}`}
           </div>
           {person && <div className="mt-1 text-xs text-gold">★ {person.knownFor}</div>}
           <div className="mt-2">

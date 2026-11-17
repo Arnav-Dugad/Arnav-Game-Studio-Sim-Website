@@ -418,7 +418,39 @@ export function updateStaffMonthly(c: Ctx): void {
       pushNews(s, { category: 'staff', headline: `${st.name} has resigned`, body: `Citing ${reason}. Morale was ${Math.round(st.morale)}%.`, tone: 'bad' });
     }
   }
+  retirements(s);
   s.company.moraleMods = s.company.moraleMods.filter((m) => m.until > s.day);
+}
+
+/** Years after hiring when someone retires (25–35, stable per person). */
+export function retirementYears(st: Staff): number {
+  let h = 0;
+  for (let i = 0; i < st.id.length; i++) h = (h * 31 + st.id.charCodeAt(i)) >>> 0;
+  return 25 + (h % 11);
+}
+
+/** Day a staff member will retire (never for the founder). */
+export function retirementDay(st: Staff): number | null {
+  return st.role === 'founder' ? null : Math.round(st.hiredDay + retirementYears(st) * 365.25);
+}
+
+/** Long careers end with a send-off: the veteran joins the studio's alumni and the team celebrates. */
+function retirements(s: GameState): void {
+  for (const st of Object.values(s.staff)) {
+    const day = retirementDay(st);
+    if (day === null || s.day < day) continue;
+    const years = Math.round((s.day - st.hiredDay) / 365.25);
+    (s.alumni ??= []).push({ name: st.name, role: st.role, years, games: st.gamesShipped, day: s.day, legend: !!st.personId });
+    if (s.alumni.length > 120) s.alumni.shift();
+    removeStaff(s, st.id);
+    s.company.moraleMods.push({ v: 3, until: s.day + 30, label: `${st.name}'s farewell party` });
+    pushNews(s, {
+      category: 'staff',
+      headline: `${st.name} retires after ${years} years`,
+      body: `${st.gamesShipped} game${st.gamesShipped === 1 ? '' : 's'} shipped. The team throws a farewell party; the desk stays decorated for a week.`,
+      tone: 'good',
+    });
+  }
 }
 
 export function removeStaff(s: GameState, id: string): void {

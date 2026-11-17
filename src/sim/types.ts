@@ -684,6 +684,8 @@ export interface GameState {
   subscription?: SubscriptionState;
   /** Esports leagues you run. */
   leagues?: EsportsLeague[];
+  /** Veterans who retired from the studio. */
+  alumni?: { name: string; role: Role; years: number; games: number; day: number; legend: boolean }[];
   /** Head-to-head record against each rival (company id → record). */
   rivalry?: Record<Id, RivalryRecord>;
   /** Persistent cheat switches (see sim/cheats.ts). */

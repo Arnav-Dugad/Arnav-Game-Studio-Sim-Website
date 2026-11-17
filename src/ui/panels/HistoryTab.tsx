@@ -46,6 +46,7 @@ export function studioHistory(s: GameState): Entry[] {
     out.push({ day: hw.launchDay, icon: hw.kind === 'handheld' ? 'handheld' : 'controller', text: `The ${hw.name} launches`, sub: `Your own ${hw.kind}`, tone: 'gold' });
     if (hw.endDay !== null) out.push({ day: hw.endDay, icon: 'box', text: `The ${hw.name} is discontinued`, sub: `${fmtUnits(hw.unitsSold)} units sold` });
   }
+  for (const a of s.alumni ?? []) out.push({ day: a.day, icon: 'heart', text: `${a.name} retires`, sub: `${a.years} years at the studio · ${a.games} game${a.games === 1 ? '' : 's'} shipped${a.legend ? ' · a legend' : ''}`, tone: 'good' });
   if (s.subscription) out.push({ day: s.subscription.launchedDay, icon: 'people', text: `${s.subscription.name} launches`, sub: `Peak ${fmtUnits(s.subscription.peak)} subscribers`, tone: 'good' });
   if (s.finance.stock) out.push({ day: s.finance.stock.ipoDay, icon: 'chart', text: `${s.company.name} goes public`, tone: 'gold' });
   return out.sort((a, b) => b.day - a.day);

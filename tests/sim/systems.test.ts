@@ -662,6 +662,28 @@ describe('launch titles and series expectations', () => {
   });
 });
 
+describe('retirement', () => {
+  it('veterans retire after 25–35 years with a send-off; the founder never does', async () => {
+    const { retirementDay, retirementYears } = await import('../../src/sim/systems/staff');
+    const s = game(1980, 4);
+    const cand = generateCandidate(s, new Rng([5, 6, 7, 8]), { role: 'artist' });
+    const { candidateToStaff } = await import('../../src/sim/systems/staff');
+    s.staff.vet = candidateToStaff(s, cand, 'vet', 30_000);
+    const vet = s.staff.vet!;
+    expect(retirementYears(vet)).toBeGreaterThanOrEqual(25);
+    expect(retirementYears(vet)).toBeLessThanOrEqual(35);
+    expect(retirementDay(s.staff.founder!)).toBeNull();
+    vet.hiredDay = s.day - Math.ceil(retirementYears(vet) * 365.25) - 5;
+    vet.morale = 100;
+    vet.loyalty = 100;
+    advance(s, 35);
+    expect(s.staff.vet).toBeUndefined();
+    expect(s.alumni?.[0]?.name).toBe(vet.name);
+    expect(s.company.moraleMods.some((m) => m.label.includes('farewell'))).toBe(true);
+    expect(s.staff.founder).toBeDefined();
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);
