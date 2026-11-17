@@ -81,7 +81,9 @@ export function postMortem(r: Release): PostMortem {
   for (const part of r.why.user?.parts ?? []) {
     if (part.kind !== 'add' || part.label === 'Players vary' || part.label === 'Bugs' || part.label.startsWith('Backers waited')) continue;
     const w = Math.abs(part.value) / 25;
-    if (part.label === 'Feels overpriced') push(false, { text: 'Players felt it was overpriced', lesson: 'Save premium prices for games you know are great', weight: 0.1 });
+    if (part.label === 'Worth the wait') push(true, { text: 'Players forgave the delay — it was worth the wait', weight: 0.05 });
+    else if (part.label.startsWith('Delayed')) push(false, { text: 'A long public delay, and it still disappointed', lesson: 'If you delay, use the time to fix what matters', weight: 0.09 });
+    else if (part.label === 'Feels overpriced') push(false, { text: 'Players felt it was overpriced', lesson: 'Save premium prices for games you know are great', weight: 0.1 });
     else if (part.label === 'Great value') push(true, { text: 'Players loved the budget price', weight: 0.06 });
     else if (part.label === 'Below the studio’s usual standard') push(false, { text: `Fans of your ${genre} games expected better`, lesson: 'Your speciality sets the bar — give it the time it needs', weight: 0.12 });
     else if (part.label.startsWith('Didn’t live up')) push(false, { text: 'Players felt it didn’t live up to the hype', lesson: 'Only build big hype for games that can deliver', weight: w });

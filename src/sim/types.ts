@@ -338,6 +338,8 @@ export interface GameProject {
   paysCliffhanger?: boolean;
   /** Someone's passion project (they pitched it): their staff id. */
   passion?: string;
+  /** Weeks it was publicly delayed after being announced. */
+  delayedWeeks?: number;
   /** A documentary crew is filming its making (systems/documentary.ts): since when, and crunch days caught on camera. */
   documentary?: { day: number; crunchDays: number };
   /** A co-development partner: their contribution and revenue share. */

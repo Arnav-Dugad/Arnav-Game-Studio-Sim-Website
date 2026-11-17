@@ -220,7 +220,7 @@ function GameCard({ p }: { p: GameProject }) {
         <Button size="sm" variant={p.crunch || pledged(s) ? 'danger' : 'secondary'} icon="fire" onClick={() => run({ type: 'setCrunch', projectId: p.id, on: !p.crunch })} title={pledged(s) && !p.crunch ? 'Breaks your no-crunch pledge, publicly: reputation −5 and a bitter team (morale −8 for four months)' : '+35% output, +60% bugs, burns people out'}>
           {p.crunch ? 'Stop crunch' : pledged(s) ? 'Crunch (breaks pledge!)' : 'Crunch'}
         </Button>
-        <Button size="sm" icon="hourglass" onClick={() => run({ type: 'delay', projectId: p.id, weeks: 2 })} title="Two more weeks of polish: more points, fewer bugs, more cost">
+        <Button size="sm" icon="hourglass" onClick={() => run({ type: 'delay', projectId: p.id, weeks: 2 })} title={p.announcedDay !== undefined ? 'Two more weeks of polish (more points, fewer bugs, more cost). It’s public: a little hype lost — forgiven if the game turns out great, remembered if it doesn’t.' : 'Two more weeks of polish: more points, fewer bugs, more cost'}>
           Polish +2w
         </Button>
         {p.phase <= 2 && p.focusTest?.phase !== Math.min(2, p.phase) && (

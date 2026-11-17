@@ -530,6 +530,7 @@ function apply(c: Ctx, a: Action): string | null {
       const weeks = clamp(Math.round(a.weeks), 1, BALANCE.DELAY_WEEKS_MAX);
       p.extraDays += weeks * 7;
       if (p.announcedDay !== undefined) {
+        p.delayedWeeks = (p.delayedWeeks ?? 0) + weeks;
         p.hype = Math.max(0, p.hype - 0.05 * weeks);
         pushNews(s, { category: 'studio', headline: `${p.concept.name} delayed by ${weeks} weeks`, tone: 'neutral' });
       }
