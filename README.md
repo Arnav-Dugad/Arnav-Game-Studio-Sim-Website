@@ -33,6 +33,13 @@
   - IPO, stock price and board, acquisitions and subsidiaries, and hostile takeovers.
   - Bankruptcy is a real fail state.
 - **Reviews.** Critic outlets with their own biases and generated blurbs, user scores, franchises, fans, fatigue and yearly awards.
+- **Runs a big studio without busywork.**
+  - **Studio Overview (O):** lists everything that needs attention, each with a one-click fix.
+  - **Team tab:** filters, search, grouping and compact rows for hundreds of people, plus bulk actions (assign, research, vacation, training, raises).
+  - **Team pickers:** every one has search and a "Best team" option ranked by fit for the job.
+  - **Hiring:** hire several people at once.
+  - **Building:** drag to place a row of furniture, or click "Desks for everyone".
+  - **Automation policies:** idle staff research, burnt-out staff go on vacation, and research keeps going.
 - **Launch titles and expectations.** Ship in a platform's first months to sell to starved early adopters. Sequels are judged against the series' best, so disappoint the fans and some drift away.
 - **Open betas.** From 2005, test with real players during polish: fewer bugs, more hype and an early read on the score.
 - **A studio that ages.** Veterans retire after 30–40 years with a farewell party and join your alumni. Each decade ends with a look back at its Games of the Year, and winning a Golden Pixel award gets you a proper ceremony.
