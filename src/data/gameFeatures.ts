@@ -47,6 +47,7 @@ export const GAME_FEATURES: GameFeatureDef[] = [
   { id: 'loot_boxes', name: 'Loot boxes', year: 2009, work: 0.03, fits: {}, misfit: 1, sales: 1.15, user: -5, monet: ['f2p', 'live_service'], desc: 'Randomised paid rewards. Very profitable, widely disliked — and regulators are watching.' },
   { id: 'official_license', name: 'Official league licence', year: 1988, work: 0.02, cost: 150_000, fits: { sports: 1.042, racing: 1.024 }, misfit: 0.95, sales: 1.1, desc: 'Real teams, real players, real tracks. Expensive — and fans of the sport won’t buy anything else.' },
   { id: 'celebrity_cast', name: 'Celebrity cast', year: 2002, work: 0.03, cost: 90_000, fits: { adventure: 1.018, rpg: 1.012, action: 1.012, shooter: 1.012 }, misfit: 0.99, sales: 1.06, desc: 'Famous actors voice the leads. A marketing magnet; the critics don’t care much.' },
+  { id: 'collectors_edition', name: 'Collector’s edition', year: 1995, work: 0.01, cost: 50_000, fits: {}, misfit: 1, sales: 1.04, user: 1, monet: ['premium', 'premium_dlc'], desc: 'A big box with an art book, a soundtrack CD and a figurine. Fans queue for it.' },
   { id: 'battle_pass', name: 'Battle pass', year: 2017, work: 0.05, fits: {}, misfit: 1, sales: 1.12, user: -3, monet: ['f2p', 'live_service'], desc: 'Seasonal rewards that keep players paying. Effective, and a little resented.' },
 ];
 
