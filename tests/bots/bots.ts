@@ -183,6 +183,7 @@ function manageGames(s: GameState, aggressive: boolean): void {
     if (p.awaitingGate) dispatch(s, { type: 'continueGate', projectId: p.id });
     if (p.announcedDay === undefined && p.phase >= 1) dispatch(s, { type: 'announce', projectId: p.id });
     if (aggressive) dispatch(s, { type: 'setCrunch', projectId: p.id, on: p.phase >= 1 });
+    else if (p.phase === 2 && !p.beta) dispatch(s, { type: 'openBeta', projectId: p.id });
     // marketing: spend up to ~8% of cash per campaign
     if (p.announcedDay !== undefined && p.campaigns.length < (aggressive ? 4 : 2)) {
       const yr = yearOf(s);
@@ -407,6 +408,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => (s.hardware.length ? { type: rng.chance(0.5) ? 'retireConsole' : 'cancelConsole', id: rng.pick(s.hardware).id } : null),
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
+  (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'openBeta', projectId: rng.pick(p) } : null; },
   (s, rng) => { const r = Object.values(s.releases); return r.length ? { type: 'foundLeague', releaseId: rng.pick(r).id, tier: rng.pick(['regional', 'pro', 'world', 'mega'] as never[]), name: rng.chance(0.1) ? '' : 'Fuzz League' } : null; },
   (s, rng) => (s.leagues?.length ? { type: 'closeLeague', id: rng.pick(s.leagues).id } : null),
   (s, rng) => { const r = Object.values(s.releases); return r.length ? { type: 'runSale', releaseId: rng.pick(r).id, discount: rng.pick([0.25, 0.5, 0.75, 0.9] as never[]) } : null; },

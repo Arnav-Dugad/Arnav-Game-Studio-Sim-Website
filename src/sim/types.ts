@@ -184,6 +184,8 @@ export interface GameProject {
   /** Waiting for player input at a phase gate. */
   awaitingGate: boolean;
   qualityPreview?: Breakdown;
+  /** Public beta run during polish: when, and the score beta players predicted. */
+  beta?: { day: number; predicted: number };
 }
 
 export interface ContractProject {

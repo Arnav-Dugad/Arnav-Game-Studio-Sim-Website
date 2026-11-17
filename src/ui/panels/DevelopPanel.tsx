@@ -12,7 +12,7 @@ import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore } from '@/sim/systems/dev';
 import { expansionPlatforms, expansionSizeOk, salesPotential } from '@/sim/systems/release';
-import { dealAdvanceFor, devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
+import { betaBlocked, betaCost, dealAdvanceFor, devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { Cover } from '../art/Cover';
@@ -153,6 +153,11 @@ function GameCard({ p }: { p: GameProject }) {
           {p.team.length > 8 && <span className="grid size-6 place-items-center rounded-full bg-bg2 text-[10px] ring-2 ring-[var(--panel)]">+{p.team.length - 8}</span>}
         </div>
         <span>
+          {p.beta && (
+            <>
+              Beta says <b className="num text-ink">~{p.beta.predicted}</b> ·{' '}
+            </>
+          )}
           Hype <b className="num text-ink">{p.hype.toFixed(2)}</b>
           {p.announcedDay === undefined && ' · unannounced'}
         </span>
@@ -181,6 +186,11 @@ function GameCard({ p }: { p: GameProject }) {
         <Button size="sm" icon="hourglass" onClick={() => run({ type: 'delay', projectId: p.id, weeks: 2 })} title="Two more weeks of polish: more points, fewer bugs, more cost">
           Polish +2w
         </Button>
+        {p.phase === 2 && !p.beta && fromDay(s.day).year >= 2005 && (
+          <Button size="sm" icon="people" disabled={!!betaBlocked(s, p)} onClick={() => run({ type: 'openBeta', projectId: p.id })} title={betaBlocked(s, p) ?? `Two more weeks of polish with real players: a quarter of the bugs found, +0.15 hype and an early read on the score (${fmtMoney(betaCost(s, p))})`}>
+            Open beta
+          </Button>
+        )}
         {!p.cut && p.phase < 3 && (
           <Button size="sm" icon="minus" onClick={() => run({ type: 'cutFeatures', projectId: p.id })} title="Remaining phases 25% shorter, small quality penalty">
             Cut features

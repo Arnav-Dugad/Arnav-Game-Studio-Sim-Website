@@ -14,7 +14,7 @@ import { clamp } from './breakdown';
 import { fromDay } from './calendar';
 import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
-import { benchmarkPoints, engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
+import { benchmarkPoints, engineBuildPoints, engineTechFor, gameQuality, phaseLength, qualityToScore } from './systems/dev';
 import { resolveEvent } from './systems/events';
 import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
@@ -98,6 +98,7 @@ export type Action =
   | { type: 'refreshCandidates' }
   | { type: 'patchGame'; releaseId: string }
   | { type: 'cheat'; cheat: CheatOp }
+  | { type: 'openBeta'; projectId: string }
   | { type: 'foundLeague'; releaseId: string; tier: LeagueTier; name: string }
   | { type: 'closeLeague'; id: string }
   | { type: 'runSale'; releaseId: string; discount: SaleDiscount }
@@ -158,6 +159,20 @@ function assignTeam(s: GameState, projectId: string, team: string[]): void {
     const st = s.staff[id];
     if (st) st.assignment = { kind: 'project', id: projectId };
   }
+}
+
+/** Public betas (2005+): two extra weeks in polish, a quarter of the bugs found, some hype, and a score read. */
+export const BETA_DAYS = 14;
+export function betaCost(s: GameState, p: GameProject): number {
+  return money({ small: 4_000, medium: 10_000, large: 25_000, aaa: 60_000 }[p.concept.size], s.day);
+}
+export function betaBlocked(s: GameState, p: GameProject): string | null {
+  if (fromDay(s.day).year < 2005) return 'Public betas take off with online distribution (2005+)';
+  if (p.beta) return 'Already ran a beta';
+  if (p.phase !== 2) return 'Betas happen during polish';
+  if (p.announcedDay === undefined) return 'Announce the game first';
+  if (s.company.cash < betaCost(s, p)) return `Needs ${fmtMoney(betaCost(s, p))} for servers`;
+  return null;
 }
 
 /** A publisher pays the advance for the game size it offered for; a smaller game gets a proportionally smaller one. */
@@ -861,6 +876,21 @@ function apply(c: Ctx, a: Action): string | null {
       const lg = (s.leagues ?? []).find((l) => l.id === a.id && l.status === 'live');
       if (!lg) return 'No such league';
       closeLeague(s, lg);
+      return null;
+    }
+    case 'openBeta': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      const why = betaBlocked(s, p);
+      if (why) return why;
+      const cost = betaCost(s, p);
+      spend(s, 'servers', cost);
+      p.extraDays += BETA_DAYS;
+      p.bugs *= 0.75;
+      p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + 0.15);
+      const est = qualityToScore(gameQuality(s, p, true).total);
+      p.beta = { day: s.day, predicted: clamp(Math.round(est + c.rng.normal(0, 2)), 1, 100) };
+      pushNews(s, { category: 'studio', headline: `${p.concept.name} opens a public beta`, body: `Players are hunting bugs, and the buzz is building. Early impressions suggest a score around ${p.beta.predicted}.`, tone: 'good' });
       return null;
     }
     case 'runSale': {

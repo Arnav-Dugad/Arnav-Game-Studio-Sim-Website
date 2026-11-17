@@ -591,6 +591,36 @@ describe('rivalries', () => {
   });
 });
 
+describe('open betas', () => {
+  it('in polish, once, after announcing: fewer bugs, more hype, a score read and two more weeks', () => {
+    const s = game(2008, 9);
+    s.company.cash = 1e7;
+    const p = startSmall(s, { platforms: [availablePlatforms(s).find((x) => x.kind === 'computer')!.id] });
+    expect(dispatch(s, { type: 'openBeta', projectId: p.id }).ok).toBe(false); // not in polish
+    for (let i = 0; i < 200 && p.phase < 2; i++) {
+      advance(s, 1);
+      if (p.awaitingGate) dispatch(s, { type: 'continueGate', projectId: p.id });
+      s.pendingEvents = [];
+    }
+    expect(dispatch(s, { type: 'openBeta', projectId: p.id }).ok).toBe(false); // not announced
+    dispatch(s, { type: 'announce', projectId: p.id });
+    p.bugs = 40;
+    const hype = p.hype;
+    const extra = p.extraDays;
+    expect(dispatch(s, { type: 'openBeta', projectId: p.id }).ok).toBe(true);
+    expect(p.bugs).toBe(30);
+    expect(p.hype).toBeGreaterThan(hype);
+    expect(p.extraDays).toBe(extra + 14);
+    expect(p.beta!.predicted).toBeGreaterThan(0);
+    expect(dispatch(s, { type: 'openBeta', projectId: p.id }).ok).toBe(false); // once
+    const old = game(1995, 9);
+    const q = startSmall(old);
+    q.phase = 2;
+    q.announcedDay = old.day;
+    expect(dispatch(old, { type: 'openBeta', projectId: q.id }).ok).toBe(false); // too early in history
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);
