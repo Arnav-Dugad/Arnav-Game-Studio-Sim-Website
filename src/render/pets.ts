@@ -79,6 +79,8 @@ const DOG_LINES = (n: string) => [`Who’s a good dog?`, `Hi ${n}!`, `${n}! 🐶
 export class PetSystem {
   private pets = new Map<string, Pet>();
   private key = '';
+  /** Reduced motion: no following or zoomies. */
+  private calm = false;
 
   constructor(private layer: Container) {}
 
@@ -168,6 +170,8 @@ export class PetSystem {
           p.label.anchor.set(0.5, 1);
           p.c.addChild(p.label);
         }
+        p.label.style.fill = night ? 0xf1ede6 : 0x2a2622;
+        p.label.style.stroke = { color: night ? 0x15130f : 0xffffff, width: 3 };
         p.label.text = `${p.name}
 ${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'napping' : p.mode === 'desk' ? 'on a keyboard' : p.mode === 'follow' ? 'following someone' : p.mode === 'walk' ? 'exploring' : 'hanging out'}`;
         p.label.visible = true;
@@ -248,14 +252,14 @@ ${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'nap
       return;
     }
     const walkers = people.filter((x) => x.mode === 'walk');
-    if (r < 0.55 && walkers.length) {
+    if (r < 0.55 && walkers.length && !this.calm) {
       const w = walkers[Math.floor(Math.random() * walkers.length)]!;
       p.follow = w.id;
       p.mode = 'follow';
       p.wait = 8 + Math.random() * 8;
       return;
     }
-    if (r < 0.7) {
+    if (r < 0.7 && !this.calm) {
       // zoomies: a quick dash through a few spots
       const pts: [number, number][] = [];
       for (let i = 0; i < 3; i++) {
@@ -283,6 +287,7 @@ ${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'nap
 
   update(s: GameState, floor: number, dt: number, host: PetHost, reducedMotion: boolean): void {
     this.sync(s, floor);
+    this.calm = reducedMotion;
     if (!this.pets.size) return;
     let people: PetPerson[] | null = null;
     const peopleNow = () => (people ??= host.people());

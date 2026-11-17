@@ -364,7 +364,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   if (a.sad > 0) tilt += i.face * 0.08;
   r.root.rotation = i.reducedMotion ? 0 : tilt;
   let face = i.face;
-  if (i.pose === 'sit' && !walking) {
+  if (i.pose === 'sit' && !walking && !i.reducedMotion) {
     a.look -= dt;
     if (a.look <= 0) {
       a.look = a.lookDir === 1 ? 1.2 + Math.random() * 1.5 : 5 + Math.random() * 9;
