@@ -4,9 +4,9 @@
  * first game. Each has a deadline. Fulfil it and they're happier and far more loyal; let it lapse and
  * they feel ignored.
  */
-import { GENRES, GENRE_BY_ID } from '@/data/genres';
-import { ITEMS } from '@/data/facilities';
-import type { GenreId } from '@/data/types';
+import { GENRES, GENRE_BY_ID } from '../../data/genres';
+import { ITEMS } from '../../data/facilities';
+import type { GenreId } from '../../data/types';
 import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { Ambition, GameState, Staff } from '../types';
