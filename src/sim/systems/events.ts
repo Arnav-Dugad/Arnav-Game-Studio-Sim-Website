@@ -870,7 +870,7 @@ export const EVENT_DEFS: EventDef[] = [
       const first = st.name.split(' ')[0];
       return {
         title: `${first} has a pitch`,
-        body: `${st.name} corners you by the coffee machine with a sketchbook: a ${pitchText(idea)}. “I’ve wanted to make this since I was a kid.”`,
+        body: `${st.name} corners you by the coffee machine with a sketchbook: ${pitchText(idea, true)}. “I’ve wanted to make this since I was a kid.”`,
         options: [
           { id: 'yes', label: 'Greenlight it', preview: `It waits in the new-game screen for six months. Make it with ${first} on the team: a passion project (fresh ideas, a very happy ${first}).` },
           { id: 'no', label: 'Not right now', preview: `${first} is a little deflated (a small mood dip)` },

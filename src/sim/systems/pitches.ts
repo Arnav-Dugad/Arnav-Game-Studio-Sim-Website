@@ -39,8 +39,10 @@ export function makePitch(s: GameState, rng: Rng, st: Staff): { genre: GenreId; 
   return { genre, topic: rng.pick(topics).id };
 }
 
-export function pitchText(p: { genre: GenreId; topic: string }): string {
-  return `${TOPIC_BY_ID[p.topic]?.name ?? p.topic} ${GENRE_BY_ID[p.genre].name.toLowerCase()} game`;
+/** "an Insects strategy game" (with `article`), or "Insects strategy game". */
+export function pitchText(p: { genre: GenreId; topic: string }, article = false): string {
+  const text = `${TOPIC_BY_ID[p.topic]?.name ?? p.topic} ${GENRE_BY_ID[p.genre].name.toLowerCase()} game`;
+  return article ? `${/^[aeiou]/i.test(text) ? 'an' : 'a'} ${text}` : text;
 }
 
 /** At the start of a game: if it's the greenlit pitch and the pitcher is on the team, it's their passion project. */
