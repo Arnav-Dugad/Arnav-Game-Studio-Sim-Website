@@ -19,6 +19,8 @@ export interface AmbienceSnapshot {
   year: number;
   /** Game running (not paused). */
   active: boolean;
+  /** It's raining outside. */
+  rain?: boolean;
 }
 
 interface Prefs {
@@ -53,6 +55,7 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let noise: AudioBuffer | null = null;
 let murmurGain: GainNode | null = null;
+let rainGain: GainNode | null = null;
 let roomGain: GainNode | null = null;
 let loops: AudioBufferSourceNode[] = [];
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -213,6 +216,9 @@ function tick(): void {
   const rate = Math.min(1.6, s.working / 6) * quiet;
   let n = Math.floor(rate * 3 + Math.random() * rate * 2);
   while (n-- > 0) burst(t + Math.random() * 0.1, mech ? 2200 + Math.random() * 900 : 3400 + Math.random() * 1500, mech ? 4 : 6, mech ? 0.035 : 0.02, (mech ? 0.05 : 0.025) * (0.6 + Math.random() * 0.6));
+  // rain on the windows: a soft hiss and the odd fat drop
+  rainGain?.gain.setTargetAtTime(s.rain ? 0.018 : 0, t, 1.5);
+  if (s.rain && Math.random() < 0.35) burst(t + Math.random() * 0.1, 900 + Math.random() * 1600, 8, 0.03, 0.012 * (0.5 + Math.random()));
   // the coffee machine
   coffeeT -= 0.1;
   if (coffeeT <= 0) {
@@ -245,6 +251,7 @@ export const ambience = {
     if (!loops.length) {
       roomGain = bed('lowpass', 220, 0.5);
       murmurGain = bed('bandpass', 420, 0.9);
+      rainGain = bed('highpass', 1800, 0.4);
     }
     timer = setInterval(tick, 100);
   },
@@ -259,7 +266,7 @@ export const ambience = {
       }
     }
     loops = [];
-    roomGain = murmurGain = null;
+    roomGain = murmurGain = rainGain = null;
   },
   isOn: () => prefs.on,
   volume: () => prefs.volume,

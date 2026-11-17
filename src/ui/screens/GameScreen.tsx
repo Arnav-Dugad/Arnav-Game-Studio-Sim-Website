@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isRainy } from '@/render/weather';
 import { OfficeCanvas } from '@/render/OfficeCanvas';
 import type { OfficeRenderer } from '@/render/OfficeRenderer';
 import { tierDef } from '@/sim/systems/office';
@@ -45,7 +46,8 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       const r = rendererRef.current;
       const g = useGame.getState();
       if (!r || !g.s) return null;
-      return { ...r.ambienceStats(), year: fromDay(g.s.day).year, active: g.speed > 0 };
+      const d = fromDay(g.s.day);
+      return { ...r.ambienceStats(), year: d.year, active: g.speed > 0, rain: isRainy(g.s.day, d.month) };
     });
     return () => ambience.stop();
   }, []);
