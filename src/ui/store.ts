@@ -73,7 +73,7 @@ interface GameStore {
   selectedStaff: string | null;
   lastSavedDay: number;
   /** Pre-fill for the new-game wizard (e.g. planning a sequel). */
-  wizardPreset: { franchiseId?: string; remasterOf?: string } | null;
+  wizardPreset: { franchiseId?: string; remasterOf?: string; expansionOf?: string } | null;
   /** Bumped whenever a preset is set, so an already-open wizard remounts with it. */
   wizardNonce: number;
   onMonth: ((s: GameState) => void) | null;

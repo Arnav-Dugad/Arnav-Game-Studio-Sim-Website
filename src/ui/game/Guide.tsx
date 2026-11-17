@@ -49,6 +49,8 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Watch the market', 'Platforms rise and fall on their real dates. Don’t be the last studio making cartridges in 1997.'],
       ['Keep fans happy', 'Good games build franchise fans who buy sequels — but sequels too close together cause fatigue.'],
       ['Patches, ports & remasters', 'Open a released game (Games panel) to patch bugs, port it to new platforms, or — once a 70+ game is 8 years old — remaster it for about half the work of a new game.'],
+      ['Expansion packs', 'From 1987, a paid game scoring 65+ can get up to two expansions within 5 years of launch. They take about 40% of the work, sell at 60% of the price mostly to people who own the base game, and bring lapsed players back to it. Not for cartridge platforms or free-to-play games.'],
+      ['Storefront sales', 'Once most copies sell digitally, a paid game at least 4 months old can go 25%, 50% or 75% off every 6 months. Half price usually earns the most; 75% off moves the most copies (and wins fans before a sequel). Each sale draws a little less than the last.'],
     ],
   },
 ];

@@ -20,7 +20,7 @@ import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
-import { applyPatch, applyPort, canPatch, canRemaster, patchCost, portCost } from './systems/release';
+import { applyPatch, applyPort, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, SALE_DISCOUNTS, type SaleDiscount } from './systems/release';
 import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, tierDef, touchOffice } from './systems/office';
@@ -29,7 +29,7 @@ import { candidateToStaff, marketSalary, refreshCandidates, removeStaff, vacatio
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { Focus3, GameProject, GameState, Size, Specialisation } from './types';
-import { addRep, aOrAn, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from './util';
+import { addRep, aOrAn, earn, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
 
 export interface StartGamePayload {
   name: string;
@@ -43,6 +43,8 @@ export interface StartGamePayload {
   franchiseId?: string;
   dealId?: string;
   remasterOf?: string;
+  /** Release id of the base game, for an expansion pack. */
+  expansionOf?: string;
   team: string[];
   focus?: [Focus3, Focus3, Focus3];
 }
@@ -93,6 +95,7 @@ export type Action =
   | { type: 'tutorial'; step: number }
   | { type: 'refreshCandidates' }
   | { type: 'patchGame'; releaseId: string }
+  | { type: 'runSale'; releaseId: string; discount: SaleDiscount }
   | { type: 'portGame'; releaseId: string; platform: string }
   | { type: 'secondaryOffering'; pct: number }
   | { type: 'marketResearch'; genre: GenreId; topic: string }
@@ -228,6 +231,19 @@ function apply(c: Ctx, a: Action): string | null {
         if (g.genre !== orig.concept.genre || g.topic !== orig.concept.topic) return 'A remaster keeps the original genre and topic';
         if (g.franchiseId !== (orig.concept.franchiseId && s.franchises[orig.concept.franchiseId] ? orig.concept.franchiseId : undefined)) return 'A remaster belongs to the original’s franchise';
       }
+      const base = g.expansionOf ? s.releases[g.expansionOf] : undefined;
+      if (g.expansionOf) {
+        if (!base) return 'Unknown game to expand';
+        if (orig) return 'A game can’t be both a remaster and an expansion';
+        const why = canExpand(s, base);
+        if (why) return why;
+        if (g.genre !== base.concept.genre || g.topic !== base.concept.topic) return 'An expansion keeps the base game’s genre and topic';
+        if (g.franchiseId !== base.concept.franchiseId) return 'An expansion belongs to the base game’s franchise';
+        if (g.monetization !== 'premium') return 'Expansion packs are sold as one-off purchases';
+        if (!expansionSizeOk(base, g.size)) return 'An expansion can’t be bigger than its base game';
+        const ok = expansionPlatforms(s, base);
+        if (g.platforms.some((pid) => !ok.includes(pid))) return 'An expansion ships on the base game’s platforms';
+      }
       // dev kits
       const kitCost = g.platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
       if (kitCost > 0 && kitCost > s.company.cash) return `Need ${fmtMoney(kitCost)} for dev kits`;
@@ -258,11 +274,12 @@ function apply(c: Ctx, a: Action): string | null {
           engineId: g.engineId,
           franchiseId: g.franchiseId,
           remasterOf: orig?.id,
+          expansionOf: base?.id,
           deal: deal ? { publisherId: deal.publisherId, advance: deal.advance, royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
         },
         phase: 0,
         phaseDay: 0,
-        phaseDays: [0, 1, 2].map((ph) => Math.max(4, Math.round(phaseLength(g.size, ph) * (orig ? BALANCE.REMASTER_WORK : 1)))) as [number, number, number],
+        phaseDays: [0, 1, 2].map((ph) => Math.max(4, Math.round(phaseLength(g.size, ph) * (orig ? BALANCE.REMASTER_WORK : base ? BALANCE.EXPANSION_WORK : 1)))) as [number, number, number],
         focus: g.focus ?? defaultFocus(g.genre),
         points: { engine: 0, gameplay: 0, story: 0, level: 0, dialogue: 0, ai: 0, world: 0, graphics: 0, sound: 0 },
         design: 0,
@@ -793,6 +810,16 @@ function apply(c: Ctx, a: Action): string | null {
       spend(s, 'other_expense', cost);
       const gain = applyPatch(s, rel);
       pushNews(s, { category: 'studio', headline: `Patch for ${rel.name} fixes bugs (user score +${gain})`, tone: 'good' });
+      return null;
+    }
+    case 'runSale': {
+      const rel = s.releases[a.releaseId];
+      if (!rel) return 'No such game';
+      if (!SALE_DISCOUNTS.includes(a.discount)) return 'Pick 25%, 50% or 75% off';
+      const why = canRunSale(s, rel);
+      if (why) return why;
+      const extra = applySale(s, rel, a.discount);
+      pushNews(s, { category: 'studio', headline: `${rel.name} is ${Math.round(a.discount * 100)}% off this week`, body: `Storefronts expect around ${fmtUnits(extra)} extra copies.`, tone: 'neutral' });
       return null;
     }
     case 'portGame': {

@@ -6,7 +6,7 @@ import { SKILLS, type Skill } from '@/data/types';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
-import { canPatch, canRemaster, patchCost, portCost } from '@/sim/systems/release';
+import { canExpand, canPatch, canRemaster, canRunSale, EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, expansionsOf, patchCost, portCost, SALE_DISCOUNTS, saleForecast } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
 import { marketSalary, productivity, moraleTarget, ROLE_NAMES, vacationBlocked } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
@@ -237,6 +237,9 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             <Pill tone={r.score >= 70 ? 'good' : 'neutral'}>Critics {r.score}</Pill>
             <Pill>Users {r.userScore}</Pill>
             <Pill>{fmtUnits(r.units)} sold</Pill>
+            {r.concept.expansionOf && s.releases[r.concept.expansionOf] && <Pill tone="tech">Expansion for {s.releases[r.concept.expansionOf]!.name}</Pill>}
+            {r.concept.remasterOf && <Pill tone="gold">Remaster</Pill>}
+            {expansionsOf(s, r).released.length > 0 && <Pill tone="tech">{expansionsOf(s, r).released.length} expansion{expansionsOf(s, r).released.length > 1 ? 's' : ''}</Pill>}
             <Pill tone={profit >= 0 ? 'good' : 'bad'}>
               {profit >= 0 ? 'Profit' : 'Loss'} {fmtMoney(Math.abs(profit))}
             </Pill>
@@ -275,7 +278,21 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
       </Section>
       <PostLaunch releaseId={releaseId} />
       <div className="mt-2 flex flex-wrap justify-end gap-2">
-        {!r.concept.remasterOf && r.score >= 70 && (
+        {!r.concept.remasterOf && !r.concept.expansionOf && r.score >= EXPANSION_MIN_SCORE && s.day - r.day < EXPANSION_MAX_AGE_YEARS * 365.25 && (
+          <Button
+            icon="layers"
+            disabled={!!canExpand(s, r)}
+            title={canExpand(s, r) ?? 'New content for owners of this game: about 40% of the work of a new game, sold at a lower price mostly to people who own it — and it brings lapsed players back'}
+            onClick={() => {
+              useGame.setState((g) => ({ wizardPreset: { expansionOf: r.id }, wizardNonce: g.wizardNonce + 1 }));
+              onClose();
+              useGame.getState().openPanel('develop', 'new');
+            }}
+          >
+            Expansion…
+          </Button>
+        )}
+        {!r.concept.remasterOf && !r.concept.expansionOf && r.score >= 70 && (
           <Button
             icon="sparkle"
             disabled={!!canRemaster(s, r)}
@@ -737,6 +754,8 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
   const [portChoice, setPort] = useState(ports[0]?.id ?? '');
   const port = ports.some((p) => p.id === portChoice) ? portChoice : (ports[0]?.id ?? '');
   const patchWhy = canPatch(s, r);
+  const saleWhy = canRunSale(s, r);
+  const showSale = r.concept.monetization === 'premium' || r.concept.monetization === 'premium_dlc';
   const tooOld = s.day - r.day > 365 * 4;
   const run = (a: Parameters<typeof act>[0], ok: string) => {
     const res = act(a);
@@ -774,6 +793,28 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
             </div>
           )}
         </div>
+        {showSale && (
+          <div className="rounded-xl border border-line p-3 text-xs sm:col-span-2">
+            <div className="text-sm font-semibold">Storefront sale</div>
+            <p className="mt-0.5 text-ink3">
+              Discount it for a burst of sales. Deeper cuts sell more copies (and win more fans) but earn less per copy, and each sale draws a little less than the last. {r.saleCount ? `Sales so far: ${r.saleCount}.` : ''}
+            </p>
+            {saleWhy ? (
+              <p className="mt-2 text-ink3">{saleWhy}</p>
+            ) : (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {SALE_DISCOUNTS.map((d) => {
+                  const units = saleForecast(s, r, d);
+                  return (
+                    <Button key={d} size="sm" icon="coin" title={`About ${fmtUnits(units)} extra copies at ${fmtMoney(r.price * (1 - d))} each`} onClick={() => run({ type: 'runSale', releaseId, discount: d }, `${r.name} is ${Math.round(d * 100)}% off`)}>
+                      {Math.round(d * 100)}% off · ~{fmtUnits(units)}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Section>
   );

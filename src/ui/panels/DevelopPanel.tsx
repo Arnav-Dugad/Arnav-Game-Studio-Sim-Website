@@ -11,9 +11,9 @@ import { availablePlatforms } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore } from '@/sim/systems/dev';
-import { salesPotential } from '@/sim/systems/release';
+import { expansionPlatforms, expansionSizeOk, salesPotential } from '@/sim/systems/release';
 import { devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
-import type { ContractProject, EngineProject, Focus3, GameProject, Size } from '@/sim/types';
+import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { Cover } from '../art/Cover';
 import { Avatar, InitialsBadge } from '../art/Avatar';
@@ -22,7 +22,7 @@ import { Icon } from '../icons';
 import { useGame } from '../store';
 import { isAway } from '@/sim/systems/staff';
 import { FocusSliders } from '../game/FocusEditor';
-import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, bestSkill, comboFitValue, estimateCost, fitLabel, genreExperience, idealFocus, knowsCombo, suggestName } from '../game/lib';
+import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, bestSkill, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, idealFocus, knowsCombo, suggestName } from '../game/lib';
 import { sound } from '../sound';
 
 export default function DevelopPanel() {
@@ -333,32 +333,49 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const firstGenre = (genres.find((g) => g.ok)?.g.id ?? 'action') as GenreId;
   // Planning a sequel pre-fills the wizard from the franchise
   // …and remastering pre-fills it from the original release.
-  const [remasterRel, setRemasterRel] = useState(() => {
+  // …remastering or expanding pre-fills it from an earlier release.
+  const [based, setBased] = useState<{ mode: 'remaster' | 'expansion'; rel: Release } | undefined>(() => {
     const p = useGame.getState().wizardPreset;
-    return p?.remasterOf ? s.releases[p.remasterOf] : undefined;
+    const id = p?.remasterOf ?? p?.expansionOf;
+    const rel = id ? s.releases[id] : undefined;
+    return rel ? { mode: p?.remasterOf ? 'remaster' : 'expansion', rel } : undefined;
   });
+  const baseRel = based?.rel;
+  const remasterRel = based?.mode === 'remaster' ? based.rel : undefined;
+  const expansionRel = based?.mode === 'expansion' ? based.rel : undefined;
   const [presetFr] = useState(() => {
     const p = useGame.getState().wizardPreset;
-    const fid = p?.franchiseId ?? (remasterRel?.concept.franchiseId && s.franchises[remasterRel.concept.franchiseId] ? remasterRel.concept.franchiseId : undefined);
+    const fid = p?.franchiseId ?? (baseRel?.concept.franchiseId && s.franchises[baseRel.concept.franchiseId] ? baseRel.concept.franchiseId : undefined);
     return fid ? s.franchises[fid] : undefined;
   });
-  const [genre, setGenre] = useState<GenreId>(remasterRel?.concept.genre ?? presetFr?.genre ?? firstGenre);
-  const [topic, setTopic] = useState<string>(remasterRel?.concept.topic ?? presetFr?.topic ?? topics.find((t) => t.ok)?.t.id ?? 'fantasy');
-  const [name, setName] = useState(() => (remasterRel ? `${remasterRel.name} Remastered` : presetFr ? `${presetFr.name} ${presetFr.entries.length + 1 + (presetFr.origin ? 1 : 0)}` : suggestName(s.day, 'fantasy')));
-  const [audience, setAudience] = useState<Audience>(remasterRel?.concept.audience ?? 'everyone');
-  const locked = !!remasterRel;
+  const [genre, setGenre] = useState<GenreId>(baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre);
+  const [topic, setTopic] = useState<string>(baseRel?.concept.topic ?? presetFr?.topic ?? topics.find((t) => t.ok)?.t.id ?? 'fantasy');
+  const [name, setName] = useState(() =>
+    remasterRel
+      ? `${remasterRel.name} Remastered`
+      : expansionRel
+        ? `${expansionRel.name}: ${expansionSubtitle(s.day + expansionRel.day)}`
+        : presetFr
+          ? `${presetFr.name} ${presetFr.entries.length + 1 + (presetFr.origin ? 1 : 0)}`
+          : suggestName(s.day, 'fantasy'),
+  );
+  const [audience, setAudience] = useState<Audience>(baseRel?.concept.audience ?? 'everyone');
+  const locked = !!baseRel;
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
-  const plats = availablePlatforms(s).sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0));
-  const [platforms, setPlatforms] = useState<string[]>(plats[0] ? [plats[0].id] : []);
+  const expPlats = expansionRel ? expansionPlatforms(s, expansionRel) : null;
+  const plats = availablePlatforms(s)
+    .filter((p) => !expPlats || expPlats.includes(p.id))
+    .sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0));
+  const [platforms, setPlatforms] = useState<string[]>(() => (expPlats ? expPlats.slice(0, 6) : plats[0] ? [plats[0].id] : []));
   const engines = Object.values(s.engines).sort((a, b) => b.tech - a.tech);
   const [engineId, setEngineId] = useState(engines[0]?.id ?? 'e0');
   const idle = Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
   const [team, setTeam] = useState<string[]>(idle.slice(0, BALANCE.SIZE.small.teamCap).map((x) => x.id));
   const [franchiseId, setFranchiseId] = useState<string>(presetFr?.id ?? '');
   useEffect(() => {
-    if (presetFr || remasterRel) useGame.setState({ wizardPreset: null });
-  }, [presetFr, remasterRel]);
+    if (presetFr || baseRel) useGame.setState({ wizardPreset: null });
+  }, [presetFr, baseRel]);
   const selfPub = s.research.done.includes('biz_self_publishing');
   const [dealId, setDealId] = useState<string>(selfPub ? '' : (s.offers.deals[0]?.id ?? ''));
   const learned = genreExperience(s, genre) > 0;
@@ -370,14 +387,14 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const ideal = learned ? idealFocus(genre) : undefined;
   const franchises = Object.values(s.franchises).filter((f) => f.bestScore > 0 || f.origin);
   const teamStaff = team.map((id) => s.staff[id]!).filter(Boolean);
-  const cost = estimateCost(s, size, teamStaff, locked);
+  const cost = estimateCost(s, size, teamStaff, remasterRel ? BALANCE.REMASTER_WORK : expansionRel ? BALANCE.EXPANSION_WORK : 1);
   const kitCost = platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
   const deal = s.offers.deals.find((d) => d.id === dealId);
   const liveDealId = deal ? dealId : ''; // the offer may have expired since it was picked
   const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
   const conceptPreview = useMemo(
-    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id }),
-    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel],
+    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id }),
+    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel],
   );
   const forecast = useMemo(() => {
     if (!platforms.length) return null;
@@ -391,7 +408,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id },
     });
     if (r.ok) {
       sound.play('success');
@@ -403,18 +420,24 @@ function NewGame({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="space-y-5">
-      {remasterRel && (
-        <div className="flex items-center gap-3 rounded-2xl border border-gold/50 bg-gold/10 p-3 text-xs">
-          <Icon name="sparkle" size={18} className="shrink-0 text-gold" />
+      {baseRel && (
+        <div className={cx('flex items-center gap-3 rounded-2xl border p-3 text-xs', remasterRel ? 'border-gold/50 bg-gold/10' : 'border-tech/50 bg-tech/10')}>
+          <Icon name={remasterRel ? 'sparkle' : 'layers'} size={18} className={cx('shrink-0', remasterRel ? 'text-gold' : 'text-tech')} />
           <div className="min-w-0 flex-1">
-            <div className="font-semibold">Remastering {remasterRel.name} ({Math.round(remasterRel.score)})</div>
-            <div className="text-ink3">Genre, topic and franchise are locked to the original. About {Math.round((1 - BALANCE.REMASTER_WORK) * 100)}% less work than a new game, but it sells to a smaller, nostalgic market.</div>
+            <div className="font-semibold">
+              {remasterRel ? 'Remastering' : 'Expansion for'} {baseRel.name} ({Math.round(baseRel.score)})
+            </div>
+            <div className="text-ink3">
+              {remasterRel
+                ? `Genre, topic and franchise are locked to the original. About ${Math.round((1 - BALANCE.REMASTER_WORK) * 100)}% less work than a new game, but it sells to a smaller, nostalgic market.`
+                : `New content for the ${fmtUnits(baseRel.units)} people who own it. Takes about ${Math.round(BALANCE.EXPANSION_WORK * 100)}% of the work of a new game and sells for ${Math.round(BALANCE.EXPANSION_PRICE * 100)}% of the price. It can’t be bigger than the base game, and a good one brings players back to the original.`}
+            </div>
           </div>
           <Button
             size="sm"
             variant="ghost"
             onClick={() => {
-              setRemasterRel(undefined);
+              setBased(undefined);
               setName(suggestName(s.day, topic));
             }}
           >
@@ -431,7 +454,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             </div>
           </Field>
           {franchises.length > 0 && (
-            <Field label="Sequel to">
+            <Field label={baseRel ? 'Franchise' : 'Sequel to'}>
               <select
                 className={inputCls}
                 disabled={locked}
@@ -534,7 +557,10 @@ function NewGame({ onDone }: { onDone: () => void }) {
               setSize(v);
               setTeam((t) => t.slice(0, BALANCE.SIZE[v].teamCap));
             }}
-            options={(['small', 'medium', 'large', 'aaa'] as Size[]).map((z) => ({ value: z, label: SIZE_LABEL[z], disabled: !!sizeAllowed(s, z), title: sizeAllowed(s, z) ?? `${BALANCE.SIZE[z].days} days · up to ${BALANCE.SIZE[z].teamCap} people` }))}
+            options={(['small', 'medium', 'large', 'aaa'] as Size[]).map((z) => {
+              const why = sizeAllowed(s, z) ?? (expansionRel && !expansionSizeOk(expansionRel, z) ? 'An expansion can’t be bigger than its base game' : null);
+              return { value: z, label: SIZE_LABEL[z], disabled: !!why, title: why ?? `${Math.round(BALANCE.SIZE[z].days * (remasterRel ? BALANCE.REMASTER_WORK : expansionRel ? BALANCE.EXPANSION_WORK : 1))} days · up to ${BALANCE.SIZE[z].teamCap} people` };
+            })}
           />
         </div>
         <div className="mt-2">
@@ -545,8 +571,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
             options={(['premium', 'shareware', 'premium_dlc', 'subscription', 'f2p', 'live_service'] as Monetization[]).map((m) => ({
               value: m,
               label: { premium: 'Premium', shareware: 'Shareware', premium_dlc: 'Premium + DLC', subscription: 'Subscription', f2p: 'Free-to-play', live_service: 'Live service' }[m],
-              disabled: !!monetizationAllowed(s, m, genre),
-              title: monetizationAllowed(s, m, genre) ?? undefined,
+              disabled: !!monetizationAllowed(s, m, genre) || (!!expansionRel && m !== 'premium'),
+              title: (expansionRel && m !== 'premium' ? 'Expansion packs are one-off purchases' : monetizationAllowed(s, m, genre)) ?? undefined,
             }))}
           />
         </div>

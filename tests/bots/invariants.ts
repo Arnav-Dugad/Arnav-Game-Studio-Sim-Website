@@ -45,7 +45,7 @@ export function checkInvariants(s: GameState): string[] {
     if (r.units < 0 || !Number.isInteger(r.units)) errs.push(`release ${r.name} units=${r.units}`);
     for (const p of r.platforms) {
       if (p.units < 0 || !Number.isInteger(p.units)) errs.push(`release ${r.name} ${p.platform} units=${p.units}`);
-      if (p.units > Math.max(1, p.potential) * 1.5 + 50) errs.push(`release ${r.name} ${p.platform} units ${p.units} > potential ${p.potential}`);
+      if (p.units > Math.max(1, p.potential) * 1.5 + (p.extraPotential ?? 0) + 50) errs.push(`release ${r.name} ${p.platform} units ${p.units} > potential ${p.potential}`);
     }
     if (r.score < 1 || r.score > 100 || r.userScore < 1 || r.userScore > 100) errs.push(`release ${r.name} score out of range`);
   }

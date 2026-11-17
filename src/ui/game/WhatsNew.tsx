@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17';
+export const WHATS_NEW_VERSION = '2026-11-17b';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'layers', title: 'Expansion packs', body: 'Give a recent hit more content: less work than a sequel, and it brings players back to the original.' },
+  { icon: 'coin', title: 'Storefront sales', body: 'Put older games on sale in the digital era for a burst of copies (open a game → Post-launch).' },
   { icon: 'controller', title: 'Build your own console', body: 'Research the Hardware Lab, then design, price and launch a console or handheld. Rivals answer with price wars.' },
   { icon: 'people', title: 'Subscription pass', body: 'Turn a strong back catalogue into monthly income (Company → Pass).' },
   { icon: 'briefcase', title: 'Publishing label', body: 'Fund indie studios’ games for a share of their revenue.' },

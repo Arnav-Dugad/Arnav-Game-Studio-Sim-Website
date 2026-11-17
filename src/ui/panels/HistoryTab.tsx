@@ -30,8 +30,8 @@ export function studioHistory(s: GameState): Entry[] {
     if (!big) continue;
     out.push({
       day: r.day,
-      icon: r.score >= 85 ? 'crown' : r.score < 45 ? 'skull' : r.concept.remasterOf ? 'sparkle' : 'rocket',
-      text: `${r.name} released${r.concept.remasterOf ? ' (remaster)' : ''}`,
+      icon: r.score >= 85 ? 'crown' : r.score < 45 ? 'skull' : r.concept.remasterOf ? 'sparkle' : r.concept.expansionOf ? 'layers' : 'rocket',
+      text: `${r.name} released${r.concept.remasterOf ? ' (remaster)' : r.concept.expansionOf ? ' (expansion)' : ''}`,
       sub: `Scored ${Math.round(r.score)} · ${fmtUnits(r.units)} sold${r.awards.length ? ` · ${r.awards.join(', ')}` : ''}`,
       tone: r.score >= 85 ? 'gold' : r.score < 45 ? 'bad' : undefined,
       releaseId: r.id,

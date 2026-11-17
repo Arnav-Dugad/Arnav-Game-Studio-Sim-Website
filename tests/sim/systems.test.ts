@@ -9,7 +9,7 @@ import { toDay } from '../../src/sim/calendar';
 import { Rng } from '../../src/sim/rng';
 import { productivity, moraleTarget, generateCandidate, topSkill } from '../../src/sim/systems/staff';
 import { gameQuality, engineTechFor, comboFit } from '../../src/sim/systems/dev';
-import { salesPotential, competition, canRemaster, yearlyAwards } from '../../src/sim/systems/release';
+import { salesPotential, competition, canExpand, canRemaster, canRunSale, saleForecast, yearlyAwards } from '../../src/sim/systems/release';
 import { BALANCE } from '../../src/data/balance';
 import { demandMul, platformInfo, isPlatformAvailable, availablePlatforms } from '../../src/sim/systems/market';
 import { creditLimit, ipoEligible } from '../../src/sim/systems/finance';
@@ -476,6 +476,90 @@ describe('remasters', () => {
     expect(p.phaseDays[1]).toBeLessThan(BALANCE.SIZE.small.days * BALANCE.PHASE_SHARE[1]);
     expect(gameQuality(s, p, true).parts.some((x) => x.label.startsWith('Remaster of'))).toBe(true);
     expect(canRemaster(s, orig)).toMatch(/Already/);
+  });
+});
+
+describe('expansion packs', () => {
+  it('extend a recent hit for less work, sell to its owners and bring players back', () => {
+    const s = game(1988, 11);
+    startSmall(s, { genre: 'rpg', topic: 'fantasy', platforms: [availablePlatforms(s).find((p) => p.media !== 'cartridge')!.id] });
+    advance(s, 90);
+    const orig = s.releases[s.releaseOrder[0]!]!;
+    orig.score = 82;
+    for (const ps of orig.platforms) ps.units = 200_000;
+    orig.units = 200_000 * orig.platforms.length;
+    const plats = orig.concept.platforms;
+    const base = { name: 'More', genre: orig.concept.genre, topic: orig.concept.topic, platforms: plats, audience: orig.concept.audience, size: 'small' as const, monetization: 'premium' as const, engineId: 'e0', team: ['founder'], franchiseId: orig.concept.franchiseId };
+    s.research.done.push('biz_self_publishing');
+    s.company.cash = 5_000_000;
+    expect(canExpand(s, orig)).toBeNull();
+    expect(dispatch(s, { type: 'startGame', game: { ...base, size: 'medium', expansionOf: orig.id } }).ok).toBe(false); // bigger than the base
+    expect(dispatch(s, { type: 'startGame', game: { ...base, monetization: 'f2p', expansionOf: orig.id } }).ok).toBe(false);
+    expect(dispatch(s, { type: "startGame", game: { ...base, expansionOf: orig.id } })).toEqual({ ok: true, events: expect.any(Array) });
+    const p = Object.values(s.projects).find((x) => x.kind === 'game') as GameProject;
+    expect(p.phaseDays[1]).toBeLessThan(BALANCE.SIZE.small.days * BALANCE.PHASE_SHARE[1] * 0.5);
+    expect(canExpand(s, orig)).toMatch(/already in development/);
+    expect(gameQuality(s, p, true).parts.some((x) => x.label.startsWith('Builds on'))).toBe(true);
+    // the owner base caps the market
+    const pot = salesPotential(s, p.concept, 90, 0.5).platforms.reduce((t, x) => t + x.potential, 0);
+    expect(pot).toBeLessThan(orig.units * 0.75);
+    const fans = s.franchises[orig.concept.franchiseId!]!;
+    const entries = fans.entries.length;
+    const fatigue = fans.fatigue;
+    for (let i = 0; i < 200 && Object.keys(s.projects).length; i++) {
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const exp = Object.values(s.releases).find((r) => r.concept.expansionOf === orig.id)!;
+    expect(exp).toBeTruthy();
+    expect(exp.price).toBeLessThan(orig.price);
+    expect(fans.entries.length).toBe(entries); // not a sequel
+    expect(fans.fatigue).toBe(fatigue);
+    if (exp.score >= 55) expect(orig.platforms.some((x) => x.revival)).toBe(true);
+    const before = orig.units;
+    advance(s, 120);
+    if (exp.score >= 55) expect(orig.units).toBeGreaterThan(before);
+    orig.day -= 365 * 6;
+    expect(canExpand(s, orig)).toMatch(/Too old/);
+  });
+});
+
+describe('storefront sales', () => {
+  it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
+    const boxed = game(1990, 4);
+    startSmall(boxed);
+    advance(boxed, 300);
+    expect(canRunSale(boxed, boxed.releases[boxed.releaseOrder[0]!]!)).toMatch(/digital/);
+
+    const s = game(2012, 8);
+    s.research.done.push('biz_self_publishing');
+    startSmall(s, { platforms: [availablePlatforms(s).find((p) => p.kind === 'computer')!.id] });
+    for (let i = 0; i < 200 && !s.releaseOrder.length; i++) {
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const r = s.releases[s.releaseOrder[0]!]!;
+    expect(canRunSale(s, r)).toMatch(/Too new/);
+    advance(s, 200);
+    r.score = 80;
+    r.userScore = 80;
+    for (const ps of r.platforms) ps.potential = 200_000;
+    expect(canRunSale(s, r)).toBeNull();
+    expect(saleForecast(s, r, 0.75)).toBeGreaterThan(saleForecast(s, r, 0.25));
+    const first = saleForecast(s, r, 0.5);
+    const units = r.units;
+    const net = r.net;
+    expect(dispatch(s, { type: 'runSale', releaseId: r.id, discount: 0.5 }).ok).toBe(true);
+    expect(dispatch(s, { type: 'runSale', releaseId: r.id, discount: 0.5 }).ok).toBe(false); // cooldown
+    expect(dispatch(s, { type: 'runSale', releaseId: r.id, discount: 0.3 as never }).ok).toBe(false);
+    advance(s, 28);
+    expect(r.units - units).toBeGreaterThan(first * 0.5);
+    expect(r.net).toBeGreaterThan(net);
+    expect(saleForecast(s, r, 0.5)).toBeLessThan(first); // repeat sales draw less
+    advance(s, 160);
+    expect(canRunSale(s, r)).toBeNull();
   });
 });
 

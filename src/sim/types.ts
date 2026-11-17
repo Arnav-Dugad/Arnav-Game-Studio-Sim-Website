@@ -135,6 +135,8 @@ export interface Concept {
   deal?: PublisherDeal;
   /** Release id of the classic this game remasters. */
   remasterOf?: Id;
+  /** Release id of the base game this expansion pack extends. */
+  expansionOf?: Id;
 }
 
 export interface PublisherDeal {
@@ -241,6 +243,10 @@ export interface PlatformSales {
   units: number;
   /** Release week this platform version launched (ports launch later). */
   startWeek?: number;
+  /** A second wave of sales (an expansion brought players back): extra units and the week it started. */
+  revival?: { week: number; potential: number; units: number; priceMul?: number };
+  /** Total extra potential ever granted by second waves (for the addressable-market cap). */
+  extraPotential?: number;
 }
 
 export interface Release {
@@ -273,6 +279,9 @@ export interface Release {
   why: { sales?: Breakdown; user?: Breakdown };
   /** Post-launch patches shipped. */
   patches?: number;
+  /** Storefront discounts run so far, and when the last one started. */
+  saleCount?: number;
+  lastSaleDay?: number;
 }
 
 export interface Franchise {

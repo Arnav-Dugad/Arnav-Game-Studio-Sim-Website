@@ -9,6 +9,10 @@ export const BALANCE = {
   /** Remasters need this share of a new game's work and reach this share of its market. */
   REMASTER_WORK: 0.55,
   REMASTER_REACH: 0.7,
+  /** Expansion packs: share of a new game's work, price vs. a full game, and the share of base-game owners who buy one at a perfect score. */
+  EXPANSION_WORK: 0.4,
+  EXPANSION_PRICE: 0.6,
+  EXPANSION_ATTACH: 0.8,
   /** Sales multiplier for multi-platform online games once Cross-Play is researched. */
   CROSSPLAY_SALES: 1.1,
   INFLATION: 0.032, // ~3.2%/yr compounding (1980→2026 ≈ ×4.25)

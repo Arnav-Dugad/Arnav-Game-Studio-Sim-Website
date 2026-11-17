@@ -31,7 +31,7 @@
   - IPO, stock price and board, acquisitions and subsidiaries, and hostile takeovers.
   - Bankruptcy is a real fail state.
 - **Reviews.** Critic outlets with their own biases and generated blurbs, user scores, franchises, fans, fatigue and yearly awards.
-- **Post-launch.** Patch buggy games to win players back, port hits to new platforms, or remaster an 8-year-old classic for half the work. Holiday seasons sell, January slumps.
+- **Post-launch.** Patch buggy games to win players back, port hits to new platforms, make up to two expansion packs for a recent hit (they sell to its owners and bring lapsed players back), run storefront sales in the digital era, or remaster an 8-year-old classic for half the work. Holiday seasons sell, January slumps.
 - **Publishing label.** Fund indie studios' games for a share of the revenue. Pick talent, set the budget and hope for a hit.
 - **Subscription pass.** Turn a strong back catalogue into recurring revenue with your own all-you-can-play pass. Price it right and keep shipping good games, but watch older-game sales and server bills.
 - **Your own console.** Research the Hardware Lab, then design a console or handheld: choose its tier, price, licence fee and launch campaign. It becomes a real platform with its own install base and market share. Hardware sells near cost, while licence fees, royalty-free exclusives and a pack-in hit are where the money is. Faults, piracy and retail bundle deals keep you on your toes.

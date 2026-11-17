@@ -13,10 +13,10 @@ import { BD, clamp, type Breakdown } from '../breakdown';
 import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
-import type { AwardWinner, CriticReview, GameProject, GameState, Release, Size } from '../types';
+import type { AwardWinner, CriticReview, GameProject, GameState, PlatformSales, Release, Size } from '../types';
 import { addRep, earn, fmtMoney, fmtUnits, hasFlag, inflation, newId, pushNews, spend } from '../util';
 import { finishProject, qualityToScore } from './dev';
-import { demandMul, genreInterest, platformAudienceFit, platformGenreFit, platformInfo, topicPopularity, type PlatformInfo } from './market';
+import { demandMul, genreInterest, isPlatformAvailable, platformAudienceFit, platformGenreFit, platformInfo, topicPopularity, type PlatformInfo } from './market';
 
 const SIZE_REP: Record<Size, number> = { small: 0.6, medium: 1, large: 1.4, aaa: 1.8 };
 /** Price multiplier by size: retail-era games all cost about the same; digital lets small games sell cheap. */
@@ -209,6 +209,27 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
     for (const ps of platforms) ps.potential += fanBuy * (((s.market.users[ps.platform] ?? 0) * 1e6) / Math.max(1, totalUsers));
     sb.add('Franchise fans (units)', Math.round(fanBuy));
   }
+  const base = concept.expansionOf ? s.releases[concept.expansionOf] : undefined;
+  if (base) return expansionPotential(base, platforms, effScore, hype, attach);
+  return { platforms, hype, salesWhy: sb.done(), attach };
+}
+
+/**
+ * Expansion packs sell mostly to people who own the base game (a share that climbs steeply with the
+ * expansion's own reviews), plus a trickle of newcomers who buy both.
+ */
+function expansionPotential<P extends { platform: string; potential: number }>(base: Release, platforms: P[], effScore: number, hype: number, attach: number) {
+  const q = clamp(effScore, 0, 100) / 100;
+  const share = BALANCE.EXPANSION_ATTACH * Math.pow(q, 2.2) * (1 + hype * 0.25);
+  const owners = base.platforms.reduce((t, p) => t + p.units, 0);
+  let fresh = 0;
+  for (const ps of platforms) {
+    const own = base.platforms.find((b) => b.platform === ps.platform)?.units ?? 0;
+    const newcomers = ps.potential * 0.08;
+    fresh += newcomers;
+    ps.potential = own * share + newcomers;
+  }
+  const sb = new BD(`Owners of ${base.name}`, owners).mul(`Expansion appeal (${Math.round(effScore)})`, share).add('Newcomers who buy both', Math.round(fresh));
   return { platforms, hype, salesWhy: sb.done(), attach };
 }
 
@@ -239,7 +260,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
-  const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization);
+  const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization) * (p.concept.expansionOf ? BALANCE.EXPANSION_PRICE : 1);
   const decay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
   const id = newId(s, 'r');
   const rel: Release = {
@@ -293,12 +314,18 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     rel.concept = { ...rel.concept, franchiseId: frId };
   }
   const f = s.franchises[frId]!;
-  if (f.entries.length > 0 && s.day - f.lastDay < 365 * 2) f.fatigue = clamp(f.fatigue + BALANCE.FATIGUE_PER_SEQUEL, 0, 0.9);
-  f.entries.push(id);
-  f.lastDay = s.day;
-  f.bestScore = Math.max(f.bestScore, score);
+  const baseRel = p.concept.expansionOf ? s.releases[p.concept.expansionOf] : undefined;
+  if (baseRel) {
+    // An expansion isn't a sequel: no fatigue and no new entry, but it brings lapsed players back to the base game.
+    reviveBase(baseRel, rel, score);
+  } else {
+    if (f.entries.length > 0 && s.day - f.lastDay < 365 * 2) f.fatigue = clamp(f.fatigue + BALANCE.FATIGUE_PER_SEQUEL, 0, 0.9);
+    f.entries.push(id);
+    f.lastDay = s.day;
+    f.bestScore = Math.max(f.bestScore, score);
+  }
   // Reputation
-  const rd = ((score - 60) / 7) * SIZE_REP[p.concept.size];
+  const rd = ((score - 60) / 7) * SIZE_REP[p.concept.size] * (baseRel ? 0.5 : 1);
   addRep(s, (rd > 0 ? rd * (1 - s.company.reputation / 115) : rd), `Reviews of ${rel.name}`);
   // Stats
   const st = s.progress.stats;
@@ -377,13 +404,29 @@ export function updateSalesWeekly(c: Ctx): void {
       const life = pl.endDay !== null && s.day > pl.endDay ? Math.exp(-(s.day - pl.endDay) / 250) : 1;
       let u = (ps.potential * share * life * demandMul(s, pl) * season * (rel.serverLoad > 0 ? outage : 1) * catalogSalesMul(s, rel.day)) / comp;
       u = Math.floor(u + c.rng.next()); // stochastic rounding keeps integers without bias
-      u = Math.min(u, Math.max(0, Math.floor(ps.potential * 1.5) - ps.units)); // can't exceed the addressable market
+      u = Math.min(u, Math.max(0, Math.floor(ps.potential * 1.5 + (ps.extraPotential ?? 0)) - ps.units)); // can't exceed the addressable market
+      const price = rel.price;
+      if (u > 0) {
+        gross += u * price;
+        net += u * netPerUnit(s, pl, price, selfPub);
+      }
+      // A second wave (expansion launch or a storefront sale), possibly at a discount.
+      const rv = ps.revival;
+      if (rv && rv.units < rv.potential) {
+        const w = Math.max(0, rel.week - rv.week);
+        const rate = rv.priceMul !== undefined ? SALE_RATE : REVIVAL_RATE;
+        const extra = Math.min(Math.floor(rv.potential - rv.units), Math.floor(rv.potential * rate * Math.pow(1 - rate, w) * life * (rv.priceMul !== undefined ? 1 : season) + c.rng.next()));
+        if (extra > 0) {
+          rv.units += extra;
+          u += extra;
+          const p2 = price * (rv.priceMul ?? 1);
+          gross += extra * p2;
+          net += extra * netPerUnit(s, pl, p2, selfPub);
+        }
+      }
       if (u <= 0) continue;
       ps.units += u;
       units += u;
-      const price = rel.price;
-      gross += u * price;
-      net += u * netPerUnit(s, pl, price, selfPub);
     }
     rel.week += 1;
     if (rel.week <= 104) rel.weekly.push(units);
@@ -483,7 +526,7 @@ export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
   type Entry = { name: string; company: string; score: number; genre: string; mine: boolean; classic?: boolean; releaseId?: string };
   const entries: Entry[] = [
     ...Object.values(s.releases)
-      .filter((r) => fromDay(r.day).year === yr && !r.concept.remasterOf)
+      .filter((r) => fromDay(r.day).year === yr && !r.concept.remasterOf && !r.concept.expansionOf)
       .map((r) => ({ name: r.name, company: s.company.name, score: Math.round(r.score), genre: r.concept.genre, mine: true, releaseId: r.id })),
     ...s.rivalGames
       .filter((g) => fromDay(g.day).year === yr && !g.publishedByPlayer)
@@ -551,6 +594,7 @@ export const REMASTER_MIN_AGE_YEARS = 8;
 export const REMASTER_MIN_SCORE = 70;
 export function canRemaster(s: GameState, rel: Release): string | null {
   if (rel.concept.remasterOf) return 'Already a remaster';
+  if (rel.concept.expansionOf) return 'Remaster the base game instead';
   if (rel.concept.franchiseId && !s.franchises[rel.concept.franchiseId]) return 'You sold this IP';
   if (rel.score < REMASTER_MIN_SCORE) return `Only games scoring ${REMASTER_MIN_SCORE}+ are worth remastering`;
   const age = (s.day - rel.day) / 365.25;
@@ -558,6 +602,119 @@ export function canRemaster(s: GameState, rel: Release): string | null {
   const taken = Object.values(s.projects).some((p) => p.kind === 'game' && p.concept.remasterOf === rel.id) || Object.values(s.releases).some((r) => r.concept.remasterOf === rel.id);
   if (taken) return 'Already remastered';
   return null;
+}
+
+/** Expansion packs: up to two for a well-reviewed paid game while players are still around. */
+export const EXPANSION_MAX = 2;
+export const EXPANSION_MIN_SCORE = 65;
+export const EXPANSION_MAX_AGE_YEARS = 5;
+export const EXPANSION_FIRST_YEAR = 1987;
+const REVIVAL_RATE = 0.14;
+/** Storefront sales are front-loaded: most of the extra copies sell in the first two weeks. */
+const SALE_RATE = 0.45;
+const NO_EXPANSION = new Set<string>(['f2p', 'live_service', 'shareware']);
+const SIZE_RANK: Record<Size, number> = { small: 0, medium: 1, large: 2, aaa: 3 };
+
+export function expansionsOf(s: GameState, rel: Release): { released: Release[]; inDev: number } {
+  const released = Object.values(s.releases).filter((r) => r.concept.expansionOf === rel.id);
+  const inDev = Object.values(s.projects).filter((p) => p.kind === 'game' && p.concept.expansionOf === rel.id).length;
+  return { released, inDev };
+}
+
+export function canExpand(s: GameState, rel: Release): string | null {
+  if (rel.concept.expansionOf) return 'Expand the base game instead';
+  if (rel.concept.remasterOf) return 'Remasters don’t get expansions';
+  if (fromDay(s.day).year < EXPANSION_FIRST_YEAR) return `Expansion packs catch on around ${EXPANSION_FIRST_YEAR}`;
+  if (NO_EXPANSION.has(rel.concept.monetization)) return 'Free-to-play, live and shareware games get updates, not expansions';
+  if (rel.concept.franchiseId && !s.franchises[rel.concept.franchiseId]) return 'You sold this IP';
+  if (rel.score < EXPANSION_MIN_SCORE) return `Only games scoring ${EXPANSION_MIN_SCORE}+ have players asking for more`;
+  const age = (s.day - rel.day) / 365.25;
+  if (age > EXPANSION_MAX_AGE_YEARS) return `Too old — players have moved on (expansions work within ${EXPANSION_MAX_AGE_YEARS} years)`;
+  const { released, inDev } = expansionsOf(s, rel);
+  if (inDev > 0) return 'An expansion is already in development';
+  if (released.length >= EXPANSION_MAX) return `Already has ${EXPANSION_MAX} expansions`;
+  if (!expansionPlatforms(s, rel).length) return 'None of its platforms can take an expansion (cartridge or no longer sold)';
+  return null;
+}
+
+/** Platforms an expansion can ship on: the base game's platforms still on sale (cartridges can't take add-ons). */
+export function expansionPlatforms(s: GameState, rel: Release): string[] {
+  return rel.concept.platforms.filter((pid) => {
+    const pl = platformInfo(s, pid);
+    return !!pl && pl.media !== 'cartridge' && isPlatformAvailable(s, pl);
+  });
+}
+
+/** An expansion can be at most as big as its base game. */
+export function expansionSizeOk(base: Release, size: Size): boolean {
+  return SIZE_RANK[size] <= SIZE_RANK[base.concept.size];
+}
+
+/** The base game gets a second wave: lapsed and new players return for the expansion. */
+function reviveBase(base: Release, exp: Release, score: number): void {
+  const q = clamp((score - 50) / 40, 0, 1);
+  const expUnits = exp.platforms.reduce((t, p) => t + p.potential, 0);
+  const baseUnits = Math.max(1, base.platforms.reduce((t, p) => t + p.units, 0));
+  const total = expUnits * 0.35 * q;
+  for (const ps of base.platforms) {
+    if (!exp.concept.platforms.includes(ps.platform)) continue;
+    const add = total * (ps.units / baseUnits);
+    if (add < 1) continue;
+    const prev = ps.revival;
+    ps.revival = { week: base.week, potential: (prev ? prev.potential - prev.units : 0) + add, units: 0 };
+    ps.extraPotential = (ps.extraPotential ?? 0) + add;
+  }
+  base.active = true;
+  base.userScore = clamp(base.userScore + Math.round(q * 3), 1, 100);
+}
+
+/** Storefront discounts: the digital era's way to wake up a back-catalogue game. */
+export const SALE_DISCOUNTS = [0.25, 0.5, 0.75] as const;
+export type SaleDiscount = (typeof SALE_DISCOUNTS)[number];
+/** Share of the game's lifetime potential that a sale at each discount brings in (first sale; later sales shrink). */
+const SALE_LIFT: Record<SaleDiscount, number> = { 0.25: 0.06, 0.5: 0.13, 0.75: 0.22 };
+export const SALE_COOLDOWN_DAYS = 180;
+export const SALE_MIN_AGE_DAYS = 120;
+const SALE_MONET = new Set<string>(['premium', 'premium_dlc']);
+
+/** Platforms where the game is sold digitally enough for a storefront sale to matter. */
+function saleShare(s: GameState, ps: PlatformSales): number {
+  const pl = platformInfo(s, ps.platform);
+  return pl ? digitalShare(s, pl) : 0;
+}
+
+export function canRunSale(s: GameState, rel: Release): string | null {
+  if (!SALE_MONET.has(rel.concept.monetization)) return 'Only one-off purchases go on sale';
+  if (s.day - rel.day < SALE_MIN_AGE_DAYS) return `Too new — wait ${Math.ceil((SALE_MIN_AGE_DAYS - (s.day - rel.day)) / 7)} more weeks`;
+  if (rel.lastSaleDay !== undefined && s.day - rel.lastSaleDay < SALE_COOLDOWN_DAYS) return `On sale recently — again in ${Math.ceil((SALE_COOLDOWN_DAYS - (s.day - rel.lastSaleDay)) / 7)} weeks`;
+  if (!rel.platforms.some((ps) => saleShare(s, ps) >= 0.2)) return 'Needs digital storefronts (most sales here are still boxed)';
+  return null;
+}
+
+/** Expected extra copies from a sale (shown in the UI; the sale itself is stochastic week to week). */
+export function saleForecast(s: GameState, rel: Release, discount: SaleDiscount): number {
+  const appeal = clamp((rel.score * 0.6 + rel.userScore * 0.4 - 30) / 50, 0.1, 1.2);
+  const fade = Math.pow(0.7, rel.saleCount ?? 0);
+  return rel.platforms.reduce((t, ps) => t + ps.potential * SALE_LIFT[discount] * appeal * fade * saleShare(s, ps), 0);
+}
+
+export function applySale(s: GameState, rel: Release, discount: SaleDiscount): number {
+  const appeal = clamp((rel.score * 0.6 + rel.userScore * 0.4 - 30) / 50, 0.1, 1.2);
+  const fade = Math.pow(0.7, rel.saleCount ?? 0);
+  let total = 0;
+  for (const ps of rel.platforms) {
+    const add = ps.potential * SALE_LIFT[discount] * appeal * fade * saleShare(s, ps);
+    if (add < 1) continue;
+    // A sale replaces any unfinished wave (its leftover is folded in at the new price).
+    const left = ps.revival ? Math.max(0, ps.revival.potential - ps.revival.units) * 0.5 : 0;
+    ps.revival = { week: rel.week, potential: add + left, units: 0, priceMul: 1 - discount };
+    ps.extraPotential = (ps.extraPotential ?? 0) + add;
+    total += add;
+  }
+  rel.saleCount = (rel.saleCount ?? 0) + 1;
+  rel.lastSaleDay = s.day;
+  rel.active = true;
+  return total;
 }
 
 export function canPatch(s: GameState, rel: Release): string | null {

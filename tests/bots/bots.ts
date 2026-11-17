@@ -20,6 +20,7 @@ import { estimateContractDays } from '../../src/sim/systems/offers';
 import { canLaunchSub, subLaunchCost, subRefPrice } from '../../src/sim/systems/subscription';
 import { showcaseBlocked, showcaseCost } from '../../src/sim/systems/showcase';
 import { dealAdvance, labelBlocked, signableIndies } from '../../src/sim/systems/publishing';
+import { canExpand, canRunSale, expansionPlatforms } from '../../src/sim/systems/release';
 import { MARKETING, canDesignConsole, consoleSpec, liveConsoles, refPrice } from '../../src/sim/systems/hardware';
 import type { Focus3, GameState, Size } from '../../src/sim/types';
 import { money } from '../../src/sim/util';
@@ -125,8 +126,19 @@ function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' |
   if (hasGame) return;
   const team = idleStaff(s);
   if (!team.length) return;
-  const { genre, topic } = bestCombo(s, rng, opts.mode);
   const size = chooseSize(s, team, opts.aggressive);
+  // Planners sometimes follow a recent hit with an expansion pack instead of a new game.
+  const hit = opts.mode !== 'random' && rng.chance(0.35) ? Object.values(s.releases).find((r) => r.score >= 75 && !canExpand(s, r)) : undefined;
+  if (hit) {
+    const expSize = hit.concept.size === 'small' || size === 'small' ? 'small' : 'medium';
+    const r = dispatch(s, {
+      type: 'startGame',
+      game: { name: `${hit.name}: More`, genre: hit.concept.genre, topic: hit.concept.topic, platforms: expansionPlatforms(s, hit).slice(0, 6), audience: hit.concept.audience, size: expSize, monetization: 'premium', engineId: hit.concept.engineId in s.engines ? hit.concept.engineId : 'e0', franchiseId: hit.concept.franchiseId, expansionOf: hit.id, team: team.slice(0, BALANCE.SIZE[expSize].teamCap), focus: idealFocus(hit.concept.genre) },
+    });
+    if (r.ok) return;
+    if (process.env.BOT_DEBUG) console.log('expansion failed', r.error);
+  }
+  const { genre, topic } = bestCombo(s, rng, opts.mode);
   const cap = BALANCE.SIZE[size].teamCap;
   const plats = bestPlatforms(s, genre, opts.maxPlatforms);
   if (!plats.length) return;
@@ -315,6 +327,9 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
     const t = s.offers.acquisitions[0];
     if (t && s.company.cash > t.price * 3) dispatch(s, { type: 'acquire', targetId: t.id });
     hardware(s);
+    // Wake up the back catalogue with a storefront sale now and then.
+    const old = Object.values(s.releases).find((r) => r.score >= 70 && !canRunSale(s, r));
+    if (old && rng.chance(0.2)) dispatch(s, { type: 'runSale', releaseId: old.id, discount: rng.pick([0.25, 0.5, 0.75] as const) });
     if (!showcaseBlocked(s) && s.company.cash > showcaseCost(s) * 20) dispatch(s, { type: 'hostShowcase' });
     const indie = signableIndies(s)[0];
     if (indie && !labelBlocked(s) && s.company.cash > dealAdvance(s, 'medium') * 15) dispatch(s, { type: 'signIndie', rivalId: indie.id, tier: 'medium' });
@@ -388,6 +403,13 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => (s.hardware.length ? { type: rng.chance(0.5) ? 'retireConsole' : 'cancelConsole', id: rng.pick(s.hardware).id } : null),
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
+  (s, rng) => { const r = Object.values(s.releases); return r.length ? { type: 'runSale', releaseId: rng.pick(r).id, discount: rng.pick([0.25, 0.5, 0.75, 0.9] as never[]) } : null; },
+  (s, rng) => {
+    const r = Object.values(s.releases);
+    if (!r.length) return null;
+    const b = rng.pick(r);
+    return { type: 'startGame', game: { name: 'Fuzz Exp', genre: b.concept.genre, topic: b.concept.topic, platforms: rng.chance(0.8) ? b.concept.platforms : ['nes'], audience: b.concept.audience, size: rng.pick(['small', 'medium', 'large', 'aaa'] as const), monetization: rng.chance(0.8) ? 'premium' : 'f2p', engineId: 'e0', franchiseId: b.concept.franchiseId, expansionOf: b.id, remasterOf: rng.chance(0.1) ? b.id : undefined, team: Object.keys(s.staff).slice(0, 2) } };
+  },
   (s, rng) => { const r = Object.values(s.rivals); return r.length ? { type: 'signIndie', rivalId: rng.pick(r).id, tier: rng.pick(['small', 'medium', 'large'] as const) } : null; },
   (_s, rng) => (rng.chance(0.7) ? { type: 'setSubscriptionPrice', price: rng.range(-1, 60) } : { type: 'closeSubscription' }),
   (s, rng) => { const st = Object.values(s.staff); return st.length ? { type: 'vacation', staffId: rng.pick(st).id, days: rng.chance(0.5) ? 7 : 14 } : null; },

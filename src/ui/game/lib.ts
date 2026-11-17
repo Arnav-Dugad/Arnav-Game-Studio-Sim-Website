@@ -76,8 +76,18 @@ export function genreExperience(s: GameState, genre: GenreId): number {
   return Object.values(s.releases).filter((r) => r.concept.genre === genre).length;
 }
 
-export function estimateCost(s: GameState, size: Size, team: Staff[], remaster = false): { salaries: number; production: number; total: number; days: number } {
-  const days = Math.round(BALANCE.SIZE[size].days * (remaster ? BALANCE.REMASTER_WORK : 1));
+const EXPANSION_SUBTITLES = [
+  'Beyond the Rift', 'Ashes of Dawn', 'The Sunken Realm', 'Iron Tide', 'Second Wind', 'Into the Deep', 'The Long Night', 'Lost Signals',
+  'Heart of Embers', 'New Horizons', 'The Outer Reach', 'Shattered Crown', 'Northern Lights', 'Undertow', 'The Last Harbor', 'Wildlands',
+];
+
+/** A suggested subtitle for an expansion pack (stable for a given seed). */
+export function expansionSubtitle(seed: number): string {
+  return EXPANSION_SUBTITLES[Math.abs(Math.floor(seed)) % EXPANSION_SUBTITLES.length]!;
+}
+
+export function estimateCost(s: GameState, size: Size, team: Staff[], workShare = 1): { salaries: number; production: number; total: number; days: number } {
+  const days = Math.round(BALANCE.SIZE[size].days * workShare);
   const salaries = team.reduce((t, st) => t + st.salary, 0) * (days / 365);
   const production = sizeDailyCost(size, s.day) * days;
   return { salaries, production, total: salaries + production, days };

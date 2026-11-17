@@ -269,6 +269,11 @@ export function devProgress(p: GameProject): number {
   return Math.max(0.05, Math.min(1, done / Math.max(1, total)));
 }
 
+/** Share of a full game's work: remasters and expansions are smaller jobs. */
+export function workShare(c: { remasterOf?: string; expansionOf?: string }): number {
+  return c.remasterOf ? BALANCE.REMASTER_WORK : c.expansionOf ? BALANCE.EXPANSION_WORK : 1;
+}
+
 /**
  * Quality model. With `project`, effort/bugs are extrapolated to the end of development at the current
  * pace — used for in-progress estimates so the preview isn't misleadingly low early on.
@@ -279,7 +284,7 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   const scale = project ? 1 / devProgress(p) : 1;
   const total = (p.design + p.tech) * scale;
   const orig = c.remasterOf ? s.releases[c.remasterOf] : undefined;
-  const bench = benchmarkPoints(c.size, s.day) * (orig ? BALANCE.REMASTER_WORK : 1);
+  const bench = benchmarkPoints(c.size, s.day) * workShare(c);
   const r = total / bench;
   const bd = new BD('Development effort', r / (r + 0.35));
   // design/tech ratio
@@ -315,6 +320,8 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   bd.mul('Topic trend', clamp(0.97 + (topicPopularity(s, c.topic) - 1) * 0.08, 0.93, 1.06));
   // novelty / repetition
   if (orig) bd.mul(`Remaster of ${orig.name} (${Math.round(orig.score)})`, clamp(0.9 + (orig.score - 70) / 150, 0.9, 1.1));
+  const base = c.expansionOf ? s.releases[c.expansionOf] : undefined;
+  if (base) bd.mul(`Builds on ${base.name} (${Math.round(base.score)})`, clamp(1 + (base.score - 70) / 150, 0.95, 1.08));
   if (!c.franchiseId && !orig) {
     const recent = s.releaseOrder.slice(-6).map((id) => s.releases[id]!);
     const same = recent.filter((rr) => rr.concept.genre === c.genre && rr.concept.topic === c.topic).length;
