@@ -97,6 +97,7 @@ interface Agent {
   speechT: number;
   thinkT: number;
   medal?: Graphics;
+  lanyard?: Graphics;
   /** Last seen level, to celebrate promotions. */
   level?: string;
   /** Why they were away last time we looked (to welcome them back). */
@@ -1019,6 +1020,18 @@ export class OfficeRenderer {
       if (a.medal) {
         a.medal.visible = star;
         a.medal.position.set(-3.5, (a.pose === 'stand' ? -14 : -12) - 4);
+      }
+      // summer interns wear a lanyard with a visitor badge
+      if (st.intern && !a.lanyard) {
+        a.lanyard = new Graphics();
+        a.lanyard.moveTo(-2.4, -6).lineTo(0, 0).lineTo(2.4, -6).stroke({ width: 0.7, color: 0x3d85c6 });
+        a.lanyard.roundRect(-1.8, -0.2, 3.6, 4.2, 0.6).fill(0xffffff);
+        a.lanyard.rect(-1.8, -0.2, 3.6, 1.2).fill(0xe07a5f);
+        a.rig.root.addChildAt(a.lanyard, a.rig.root.getChildIndex(a.rig.armL));
+      }
+      if (a.lanyard) {
+        a.lanyard.visible = !!st.intern;
+        a.lanyard.position.set(0, (a.pose === 'stand' ? -14 : -12) - 3);
       }
       const bday = birthdayOf(st.id) === doy;
       setHat(a.rig, bday ? 'party' : hatSeason, bday ? 0xf2c450 : a.look.top);
