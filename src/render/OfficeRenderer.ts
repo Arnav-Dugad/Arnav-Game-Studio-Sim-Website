@@ -990,6 +990,7 @@ export class OfficeRenderer {
         idle: atDesk && st.assignment.kind === 'idle',
         sleepy: st.activity === 'burnout' || (atDesk && st.energy < 12) || (a.mode === 'fun' && funGlyph === '😴'),
         leisure: a.mode === 'station' ? stationGlyph((a as Agent & { station?: string }).station) : a.mode === 'fun' ? funGlyph : atDesk && st.activity === 'training' ? '📖' : undefined,
+        ...(s.company.moraleMods.some((m) => m.label === 'Game jam' && m.until - s.day > 55) && (a.mode === 'station' || a.mode === 'talk') ? { carry: 'pizza' as const } : {}),
         era,
         reducedMotion: ui.reducedMotion,
       });

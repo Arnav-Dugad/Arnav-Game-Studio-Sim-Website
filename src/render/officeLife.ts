@@ -72,6 +72,7 @@ export function chatExchange(s: GameState, a: Staff, b: Staff): Exchange {
   if (isRainy(s.day, month)) topics.push({ w: 3, make: () => pick<Exchange>([['It’s pouring out there.', 'Forgot my umbrella…'], ['Rainy day = crunch day?', 'Don’t jinx it.'], ['Listen to that rain.', 'So cosy.']]) });
   if (month >= 3 && month <= 5) topics.push({ w: 1.5, make: () => pick<Exchange>([['Spring at last!', 'Finally!'], ['Allergies…', 'Achoo!']]) });
   // The studio's other stories
+  if (s.company.moraleMods.some((m) => m.label === 'Game jam' && m.until - s.day > 55)) topics.push({ w: 5, make: () => pick<Exchange>([['Game jam weekend!', 'I’m making a frog racer.'], ['48 hours, one idea.', 'And all the pizza. 🍕'], ['My jam game is a cooking roguelike.', 'Ship it!'], ['Who’s on my jam team?', 'Me! 🙋']]) });
   const cm = s.community;
   if (cm && cm.health >= 70) topics.push({ w: 1.5, make: () => pick<Exchange>([['The forums love us right now.', 'Don’t jinx it!'], ['Fan made a guide on our forums!', 'So cool.']]) });
   if (cm && cm.health < 35) topics.push({ w: 2.5, make: () => pick<Exchange>([['Don’t read the forums today.', 'Too late… 😬'], ['The community is furious.', 'Patch. Now.']]) });
