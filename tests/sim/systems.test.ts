@@ -691,7 +691,15 @@ describe('retirement', () => {
     s.retirementSince = s.day - 4 * 365;
     vet.morale = 100;
     vet.loyalty = 100;
+    vet.skills.art = 95;
+    const junior = candidateToStaff(s, generateCandidate(s, new Rng([9, 9, 9, 9]), { role: 'artist' }), 'jr', 20_000);
+    junior.skills.art = 20;
+    junior.potential = 90;
+    junior.morale = 100;
+    junior.loyalty = 100;
+    s.staff.jr = junior;
     advance(s, 35);
+    expect(s.staff.jr!.skills.art).toBeGreaterThan(21); // learned from the veteran
     expect(s.staff.vet).toBeUndefined();
     expect(s.alumni?.[0]?.name).toBe(vet.name);
     expect(s.company.moraleMods.some((m) => /farewell/i.test(m.label))).toBe(true);

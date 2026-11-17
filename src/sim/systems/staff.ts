@@ -453,6 +453,11 @@ function retirements(c: Ctx): void {
     (s.alumni ??= []).push({ name: st.name, role: st.role, years, games: st.gamesShipped, day: s.day, legend: !!st.personId });
     if (s.alumni.length > 120) s.alumni.shift();
     removeStaff(s, st.id);
+    // Before leaving, a veteran passes their craft on to colleagues in the same role.
+    const [craft] = ROLE_SKILLS[st.role];
+    const heirs = Object.values(s.staff).filter((o) => o.role === st.role && o.skills[craft] < st.skills[craft]);
+    const lesson = Math.min(6, 1 + years / 10);
+    for (const o of heirs) o.skills[craft] = Math.min(o.potential, st.skills[craft], o.skills[craft] + lesson);
     // One shared farewell boost (several retirements don't stack into a morale spike).
     const party = s.company.moraleMods.find((m) => m.label === 'Farewell parties');
     if (party) {
@@ -463,7 +468,7 @@ function retirements(c: Ctx): void {
     pushNews(s, {
       category: 'staff',
       headline: `${st.name} retires after ${years} years`,
-      body: `${st.gamesShipped} game${st.gamesShipped === 1 ? '' : 's'} shipped. The team throws a farewell party.`,
+      body: `${st.gamesShipped} game${st.gamesShipped === 1 ? '' : 's'} shipped. The team throws a farewell party${heirs.length ? `, and ${heirs.length} colleague${heirs.length === 1 ? '' : 's'} picked up some of their craft` : ''}.`,
       tone: 'good',
     });
   }
