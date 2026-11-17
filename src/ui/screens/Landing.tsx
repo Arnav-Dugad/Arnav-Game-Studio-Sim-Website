@@ -26,8 +26,7 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
   { icon: 'flag', title: 'Scenarios', body: `${SCENARIOS.length} curated challenges, from Garage Days to Empire: survive the crash, build a Japanese RPG house, crowdfund your dream, become a media mogul.` },
   { icon: 'sliders', title: 'Deep development', body: 'Genre × topic × platform × audience. Focus sliders per phase, bugs, crunch, delays, engines and research.' },
   { icon: 'chart', title: 'Build an empire', body: 'Crowdfunding and Early Access, co-development, publishing deals, IPOs and acquisitions, films and toy lines of your series, esports leagues, a subscription pass — then launch your own console. Or go bankrupt trying.' },
-  { icon: 'heart', title: 'Players who care', body: 'Fan mail and kids’ crayon drawings of your games, an official community to keep healthy, review bombs, a Hall of Classics — and the story of your studio, written from everything you did.' },
-  { icon: 'trophy', title: 'Rivals, awards, legacy', body: 'Head-to-head showdowns with real studios, a yearly awards gala with real-history winners, and a trophy shelf in your office that fills up as you win.' },
+  { icon: 'trophy', title: 'Rivals, fans, legacy', body: 'Showdowns with real studios and a yearly awards gala. Fan mail and kids’ crayon drawings of your games, a community to keep healthy, the Hall of Classics — and the story of your studio, written from everything you did.' },
   { icon: 'music', title: 'A soundtrack that ages with you', body: 'Music generated live in your browser: chiptune in the ’80s, FM in the ’90s, soft synths in the 2000s, lo-fi beats after. No downloads, no files.' },
   { icon: 'sparkle', title: 'Sandbox & cheats', body: 'Play it straight, or tick Sandbox mode and bend every rule: money, staff, review scores, trends, rivals and time itself.' },
 ];
