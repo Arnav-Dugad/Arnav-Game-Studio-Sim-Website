@@ -467,6 +467,8 @@ export interface Release {
   passion?: string;
   /** Fans asked to translate it (the event happened, whatever you chose). */
   fanTranslated?: boolean;
+  /** It had a public demo before launch (the score players saw). */
+  demo?: { day: number; score: number };
   /** Players asked for accessibility options (the event happened). */
   accessibilityAsked?: boolean;
   /** A hidden secret, and whether players have found it yet. */

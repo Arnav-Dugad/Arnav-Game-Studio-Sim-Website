@@ -444,6 +444,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     ...(cf ? { crowdfund: { raised: cf.raised, backers: cf.backers, late: cfLate } } : {}),
     ...(modded ? { modded: true } : {}),
     ...(p.passion ? { passion: p.passion } : {}),
+    ...(p.demo ? { demo: { ...p.demo } } : {}),
   };
   if (ea) {
     rel.units += ea.units;
