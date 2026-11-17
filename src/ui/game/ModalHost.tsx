@@ -1183,7 +1183,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
     void addHallOfFame(user.uid, {
       company: s.company.name,
       founder: s.company.founderName,
-      ending,
+      ending: s.settings.daily ? `Daily ${s.settings.daily} · ${ending}` : ending,
       years: `${s.settings.startYear}–${fromDay(s.day).year}`,
       score,
       bestGame: s.progress.stats.bestGame,

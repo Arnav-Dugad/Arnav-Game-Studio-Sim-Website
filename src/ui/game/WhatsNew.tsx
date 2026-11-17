@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21g';
+export const WHATS_NEW_VERSION = '2026-11-21h';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'calendar', title: 'Daily challenge', body: 'A new mode when founding a studio: one scenario and one world a day, the same for every player. Compare your run with a friend’s — daily runs are marked in the Hall of Fame.' },
   { icon: 'warning', title: 'Console certification', body: 'From 1986, a buggy console or handheld game in polish can fail the platform holder’s certification: pay for an expedited re-test (a week) or fix it properly (two weeks, more bugs gone). Good QA keeps you out of trouble. Plus new rival series: Yu-Gi-Oh!, Legends of Runeterra and Tokimeki Memorial.' },
   { icon: 'coin', title: 'Launch bonuses & public delays', body: 'After a launch, open the game and thank the team: a launch bonus for everyone who made it buys three months of better mood and more loyalty (once, within two months). And players now remember a public delay — forgiven if the game is great, held against it if it isn’t.' },
   { icon: 'sparkle', title: 'Stories for the new genres', body: 'Fans may run a tournament for your card game (sponsor it for fans and a burst of sales), or ask to translate your visual novel for players abroad — bless it, hire them to make it official, or send a takedown. Plus new research: Card-Game AI and Illustrated Scenes.' },

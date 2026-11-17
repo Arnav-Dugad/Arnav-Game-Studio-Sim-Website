@@ -953,6 +953,8 @@ export interface Settings {
   endless: boolean;
   autopause: { gates: boolean; events: boolean; releases: boolean; research: boolean };
   startYear: number;
+  /** A daily-challenge run: the day it was for (YYYY-MM-DD). */
+  daily?: string;
 }
 
 export type GameStatus = 'running' | 'bankrupt' | 'acquired' | 'retired';

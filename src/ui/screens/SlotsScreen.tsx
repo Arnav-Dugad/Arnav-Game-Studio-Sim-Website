@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { dailyLabel, dailyPick, todayKey } from '../game/daily';
 import { SCENARIOS, SCENARIO_BY_ID } from '@/sim/systems/scenarios';
 import { createScenarioGame } from '@/sim/scenarioSetup';
 import { REGIONS, REGION_BY_ID, type RegionId } from '@/data/regions';
@@ -280,8 +281,9 @@ export function SlotsScreen() {
         <NewStudioModal
           onClose={() => setCreating(null)}
           onCreate={async (opts) => {
-            const seed = Math.floor(Math.random() * 2 ** 31);
+            const seed = opts.daily ? dailyPick(opts.daily).seed : Math.floor(Math.random() * 2 ** 31);
             const s = opts.scenario ? createScenarioGame({ seed, ...opts, scenario: opts.scenario }) : createGame({ seed, ...opts });
+            if (opts.daily) s.settings.daily = opts.daily; // the same world as everyone else today
             // A stale list could show a slot as empty that another device has since filled.
             if ((await cloudSlotStatus(user.uid, creating)) === 'taken') {
               setError('That slot already has a save in the cloud (maybe from another device). Refreshing the list — pick an empty slot.');
@@ -330,6 +332,8 @@ interface NewOpts {
   endless: boolean;
   tutorial: boolean;
   sandbox: boolean;
+  /** Today's daily challenge (YYYY-MM-DD). */
+  daily?: string;
 }
 
 /** The founder name from the last studio founded on this device (a convenience; storage may be unavailable). */
@@ -423,10 +427,24 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
             ]}
           />
         </Field>
-        <Field label="Mode" hint={o.scenario ? SCENARIO_BY_ID[o.scenario]?.blurb : 'The full sandbox story: play as long as you like.'}>
-          <Segmented ariaLabel="Mode" value={o.scenario ? 'scenario' : 'free'} onChange={(v) => set('scenario', v === 'scenario' ? (SCENARIOS[0]?.id ?? '') : '')} options={[{ value: 'free', label: 'Free play' }, { value: 'scenario', label: 'Scenario' }]} />
+        <Field label="Mode" hint={o.daily ? `Today’s challenge (${dailyLabel(o.daily)}): ${SCENARIO_BY_ID[o.scenario]?.name} — ${SCENARIO_BY_ID[o.scenario]?.tagline} Everyone playing today gets the same world, so compare runs with a friend.` : o.scenario ? SCENARIO_BY_ID[o.scenario]?.blurb : 'The full sandbox story: play as long as you like.'}>
+          <Segmented
+            ariaLabel="Mode"
+            value={o.daily ? 'daily' : o.scenario ? 'scenario' : 'free'}
+            onChange={(v) => {
+              if (v === 'daily') {
+                const key = todayKey();
+                setO((x) => ({ ...x, daily: key, scenario: dailyPick(key).scenario }));
+              } else setO((x) => ({ ...x, daily: undefined, scenario: v === 'scenario' ? (SCENARIOS[0]?.id ?? '') : '' }));
+            }}
+            options={[
+              { value: 'free', label: 'Free play' },
+              { value: 'scenario', label: 'Scenario' },
+              { value: 'daily', label: 'Daily challenge' },
+            ]}
+          />
         </Field>
-        {o.scenario && (
+        {o.scenario && !o.daily && (
           <div className="grid gap-1.5 sm:grid-cols-2" role="radiogroup" aria-label="Scenario">
             {SCENARIOS.map((sc) => (
               <button
