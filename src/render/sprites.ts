@@ -84,6 +84,8 @@ export interface DrawOpts {
   fanArt?: { seed: number; color: number }[];
   /** Your latest games for the Release Wall (genre colour, score, a seed for the art). */
   releases?: { color: number; score: number; seed: number }[];
+  /** Retired colleagues for the Alumni Wall (a colour from their name, and whether they're a legend). */
+  alumni?: { color: number; legend: boolean }[];
 }
 
 /**
@@ -478,6 +480,32 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       if (P.night) g.circle(W / 2, -8, 22).fill({ color: P.accentBiz, alpha: 0.08 });
       break;
     }
+    case 'alumni_wall': {
+      shadow(g, 4, 4, W - 8, H - 4, 0.12);
+      g.rect(8, 4, 2, H - 8).fill(P.woodDark);
+      g.rect(W - 10, 4, 2, H - 8).fill(P.woodDark);
+      g.roundRect(3, -25, W - 6, H + 4, 3).fill(0x4a3a2c); // a warm wooden panel
+      g.roundRect(3, -25, W - 6, H + 4, 3).stroke({ width: 2, color: P.woodDark });
+      const people = (o.alumni ?? []).slice(0, 6);
+      const cols = 3;
+      const pw = (W - 14) / cols - 4;
+      const ph = Math.min(pw * 1.2, (H + 10) / 2 - 4);
+      for (let i = 0; i < 6; i++) {
+        const cx = 7 + (i % cols) * (pw + 4);
+        const cy = -22 + Math.floor(i / cols) * (ph + 4);
+        const a = people[i];
+        if (!a) {
+          g.rect(cx, cy, pw, ph).stroke({ width: 1, color: 0xf4efe7, alpha: 0.15 });
+          continue;
+        }
+        g.roundRect(cx - 1.2, cy - 1.2, pw + 2.4, ph + 2.4, 1).fill(a.legend ? 0xe3b23c : P.woodDark);
+        g.rect(cx, cy, pw, ph).fill(0xe9e2d4);
+        // a little portrait: head and shoulders
+        g.circle(cx + pw / 2, cy + ph * 0.42, pw * 0.2).fill(0xc99a72);
+        g.roundRect(cx + pw * 0.2, cy + ph * 0.66, pw * 0.6, ph * 0.34, 3).fill(a.color);
+      }
+      break;
+    }
     case 'release_wall': {
       shadow(g, 4, 4, W - 8, H - 4, 0.12);
       g.rect(8, 4, 2, H - 8).fill(P.woodDark);
@@ -639,6 +667,7 @@ export function itemLift(id: ItemId): number {
     case 'aquarium':
     case 'whiteboard':
     case 'release_wall':
+    case 'alumni_wall':
     case 'fan_wall':
     case 'sound_booth':
     case 'trophy_shelf':

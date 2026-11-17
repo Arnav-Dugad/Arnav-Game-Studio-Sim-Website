@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21m';
+export const WHATS_NEW_VERSION = '2026-11-21n';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'heart', title: 'Alumni Wall', body: 'A new decor item (Build → Decor): framed portraits of the people who retired from your studio, gold frames for the legends.' },
   { icon: 'crowd', title: 'Fan votes', body: 'From 2008, with two or more series, your community may ask fans to vote on which gets a sequel. The winner gains fans — and a sequel started within a year begins with extra hype.' },
   { icon: 'megaphone', title: 'April Fools’', body: 'Some years, late in March, the team can announce a joke game for April 1st. Players love a laugh — and now and then they beg for it to be real, and one of your designers takes it on as a pitch. Plus: Valentine’s and April Fools’ chatter in the office, the studio mascot greeting launch-day queues, and World Cup summers lifting sports games.' },
   { icon: 'play', title: 'Public demos', body: 'From 1990, an announced game in polish can release a playable demo (once). A demo tells the truth: a great game (75+) wins players over, a weak one (under 60) puts them off. Plus new events: accessibility requests and charity streams.' },

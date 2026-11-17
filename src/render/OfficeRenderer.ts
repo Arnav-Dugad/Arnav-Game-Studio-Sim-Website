@@ -534,6 +534,8 @@ export class OfficeRenderer {
     const recent = s.releaseOrder.slice(-6).reverse().map((id) => s.releases[id]!).filter(Boolean);
     this.wallGames = recent.map((r) => ({ color: GENRE_POSTER[Math.abs(hashStr(r.concept.genre)) % GENRE_POSTER.length]!, score: r.score, seed: Math.abs(hashStr(r.id)) }));
     this.wallKey = recent.map((r) => r.id + ':' + Math.round(r.score)).join(',');
+    const al = (s.alumni ?? []).slice(-6);
+    this.alumni = al.map((a) => ({ color: GENRE_POSTER[Math.abs(hashStr(a.name)) % GENRE_POSTER.length]!, legend: a.legend }));
     const mc = s.company.mascot;
     this.mascot = mc ? { kind: mc.kind, color: parseInt(mc.color.slice(1), 16), acc: mc.acc } : undefined;
     if (this.wallKey !== this.lastWallKey) {
@@ -550,7 +552,7 @@ export class OfficeRenderer {
         this.textures.delete(k);
       }
     }
-    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}|${this.wallKey}|${mc ? mc.kind + mc.color + mc.acc : ''}`;
+    const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}|${this.wallKey}|${this.alumni.length}|${mc ? mc.kind + mc.color + mc.acc : ''}`;
     if (iKey !== this.itemsKey) {
       this.itemsKey = iKey;
       this.syncItems(s, floor, era);
@@ -670,6 +672,7 @@ export class OfficeRenderer {
   private fanArt: { seed: number; color: number }[] = [];
   private wallGames: { color: number; score: number; seed: number }[] = [];
   private wallKey = '';
+  private alumni: { color: number; legend: boolean }[] = [];
   private mascot?: { kind: string; color: number; acc: string };
   private lastFanKey = '';
   private lastWallKey = '';
@@ -679,14 +682,14 @@ export class OfficeRenderer {
     const def = ITEM_BY_ID[id];
     const w = rot ? def.h : def.w;
     const h = rot ? def.w : def.h;
-    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}${id === 'release_wall' ? `|r${this.wallKey}` : ''}${id === 'mascot_statue' && this.mascot ? `|m${this.mascot.kind}${this.mascot.color}${this.mascot.acc}` : ''}`;
+    const key = `${id}|${rot}|${era < 2003 ? 'crt' : 'lcd'}|${this.P.night}${id === 'trophy_shelf' ? `|t${this.trophies}` : ''}${id === 'fan_wall' ? `|f${this.fanArt.map((a) => a.seed).join(',')}` : ''}${id === 'release_wall' ? `|r${this.wallKey}` : ''}${id === 'alumni_wall' ? `|a${this.alumni.length}` : ''}${id === 'mascot_statue' && this.mascot ? `|m${this.mascot.kind}${this.mascot.color}${this.mascot.acc}` : ''}`;
     const lift = itemLift(id) + 12;
     let tex = this.textures.get(key);
     if (!tex) {
       const g = new Graphics();
       // pad region so generateTexture includes lift and overhangs
       g.rect(-6, -lift, w * T + 12, h * T + lift + 10).fill({ color: 0x000000, alpha: 0.001 });
-      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies, fanArt: this.fanArt, mascot: this.mascot, releases: this.wallGames });
+      drawItem(g, id, w, h, { era, P: this.P, trophies: this.trophies, fanArt: this.fanArt, mascot: this.mascot, releases: this.wallGames, alumni: this.alumni });
       tex = this.app.renderer.generateTexture({ target: g, resolution: 2, antialias: true });
       g.destroy();
       this.textures.set(key, tex);
