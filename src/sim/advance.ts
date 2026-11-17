@@ -67,8 +67,13 @@ function hypeWeekly(s: GameState): void {
     if (p.kind !== 'game') continue;
     p.hype = Math.max(0, p.hype * (1 - BALANCE.HYPE_DECAY_WEEKLY));
     // an industry name on the team keeps people talking
-    const famous = p.team.filter((id) => (s.staff[id]?.traits as string[] | undefined)?.includes('famous')).length;
-    if (famous && p.announcedDay !== undefined) p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + Math.min(0.03, 0.01 * famous));
+    const famous = p.team.filter((id) => {
+      const st = s.staff[id];
+      return st && st.sickDays <= 0 && !(st.vacationDays ?? 0) && (st.traits as string[] | undefined)?.includes('famous');
+    }).length;
+    // their name keeps an announced game in the news — enough to stop it fading, not to replace marketing
+    const floor = Math.min(0.5, 0.2 * famous);
+    if (famous && p.announcedDay !== undefined && p.hype < floor) p.hype = Math.min(floor, p.hype + Math.min(0.03, 0.01 * famous));
   }
 }
 

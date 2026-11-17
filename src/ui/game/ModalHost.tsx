@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MascotAcc, MascotDesign, MascotKind } from '@/sim/types';
 import { Mascot } from '../art/Mascot';
 import { StudioStory } from './StudioStory';
@@ -553,7 +553,8 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
 
 function PostMortemCard({ releaseId }: { releaseId: string }) {
   const r = useGame((g) => g.s!.releases[releaseId]);
-  const pm = useMemo(() => (r ? postMortem(r) : null), [r]);
+  useGame((g) => g.v); // re-render as the game sells (the release is mutated in place)
+  const pm = r ? postMortem(r) : null;
   if (!pm) return null;
   const col = (title: string, pts: typeof pm.right, good: boolean) => (
     <div className="min-w-0">

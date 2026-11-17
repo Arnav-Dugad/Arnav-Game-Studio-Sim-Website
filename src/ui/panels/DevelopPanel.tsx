@@ -285,7 +285,7 @@ function GameCard({ p }: { p: GameProject }) {
               { value: 'none', label: 'No review copies' },
             ]}
           />
-          <span className="text-ink3">{(p.reviewPolicy ?? 'launch') === 'early' ? 'Confident: great reviews sell more, weak ones scare buyers off.' : (p.reviewPolicy ?? 'launch') === 'none' ? 'Hides a weak game a little longer — but the press notices (reputation −0.5).' : 'The usual: no surprises either way.'}</span>
+          <span className="text-ink3">{(p.reviewPolicy ?? 'launch') === 'early' ? 'Confident: great reviews sell more, weak ones scare buyers off.' : (p.reviewPolicy ?? 'launch') === 'none' ? 'Hides a weak game a little longer (under 60 it sells ~5% more) — but the press notices (reputation −0.5), and a decent game sells ~4% less.' : 'The usual: no surprises either way.'}</span>
         </div>
       )}
       {showTeam && <TeamEditor p={p} />}
@@ -470,9 +470,9 @@ function NewGame({ onDone }: { onDone: () => void }) {
       o.best = Math.max(o.best, Math.round(r.score));
     }
     return out;
-    // the market moves monthly; releases change the counts
+    // the market moves monthly; releases change the counts (state is mutated in place, so key on lengths)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.market, s.releases, genres.length]);
+  }, [s.market.trendHistory.length, s.releaseOrder.length, genres.length]);
   const topics = availableTopics(s);
   const firstGenre = (genres.find((g) => g.ok)?.g.id ?? 'action') as GenreId;
   // Planning a sequel pre-fills the wizard from the franchise

@@ -49,7 +49,7 @@ export const TRAITS: readonly TraitDef[] = [
   { id: 'bug_magnet', name: 'Bug Magnet', desc: 'Writes 35% more bugs.', good: false, excludes: ['meticulous'] },
   { id: 'meticulous', name: 'Meticulous', desc: 'Writes 30% fewer bugs and is great at QA.', good: true, excludes: ['bug_magnet'] },
   { id: 'ambitious', name: 'Ambitious', desc: 'Grows fast, but expects raises and promotions.', good: null },
-  { id: 'famous', name: 'Industry Name', desc: 'Fans follow their work: games they’re on gain a little hype every week.', good: true },
+  { id: 'famous', name: 'Industry Name', desc: 'Fans follow their work: announced games they’re on keep a little hype even without marketing.', good: true },
   { id: 'quick', name: 'Quick Worker', desc: '+15% output, but writes 15% more bugs.', good: null, excludes: ['perfectionist', 'meticulous'] },
   { id: 'tinkerer', name: 'Tinkerer', desc: 'Loves tools: engine and research work 20% faster.', good: true },
   { id: 'social_butterfly', name: 'Social Butterfly', desc: 'Loves busy offices and lifts nearby morale a little.', good: true, excludes: ['introvert'] },

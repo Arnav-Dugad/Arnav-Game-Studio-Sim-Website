@@ -866,7 +866,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'A film crew wants to follow you',
         body: `An independent filmmaker wants to document the making of ${p.concept.name} — every meeting, every setback, all the way to launch day. Fly-on-the-wall, nothing off limits.`,
         options: [
-          { id: 'yes', label: 'Let the cameras in', preview: 'Hype +0.3 now. The film premieres six months after launch: a great game (82+) makes it a celebrated documentary (fans, reputation, applicants); a flop makes it a cautionary tale. Crunch on camera always makes the cut.' },
+          { id: 'yes', label: 'Let the cameras in', preview: 'Hype +0.3 now (morale −1 for two months: cameras everywhere). The film premieres six months after launch: a great game (82+) makes it a celebrated documentary (fans, reputation, applicants); a flop makes it a cautionary tale. Crunch on camera always makes the cut.' },
           { id: 'no', label: 'Politely decline', preview: 'No change' },
         ],
         ctx: { project: p.id },

@@ -247,6 +247,12 @@ export function SlotsScreen() {
             );
           })}
         </ul>
+        {slots && slots.every((sl) => sl.local || sl.cloud) && (
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-ink3">
+            <Icon name="info" size={14} />
+            All {slots.length} slots are in use. To found a new studio, export one you want to keep and delete it — you can import it again any time.
+          </p>
+        )}
 
         {hall.length > 0 && (
           <section className="mt-10">

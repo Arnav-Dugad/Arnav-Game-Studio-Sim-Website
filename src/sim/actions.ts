@@ -293,7 +293,7 @@ export function featuresBlocked(s: GameState, ids: string[], monet: Monetization
     if (!f) return 'Unknown feature';
     if (yr < f.year) return `${f.name} isn't possible until ${f.year}`;
     if (f.research && !s.research.done.includes(f.research)) return `${f.name} needs ${RESEARCH_BY_ID[f.research]?.name ?? 'research'}`;
-    if (f.monet && !f.monet.includes(monet)) return `${f.name} only suits free-to-play or live games`;
+    if (f.monet && !f.monet.includes(monet)) return `${f.name} only suits ${f.monet.includes('premium') ? 'games sold at full price' : 'free-to-play or live games'}`;
   }
   return null;
 }

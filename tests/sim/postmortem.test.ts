@@ -40,4 +40,17 @@ describe('post-mortem', () => {
     expect(pm.wrong.some((p) => p.lesson)).toBe(true);
     expect(pm.tone).not.toBe('good');
   });
+
+  it('does not call a game a money-loser while it is still selling', () => {
+    const r = structuredClone(ship(5, 20, 'space'));
+    r.active = true;
+    r.week = 2;
+    r.net = 0;
+    r.devCost = 1_000_000;
+    const pm = postMortem(r);
+    expect(pm.wrong.some((p) => p.text === 'It lost money')).toBe(false);
+    expect(pm.verdict).not.toMatch(/pay its way|money-loser|hard lesson/);
+    r.active = false;
+    expect(postMortem(r).wrong.some((p) => p.text === 'It lost money')).toBe(true);
+  });
 });

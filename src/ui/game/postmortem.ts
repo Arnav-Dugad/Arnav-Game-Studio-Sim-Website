@@ -26,7 +26,9 @@ const W = (m: number) => Math.abs(Math.log(Math.max(0.01, m)));
 
 /** Explain one multiplier from the quality breakdown (null = not worth mentioning). */
 function qualityPoint(label: string, m: number, genre: string): { good: boolean; p: PMPoint } | null {
-  const up = m >= 1.035;
+  // small-but-certain bonuses (a fresh idea, Early Access polish) count even though they're modest
+  const modest = label === 'Fresh idea' || label.startsWith('Early Access') || label.startsWith('Stretch goals');
+  const up = m >= (modest ? 1.01 : 1.035);
   const down = m <= 0.95;
   if (!up && !down) return null;
   const w = W(m);
@@ -77,7 +79,7 @@ export function postMortem(r: Release): PostMortem {
   }
 
   for (const part of r.why.user?.parts ?? []) {
-    if (part.kind !== 'add' || part.label === 'Players vary' || part.label === 'Bugs') continue;
+    if (part.kind !== 'add' || part.label === 'Players vary' || part.label === 'Bugs' || part.label.startsWith('Backers waited')) continue;
     const w = Math.abs(part.value) / 25;
     if (part.label.startsWith('Didn’t live up')) push(false, { text: 'Players felt it didn’t live up to the hype', lesson: 'Only build big hype for games that can deliver', weight: w });
     else if (part.label === 'Franchise fatigue' && part.value <= -2) push(false, { text: 'The series is wearing thin', lesson: 'Rest the series, or reinvent it', weight: w });
@@ -88,8 +90,11 @@ export function postMortem(r: Release): PostMortem {
 
   // business
   const profit = r.net - r.devCost;
+  // money is only judged once sales have settled (or the game has already paid its way)
+  const settled = !r.active || r.week >= 26 || profit >= 0;
   if (r.devCost > 0 && profit >= r.devCost * 2) push(true, { text: `Paid for itself ${Math.floor(r.net / r.devCost)} times over`, weight: 0.3 });
-  else if (profit < 0) push(false, { text: 'It lost money', lesson: r.hypeAtLaunch < 0.3 ? 'Market it before launch so people know it’s coming' : 'Keep the budget in line with what the game can earn', weight: 0.25 });
+  else if (profit >= 0 && r.devCost > 0 && r.active && r.week < 26) push(true, { text: 'Already earned back its budget', weight: 0.15 });
+  else if (profit < 0 && settled) push(false, { text: 'It lost money', lesson: r.hypeAtLaunch < 0.3 ? 'Market it before launch so people know it’s coming' : 'Keep the budget in line with what the game can earn', weight: 0.25 });
   if (r.hypeAtLaunch >= 1) push(true, { text: 'Launch hype was huge', weight: 0.12 });
   else if (r.hypeAtLaunch < 0.15 && !r.shadowDrop && !r.concept.expansionOf) push(false, { text: 'Few people knew it was coming', lesson: 'Announce it and run some marketing before launch', weight: 0.1 });
   if (r.crowdfund && r.crowdfund.late > 0) push(false, { text: `Backers waited ${Math.ceil(r.crowdfund.late / 30)} month(s) longer than promised`, lesson: 'Promise backers a date you can keep', weight: 0.1 });
@@ -100,7 +105,12 @@ export function postMortem(r: Release): PostMortem {
   wrong.sort((a, b) => b.weight - a.weight);
   const score = r.score;
   const ok = profit >= 0;
-  const [verdict, tone]: [string, PostMortem['tone']] =
+  const [verdict, tone]: [string, PostMortem['tone']] = !settled
+    ? score >= 85 ? ['Acclaimed — and still selling', 'good']
+    : score >= 75 ? ['Well received so far', 'good']
+    : score >= 60 ? ['A solid start', 'neutral']
+    : ['A rough launch', 'bad']
+    :
     score >= 85 && ok ? ['A triumph — the kind of game studios are remembered for', 'good']
     : score >= 75 && ok ? ['A real success', 'good']
     : score >= 75 ? ['Loved by critics, but it didn’t pay its way', 'neutral']
