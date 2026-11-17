@@ -32,10 +32,17 @@ export interface Anim {
   lookDir: number;
   fidget: number; // timer for the next idle fidget (stretch/yawn/phone)
   phone: number;
+  scratch: number; // head-scratch (puzzling over a bug)
+  palm: number; // facepalm
+  idea: number; // finger up: eureka!
+  laugh: number;
+  highfive: number;
+  /** How this person celebrates: 0 jump, 1 dance, 2 fist pumps. */
+  party: number;
 }
 
 export function newAnim(): Anim {
-  return { phase: Math.random() * 10, blink: 1 + Math.random() * 4, joy: 0, sad: 0, wave: 0, stretch: 0, yawn: 0, look: 4 + Math.random() * 8, lookDir: 1, fidget: 6 + Math.random() * 20, phone: 0 };
+  return { phase: Math.random() * 10, blink: 1 + Math.random() * 4, joy: 0, sad: 0, wave: 0, stretch: 0, yawn: 0, look: 4 + Math.random() * 8, lookDir: 1, fidget: 6 + Math.random() * 20, phone: 0, scratch: 0, palm: 0, idea: 0, laugh: 0, highfive: 0, party: Math.floor(Math.random() * 3) };
 }
 
 function drawArm(g: Graphics, look: Look): void {
@@ -123,6 +130,8 @@ export interface AnimInput {
   energy: number;
   working: boolean;
   sleepy: boolean;
+  /** Sitting at a desk with nothing to do. */
+  idle: boolean;
   /** Leisure glyph or station: what they're doing on a break. */
   leisure?: string;
   era: number;
@@ -136,7 +145,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   // timers
   a.blink -= dt;
   if (a.blink < -0.13) a.blink = 2 + Math.random() * 4;
-  for (const k of ['joy', 'sad', 'wave', 'stretch', 'yawn', 'phone'] as const) if (a[k] > 0) a[k] -= dt;
+  for (const k of ['joy', 'sad', 'wave', 'stretch', 'yawn', 'phone', 'scratch', 'palm', 'idea', 'laugh', 'highfive'] as const) if (a[k] > 0) a[k] -= dt;
   // idle fidgets
   a.fidget -= dt;
   if (a.fidget <= 0 && !i.reducedMotion) {
@@ -156,14 +165,15 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   r.armR.position.set(8.6, bodyY - 8.5);
 
   // eyes
-  const shut = a.blink < 0 || i.sleepy || a.sad > 0 || a.yawn > 0.4;
+  const shut = a.blink < 0 || i.sleepy || a.sad > 0 || a.yawn > 0.4 || a.laugh > 0 || a.palm > 0;
   r.eyesOpen.visible = !shut;
   r.eyesClosed.visible = shut;
 
   // mouth
   if (a.yawn > 0) setMouth(r, 'yawn');
   else if (i.speaking) setMouth(r, Math.sin(t * 22 + ph) > 0 ? 'talk2' : 'talk1');
-  else if (a.joy > 0) setMouth(r, 'grin');
+  else if (a.joy > 0 || a.laugh > 0 || a.highfive > 0) setMouth(r, 'grin');
+  else if (a.idea > 0) setMouth(r, 'talk1');
   else if (a.sad > 0 || i.morale < 35) setMouth(r, 'frown');
   else if (i.morale > 68) setMouth(r, 'smile');
   else setMouth(r, 'flat');
@@ -176,9 +186,41 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   let jump = 0;
   const walking = i.mode === 'walk';
   if (a.joy > 0) {
-    l = 2.7 + Math.sin(t * 14) * 0.25;
-    rr = -2.7 - Math.sin(t * 14) * 0.25;
-    jump = Math.abs(Math.sin(t * 9)) * 6;
+    if (a.party === 1) {
+      // dance: arms take turns in the air, hips sway
+      const beat = Math.sin(t * 8 + ph);
+      l = beat > 0 ? 2.6 : 0.6;
+      rr = beat > 0 ? -0.6 : -2.6;
+      lean = Math.sin(t * 8 + ph) * 0.12;
+      jump = Math.abs(Math.sin(t * 16)) * 2;
+    } else if (a.party === 2) {
+      // fist pumps
+      const pump = Math.abs(Math.sin(t * 7 + ph));
+      rr = -1.9 - pump * 1;
+      l = 0.4;
+      jump = pump * 2.5;
+    } else {
+      l = 2.7 + Math.sin(t * 14) * 0.25;
+      rr = -2.7 - Math.sin(t * 14) * 0.25;
+      jump = Math.abs(Math.sin(t * 9)) * 6;
+    }
+  } else if (a.highfive > 0) {
+    // reach up and across towards the partner (rig is mirrored, so "right" is always the facing side)
+    rr = a.highfive > 0.45 ? -2.3 : -2.05;
+    jump = a.highfive > 0.35 && a.highfive < 0.55 ? 2 : 0;
+  } else if (a.palm > 0) {
+    l = -2.5;
+    lean = 0.06 * i.face;
+  } else if (a.scratch > 0) {
+    rr = -2.85 + Math.sin(t * 20) * 0.14;
+  } else if (a.idea > 0) {
+    rr = -2.95;
+    jump = a.idea > 0.9 ? 3 : 0;
+  } else if (a.laugh > 0) {
+    l = -0.55;
+    rr = 0.55;
+    lean = -i.face * 0.08;
+    jump = Math.abs(Math.sin(t * 18)) * 1.2;
   } else if (a.wave > 0) {
     rr = -2.6 + Math.sin(t * 14) * 0.4;
   } else if (a.stretch > 0) {
@@ -223,6 +265,11 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   } else if (i.pose === 'slump') {
     l = 0.02;
     rr = -0.02;
+  } else if (i.idle) {
+    // arms folded, a slow foot-tapping sway
+    l = -0.95;
+    rr = 0.95;
+    lean = Math.sin(t * 2 + ph) * 0.025;
   } else {
     // idle: a gentle sway
     l = 0.1 + Math.sin(t * 1.3 + ph) * 0.06;

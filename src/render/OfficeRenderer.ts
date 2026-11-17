@@ -49,6 +49,8 @@ interface Talk {
   host: boolean;
   /** Seconds a non-host waits for the host to arrive before giving up. */
   patience: number;
+  /** Friends finish with a high-five. */
+  fived?: boolean;
 }
 
 interface Agent {
@@ -808,7 +810,9 @@ export class OfficeRenderer {
       }
       // Pose & animation
       const atDesk = a.mode === 'desk';
-      this.setPose(a, atDesk ? (st.activity === 'burnout' ? 'slump' : 'sit') : 'stand');
+      const funGlyph = (a as Agent & { funGlyph?: string }).funGlyph;
+      const lounging = a.mode === 'fun' && (funGlyph === '😌' || funGlyph === '😴');
+      this.setPose(a, atDesk ? (st.activity === 'burnout' ? 'slump' : 'sit') : lounging ? 'sit' : 'stand');
       let bob = 0;
       if (a.mode === 'walk') bob = Math.abs(Math.sin(a.t * 12)) * 2.2;
       else if (atDesk && st.activity !== 'burnout' && st.activity !== 'idle') {
@@ -816,7 +820,6 @@ export class OfficeRenderer {
         bob = Math.abs(Math.sin(a.t * typing)) * (0.8 + (st.productivityWhy?.total ?? 1) * 0.6);
       }
       if (st.morale > 82 && atDesk && Math.sin(a.t * 1.3) > 0.995) bob += 5;
-      const funGlyph = (a as Agent & { funGlyph?: string }).funGlyph;
       const speaking = a.speechT > 0;
       animate(a.rig, a.anim, {
         dt: dt * speedMul,
@@ -830,6 +833,7 @@ export class OfficeRenderer {
         morale: st.morale,
         energy: st.energy,
         working: atDesk && (st.activity === 'work' || st.activity === 'research'),
+        idle: atDesk && st.assignment.kind === 'idle',
         sleepy: st.activity === 'burnout' || (atDesk && st.energy < 12) || (a.mode === 'fun' && funGlyph === '😴'),
         leisure: a.mode === 'station' ? '☕' : a.mode === 'fun' ? funGlyph : atDesk && st.activity === 'training' ? '📖' : undefined,
         era,
@@ -857,8 +861,13 @@ export class OfficeRenderer {
       if (atDesk && st.activity === 'work' && a.thinkT <= 0 && a.bubbleT < -1 && !ui.reducedMotion) {
         const p = st.assignment.kind === 'project' ? s.projects[st.assignment.id] : undefined;
         const buggy = !!p && p.kind === 'game' && p.bugs > (p.design + p.tech) * 0.06;
-        this.showBubble(a, workThought(st, buggy));
+        const thought = workThought(st, buggy);
+        this.showBubble(a, thought);
         a.bubbleT = 1.8;
+        if (thought === '🐛') {
+          if (Math.random() < 0.5) a.anim.scratch = 1.4;
+          else a.anim.palm = 1.3;
+        } else if (thought === '💡') a.anim.idea = 1.2;
         a.thinkT = 10 + Math.random() * 25;
       }
       a.speechT -= dt;
@@ -1091,6 +1100,13 @@ export class OfficeRenderer {
     tk.timer -= dt;
     if (tk.timer > 0) return;
     if (tk.i >= tk.lines.length) {
+      const key = a.id < partner.id ? `${a.id}|${partner.id}` : `${partner.id}|${a.id}`;
+      if (!tk.fived && (this.affinity.get(key) ?? 0) >= 2 && Math.random() < 0.6) {
+        tk.fived = true;
+        a.anim.highfive = partner.anim.highfive = 0.8;
+        tk.timer = 0.85;
+        return;
+      }
       this.endTalk(s, floor, a);
       return;
     }
@@ -1153,6 +1169,7 @@ export class OfficeRenderer {
     a.speechT = secs;
     a.speech.visible = true;
     if (/\b(Hi|Hey|Morning|Bye)\b|👋/.test(text)) a.anim.wave = 1.6;
+    else if (/\bHa\b|😄|Right\?!|My favourite/.test(text)) a.anim.laugh = 1.3;
   }
 
   private route(s: GameState, floor: number, a: Agent, wx: number, wy: number): [number, number][] {
