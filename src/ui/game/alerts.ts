@@ -1,4 +1,6 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
+import { demoBlocked } from '@/sim/systems/demos';
+import { bonusBlocked, bonusCost, bonusTeam } from '@/sim/systems/launchBonus';
 import { pulseKey, teamPulse, type PulseItem } from './pulse';
 import { campaignBlocked, campaignFor } from '@/sim/systems/awardsCampaign';
 import { sabbaticalBlocked } from '@/sim/systems/staff';
@@ -109,6 +111,14 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
     const d = pulseCache.drag;
     if (d && d.avg <= -8 && d.people >= staff.length * 0.4)
       out.push({ id: 'pulse', tone: 'warn', icon: 'heart', text: `${d.label} is costing ${d.people} people ${Math.round(-d.avg)} morale each.${d.hint ? ` ${d.hint}.` : ''}`, action: { label: 'Team pulse', run: () => open('staff', 'team') } });
+  }
+  if (!urgentOnly) {
+    // a game good enough to show off: a demo would win players over
+    const showable = projects.find((p) => p.kind === 'game' && !demoBlocked(s, p) && p.qualityPreview && qualityToScore(p.qualityPreview.total) >= 75);
+    if (showable && showable.kind === 'game') out.push({ id: 'demo', tone: 'info', icon: 'play', text: `${showable.concept.name} is looking great — a public demo would win players over.`, action: { label: 'Develop', run: () => open('develop', 'projects') } });
+    // a recent launch, and the money to thank the team
+    const thank = s.releaseOrder.slice(-3).map((id) => s.releases[id]!).find((r) => r && !bonusBlocked(s, r) && s.company.cash > bonusCost(s, r) * 6);
+    if (thank) out.push({ id: 'bonus', tone: 'info', icon: 'coin', text: `${thank.name} is out — a launch bonus would thank the ${bonusTeam(s, thank).length} people who made it.`, action: { label: 'See it', run: () => useGame.getState().openModalNow({ kind: 'release', releaseId: thank.id }) } });
   }
   // awards season: a contender without a campaign behind it
   {
