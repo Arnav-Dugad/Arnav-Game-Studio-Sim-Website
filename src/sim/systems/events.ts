@@ -54,6 +54,122 @@ function staffById(s: GameState, id: string | number | undefined): Staff | undef
 
 export const EVENT_DEFS: EventDef[] = [
   {
+    id: 'heat_wave',
+    art: 'smoke',
+    cooldown: 300,
+    weight: (s) => {
+      const m = fromDay(s.day).month;
+      return m >= 6 && m <= 8 && staffList(s).length >= 3 ? 0.5 : 0;
+    },
+    make: ({ s }) => {
+      const cost = money(250, s.day) * Math.max(4, Object.keys(s.staff).length) ** 0.8;
+      return {
+        title: 'Heat wave!',
+        body: 'It’s 38°C outside and the old air conditioning has given up. Keyboards are sticky, tempers are short.',
+        options: [
+          { id: 'ac', label: `Install proper air conditioning (${fmtMoney(cost)})`, preview: 'Problem solved; morale +2 for a month', disabled: s.company.cash < cost },
+          { id: 'icecream', label: `Ice cream for everyone (${fmtMoney(cost / 6)})`, preview: 'Morale holds; energy dips this week' },
+          { id: 'tough', label: 'Tough it out', preview: 'Morale −6 for a month' },
+        ],
+        ctx: { cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const cost = Number(e.ctx.cost);
+      if (opt === 'ac') {
+        spend(s, 'office', cost);
+        mod(s, 2, 30, 'New air conditioning');
+      } else if (opt === 'icecream') {
+        spend(s, 'other_expense', cost / 6);
+        for (const st of Object.values(s.staff)) st.energy = clamp(st.energy - 10, 0, 100);
+      } else mod(s, -6, 30, 'Heat wave');
+    },
+  },
+  {
+    id: 'power_outage',
+    art: 'smoke',
+    cooldown: 400,
+    weight: (s) => (staffList(s).length >= 2 ? 0.25 + Math.min(0.5, s.office.items.filter((i) => i.item === 'server_rack').length * 0.1) : 0),
+    make: ({ s }) => {
+      const ups = money(4_000, s.day);
+      return {
+        title: 'Power cut',
+        body: 'The whole block has lost power. Unsaved work is gone, and anything online is down until it’s back.',
+        options: [
+          { id: 'ups', label: `Buy backup power for next time (${fmtMoney(ups)})`, preview: 'Lose today; never again', disabled: s.company.cash < ups },
+          { id: 'wait', label: 'Send everyone home early', preview: 'Energy +10, a little progress lost' },
+        ],
+        ctx: { ups },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt === 'ups') {
+        spend(s, 'office', Number(e.ctx.ups));
+        s.eventCooldowns.power_outage = s.day + 365 * 200; // backup power: no more blackouts
+      }
+      for (const p of activeGames(s)) p.bugs += 2;
+      if (opt === 'wait') for (const st of Object.values(s.staff)) st.energy = clamp(st.energy + 10, 0, 100);
+      if (opt !== 'ups' && s.office.items.some((i) => i.item === 'server_rack')) addRep(s, -1, 'Servers went down in a power cut');
+    },
+  },
+  {
+    id: 'charity_marathon',
+    art: 'heart',
+    cooldown: 600,
+    weight: (s) => (yr(s) >= 2010 && s.releaseOrder.length >= 3 ? 0.4 : 0),
+    make: ({ s }) => {
+      const gift = money(20_000, s.day);
+      return {
+        title: 'Charity gaming marathon',
+        body: 'A big charity speedrun marathon wants to feature your games for a week — and asks if you’ll match donations.',
+        options: [
+          { id: 'match', label: `Match donations (${fmtMoney(gift)})`, preview: 'Reputation +3, fans +, morale +3', disabled: s.company.cash < gift },
+          { id: 'feature', label: 'Let them feature the games', preview: 'Fans + (a little)' },
+          { id: 'no', label: 'Not this year', preview: 'Nothing happens' },
+        ],
+        ctx: { gift },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt === 'match') {
+        spend(s, 'other_expense', Number(e.ctx.gift));
+        addRep(s, 3, 'Charity marathon');
+        s.company.fans += 20_000;
+        mod(s, 3, 45, 'Proud of the charity marathon');
+        pushNews(s, { category: 'studio', headline: `${s.company.name} matches charity marathon donations`, tone: 'good' });
+      } else if (opt === 'feature') s.company.fans += 6_000;
+    },
+  },
+  {
+    id: 'celebrity_fan',
+    art: 'megaphone',
+    cooldown: 500,
+    weight: (s) => (s.releaseOrder.some((id) => (s.releases[id]?.score ?? 0) >= 85) ? 0.35 : 0),
+    make: ({ s, rng }) => {
+      const hits = s.releaseOrder.map((id) => s.releases[id]!).filter((r) => r.score >= 85);
+      if (!hits.length) return null;
+      const r = rng.pick(hits);
+      const who = rng.pick(['a chart-topping pop star', 'an Oscar-winning actor', 'a star footballer', 'a famous chef', 'a late-night talk-show host']);
+      return {
+        title: 'A celebrity superfan',
+        body: `${who[0]!.toUpperCase()}${who.slice(1)} just told millions of people that ${r.name} is their favourite game of all time.`,
+        options: [
+          { id: 'invite', label: 'Invite them to the studio', preview: 'Hype for your next game, morale +4' },
+          { id: 'thanks', label: 'Send a signed copy and a thank-you', preview: 'Fans + for the series' },
+        ],
+        ctx: { rel: r.id },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (opt === 'invite') {
+        for (const p of activeGames(s)) p.hype = Math.min(2, p.hype + 0.25);
+        mod(s, 4, 30, 'A celebrity visited');
+      } else if (r?.concept.franchiseId && s.franchises[r.concept.franchiseId]) s.franchises[r.concept.franchiseId]!.fans += Math.round(r.units * 0.05);
+      else s.company.fans += 10_000;
+    },
+  },
+  {
     id: 'cat_vs_server',
     art: 'smoke',
     cooldown: 400,
