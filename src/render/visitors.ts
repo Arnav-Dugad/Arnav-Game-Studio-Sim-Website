@@ -10,7 +10,7 @@ import { animate, createRig, newAnim, setHat, type Anim, type Prop, type Rig } f
 import type { ScenePalette } from './palette';
 import { T, drawPerson, lookFor, type Look } from './sprites';
 
-export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver' | 'headhunter';
+export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver' | 'headhunter' | 'guide' | 'kid';
 
 export interface VisitorPerson {
   id: string;
@@ -51,8 +51,8 @@ interface Visitor {
   carry: Prop;
 }
 
-const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888, headhunter: 0x1f2328 };
-const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box', headhunter: 'briefcase' };
+const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888, headhunter: 0x1f2328, guide: 0x2eb5a8, kid: 0xf2c450 };
+const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box', headhunter: 'briefcase', guide: 'notepad', kid: 'none' };
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
 const first = (n: string) => n.split(' ')[0] ?? n;
 
@@ -86,10 +86,10 @@ export class VisitorSystem {
     return pts;
   }
 
-  private spawn(s: GameState, floor: number, kind: VisitorKind, target: VisitorPerson, lines: [string, string]): void {
+  private spawn(s: GameState, floor: number, kind: VisitorKind, target: VisitorPerson, lines: [string, string], offset = 0): Visitor {
     const c = new Container();
     const fig = new Graphics();
-    const look = { ...lookFor(Math.floor(Math.random() * 1e6), 'visitor'), top: TOPS[kind] };
+    const look = { ...lookFor(Math.floor(Math.random() * 1e6), 'visitor'), top: kind === 'kid' ? [0xf2c450, 0xe07a5f, 0x3d85c6, 0x5f9e6e][Math.floor(Math.random() * 4)]! : TOPS[kind] };
     if (kind === 'investor' || kind === 'headhunter') look.glasses = Math.random() < 0.5;
     look.headphones = false;
     drawPerson(fig, look, 'stand', this.P!);
@@ -104,8 +104,13 @@ export class VisitorSystem {
     const [ex, ey] = this.tileCenter(ent.x, ent.y);
     const side = target.x > ex ? -1 : 1;
     const v: Visitor = { kind, c, rig, anim: newAnim(), legL, legR, x: ex, y: ey + T * 0.6, t: Math.random() * 10, face: 1, path: [], phase: 'in', wait: 0, target: target.id, lines, replied: false, speech: null, speechT: 0, carry: CARRY[kind] };
-    v.path = [[ex, ey], ...this.route(s, floor, ex, ey, target.x + side * 20, target.y + 4)];
+    v.path = [[ex, ey], ...this.route(s, floor, ex, ey, target.x + side * (20 + Math.abs(offset)), target.y + 4 + offset * 0.6)];
+    if (kind === 'kid') {
+      c.scale.set(0.72);
+      v.t += offset;
+    }
     this.list.push(v);
+    return v;
   }
 
   private choose(s: GameState, floor: number, host: VisitorHost): void {
@@ -134,6 +139,21 @@ export class VisitorSystem {
     if (s.company.recruiting > 0) {
       const leads = people.filter((p) => p.level === 'lead' || p.level === 'senior' || p.role === 'founder');
       if (leads.length) opts.push({ w: 1.5, go: () => this.spawn(s, floor, 'candidate', pick(leads), [pick(['Here for the interview!', 'Hi! I applied last week.', 'Is this the studio?']), pick(['Welcome! Coffee?', 'Come on in!', 'Great to meet you!'])]) });
+    }
+    if (s.company.reputation >= 50 && !this.list.length) {
+      opts.push({
+        w: 0.6,
+        go: () => {
+          const p = pick(people);
+          this.spawn(s, floor, 'guide', p, [pick(['And this is where the magic happens!', 'Say hello to a real game developer!', 'Everyone wave!']), pick(['Hi kids! 👋', 'Welcome, everyone!', 'Want to see something cool?'])]);
+          [-14, 0, 14].forEach((off, i) => {
+            const k = this.spawn(s, floor, 'kid', p, [pick(['Whoa!', 'Is that a real arcade?', 'Can I play?', 'So cool!']), ''], off);
+            k.wait = 0;
+            k.replied = true;
+            k.speechT = -1 - i;
+          });
+        },
+      });
     }
     opts.push({ w: 1, go: () => { const p = pick(people); this.spawn(s, floor, 'courier', p, [pick([`Parcel for ${first(p.name)}!`, 'Sign here, please.', 'Delivery!']), pick(['Thanks!', 'Ooh, dev kits!', 'Is it the new monitor?'])]); } });
     const total = opts.reduce((t, o) => t + o.w, 0);
