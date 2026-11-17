@@ -8,9 +8,9 @@ import { entrance, findPath, tierDef } from '@/sim/systems/office';
 import type { GameState } from '@/sim/types';
 import { animate, createRig, newAnim, setHat, type Anim, type Prop, type Rig } from './animation';
 import type { ScenePalette } from './palette';
-import { T, drawPerson, lookFor } from './sprites';
+import { T, drawPerson, lookFor, type Look } from './sprites';
 
-export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate';
+export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver';
 
 export interface VisitorPerson {
   id: string;
@@ -51,8 +51,8 @@ interface Visitor {
   carry: Prop;
 }
 
-const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6 };
-const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none' };
+const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888 };
+const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box' };
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
 const first = (n: string) => n.split(' ')[0] ?? n;
 
@@ -131,6 +131,28 @@ export class VisitorSystem {
       r -= o.w;
       if (r <= 0) return o.go();
     }
+  }
+
+  /** Someone is leaving the studio: they pack a box, say goodbye and walk out. */
+  farewell(s: GameState, floor: number, at: { x: number; y: number }, look: Look, P: ScenePalette, host: VisitorHost): void {
+    if (floor !== this.floor || this.list.filter((x) => x.kind === 'leaver').length >= 12) return;
+    this.P = P;
+    const c = new Container();
+    const fig = new Graphics();
+    drawPerson(fig, look, 'stand', P);
+    const legL = new Graphics().roundRect(-5, -8, 4, 8, 2).fill(0x3a3f4a);
+    const legR = new Graphics().roundRect(1, -8, 4, 8, 2).fill(0x3a3f4a);
+    const rig = createRig(fig, look);
+    c.addChild(legL, legR, rig.root);
+    this.layer.addChild(c);
+    const ent = entrance(s);
+    const [ex, ey] = this.tileCenter(ent.x, ent.y);
+    const v: Visitor = { kind: 'leaver', c, rig, anim: newAnim(), legL, legR, x: at.x, y: at.y, t: 0, face: 1, path: [...this.route(s, floor, at.x, at.y, ex, ey), [ex, ey + T * 0.6]], phase: 'out', wait: 0, target: '', lines: ['', ''], replied: true, speech: null, speechT: 0, carry: 'box' };
+    v.anim.wave = 1.6;
+    this.list.push(v);
+    this.say(v, pick(['Goodbye, everyone! 👋', 'It’s been an honour.', 'I’ll miss you all!', 'Keep making great games!']), 2.6);
+    const near = host.people().filter((p) => Math.hypot(p.x - at.x, p.y - at.y) < 160).slice(0, 3);
+    for (const p of near) host.reply(p.id, pick(['We’ll miss you!', 'Good luck! 👋', 'Stay in touch!', 'Bye! 😢']), 'wave');
   }
 
   private say(v: Visitor, text: string, secs: number): void {

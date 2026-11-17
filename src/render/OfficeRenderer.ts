@@ -993,6 +993,8 @@ export class OfficeRenderer {
     }
     for (const [id, a] of this.agents) {
       if (!seen.has(id)) {
+        // they've left the studio: a farewell walk to the door (if we could see them)
+        if (a.c.visible && this.agentsReady && !ui.reducedMotion) this.visitors.farewell(s, floor, { x: a.x, y: a.y }, a.look, this.P, this.visitorHost(s, floor));
         a.c.destroy({ children: true });
         this.agents.delete(id);
       }
