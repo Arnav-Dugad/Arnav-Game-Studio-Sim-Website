@@ -191,6 +191,7 @@ export function createGame(o: NewGameOptions): GameState {
     body: `${o.founderName} sets up shop in a garage with a couple of desks and big dreams.`,
     tone: 'good',
   });
+  s.retirementSince = day;
   if (o.sandbox) {
     s.cheatsUsed = true;
     s.cheats = { infiniteMoney: true, moneyFloor: money(1_000_000, day), noBankruptcy: true, freeBuild: true };

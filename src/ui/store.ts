@@ -236,6 +236,9 @@ export function handleEvents(events: SimEvent[]): void {
         sound.play('success');
         if (s.settings.autopause.research) pause = true;
         break;
+      case 'staffRetired':
+        g.toast({ text: `${e.name} retires after ${e.years} years 🎉`, tone: 'gold', icon: 'heart' });
+        break;
       case 'staffQuit':
         g.toast({ text: `${e.name} quit (${e.reason})`, tone: 'bad', icon: 'staff' });
         sound.play('fail');

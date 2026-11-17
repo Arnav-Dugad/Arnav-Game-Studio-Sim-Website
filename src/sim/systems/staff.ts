@@ -7,7 +7,9 @@ import { PEOPLE } from '../../data/people';
 import { TRAITS, type TraitId } from '../../data/traits';
 import { SKILLS, type Skill } from '../../data/types';
 import { BD, clamp } from '../breakdown';
-import { fromDay, weekday } from '../calendar';
+import { fromDay, toDay, weekday } from '../calendar';
+
+const toDayFn = (year: number) => toDay(year, 1, 1);
 import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
 import type { Candidate, GameState, Level, Role, Staff } from '../types';
@@ -418,36 +420,50 @@ export function updateStaffMonthly(c: Ctx): void {
       pushNews(s, { category: 'staff', headline: `${st.name} has resigned`, body: `Citing ${reason}. Morale was ${Math.round(st.morale)}%.`, tone: 'bad' });
     }
   }
-  retirements(s);
+  retirements(c);
   s.company.moraleMods = s.company.moraleMods.filter((m) => m.until > s.day);
 }
 
-/** Years after hiring when someone retires (25–35, stable per person). */
+/** Years after hiring when someone retires (30–40, stable per person: people join at 25–35 and leave around 65). */
 export function retirementYears(st: Staff): number {
   let h = 0;
   for (let i = 0; i < st.id.length; i++) h = (h * 31 + st.id.charCodeAt(i)) >>> 0;
-  return 25 + (h % 11);
+  return 30 + (h % 11);
 }
 
-/** Day a staff member will retire (never for the founder). */
-export function retirementDay(st: Staff): number | null {
-  return st.role === 'founder' ? null : Math.round(st.hiredDay + retirementYears(st) * 365.25);
+/** Day a staff member will retire (never for the founder). `since` spreads out veterans in saves from before retirement existed. */
+export function retirementDay(st: Staff, since?: number): number | null {
+  if (st.role === 'founder') return null;
+  const base = Math.round(st.hiredDay + retirementYears(st) * 365.25);
+  return since === undefined ? base : Math.max(base, since + 365 * (1 + (retirementYears(st) % 3)));
 }
 
 /** Long careers end with a send-off: the veteran joins the studio's alumni and the team celebrates. */
-function retirements(s: GameState): void {
+function retirements(c: Ctx): void {
+  const { s } = c;
+  // Saves from before retirement existed: veterans retire over the next 1–3 years, not all at once.
+  s.retirementSince ??= s.day > toDayFn(s.settings.startYear) + 400 ? s.day : toDayFn(s.settings.startYear);
   for (const st of Object.values(s.staff)) {
-    const day = retirementDay(st);
+    const day = retirementDay(st, s.retirementSince);
     if (day === null || s.day < day) continue;
+    // Nobody walks out mid-project: they see the current game out (for up to a year).
+    const onGame = st.assignment.kind === 'project' && s.projects[st.assignment.id]?.kind === 'game';
+    if (onGame && s.day < day + 365) continue;
     const years = Math.round((s.day - st.hiredDay) / 365.25);
     (s.alumni ??= []).push({ name: st.name, role: st.role, years, games: st.gamesShipped, day: s.day, legend: !!st.personId });
     if (s.alumni.length > 120) s.alumni.shift();
     removeStaff(s, st.id);
-    s.company.moraleMods.push({ v: 3, until: s.day + 30, label: `${st.name}'s farewell party` });
+    // One shared farewell boost (several retirements don't stack into a morale spike).
+    const party = s.company.moraleMods.find((m) => m.label === 'Farewell parties');
+    if (party) {
+      party.v = Math.min(5, party.v + 1);
+      party.until = s.day + 30;
+    } else s.company.moraleMods.push({ v: 3, until: s.day + 30, label: 'Farewell parties' });
+    c.out.push({ type: 'staffRetired', name: st.name, years });
     pushNews(s, {
       category: 'staff',
       headline: `${st.name} retires after ${years} years`,
-      body: `${st.gamesShipped} game${st.gamesShipped === 1 ? '' : 's'} shipped. The team throws a farewell party; the desk stays decorated for a week.`,
+      body: `${st.gamesShipped} game${st.gamesShipped === 1 ? '' : 's'} shipped. The team throws a farewell party.`,
       tone: 'good',
     });
   }

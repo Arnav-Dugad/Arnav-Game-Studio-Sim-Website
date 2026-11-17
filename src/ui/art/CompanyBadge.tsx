@@ -101,6 +101,7 @@ export function CompanyBadge({
   const light = rgb ? luminance(rgb) > 0.45 : false;
   const ink = light ? '#1E1A16' : '#FFFFFF';
   const ring = rgb ? lighten(rgb, light ? 0.55 : 0.4) : 'rgb(255 255 255 / 0.45)';
+  if (!SHAPES[shape]) shape = 'rounded'; // e.g. an imported save with an unknown shape
   if (emblem || shape !== 'rounded') {
     return (
       <span className={className} style={{ position: 'relative', display: 'inline-grid', width: size, height: size, flexShrink: 0 }} role="img" aria-label={`${name} badge`}>

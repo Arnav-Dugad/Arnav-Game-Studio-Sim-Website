@@ -51,6 +51,8 @@ export default function ReleasesPanel() {
       </Empty>
     );
   const rels = all.filter((r) => !selling || r.active).sort(SORTS[sort]);
+  // The remembered view is global; with fewer than two games the toggle is hidden, so show the list.
+  const shown = all.length > 1 ? view : 'list';
   const total = all.reduce((t, r) => t + r.units, 0);
   return (
     <div className="space-y-3">
@@ -97,9 +99,9 @@ export default function ReleasesPanel() {
         </p>
       )}
       {rels.length === 0 && <p className="text-xs text-ink3">Nothing is selling right now.</p>}
-      {view === 'stats' ? (
+      {shown === 'stats' ? (
         <GenreStats rels={rels} />
-      ) : view === 'shelf' ? (
+      ) : shown === 'shelf' ? (
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4" aria-label="Your games shelf">
           {rels.map((r) => (
             <li key={r.id}>

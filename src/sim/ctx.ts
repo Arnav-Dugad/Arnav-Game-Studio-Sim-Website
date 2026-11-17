@@ -13,6 +13,7 @@ export type SimEvent =
   | { type: 'projectDone'; projectId: Id; kind: 'game' | 'contract' | 'engine' }
   | { type: 'researchDone'; id: string }
   | { type: 'staffQuit'; name: string; reason: string }
+  | { type: 'staffRetired'; name: string; years: number }
   | { type: 'staffSick'; staffId: Id }
   | { type: 'hired'; staffId: Id }
   | { type: 'insolvent'; graceDays: number }

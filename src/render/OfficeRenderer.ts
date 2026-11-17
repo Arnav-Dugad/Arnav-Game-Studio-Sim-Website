@@ -458,6 +458,7 @@ export class OfficeRenderer {
   // ── Items ────────────────────────────────────────────────────────────────
 
   private trophies = 0;
+  private agentColor: number | undefined;
 
   private texFor(id: ItemId, rot: 0 | 1, era: number): { tex: Texture; ox: number; oy: number } {
     const def = ITEM_BY_ID[id];
@@ -606,6 +607,17 @@ export class OfficeRenderer {
   private syncAgents(s: GameState, floor: number, ui: RendererUI, dt: number): void {
     const seen = new Set<string>();
     const color = hexToNum(s.company.color || '#e07a5f');
+    if (this.agentColor !== undefined && this.agentColor !== color) {
+      // Studio colour changed (identity editor): redress everyone who wears it.
+      for (const st of Object.values(s.staff)) {
+        const a = this.agents.get(st.id);
+        if (!a) continue;
+        a.look = lookFor(st.look, st.role, color);
+        a.fig.clear();
+        drawPerson(a.fig, a.look, a.pose, this.P);
+      }
+    }
+    this.agentColor = color;
     const t = tierDef(s.office.tier);
     const ent = entrance(s);
     const speedMul = ui.reducedMotion ? 0.5 : ui.speed === 0 ? 0.6 : 1;

@@ -637,6 +637,19 @@ describe('launch titles and series expectations', () => {
     s.day = pl.launchDay + 200;
     expect(launchTitleMul(s, pl)).toBe(1);
   });
+  it('a launch title sells to the base the platform grows into', async () => {
+    const s = game(1994, 3);
+    const pl = availablePlatforms(s).find((p) => p.id === 'ps1') ?? availablePlatforms(s)[0]!;
+    const concept = { name: 'L', genre: 'action' as const, topic: 'scifi', platforms: [pl.id], audience: 'teen' as const, size: 'medium' as const, monetization: 'premium' as const, engineId: 'e0' };
+    const { activeUsersM } = await import('../../src/sim/systems/market');
+    s.day = pl.launchDay + 10;
+    s.market.users[pl.id] = activeUsersM(pl, s.day); // a handful of early owners
+    const early = salesPotential(s, concept, 80, 0.5).platforms[0]!.potential;
+    s.day = pl.launchDay + 180;
+    s.market.users[pl.id] = activeUsersM(pl, s.day);
+    const mid = salesPotential(s, concept, 80, 0.5).platforms[0]!.potential;
+    expect(early).toBeGreaterThan(mid * 0.5); // no longer ~1% of a later release
+  });
   it('a sequel far below the series’ best disappoints players and loses fans', () => {
     const s = game(1990, 5);
     const p = startSmall(s);
@@ -647,7 +660,8 @@ describe('launch titles and series expectations', () => {
     }
     const first = s.releases[s.releaseOrder[0]!]!;
     const fr = s.franchises[first.concept.franchiseId!]!;
-    fr.bestScore = 99; // a legendary original
+    first.score = 99; // your own legendary original
+    fr.bestScore = 99;
     fr.fans = 100_000;
     s.research.done.push('biz_self_publishing');
     const q = startSmall(s, { franchiseId: fr.id, name: 'G 2' });
@@ -663,24 +677,45 @@ describe('launch titles and series expectations', () => {
 });
 
 describe('retirement', () => {
-  it('veterans retire after 25–35 years with a send-off; the founder never does', async () => {
+  it('veterans retire after 30–40 years with a send-off; the founder never does', async () => {
     const { retirementDay, retirementYears } = await import('../../src/sim/systems/staff');
     const s = game(1980, 4);
     const cand = generateCandidate(s, new Rng([5, 6, 7, 8]), { role: 'artist' });
     const { candidateToStaff } = await import('../../src/sim/systems/staff');
     s.staff.vet = candidateToStaff(s, cand, 'vet', 30_000);
     const vet = s.staff.vet!;
-    expect(retirementYears(vet)).toBeGreaterThanOrEqual(25);
-    expect(retirementYears(vet)).toBeLessThanOrEqual(35);
+    expect(retirementYears(vet)).toBeGreaterThanOrEqual(30);
+    expect(retirementYears(vet)).toBeLessThanOrEqual(40);
     expect(retirementDay(s.staff.founder!)).toBeNull();
     vet.hiredDay = s.day - Math.ceil(retirementYears(vet) * 365.25) - 5;
+    s.retirementSince = s.day - 4 * 365;
     vet.morale = 100;
     vet.loyalty = 100;
     advance(s, 35);
     expect(s.staff.vet).toBeUndefined();
     expect(s.alumni?.[0]?.name).toBe(vet.name);
-    expect(s.company.moraleMods.some((m) => m.label.includes('farewell'))).toBe(true);
+    expect(s.company.moraleMods.some((m) => /farewell/i.test(m.label))).toBe(true);
     expect(s.staff.founder).toBeDefined();
+  });
+  it('a save from before retirement existed loses its veterans gradually, not all at once', async () => {
+    const { candidateToStaff } = await import('../../src/sim/systems/staff');
+    const s = game(1980, 8);
+    s.day = toDay(2015, 1, 5);
+    for (let i = 0; i < 8; i++) {
+      const c = generateCandidate(s, new Rng([i + 1, 2, 3, 4]), {});
+      s.staff[`old${i}`] = candidateToStaff(s, c, `old${i}`, 30_000);
+      s.staff[`old${i}`]!.hiredDay = toDay(1972, 2, 1); // all overdue (30–40 years)
+      s.staff[`old${i}`]!.morale = 100;
+      s.staff[`old${i}`]!.loyalty = 100;
+    }
+    delete s.retirementSince;
+    s.company.cash = 1e9;
+    advance(s, 40);
+    const left = Object.keys(s.staff).filter((k) => k.startsWith('old')).length;
+    expect(left).toBe(8); // nobody leaves in the first month
+    advance(s, 365 * 3 + 40);
+    expect(Object.keys(s.staff).filter((k) => k.startsWith('old')).length).toBe(0); // all gone within ~3 years
+    expect(s.company.moraleMods.filter((m) => m.label === 'Farewell parties').length).toBeLessThanOrEqual(1);
   });
 });
 

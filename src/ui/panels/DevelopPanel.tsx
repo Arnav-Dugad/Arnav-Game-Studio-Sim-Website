@@ -390,14 +390,15 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const copyLast = () => {
     if (!lastGame) return;
     const c = lastGame.concept;
-    if (genres.some((g) => g.ok && g.g.id === c.genre)) setGenre(c.genre);
+    const genreOk = genres.some((g) => g.ok && g.g.id === c.genre);
+    if (genreOk) setGenre(c.genre);
     if (topics.some((x) => x.ok && x.t.id === c.topic)) setTopic(c.topic);
     setAudience(c.audience);
     if (!sizeAllowed(s, c.size)) {
       setSize(c.size);
       setTeam((x) => x.slice(0, BALANCE.SIZE[c.size].teamCap));
     }
-    if (!monetizationAllowed(s, c.monetization, c.genre)) setMonet(c.monetization);
+    if (!monetizationAllowed(s, c.monetization, genreOk ? c.genre : genre)) setMonet(c.monetization);
     const still = c.platforms.filter((pid) => plats.some((p) => p.id === pid));
     if (still.length) setPlatforms(still.slice(0, 6));
     if (s.engines[c.engineId]) setEngineId(c.engineId);
@@ -641,7 +642,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                   </div>
                 </div>
                 <div className="text-right">
-                  {launchTitleMul(s, p) > 1.05 && <Pill tone="gold">Launch window</Pill>}
+                  {launchTitleMul(s, p, s.day + cost.days) > 1.05 && <Pill tone="gold">Launch window</Pill>}
                   {fitG >= 1.15 && <Pill tone="good">Genre fit</Pill>}
                   {fitG < 0.9 && <Pill tone="bad">Weak fit</Pill>}
                   <div className="mt-0.5 text-[10px] text-ink3">{s.devkits.includes(p.id) ? 'Dev kit owned' : `Kit ${fmtMoney(devkitCost(s, p.id))}`}</div>

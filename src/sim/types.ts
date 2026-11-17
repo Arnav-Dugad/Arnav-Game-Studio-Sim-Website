@@ -688,6 +688,8 @@ export interface GameState {
   subscription?: SubscriptionState;
   /** Esports leagues you run. */
   leagues?: EsportsLeague[];
+  /** Retirement anchor for saves made before retirement existed (veterans then retire over 1–3 years). */
+  retirementSince?: number;
   /** Veterans who retired from the studio. */
   alumni?: { name: string; role: Role; years: number; games: number; day: number; legend: boolean }[];
   /** Head-to-head record against each rival (company id → record). */

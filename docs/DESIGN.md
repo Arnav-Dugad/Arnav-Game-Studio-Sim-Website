@@ -789,4 +789,16 @@ This section records decisions made during the build that differ from, or add to
   - **Leaked-build event:** "Send the lawyers" with too little cash at resolve time no longer falls through to the "say nothing" outcome.
   - **News panel:** it follows a request to jump to Awards while it's already open, which is what the gala's "All results" button does.
   - **Studio records:** "Best year" counts operating income only, excluding asset sales, windfalls and cheat top-ups.
+- **Seventh review pass:**
+  - **Launch titles:** a game in a platform's first year now sells to the base that platform will have six months in (70% of it), times the fading launch boost. Lifetime potential is fixed at release and a brand-new platform has almost no owners yet, so before this a launch title sold about 1% of the same game a year later. The wizard pill predicts the ship date, and the sales breakdown shows the real per-platform multiplier.
+  - **Retirement:**
+    - Careers last 30–40 years. At 25–35, the late game lost its veterans and the steady bot collapsed.
+    - Saves from before retirement existed get an anchor (`retirementSince`), so overdue veterans leave over 1–3 years rather than on the first tick.
+    - Nobody retires mid-game (they stay up to a year to ship it). Farewell boosts share one capped modifier, and retirements emit a toast event.
+  - **Sequel expectations:** only your own entries count, so acquired real-world series aren't judged against their legendary past.
+  - **UI:**
+    - The Games panel falls back to the list when the remembered Shelf or Stats view can't be switched.
+    - A badge with an unknown shape falls back to rounded instead of crashing.
+    - The founder's shirt follows the studio colour.
+    - "Same setup" checks the business model against the genre actually applied.
 
