@@ -115,6 +115,8 @@ export interface Staff {
   wasIntern?: boolean;
   /** After a standing ovation, rival recruiters are watching until this day. */
   spotlightUntil?: number;
+  /** The last one-on-one: when, what they said, and what it was about (systems/checkIns.ts). */
+  checkIn?: { day: number; line: string; topic: string };
 }
 
 export type Assignment =
@@ -864,6 +866,8 @@ export interface Company {
   /** When the current (unbroken) charity pledge began. */
   charitySince?: number;
   talkBuzzUntil?: number;
+  /** Days of recent one-on-ones (the founder's calendar). */
+  checkInLog?: number[];
   /** Venture funding before the IPO: rounds raised, investors' share of the company, and when the last round closed. */
   fundingRounds?: number;
   investorStake?: number;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { checkInBlocked, checkInLimit, checkInsUsed } from '@/sim/systems/checkIns';
 import type { MascotAcc, MascotDesign, MascotKind } from '@/sim/types';
 import { Mascot } from '../art/Mascot';
 import { StudioStory } from './StudioStory';
@@ -716,6 +717,32 @@ function Mentorship({ staffId }: { staffId: string }) {
 }
 
 /** Book this person's conference talk (one per studio per year). */
+function CheckInSection({ staffId }: { staffId: string }) {
+  const s = useGame((g) => g.s)!;
+  const st = s.staff[staffId];
+  if (!st || st.role === 'founder') return null;
+  const why = checkInBlocked(s, st);
+  const left = Math.max(0, checkInLimit(s) - checkInsUsed(s));
+  return (
+    <Section
+      title="One-on-one"
+      right={<span className="text-[11px] text-ink3">{left} of {checkInLimit(s)} left this month</span>}
+    >
+      {st.checkIn && (
+        <blockquote className="mb-2 rounded-xl bg-bg2/60 px-3 py-2 text-xs italic text-ink2">
+          “{st.checkIn.line}”<span className="ml-1 not-italic text-ink3">— {formatDate(st.checkIn.day)}</span>
+        </blockquote>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" icon="user" disabled={!!why} title={why ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'checkIn', staffId }, `You sat down with ${st.name.split(' ')[0]}`)}>
+          Check in
+        </Button>
+        <span className="text-[11px] text-ink3">{why ?? 'Ask how they’re really doing. They’ll tell you what’s on their mind — and feel heard.'}</span>
+      </div>
+    </Section>
+  );
+}
+
 function TalkSection({ staffId }: { staffId: string }) {
   const s = useGame((g) => g.s)!;
   const st = s.staff[staffId];
@@ -1005,6 +1032,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
               </Button>
             </div>
           </Section>
+          <CheckInSection staffId={staffId} />
           <TalkSection staffId={staffId} />
           <Section title="Time off">
             {(st.vacationDays ?? 0) > 0 ? (

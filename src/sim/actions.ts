@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { checkIn } from './systems/checkIns';
 import { docOnCancel } from './systems/documentary';
 import type { MascotDesign } from './types';
 import { signCodev } from './systems/codev';
@@ -166,6 +167,7 @@ export type Action =
   | { type: 'setModeration'; level: 0 | 1 | 2 }
   | { type: 'openSourceEngine'; engineId: string }
   | { type: 'giveTalk'; staffId: string; releaseId: string }
+  | { type: 'checkIn'; staffId: string }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
   | { type: 'readFanMail' }
   | { type: 'crowdfund'; projectId: string; tier: CampaignTier }
@@ -1035,6 +1037,8 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'mediaDeal':
       return signMediaDeal(s, a.franchiseId, a.kind, a.control);
+    case 'checkIn':
+      return checkIn(s, a.staffId);
     case 'giveTalk':
       return giveTalk(c, a.staffId, a.releaseId);
     case 'openSourceEngine':
