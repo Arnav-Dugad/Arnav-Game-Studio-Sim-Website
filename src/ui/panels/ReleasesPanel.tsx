@@ -113,13 +113,15 @@ export default function ReleasesPanel() {
                     score={r.score}
                     className="h-auto w-full rounded-[6%] shadow-md"
                   />
+                </div>
+                <div className="mt-1 flex items-center gap-1 text-[11px] font-semibold">
+                  <span className="truncate">{r.name}</span>
                   {r.awards.length > 0 && (
-                    <span className="absolute -right-1 -top-1 rounded-full bg-gold px-1.5 text-[10px] font-bold text-white shadow">
-                      🏆 {r.awards.length}
+                    <span className="shrink-0 text-gold" title={r.awards.join(', ')}>
+                      🏆{r.awards.length > 1 ? r.awards.length : ''}
                     </span>
                   )}
                 </div>
-                <div className="mt-1 truncate text-[11px] font-semibold">{r.name}</div>
                 <div className="truncate text-[10px] text-ink3">
                   {formatDate(r.day, false)} · {fmtUnits(r.units)}
                 </div>

@@ -11,6 +11,8 @@
 | ![Build mode with heat-map overlay](docs/screenshots/build-mode.png) | ![Finance panel with charts](docs/screenshots/finance.png) |
 | **Launch your own console** | **Win the Golden Pixel Gala** |
 | ![Hardware division with a live console](docs/screenshots/hardware.png) | ![Yearly industry awards](docs/screenshots/awards.png) |
+| **Your shelf of games** | **Bend every rule** |
+| ![Every game you've made as a wall of box covers](docs/screenshots/shelf.png) | ![The cheats sandbox](docs/screenshots/cheats.png) |
 
 ## Features
 
