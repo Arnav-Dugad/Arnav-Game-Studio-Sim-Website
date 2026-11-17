@@ -75,6 +75,13 @@ export function tick(c: Ctx): void {
       yearlyAwards(c, d.year - 1); // the ceremony covers every release of last year, December included
       if (d.year % 10 === 0) decadeReview(c, d.year - 10);
       updateFuturePlatforms(c);
+      // studio anniversaries every five years
+      const age = d.year - s.settings.startYear;
+      if (age > 0 && age % 5 === 0) {
+        s.company.moraleMods.push({ v: 4, until: s.day + 60, label: `${age}th anniversary` });
+        const n = pushNews(s, { category: 'studio', headline: `${s.company.name} turns ${age}`, body: `${s.releaseOrder.length} games and ${Object.keys(s.staff).length} people later, the studio celebrates ${age} years.`, tone: 'good' });
+        c.out.push({ type: 'news', newsId: n.id, major: age % 25 === 0 });
+      }
       c.out.push({ type: 'year', year: d.year });
     }
     // franchise fatigue fades over time

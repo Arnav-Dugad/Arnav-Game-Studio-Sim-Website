@@ -1063,7 +1063,9 @@ export class OfficeRenderer {
     if (!here.length) return;
     if (!firstFrame && this.season?.newYear && this.season.dom === 1) {
       this.celebrate(!reducedMotion);
-      for (const a of here.slice(0, 6)) this.say(a, pickOne(['Happy New Year! 🎆', `Here’s to ${fromDay(s.day).year}!`, 'New year, new games!', 'Cheers! 🥂']), 3);
+      const age = fromDay(s.day).year - s.settings.startYear;
+      const anniversary = age > 0 && age % 5 === 0;
+      for (const a of here.slice(0, 6)) this.say(a, anniversary && Math.random() < 0.6 ? pickOne([`Happy ${age}th, ${s.company.name.split(' ')[0]}! 🎂`, `${age} years! 🎉`, `To the next ${age}! 🥂`]) : pickOne(['Happy New Year! 🎆', `Here’s to ${fromDay(s.day).year}!`, 'New year, new games!', 'Cheers! 🥂']), 3);
       return;
     }
     for (const a of here) {
