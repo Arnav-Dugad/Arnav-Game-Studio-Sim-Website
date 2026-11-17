@@ -816,6 +816,21 @@ describe('staff automation', () => {
   });
 });
 
+describe('furnish desks', () => {
+  it('places desks in rows until everyone has one, and refuses when nobody needs one', async () => {
+    const { candidateToStaff } = await import('../../src/sim/systems/staff');
+    const s = game(1995, 6);
+    s.company.cash = 1e7;
+    dispatch(s, { type: 'cheat', cheat: { op: 'officeTier', tier: 3 } });
+    for (let i = 0; i < 12; i++) s.staff[`n${i}`] = candidateToStaff(s, generateCandidate(s, new Rng([i + 3, 1, 2, 3]), {}), `n${i}`, 20_000);
+    const before = s.office.items.length;
+    expect(dispatch(s, { type: 'furnishDesks' }).ok).toBe(true);
+    expect(s.office.items.length).toBeGreaterThan(before);
+    expect(Object.values(s.staff).every((x) => x.deskId)).toBe(true);
+    expect(dispatch(s, { type: 'furnishDesks' }).ok).toBe(false);
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

@@ -30,7 +30,7 @@ export function projectName(p: Project): string {
   return p.kind === 'game' ? p.concept.name : p.kind === 'contract' ? p.title : `Engine: ${p.name}`;
 }
 
-export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => void, pushGate: (id: string) => void): Alert[] {
+export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => void, pushGate: (id: string) => void, furnishDesks: () => void = () => undefined): Alert[] {
   const out: Alert[] = [];
   const staff = Object.values(s.staff);
   const projects = Object.values(s.projects);
@@ -56,6 +56,8 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   // Research
   if (!s.research.active && !s.company.policies.autoQueue && staff.some((x) => x.assignment.kind === 'research')) out.push({ id: 'research', tone: 'warn', icon: 'research', text: 'Your researchers have nothing to research.', action: { label: 'Pick research', run: () => open('research') } });
   // Office
+  const deskless = staff.filter((x) => !x.deskId).length;
+  if (deskless) out.push({ id: 'desks', tone: 'warn', icon: 'build', text: `${deskless} ${deskless === 1 ? 'person has' : 'people have'} no desk and can't work properly.`, action: { label: 'Add desks', run: () => furnishDesks() } });
   const cap = tierDef(s.office.tier).staffCap;
   if (staff.length >= cap) out.push({ id: 'office', tone: 'info', icon: 'build', text: `Your office is full (${staff.length}/${cap}). Move to grow the team.`, action: { label: 'Office', run: () => open('office') } });
   // Projects at risk

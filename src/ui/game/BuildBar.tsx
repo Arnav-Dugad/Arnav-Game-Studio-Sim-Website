@@ -6,6 +6,7 @@ import { useGame, type HeatKind } from '../store';
 
 /** Contextual toolbar while in build mode: what you're placing, rotate, heat-map, floors. */
 export function BuildBar() {
+  const deskless = useGame((g) => (g.s ? Object.values(g.s.staff).filter((x) => !x.deskId).length : 0));
   const s = useGame((g) => g.s);
   useGame((g) => g.v);
   const build = useGame((g) => g.build);
@@ -75,6 +76,11 @@ export function BuildBar() {
                 { value: 'crowding', label: 'Space', title: 'Green = roomy, red = crowded' },
               ]}
             />
+            {deskless > 0 && (
+              <Button size="sm" icon="plus" onClick={() => furnish()} title="Place the best available desk in free spots, in rows, until everyone has one">
+                Desks for everyone ({deskless})
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={() => g.setBuild(null)}>
               Done (Esc)
             </Button>
@@ -83,4 +89,16 @@ export function BuildBar() {
       </div>
     </div>
   );
+}
+
+/** One click: desks for everyone who doesn't have one (reports what happened). */
+export function furnish(): void {
+  const g = useGame.getState();
+  if (!g.s) return;
+  const before = g.s.office.items.length;
+  const r = g.act({ type: 'furnishDesks' });
+  const placed = (g.s.office.items.length ?? before) - before;
+  const left = Object.values(g.s.staff).filter((x) => !x.deskId).length;
+  if (!r.ok) g.toast({ text: r.error, tone: 'bad' });
+  else g.toast({ text: `Placed ${placed} desk${placed === 1 ? '' : 's'}${left ? ` · ${left} still without one (no room or cash)` : ' · everyone has a desk'}`, tone: left ? 'neutral' : 'good', icon: 'build' });
 }

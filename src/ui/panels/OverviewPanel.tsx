@@ -11,6 +11,7 @@ import { Meter, Section, cx } from '../components/ui';
 import { Icon } from '../icons';
 import { useGame, type PanelId } from '../store';
 import { daysLeft, projectName, studioAlerts } from '../game/alerts';
+import { furnish } from '../game/BuildBar';
 
 export default function OverviewPanel() {
   const s = useGame((g) => g.s)!;
@@ -18,7 +19,7 @@ export default function OverviewPanel() {
   const openPanel = useGame((g) => g.openPanel);
   const pushModal = useGame((g) => g.pushModal);
   const open = (p: PanelId, tab?: string) => openPanel(p, tab ?? null);
-  const alerts = studioAlerts(s, open, (id) => pushModal({ kind: 'gate', projectId: id }));
+  const alerts = studioAlerts(s, open, (id) => pushModal({ kind: 'gate', projectId: id }), furnish);
   const projects = Object.values(s.projects);
   const selling = Object.values(s.releases)
     .filter((r) => r.active)

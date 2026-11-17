@@ -99,6 +99,8 @@ export type Action =
   | { type: 'patchGame'; releaseId: string }
   | { type: 'cheat'; cheat: CheatOp }
   | { type: 'openBeta'; projectId: string }
+  /** Place the best available desk in free spots until everyone has one. */
+  | { type: 'furnishDesks' }
   | { type: 'setIdentity'; name?: string; color?: string; emblem?: string | null; shape?: BadgeShape }
   | { type: 'foundLeague'; releaseId: string; tier: LeagueTier; name: string }
   | { type: 'closeLeague'; id: string }
@@ -899,6 +901,33 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.emblem === null) delete logo.emblem;
       else if (a.emblem !== undefined) logo.emblem = a.emblem;
       s.company.logo = logo;
+      return null;
+    }
+    case 'furnishDesks': {
+      const yr = fromDay(s.day).year;
+      const desks = Object.values(ITEM_BY_ID).filter((i) => i.category === 'desk' && i.year <= yr && (!i.research || s.research.done.includes(i.research)));
+      const def = desks[desks.length - 1];
+      if (!def) return 'No desks available yet';
+      assignDesks(s);
+      let need = Object.values(s.staff).filter((st) => !st.deskId).length;
+      if (need <= 0) return 'Everyone already has a desk';
+      const cost = money(def.cost, s.day);
+      const t = tierDef(s.office.tier);
+      let placed = 0;
+      // Rows of desks with an aisle between them, floor by floor.
+      outer: for (let f = 0; f < t.floors; f++)
+        for (let y = 1; y < t.h - 1; y += def.h + 1)
+          for (let x = 0; x < t.w; x += def.w) {
+            if (need <= 0 || s.company.cash < cost) break outer;
+            if (!canPlace(s, def, f, x, y, 0).ok) continue;
+            spend(s, 'office', cost);
+            s.office.items.push({ id: `i${s.office.nextItemId++}`, item: def.id, floor: f, x, y, rot: 0 });
+            placed += 1;
+            need -= 1;
+          }
+      if (!placed) return s.company.cash < cost ? 'Not enough cash for a desk' : 'No room for more desks — move to a bigger office or clear some space';
+      touchOffice(s);
+      assignDesks(s);
       return null;
     }
     case 'openBeta': {
