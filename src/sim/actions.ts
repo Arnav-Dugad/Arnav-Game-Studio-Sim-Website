@@ -6,7 +6,7 @@ import { runLiveEvent } from './systems/liveEvents';
 import { teamRetreat } from './systems/studioLife';
 import type { CultureId } from '../data/culture';
 import { setValues } from './systems/culture';
-import { LOC_COST, LOC_YEAR, REGION_BY_ID, type RegionId } from '../data/regions';
+import { BRANCH, LOC_COST, LOC_YEAR, REGION_BY_ID, type RegionId } from '../data/regions';
 import { BALANCE } from '../data/balance';
 import { ENGINE_BY_ID } from '../data/engines';
 import { ITEM_BY_ID, type ItemId } from '../data/facilities';
@@ -61,6 +61,17 @@ export interface StartGamePayload {
   focus?: [Focus3, Focus3, Focus3];
 }
 
+/** Why a branch office can't open in this region right now (or null). */
+export function branchBlocked(s: GameState, region: RegionId): string | null {
+  if (!REGION_BY_ID[region]) return 'Unknown region';
+  if (region === (s.company.homeRegion ?? 'na')) return 'That’s home';
+  if ((s.company.branches ?? []).includes(region)) return 'Already open';
+  if (fromDay(s.day).year < BRANCH.minYear) return `From ${BRANCH.minYear}`;
+  if (s.company.reputation < BRANCH.minReputation) return `Needs reputation ${BRANCH.minReputation}`;
+  if (s.company.cash < money(BRANCH.open, s.day)) return `Needs ${fmtMoney(money(BRANCH.open, s.day))}`;
+  return null;
+}
+
 export type Action =
   | { type: 'startGame'; game: StartGamePayload }
   | { type: 'setFocus'; projectId: string; phase: 0 | 1 | 2; focus: Focus3 }
@@ -99,6 +110,8 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'openBranch'; region: RegionId }
+  | { type: 'closeBranch'; region: RegionId }
   | { type: 'acquire'; targetId: string }
   | { type: 'setSubsidiary'; id: string; budget: 'low' | 'normal' | 'high'; focusGenre?: GenreId }
   | { type: 'sellFranchise'; franchiseId: string }
@@ -313,7 +326,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (featErr) return featErr;
       const featCost0 = feats.reduce((t, id) => t + money(FEATURE_BY_ID[id]!.cost ?? 0, s.day), 0);
       const home = s.company.homeRegion ?? 'na';
-      const locs = [...new Set(g.localized ?? [])].filter((r) => r !== home);
+      const locs = [...new Set(g.localized ?? [])].filter((r) => r !== home && !(s.company.branches ?? []).includes(r));
       if (locs.some((r) => !REGION_BY_ID[r])) return 'Unknown region';
       if (locs.length && yr < LOC_YEAR) return `Localisation is available from ${LOC_YEAR}`;
       const locCost = locs.length * money(LOC_COST[g.size], s.day);
@@ -777,6 +790,19 @@ function apply(c: Ctx, a: Action): string | null {
       pushNews(s, { category: 'studio', headline: `${s.company.name} goes public!`, tone: 'good' });
       return null;
     }
+    case 'openBranch': {
+      const why = branchBlocked(s, a.region);
+      if (why) return why;
+      spend(s, 'office', money(BRANCH.open, s.day));
+      (s.company.branches ??= []).push(a.region);
+      pushNews(s, { category: 'studio', headline: `${s.company.name} opens a studio in ${REGION_BY_ID[a.region].name}`, body: 'Every game is now translated there for free — and the local team knows what players want.', tone: 'good' });
+      return null;
+    }
+    case 'closeBranch':
+      if (!(s.company.branches ?? []).includes(a.region)) return 'No branch there';
+      s.company.branches = (s.company.branches ?? []).filter((r) => r !== a.region);
+      pushNews(s, { category: 'studio', headline: `${s.company.name} closes its ${REGION_BY_ID[a.region].name} studio`, tone: 'neutral' });
+      return null;
     case 'liveEvent':
       return runLiveEvent(s, a.releaseId);
     case 'teamRetreat':

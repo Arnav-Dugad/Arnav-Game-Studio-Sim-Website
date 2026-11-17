@@ -33,7 +33,8 @@ describe('scenarios', () => {
     s.pendingEvents = [];
     s.cheats = { noEvents: true };
     // monthly check runs on the 1st
-    for (let i = 0; i < 40 && s.status === 'running'; i++) advance(s, 1);
+    // money goals must hold for three monthly checks
+    for (let i = 0; i < 130 && s.status === 'running'; i++) advance(s, 1);
     expect(s.scenario?.result).toBe('won');
     expect(s.status).toBe('retired');
     expect(dispatch(s, { type: 'continueEndless' }).ok).toBe(true);

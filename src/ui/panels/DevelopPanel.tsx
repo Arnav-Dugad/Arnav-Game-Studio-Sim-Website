@@ -389,7 +389,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const ideal = learned ? idealFocus(genre) : undefined;
   const franchises = Object.values(s.franchises).filter((f) => f.bestScore > 0 || f.origin);
   const teamStaff = team.map((id) => s.staff[id]!).filter(Boolean);
-  const locs = useMemo(() => (yr >= LOC_YEAR ? localized.filter((r) => r !== home) : []), [yr, localized, home]);
+  const locs = useMemo(() => (yr >= LOC_YEAR ? localized.filter((r) => r !== home && !(s.company.branches ?? []).includes(r)) : []), [yr, localized, home, s.company.branches]);
   const work = workShare({ remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs });
   const cost = estimateCost(s, size, teamStaff, work);
   const featCost = features.reduce((tt, id) => tt + money(FEATURE_BY_ID[id]?.cost ?? 0, s.day), 0) + locs.length * money(LOC_COST[size], s.day);
@@ -629,7 +629,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
         <Section title="Localisation" right={<span className="text-xs text-ink3">Optional · {REGION_BY_ID[home].name} is home</span>}>
           <div className="grid gap-1.5 sm:grid-cols-3">
             {REGIONS.filter((r) => r.id !== home).map((r) => {
-              const on = locs.includes(r.id);
+              const branch = (s.company.branches ?? []).includes(r.id);
+              const on = branch || locs.includes(r.id);
               const gain = regionMix(yr, genre, home, [r.id]).mul - 1;
               const taste = r.taste[genre] ?? 1;
               return (
@@ -637,6 +638,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                   key={r.id}
                   type="button"
                   aria-pressed={on}
+                  disabled={branch}
                   onClick={() => setLocalized((x) => (on ? x.filter((y) => y !== r.id) : [...x, r.id]))}
                   title={r.blurb}
                   className={cx('rounded-xl border px-2.5 py-2 text-left text-xs transition', on ? 'border-accent bg-accent/10' : 'border-line hover:bg-bg2')}
@@ -648,7 +650,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                   <div className="text-ink3">
                     {Math.round(regionShares(yr)[r.id] * 100)}% of players · {taste >= 1.2 ? `loves ${GENRE_BY_ID[genre].name}` : taste <= 0.8 ? `cool on ${GENRE_BY_ID[genre].name}` : `likes ${GENRE_BY_ID[genre].name}`}
                   </div>
-                  <div className="num text-ink3">{fmtMoney(money(LOC_COST[size], s.day))} · +{Math.round(LOC_WORK * 100)}% work</div>
+                  <div className="num text-ink3">{branch ? 'Your branch office handles it — free' : `${fmtMoney(money(LOC_COST[size], s.day))} · +${Math.round(LOC_WORK * 100)}% work`}</div>
                 </button>
               );
             })}

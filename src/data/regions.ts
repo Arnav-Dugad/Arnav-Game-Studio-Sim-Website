@@ -68,6 +68,9 @@ const TEXT_HEAVY: Partial<Record<GenreId, number>> = { rpg: 1, adventure: 1, str
 /** Localisation cost per region, in 1980 dollars, and extra work (share of the game). */
 export const LOC_COST: Record<Size, number> = { small: 4_000, medium: 12_000, large: 35_000, aaa: 90_000 };
 export const LOC_WORK = 0.03;
+/** Branch offices abroad: games are localised there for free and sell a little better (a local team knows the market). */
+export const BRANCH = { open: 400_000, rent: 12_000, minYear: 1985, minReputation: 35, reach: 1.06 };
+
 /** Localisation is a thing from here (before, games shipped as they were). */
 export const LOC_YEAR = 1983;
 
@@ -96,20 +99,21 @@ export function unlocalizedReach(r: RegionDef, genre: GenreId): number {
 }
 
 /**
- * Where a game's players come from, and the sales multiplier from localisation (1 = shipped only in the
- * home language; the baseline every game had before regions existed).
+ * Where a game's players come from, and the sales multiplier from home region and localisation (1 = an
+ * unlocalised game from a North American studio — the baseline every game had before regions existed).
  */
-export function regionMix(year: number, genre: GenreId, home: RegionId, localized: readonly RegionId[]): { mix: Record<RegionId, number>; mul: number } {
+export function regionMix(year: number, genre: GenreId, home: RegionId, localized: readonly RegionId[], branches: readonly RegionId[] = []): { mix: Record<RegionId, number>; mul: number } {
   const shares = regionShares(year);
-  let base = 0;
+  let base = 0; // reference: an unlocalised game from a North American studio (the baseline everything was tuned on)
   let now = 0;
   const raw: Record<RegionId, number> = { na: 0, eu: 0, jp: 0, row: 0 };
   for (const r of REGIONS) {
     const demand = shares[r.id] * (r.taste[genre] ?? 1);
-    const local = r.id === home || localized.includes(r.id);
+    const branch = r.id !== home && branches.includes(r.id);
+    const local = r.id === home || branch || localized.includes(r.id);
     const without = r.id === home ? 1 : unlocalizedReach(r, genre);
-    base += demand * without;
-    raw[r.id] = demand * (local ? 1 : without);
+    base += demand * (r.id === 'na' ? 1 : unlocalizedReach(r, genre));
+    raw[r.id] = demand * (local ? 1 : without) * (branch ? BRANCH.reach : 1);
     now += raw[r.id];
   }
   const mix = Object.fromEntries(REGIONS.map((r) => [r.id, now > 0 ? raw[r.id] / now : 0])) as Record<RegionId, number>;

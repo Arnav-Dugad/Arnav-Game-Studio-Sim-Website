@@ -8,6 +8,8 @@
  * - Safe to import in tests: nothing touches `window` until `start()` is called.
  */
 
+import { sound } from './sound';
+
 export interface AmbienceSnapshot {
   working: number;
   chatting: number;
@@ -198,6 +200,9 @@ function tick(): void {
   const c = ctx;
   const s = snap();
   if (!c || !s || !master) return;
+  const silent = sound.muted || (typeof document !== 'undefined' && document.hidden);
+  master.gain.setTargetAtTime(silent ? 0 : level(), c.currentTime, 0.2);
+  if (silent) return;
   const quiet = s.active ? 1 : 0.5;
   const t = c.currentTime + 0.02;
   const people = s.working + s.chatting + s.onBreak;

@@ -16,7 +16,7 @@ export function CultureTab() {
   const conflictWith = (id: CultureId) => CULTURE_CONFLICTS.find(([a, b]) => (a === id && pick.includes(b)) || (b === id && pick.includes(a)));
   const why = valuesBlocked(s, pick);
   const changed = !(pick.length === current.length && pick.every((x) => current.includes(x)));
-  const cooldown = current.length && s.company.valuesDay !== undefined ? Math.max(0, CULTURE_COOLDOWN_DAYS - (s.day - s.company.valuesDay)) : 0;
+  const cooldown = s.company.valuesDay !== undefined ? Math.max(0, CULTURE_COOLDOWN_DAYS - (s.day - s.company.valuesDay)) : 0;
   return (
     <div>
       <Section title="Studio culture" right={<span className="text-xs text-ink3">Up to {MAX_VALUES} values</span>}>
@@ -60,7 +60,7 @@ export function CultureTab() {
               toast(r.ok ? { text: pick.length ? `Your studio now stands for ${pick.map((id) => CULTURE_BY_ID[id].name).join(' and ')}` : 'Values cleared', tone: 'good' } : { text: r.error, tone: 'bad' });
             }}
           >
-            {current.length ? 'Change culture' : 'Adopt these values'}
+            {s.company.valuesDay !== undefined ? 'Change culture' : 'Adopt these values'}
           </Button>
           {changed && <Button variant="ghost" onClick={() => setPick(current)}>Reset</Button>}
           <span className="text-xs text-ink3">{changed && why ? why : cooldown > 0 ? `Next change possible in ${cooldown} days` : ''}</span>

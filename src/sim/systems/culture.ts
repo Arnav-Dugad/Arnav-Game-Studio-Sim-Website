@@ -16,7 +16,7 @@ export function valuesBlocked(s: GameState, values: readonly CultureId[]): strin
   const cur = s.company.values ?? [];
   const same = cur.length === v.length && cur.every((x) => v.includes(x));
   if (same) return 'Those are already your values';
-  if (cur.length && s.company.valuesDay !== undefined && s.day - s.company.valuesDay < CULTURE_COOLDOWN_DAYS) return `Culture can change again in ${CULTURE_COOLDOWN_DAYS - (s.day - s.company.valuesDay)} days`;
+  if (s.company.valuesDay !== undefined && s.day - s.company.valuesDay < CULTURE_COOLDOWN_DAYS) return `Culture can change again in ${CULTURE_COOLDOWN_DAYS - (s.day - s.company.valuesDay)} days`;
   return null;
 }
 
@@ -25,7 +25,7 @@ export function setValues(s: GameState, values: readonly CultureId[]): string | 
   const why = valuesBlocked(s, values);
   if (why) return why;
   const v = [...new Set(values)];
-  const had = (s.company.values ?? []).length > 0;
+  const had = s.company.valuesDay !== undefined; // anything after the very first choice unsettles people
   s.company.values = v;
   s.company.valuesDay = s.day;
   if (had) s.company.moraleMods.push({ v: CULTURE_CHANGE_MORALE.v, until: s.day + CULTURE_CHANGE_MORALE.days, label: 'Culture shake-up' });

@@ -46,9 +46,11 @@ export function runLiveEvent(s: GameState, releaseId: string): string | null {
   spend(s, 'marketing', cost);
   const mul = liveEventBoost(s, r);
   r.liveEvent = { until: s.day + LIVE_EVENT_DAYS, mul, name: liveEventName(s.day) };
+  if (r.lastLiveEventDay !== undefined && s.day - r.lastLiveEventDay >= 365) r.liveEvents = 0; // players have forgotten
   r.liveEvents = (r.liveEvents ?? 0) + 1;
   r.lastLiveEventDay = s.day;
-  if ((r.liveEvents ?? 0) <= 4) r.userScore = clamp(r.userScore + 1, 0, 100);
+  if ((r.liveEvents ?? 0) <= 2 && !r.liveScoreBumps) r.userScore = clamp(r.userScore + 1, 0, 100);
+  if ((r.liveEvents ?? 0) >= 2) r.liveScoreBumps = true;
   pushNews(s, { category: 'studio', headline: `${r.name}: the ${r.liveEvent.name} is live`, body: `Players flock back for limited-time content (+${Math.round((mul - 1) * 100)}% live income for three months).`, tone: 'good' });
   return null;
 }

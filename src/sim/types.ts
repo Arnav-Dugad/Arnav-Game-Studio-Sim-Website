@@ -323,6 +323,8 @@ export interface Release {
   liveEvent?: { until: number; mul: number; name: string };
   liveEvents?: number;
   lastLiveEventDay?: number;
+  /** The user-score bump from events has been used up. */
+  liveScoreBumps?: boolean;
   /** Share of players by region at launch (data/regions.ts). */
   regionMix?: Record<RegionId, number>;
   /** Storefront discounts run so far, and when the last one started. */
@@ -663,6 +665,8 @@ export interface Company {
   name: string;
   /** Where the studio is based (its own language is always supported). Defaults to North America. */
   homeRegion?: RegionId;
+  /** Branch offices abroad (data/regions.ts BRANCH). */
+  branches?: RegionId[];
   /** Studio culture (data/culture.ts) and when it last changed. */
   values?: CultureId[];
   valuesDay?: number;
@@ -711,7 +715,7 @@ export interface GameState {
   /** Relationships between colleagues (pair key 'a|b' → −100..100; systems/relations.ts). */
   relations?: Record<string, number>;
   /** A scenario run (systems/scenarios.ts): goals met (index → day) and the result. */
-  scenario?: { id: string; deadlineDay: number; met: Record<number, number>; result?: 'won' | 'failed' };
+  scenario?: { id: string; deadlineDay: number; met: Record<number, number>; hold?: Record<number, number>; result?: 'won' | 'failed' };
   /** This month's Employee of the Month. */
   eotm?: { id: string; day: number };
   schemaVersion: number;

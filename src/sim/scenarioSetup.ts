@@ -11,7 +11,7 @@ import { newId, pushNews } from './util';
 export function createScenarioGame(o: NewGameOptions & { scenario: string }): GameState {
   const def = SCENARIO_BY_ID[o.scenario];
   if (!def) throw new Error(`Unknown scenario ${o.scenario}`);
-  const s = createGame({ ...o, startYear: def.year, homeRegion: def.home ?? o.homeRegion, endless: true, sandbox: false });
+  const s = createGame({ ...o, startYear: def.year, homeRegion: def.home ?? 'na', endless: true, sandbox: false });
   // Build the office with a temporary free-build pass (not a cheat: it's the scenario's setup).
   const cheats = s.cheats;
   s.cheats = { ...(cheats ?? {}), freeBuild: true };
@@ -20,7 +20,7 @@ export function createScenarioGame(o: NewGameOptions & { scenario: string }): Ga
   s.cheats = cheats;
   const rng = new Rng(s.rng);
   for (let i = 0; i < (def.hires ?? 0); i++) {
-    const cand = generateCandidate(s, rng, { quality: def.hireQuality ?? 0.1 });
+    const cand = generateCandidate(s, rng, { quality: (def.hireQuality ?? 0.1) * 100 });
     const id = newId(s, 's');
     s.staff[id] = candidateToStaff(s, cand, id, cand.askSalary);
   }

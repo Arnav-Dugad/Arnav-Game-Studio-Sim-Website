@@ -121,8 +121,9 @@ export const EVENT_DEFS: EventDef[] = [
       const who = staffList(s).filter((x) => x.ambition && x.ambition.kind !== 'holiday');
       if (!who.length) return null;
       const st = rng.pick(who);
-      const r = rng.pick(Object.values(s.rivals).filter((x) => x.alive));
-      if (!r) return null;
+      const rivals = Object.values(s.rivals).filter((x) => x.alive && !x.ownedByPlayer);
+      if (!rivals.length) return null;
+      const r = rng.pick(rivals);
       const raise = Math.round(st.salary * 0.15);
       return {
         title: 'A rival offers a dream',
@@ -146,6 +147,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt === 'match') {
         st.salary += Number(e.ctx.raise);
         st.loyalty = clamp(st.loyalty + 10, 0, 100);
+        st.promise = { salary: st.salary, until: s.day + 365 };
       } else if (opt === 'talk') {
         if (!rng.chance(clamp(st.loyalty / 100, 0.15, 0.9))) leave();
         else st.loyalty = clamp(st.loyalty - 5, 0, 100);
@@ -166,15 +168,14 @@ export const EVENT_DEFS: EventDef[] = [
       title: 'Best Places to Work',
       body: `${s.company.name} has been shortlisted as one of the industry’s best places to work. A magazine wants a photo shoot and interviews.`,
       options: [
-        { id: 'yes', label: 'Open the doors', preview: 'Reputation +3, better candidates for a while' },
+        { id: 'yes', label: 'Open the doors', preview: 'Reputation +4' },
         { id: 'no', label: 'Keep our heads down', preview: 'Nothing changes' },
       ],
       ctx: {},
     }),
     resolve: ({ s }, _e, opt) => {
       if (opt !== 'yes') return;
-      addRep(s, 3, 'Best Places to Work');
-      s.company.recruiting = Math.max(s.company.recruiting, 1);
+      addRep(s, 4, 'Best Places to Work');
       pushNews(s, { category: 'studio', headline: `${s.company.name} named one of the best places to work in games`, tone: 'good' });
     },
   },
@@ -189,6 +190,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (!f) return null;
       const cost = money(2_000, s.day);
       const together = f.a.assignment.kind === 'project' && f.b.assignment.kind === 'project' && f.a.assignment.id === f.b.assignment.id;
+      const shared = together && f.a.assignment.kind === 'project' ? f.a.assignment.id : '';
       return {
         title: 'A feud in the team',
         body: `${f.a.name} and ${f.b.name} can’t stand each other any more. ${together ? 'They’re on the same project, and the whole team feels it.' : 'It’s poisoning the mood.'}`,
@@ -197,7 +199,7 @@ export const EVENT_DEFS: EventDef[] = [
           { id: 'split', label: `Split them up (${f.b.name.split(' ')[0]} leaves the project)`, preview: together ? 'The team calms down; the project loses a person' : 'Not on the same project', disabled: !together },
           { id: 'ignore', label: 'Let them work it out', preview: 'Both morale −8; it may get worse — or one may quit' },
         ],
-        ctx: { a: f.a.id, b: f.b.id, cost },
+        ctx: { a: f.a.id, b: f.b.id, cost, project: shared },
       };
     },
     resolve: ({ s, rng }, e, opt) => {
@@ -210,10 +212,13 @@ export const EVENT_DEFS: EventDef[] = [
         spend(s, 'other_expense', Number(e.ctx.cost));
         rel[k] = Math.max(rel[k] ?? 0, 0) + 10;
         pushNews(s, { category: 'staff', headline: `${a.name} and ${b.name} make peace`, tone: 'good' });
-      } else if (opt === 'split' && b.assignment.kind === 'project') {
-        const p = s.projects[b.assignment.id];
-        if (p) p.team = p.team.filter((x) => x !== b.id);
-        b.assignment = { kind: 'idle' };
+      } else if (opt === 'split') {
+        const p = s.projects[String(e.ctx.project)];
+        // only if they still share that project and it keeps someone on it
+        if (p && p.team.includes(a.id) && p.team.includes(b.id) && p.team.length > 1) {
+          p.team = p.team.filter((x) => x !== b.id);
+          b.assignment = { kind: 'idle' };
+        }
         rel[k] = (rel[k] ?? 0) + 15;
       } else {
         for (const x of [a, b]) x.morale = clamp(x.morale - 8, 0, 100);
@@ -1604,7 +1609,7 @@ const DEF_BY_ID = Object.fromEntries(EVENT_DEFS.map((d) => [d.id, d]));
 export function fireEvent(c: Ctx, defId: string): boolean {
   const { s } = c;
   const def = DEF_BY_ID[defId];
-  if (!def || s.pendingEvents.some((e) => e.defId === defId)) return false;
+  if (!def || s.pendingEvents.some((e) => e.defId === defId) || (s.eventCooldowns[defId] ?? -1) > s.day) return false;
   const made = def.make(c);
   if (!made) return false;
   s.nextEventUid += 1;

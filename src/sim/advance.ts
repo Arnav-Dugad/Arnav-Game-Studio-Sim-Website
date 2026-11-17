@@ -94,8 +94,6 @@ export function tick(c: Ctx): void {
     refreshCandidates(c);
     refreshOffers(c);
     if (d.month % 3 === 1) quarterlyEarnings(c);
-    scenarioMonthly(c);
-    if (s.status !== 'running') return;
     if (d.month === 5 && s.finance.stock && s.day - s.finance.stock.ipoDay > 300) fireEvent(c, 'agm');
     s.progress.stats.peakCash = Math.max(s.progress.stats.peakCash, s.company.cash);
     const v = valuation(s);
@@ -105,6 +103,7 @@ export function tick(c: Ctx): void {
     if (s.day - lastRel > 270) addRep(s, -(0.15), 'Quiet spell (no recent releases)');
     checkAchievements(c);
     c.out.push({ type: 'month', day: s.day });
+    scenarioMonthly(c);
   }
 
   updateStaffDaily(c);

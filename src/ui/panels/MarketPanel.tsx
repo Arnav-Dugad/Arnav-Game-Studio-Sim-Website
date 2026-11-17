@@ -1,16 +1,17 @@
 import { useMemo } from 'react';
-import { REGIONS, regionShares, type RegionId } from '@/data/regions';
+import { BRANCH, REGIONS, regionShares, type RegionId } from '@/data/regions';
+import { branchBlocked } from '@/sim/actions';
 import { GENRES, GENRE_BY_ID } from '@/data/genres';
 import { COMPANY_BY_ID } from '@/data/companies';
 import { PERSON_BY_ID } from '@/data/people';
 import { fromDay, formatDate } from '@/sim/calendar';
-import { fmtUnits } from '@/sim/util';
+import { fmtMoney, fmtUnits, money } from '@/sim/util';
 import { genrePopularity, livePlatforms, platformName } from '@/sim/systems/market';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { FRANCHISES } from '@/data/franchises';
 import { parseYM } from '@/sim/calendar';
 import { StackedArea, LineChart } from '../charts';
-import { Pill, Section, Segmented, cx } from '../components/ui';
+import { Button, Pill, Section, Segmented, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { InitialsBadge } from '../art/Avatar';
 import { Icon } from '../icons';
@@ -147,6 +148,26 @@ function World() {
               ))}
             </div>
             {totalMine > 0 && <div className="mt-1.5 text-[11px] text-ink3">Your recent games: {Math.round((myUnits(r.id) / totalMine) * 100)}% of copies sold here</div>}
+            {r.id !== home && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                {(s.company.branches ?? []).includes(r.id) ? (
+                  <>
+                    <Pill tone="good">Branch office open</Pill>
+                    <span className="text-ink3">{fmtMoney(money(BRANCH.rent, s.day))}/mo</span>
+                    <Button size="sm" variant="ghost" onClick={() => useGame.getState().actOrToast({ type: 'closeBranch', region: r.id }, `Closed the ${r.name} studio`)}>
+                      Close
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" icon="building" disabled={!!branchBlocked(s, r.id)} title={branchBlocked(s, r.id) ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'openBranch', region: r.id }, `Opened a studio in ${r.name}!`)}>
+                      Open a branch · {fmtMoney(money(BRANCH.open, s.day))}
+                    </Button>
+                    <span className="text-ink3">then {fmtMoney(money(BRANCH.rent, s.day))}/mo · free localisation here and +{Math.round((BRANCH.reach - 1) * 100)}% local reach</span>
+                  </>
+                )}
+              </div>
+            )}
           </section>
         );
       })}

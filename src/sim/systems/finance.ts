@@ -2,6 +2,7 @@
  * Finance: monthly payroll/rent/upkeep, loans & credit, taxes, insolvency → bankruptcy,
  * company valuation, IPO and the stock price.
  */
+import { BRANCH } from '../../data/regions';
 import { BALANCE } from '../../data/balance';
 import { ITEM_BY_ID } from '../../data/facilities';
 import { clamp } from '../breakdown';
@@ -63,7 +64,7 @@ export function monthlyUpkeep(s: GameState): number {
 }
 
 export function monthlyRent(s: GameState): number {
-  return tierDef(s.office.tier).rent * inflation(s.day);
+  return (tierDef(s.office.tier).rent + (s.company.branches?.length ?? 0) * BRANCH.rent) * inflation(s.day);
 }
 
 export function monthlyBurn(s: GameState): number {

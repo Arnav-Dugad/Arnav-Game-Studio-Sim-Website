@@ -154,8 +154,10 @@ export function goalProgress(s: GameState, g: GoalDef): { p: number; text: strin
       const n = s.releaseOrder.length;
       return { p: n / g.n, text: `Release ${g.n} games`, now: `${n}/${g.n}` };
     }
-    case 'cash':
-      return { p: s.company.cash / g.amount, text: `Have ${fmtMoney(g.amount)} in the bank`, now: fmtMoney(s.company.cash) };
+    case 'cash': {
+      const net = s.company.cash - s.finance.loans.reduce((t, l) => t + l.remaining, 0);
+      return { p: net / g.amount, text: `Have ${fmtMoney(g.amount)} in the bank (net of loans)`, now: fmtMoney(net) };
+    }
     case 'valuation': {
       const v = valuation(s);
       return { p: v / g.amount, text: `Reach a ${fmtMoney(g.amount)} valuation`, now: fmtMoney(v) };
@@ -195,7 +197,13 @@ export function scenarioMonthly(c: Ctx): void {
   const def = SCENARIO_BY_ID[sc.id];
   if (!def) return;
   def.goals.forEach((g, i) => {
-    if (sc.met[i] === undefined && goalProgress(s, g).p >= 1) {
+    // money and headcount have to last: three monthly checks in a row
+    const sustained = g.kind === 'cash' || g.kind === 'valuation' || g.kind === 'staff';
+    if (sc.met[i] !== undefined) return;
+    const ok = goalProgress(s, g).p >= 1;
+    const hold = (sc.hold ??= {});
+    hold[i] = ok ? (hold[i] ?? 0) + 1 : 0;
+    if (ok && (!sustained || hold[i]! >= 3)) {
       sc.met[i] = s.day;
       pushNews(s, { category: 'studio', headline: `Scenario goal met: ${goalProgress(s, g).text}`, tone: 'good' });
     }

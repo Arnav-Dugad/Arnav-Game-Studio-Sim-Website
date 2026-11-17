@@ -80,7 +80,7 @@ export function teamSynergy(s: GameState, team: Staff[]): Breakdown {
   const hot = team.filter((t) => hasTrait(t, 'hothead')).length;
   if (hot && n > 1) bd.mul('Hotheads', 1 - Math.min(0.08, hot * 0.03));
   if (n > 1) {
-    const chem = teamChemistry(s, team);
+    const chem = teamChemistry(s, team.filter((x) => x.role !== 'founder'));
     if (Math.abs(chem.avg) >= 1) bd.mul(chem.avg >= 0 ? 'Team chemistry' : 'Bad blood', 1 + clamp(chem.avg / 100, -0.6, 1) * 0.06);
     for (const [a, b] of chem.feuds.slice(0, 2)) bd.mul(`Feud: ${a.name.split(' ')[0]} vs ${b.name.split(' ')[0]}`, 0.96);
   }
