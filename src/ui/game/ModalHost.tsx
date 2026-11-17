@@ -1,4 +1,6 @@
+import { COMPANY_BY_ID } from '@/data/companies';
 import { useEffect, useRef, useState } from 'react';
+import { CAMPAIGN_BOOST, CAMPAIGN_MIN_SCORE, campaignBlocked, campaignCost, campaignFor } from '@/sim/systems/awardsCampaign';
 import { licenceDue } from '@/sim/systems/licences';
 import { checkInBlocked, checkInLimit, checkInsUsed } from '@/sim/systems/checkIns';
 import type { MascotAcc, MascotDesign, MascotKind } from '@/sim/types';
@@ -522,6 +524,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
           </ul>
         </Section>
       )}
+      <AwardsSeason releaseId={releaseId} />
       <PostLaunch releaseId={releaseId} />
       <ReleaseBuzz releaseId={releaseId} />
       <Credits releaseId={releaseId} />
@@ -569,6 +572,40 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         )}
       </div>
     </Modal>
+  );
+}
+
+function AwardsSeason({ releaseId }: { releaseId: string }) {
+  const s = useGame((g) => g.s)!;
+  const r = s.releases[releaseId];
+  const yr = fromDay(s.day).year;
+  if (!r || fromDay(r.day).year !== yr || r.score < CAMPAIGN_MIN_SCORE || r.concept.remasterOf || r.concept.expansionOf) return null;
+  const why = campaignBlocked(s, r);
+  const backing = campaignFor(s) === r.id;
+  // the competition so far this year
+  const rivals = s.rivalGames.filter((g) => fromDay(g.day).year === yr && g.day <= s.day && !g.publishedByPlayer);
+  const top = [...rivals].sort((a, b) => b.score - a.score)[0];
+  const genreTop = rivals.filter((g) => g.genre === r.concept.genre).sort((a, b) => b.score - a.score)[0];
+  const name = (g: (typeof rivals)[number]) => `${g.name} (${s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company}, ${g.score})`;
+  return (
+    <Section title="Awards season">
+      <p className="text-xs text-ink2">
+        The Golden Pixel Gala is on New Year’s Day. Game of the Year needs 85+ and to beat every rival; Best {GENRE_BY_ID[r.concept.genre].name} needs 80+ and to beat the genre.
+        {top && <> Front-runner so far: <b>{name(top)}</b>.</>}
+        {genreTop && genreTop !== top && <> Best {GENRE_BY_ID[r.concept.genre].name.toLowerCase()} rival: <b>{name(genreTop)}</b>.</>}
+        {!rivals.length && ' No rival has released anything notable yet this year.'}
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {backing ? (
+          <Pill tone="gold">Campaigning for the gala (+{CAMPAIGN_BOOST} with the jury)</Pill>
+        ) : (
+          <Button size="sm" icon="trophy" disabled={!!why} title={why ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'awardsCampaign', releaseId }, `Awards campaign launched for ${r.name}`)}>
+            Run an awards campaign · {fmtMoney(campaignCost(s))}
+          </Button>
+        )}
+        {!backing && <span className="text-[11px] text-ink3">{why ?? `+${CAMPAIGN_BOOST} with the jury — enough to tip a close race, not to win a hopeless one. One a year.`}</span>}
+      </div>
+    </Section>
   );
 }
 

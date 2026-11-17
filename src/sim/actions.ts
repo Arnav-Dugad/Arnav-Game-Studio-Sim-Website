@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { runCampaign } from './systems/awardsCampaign';
 import { breakPledge, takePledge, withdrawPledge } from './systems/crunchPledge';
 import type { PriceTier, Release } from './types';
 import { priceTierAllowed } from './systems/pricing';
@@ -174,6 +175,7 @@ export type Action =
   | { type: 'giveTalk'; staffId: string; releaseId: string }
   | { type: 'checkIn'; staffId: string }
   | { type: 'crunchPledge'; on: boolean }
+  | { type: 'awardsCampaign'; releaseId: string }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
   | { type: 'readFanMail' }
   | { type: 'crowdfund'; projectId: string; tier: CampaignTier }
@@ -1045,6 +1047,8 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'mediaDeal':
       return signMediaDeal(s, a.franchiseId, a.kind, a.control);
+    case 'awardsCampaign':
+      return runCampaign(s, a.releaseId);
     case 'crunchPledge':
       return a.on ? takePledge(s) : withdrawPledge(s);
     case 'checkIn':

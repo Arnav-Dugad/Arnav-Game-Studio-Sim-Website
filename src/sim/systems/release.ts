@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { campaignBoost } from './awardsCampaign';
 import { renownSalesMul, renownUserEffect } from './renown';
 import { PRICE_MUL, priceDemandMul, priceTierOf, priceUserEffect } from './pricing';
 import { docOnRelease } from './documentary';
@@ -734,11 +735,11 @@ export function updateLiveMonthly(c: Ctx): void {
 /** Yearly awards ceremony (December). */
 export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
   const { s } = c;
-  type Entry = { name: string; company: string; score: number; genre: string; mine: boolean; classic?: boolean; releaseId?: string; user?: number };
+  type Entry = { name: string; company: string; score: number; genre: string; mine: boolean; classic?: boolean; releaseId?: string; user?: number; boost?: number };
   const entries: Entry[] = [
     ...Object.values(s.releases)
       .filter((r) => fromDay(r.day).year === yr && !r.concept.remasterOf && !r.concept.expansionOf)
-      .map((r) => ({ name: r.name, company: s.company.name, score: Math.round(r.score), genre: r.concept.genre, mine: true, releaseId: r.id, user: Math.round(r.userScore) })),
+      .map((r) => ({ name: r.name, company: s.company.name, score: Math.round(r.score), genre: r.concept.genre, mine: true, releaseId: r.id, user: Math.round(r.userScore), boost: campaignBoost(s, r.id, yr) })),
     ...s.rivalGames
       .filter((g) => fromDay(g.day).year === yr && !g.publishedByPlayer)
       .map((g) => ({ name: g.name, company: s.rivals[g.company]?.name ?? COMPANY_BY_ID[g.company]?.name ?? g.company, score: g.score, genre: g.genre, mine: false, classic: !!g.franchise })),
@@ -751,10 +752,12 @@ export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
   const byWeight = (a: Entry, b: Entry) => weight(b) - weight(a) || b.score - a.score;
   const winners: AwardWinner[] = [];
   const pick = (category: string, pool: Entry[], minScore: number, mineMin: number, strict: boolean) => {
-    const mine = pool.filter((e) => e.mine).sort((a, b) => b.score - a.score)[0];
+    // an awards campaign gives its game a little extra weight with the jury
+    const judged = (e: Entry) => e.score + (e.boost ?? 0);
+    const mine = pool.filter((e) => e.mine).sort((a, b) => judged(b) - judged(a))[0];
     const rivalsIn = pool.filter((e) => !e.mine);
     const bestRivalRaw = rivalsIn.reduce((m, e) => Math.max(m, e.score), 0);
-    if (mine && mine.score >= mineMin && (strict ? mine.score > bestRivalRaw : mine.score >= bestRivalRaw)) {
+    if (mine && judged(mine) >= mineMin && (strict ? judged(mine) > bestRivalRaw : judged(mine) >= bestRivalRaw)) {
       winners.push({ category, name: mine.name, company: mine.company, score: mine.score, mine: true, releaseId: mine.releaseId });
       return;
     }

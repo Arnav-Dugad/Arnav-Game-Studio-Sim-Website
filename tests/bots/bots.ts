@@ -466,6 +466,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'crowdfund', projectId: rng.pick(p), tier: rng.pick(['modest', 'ambitious', 'moonshot', 'bogus'] as never[]) } : null; },
   (_s, rng) => ({ type: 'setPolicy', parentalLeave: rng.pick(['minimal', 'standard', 'generous', 'bogus'] as never[]), interns: rng.chance(0.5) }),
   (_s, rng) => ({ type: 'crunchPledge', on: rng.chance(0.6) }),
+  (s, rng) => { const r = Object.keys(s.releases); return r.length ? { type: 'awardsCampaign', releaseId: rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
   (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'checkIn', staffId: rng.chance(0.9) ? rng.pick(st) : 'nope' } : null; },
   (s, rng) => (s.fanMail?.length ? { type: 'pinFanArt', id: rng.pick(s.fanMail).id, on: rng.chance(0.7) } : { type: 'readFanMail' }),
   (s, rng) => { const st = Object.keys(s.staff); const r = Object.keys(s.releases); return st.length ? { type: 'giveTalk', staffId: rng.pick(st), releaseId: r.length && rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
