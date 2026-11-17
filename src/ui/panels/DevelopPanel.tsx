@@ -13,7 +13,7 @@ import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore, workShare } from '@/sim/systems/dev';
 import { expansionPlatforms, expansionSizeOk, launchTitleMul, salesPotential } from '@/sim/systems/release';
-import { betaBlocked, betaCost, dealAdvanceFor, devkitCost, featuresBlocked, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
+import { betaBlocked, betaCost, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size, Staff } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
@@ -162,6 +162,12 @@ function GameCard({ p }: { p: GameProject }) {
               Beta says <b className="num text-ink">~{p.beta.predicted}</b> ·{' '}
             </>
           )}
+          {!p.beta && p.focusTest && (
+            <>
+              Focus test <b className="num text-ink">~{p.focusTest.predicted}</b>
+              {p.focusTest.wantMore && <> · players want more <b className="capitalize text-ink">{p.focusTest.wantMore}</b></>} ·{' '}
+            </>
+          )}
           Hype <b className="num text-ink">{p.hype.toFixed(2)}</b>
           {p.announcedDay === undefined && ' · unannounced'}
         </span>
@@ -190,6 +196,11 @@ function GameCard({ p }: { p: GameProject }) {
         <Button size="sm" icon="hourglass" onClick={() => run({ type: 'delay', projectId: p.id, weeks: 2 })} title="Two more weeks of polish: more points, fewer bugs, more cost">
           Polish +2w
         </Button>
+        {p.phase <= 2 && p.focusTest?.phase !== Math.min(2, p.phase) && (
+          <Button size="sm" icon="people" onClick={() => run({ type: 'focusTest', projectId: p.id })} title={`Players try the build: a rough score estimate and which area of this phase they want more of (${fmtMoney(focusTestCost(s, p.concept.size))})`}>
+            Focus test
+          </Button>
+        )}
         {p.phase >= 2 && !p.bugBashed && (
           <Button size="sm" icon="bug" onClick={() => {
               if (!useGame.getState().modals.some((m) => m.kind === 'bugBash')) useGame.getState().openModalNow({ kind: 'bugBash', projectId: p.id });

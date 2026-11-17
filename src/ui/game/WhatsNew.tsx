@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18l';
+export const WHATS_NEW_VERSION = '2026-11-18m';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'Focus tests, wellness & floor copying', body: 'Run a focus test once per phase (any era) for a rough score and what players want more of. A Wellness Program policy slows burnout. In big offices, copy a floor’s layout onto the next floor.' },
   { icon: 'coin', title: 'Venture funding', body: 'Company → Stock: before going public, raise a Seed round, Series A and Series B — cash now for a slice of the studio. Every round shrinks the share you keep at the IPO.' },
   { icon: 'handshake', title: 'Spin-offs & negotiation', body: 'A star who quits may found their own studio and become your rival (buy them back for an achievement). And you can now haggle with publishers: ask for a bigger advance or royalty — they might walk away.' },
   { icon: 'leaf', title: 'Sabbaticals & work anniversaries', body: 'Veterans with 8+ years can take a two-month sabbatical and come back better at their craft. Work anniversaries bring cake every five years and loyalty at 10, 20 and 30.' },

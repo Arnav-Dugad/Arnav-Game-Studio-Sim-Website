@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { PHASE_AREAS } from '../data/types';
 import { COMPANY_BY_ID } from '../data/companies';
 import { runLiveEvent } from './systems/liveEvents';
 import { teamRetreat } from './systems/studioLife';
@@ -60,6 +61,11 @@ export interface StartGamePayload {
   localized?: RegionId[];
   team: string[];
   focus?: [Focus3, Focus3, Focus3];
+}
+
+/** A focus group costs more for bigger games. */
+export function focusTestCost(s: GameState, size: Size): number {
+  return money({ small: 2_500, medium: 6_000, large: 15_000, aaa: 40_000 }[size], s.day);
 }
 
 /** Chance a publisher agrees to better terms: your reputation is your leverage. */
@@ -127,6 +133,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'focusTest'; projectId: string }
   | { type: 'copyFloor'; from: number; to: number }
   | { type: 'raiseFunding' }
   | { type: 'negotiateDeal'; dealId: string; ask: 'advance' | 'royalty' }
@@ -1191,6 +1198,28 @@ function apply(c: Ctx, a: Action): string | null {
       if (!placed) return s.company.cash < cost ? 'Not enough cash for a desk' : 'No room for more desks — move to a bigger office or clear some space';
       touchOffice(s);
       assignDesks(s);
+      return null;
+    }
+    case 'focusTest': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      const phase = Math.min(2, p.phase);
+      if (p.focusTest?.phase === phase) return 'Already focus-tested this phase';
+      const cost = focusTestCost(s, p.concept.size);
+      if (s.company.cash < cost) return 'Not enough cash';
+      spend(s, 'research', cost);
+      const est = qualityToScore(gameQuality(s, p, true).total);
+      // which of this phase's areas is furthest below what the genre wants?
+      const g = GENRE_BY_ID[p.concept.genre];
+      const areas = PHASE_AREAS[phase]!;
+      const focus = p.focus[phase as 0 | 1 | 2];
+      const total = areas.reduce((t, ar) => t + (g.ideal[ar] ?? 1), 0);
+      let worst: { area: string; gap: number } | null = null;
+      areas.forEach((ar, i) => {
+        const gap = ((g.ideal[ar] ?? 1) / total) * 100 - (focus[i] ?? 33);
+        if (gap > 6 && (!worst || gap > worst.gap)) worst = { area: ar, gap };
+      });
+      p.focusTest = { phase, predicted: clamp(Math.round(est + c.rng.normal(0, 4)), 1, 100), ...(worst ? { wantMore: (worst as { area: string }).area } : {}) };
       return null;
     }
     case 'openBeta': {

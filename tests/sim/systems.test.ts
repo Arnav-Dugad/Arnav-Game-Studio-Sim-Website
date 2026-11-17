@@ -1344,3 +1344,18 @@ describe('copy floor', () => {
     expect(dispatch(s, { type: 'copyFloor', from: 0, to: 0 }).ok).toBe(false);
   });
 });
+
+describe('focus test', () => {
+  it('gives a score estimate once per phase, for a fee', () => {
+    const s = game(1985, 91);
+    s.company.cash = 1_000_000;
+    const p = startSmall(s);
+    const cash = s.company.cash;
+    expect(dispatch(s, { type: 'focusTest', projectId: p.id }).ok).toBe(true);
+    expect(p.focusTest?.predicted).toBeGreaterThan(0);
+    expect(s.company.cash).toBeLessThan(cash);
+    expect(dispatch(s, { type: 'focusTest', projectId: p.id }).ok).toBe(false);
+    p.phase = 1;
+    expect(dispatch(s, { type: 'focusTest', projectId: p.id }).ok).toBe(true);
+  });
+});

@@ -236,6 +236,8 @@ export interface GameProject {
   qualityPreview?: Breakdown;
   /** Public beta run during polish: when, and the score beta players predicted. */
   beta?: { day: number; predicted: number };
+  /** Focus-group feedback (one per phase): predicted score and the area players want more of. */
+  focusTest?: { phase: number; predicted: number; wantMore?: string };
   /** A bug bash has been run (once per game). */
   bugBashed?: boolean;
 }
