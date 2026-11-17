@@ -1366,6 +1366,24 @@ export class OfficeRenderer {
     }
   }
 
+  /** What the office sounds like right now (for the ambience engine). */
+  ambienceStats(): { working: number; chatting: number; onBreak: number; cats: number; dogs: number } {
+    const s = this.cb.getState();
+    let working = 0;
+    let chatting = 0;
+    let onBreak = 0;
+    for (const a of this.agents.values()) {
+      if (!a.c.visible) continue;
+      if (a.mode === 'talk' || a.speechT > 0) chatting++;
+      else if (a.mode === 'station' || a.mode === 'fun') onBreak++;
+      else if (a.mode === 'desk') {
+        const act = s?.staff[a.id]?.activity;
+        if (act === 'work' || act === 'research') working++;
+      }
+    }
+    return { working, chatting, onBreak, ...this.pets.counts() };
+  }
+
   /** A captioned PNG of the current floor (photo mode). Hover rings and labels are hidden for the shot. */
   async snapshot(caption: string, sub: string): Promise<Blob | null> {
     if (!this.ready) return null;

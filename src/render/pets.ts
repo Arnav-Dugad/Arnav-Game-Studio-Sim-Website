@@ -84,6 +84,15 @@ export class PetSystem {
 
   constructor(private layer: Container) {}
 
+  /** How many cats and dogs are on the visible floor (for ambience). */
+  counts(): { cats: number; dogs: number } {
+    let cats = 0;
+    let dogs = 0;
+    for (const p of this.pets.values()) if (p.kind === 'cat') cats++;
+    else dogs++;
+    return { cats, dogs };
+  }
+
   destroy(): void {
     for (const p of this.pets.values()) p.c.destroy({ children: true });
     this.pets.clear();

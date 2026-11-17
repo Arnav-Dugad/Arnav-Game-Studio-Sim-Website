@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17t';
+export const WHATS_NEW_VERSION = '2026-11-17u';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'music', title: 'Office ambience', body: 'Hear your studio: keyboards clatter with the number of people working (clacky in the 80s), chatter murmurs, the coffee machine gurgles, desk phones ring and the pets chime in. Settings → Office ambience.' },
   { icon: 'sparkle', title: 'Studio culture', body: 'Company → Culture: pick up to two values — Quality First, Ship Fast, Player Obsessed, Profit Driven, Innovation, Work-Life Balance. Each is a real trade-off, some clash, and changing course costs morale and waits a year.' },
   { icon: 'globe', title: 'World regions & localisation', body: 'North America, Europe, Japan and the rest of the world each have their own tastes and a share of players that shifts over the decades. Choose your home region when founding a studio, and localise games (from 1983) to reach players abroad — an RPG in Japan, a strategy game in Europe. Market → World; each game shows its players by region.' },
   { icon: 'people', title: 'Visitors', body: 'People drop by: couriers with parcels, the pizza run during crunch, journalists chasing a preview of your hyped game, investors calling on the founder, candidates arriving for interviews.' },

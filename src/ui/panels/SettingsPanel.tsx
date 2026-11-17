@@ -4,6 +4,7 @@ import { useGame } from '../store';
 import { useSettings, type MotionPref, type ThemePref } from '../settings';
 import { sound } from '../sound';
 import { music } from '../music';
+import { ambience } from '../ambience';
 
 export default function SettingsPanel() {
   const st = useSettings();
@@ -14,6 +15,8 @@ export default function SettingsPanel() {
   const [muted, setMuted] = useState(sound.muted);
   const [musicOn, setMusicOn] = useState(music.on);
   const [musicVol, setMusicVol] = useState(music.volume);
+  const [ambOn, setAmbOn] = useState(ambience.isOn());
+  const [ambVol, setAmbVol] = useState(ambience.volume());
   return (
     <div className="space-y-1 text-sm">
       <Section title="Appearance">
@@ -105,6 +108,32 @@ export default function SettingsPanel() {
                 setMusicVol(Number(e.target.value));
               }}
               aria-label="Music volume"
+            />
+          </Row>
+          <Row label="Office ambience">
+            <input
+              type="checkbox"
+              className="size-5 accent-[var(--accent)]"
+              checked={ambOn}
+              onChange={(e) => {
+                ambience.setOn(e.target.checked);
+                setAmbOn(e.target.checked);
+              }}
+            />
+          </Row>
+          <Row label={`Ambience volume ${Math.round(ambVol * 100)}%`}>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={ambVol}
+              disabled={!ambOn}
+              onChange={(e) => {
+                ambience.setVolume(Number(e.target.value));
+                setAmbVol(Number(e.target.value));
+              }}
+              aria-label="Ambience volume"
             />
           </Row>
           <p className="px-1 text-[11px] text-ink3">The soundtrack is generated live and follows the era: chiptune in the ’80s, FM in the ’90s, soft synths after.</p>

@@ -17,6 +17,7 @@ import { BuildBar } from '../game/BuildBar';
 import { ProjectDock, YearInReview } from '../game/Dock';
 import { sound } from '../sound';
 import { music } from '../music';
+import { ambience } from '../ambience';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { navigate } from '../router';
@@ -37,6 +38,16 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
   useEffect(() => {
     music.start({ year: () => fromDay(useGame.getState().s?.day ?? 0).year, active: () => useGame.getState().speed > 0 });
     return () => music.stop();
+  }, []);
+  // Office ambience: keyboards, chatter, coffee, phones and pets, following what the office is doing.
+  useEffect(() => {
+    ambience.start(() => {
+      const r = rendererRef.current;
+      const g = useGame.getState();
+      if (!r || !g.s) return null;
+      return { ...r.ambienceStats(), year: fromDay(g.s.day).year, active: g.speed > 0 };
+    });
+    return () => ambience.stop();
   }, []);
 
   // Autosave: local each in-game month, cloud throttled + on tab hide.
