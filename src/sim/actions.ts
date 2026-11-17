@@ -561,7 +561,8 @@ function apply(c: Ctx, a: Action): string | null {
         pushNews(s, { category: 'studio', headline: `${p.concept.name} abandoned in Early Access`, body: `${fmtUnits(p.earlyAccess.units)} players paid for a game that will never be finished. Refund requests are pouring in.`, tone: 'bad' });
       }
       if (p.kind === 'game' && p.concept.deal) {
-        // the publisher wants its advance back
+        // the publisher wants its advance back — and won't forget
+        (s.publisherTrust ??= {})[p.concept.deal.publisherId] = Math.max(-5, (s.publisherTrust[p.concept.deal.publisherId] ?? 0) - 3);
         spend(s, 'other_expense', p.concept.deal.advance);
         addRep(s, -2, 'Cancelled a published game');
       }

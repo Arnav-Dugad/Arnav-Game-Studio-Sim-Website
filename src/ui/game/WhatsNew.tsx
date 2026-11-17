@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20m';
+export const WHATS_NEW_VERSION = '2026-11-20n';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'handshake', title: 'Publishers remember', body: 'Deliver a published game on time and above the bar and that publisher trusts you more — bigger advances, better royalties, a lower score bar next time. Miss deadlines, disappoint them or cancel, and they grow wary; burn them badly and they stop calling.' },
   { icon: 'rocket', title: 'Shadow drops & smarter furniture', body: 'From 2015, a good game you never announce launches as a surprise “shadow drop” — the shock is the marketing. And hovering any piece of furniture now tells you what it does.' },
   { icon: 'trophy', title: 'Studio Awards', body: 'Every December your studio holds its own awards night: MVP, Rookie of the Year, Mentor of the Year and Heart of the Studio. Winners glow (and keep the honour on their card), and the office cheers them on.' },
   { icon: 'heart', title: 'Favourite genres & the years in charts', body: 'Everyone has a favourite genre (on their card; a ♥ in the team picker). On a game they love they work 5% faster and are happier. And the Yearbook now charts your studio over the years — people, reputation, fans and revenue.' },

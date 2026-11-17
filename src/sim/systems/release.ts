@@ -469,6 +469,12 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     addRep(s, -Math.min(8, 2 + monthsLate), 'Missed a publisher deadline');
     pushNews(s, { category: 'studio', headline: `Publisher frustrated: ${p.concept.name} shipped ${monthsLate} month${monthsLate > 1 ? 's' : ''} late`, tone: 'bad' });
   }
+  if (deal) {
+    // the publisher remembers how this went
+    const late = s.day > deal.deadlineDay ? Math.ceil((s.day - deal.deadlineDay) / 30) : 0;
+    const d = (late ? -1 - late * 0.5 : 1) + (score >= deal.minScore ? 1 : -1.5) + (score >= deal.minScore + 10 ? 1 : 0);
+    (s.publisherTrust ??= {})[deal.publisherId] = Math.round(clamp((s.publisherTrust[deal.publisherId] ?? 0) + d, -5, 6) * 10) / 10;
+  }
   if (deal && score < deal.minScore) {
     addRep(s, -(2), 'Publisher disappointed');
     pushNews(s, { category: 'studio', headline: `Publisher disappointed with ${rel.name}`, body: `The contract wanted ${deal.minScore}+.`, tone: 'bad' });

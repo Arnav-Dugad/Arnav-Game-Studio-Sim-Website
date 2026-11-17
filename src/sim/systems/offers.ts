@@ -56,19 +56,20 @@ export function refreshOffers(c: Ctx): void {
   // Publisher deals
   const publishers = alive.filter((r) => {
     const d = COMPANY_BY_ID[r.id];
-    return d && (d.kind === 'publisher' || d.kind === 'platform_holder') && r.reputation >= 30 && (s.offers.snubbed?.[r.id] ?? 0) <= s.day;
+    return d && (d.kind === 'publisher' || d.kind === 'platform_holder') && r.reputation >= 30 && (s.offers.snubbed?.[r.id] ?? 0) <= s.day && (s.publisherTrust?.[r.id] ?? 0) > -3; // burned publishers stop calling
   });
   while (s.offers.deals.length < 3 && publishers.length) {
     const pub = rng.pick(publishers);
     const size = (['small', 'medium', 'large', 'aaa'] as Size[])[clamp(Math.floor(s.company.reputation / 25), 0, 3)]!;
     const bench = benchmarkPoints(size, s.day);
-    const advance = Math.round(money(bench * rng.range(220, 380), s.day) / 1000) * 1000;
+    const trust = s.publisherTrust?.[pub.id] ?? 0;
+    const advance = Math.round((money(bench * rng.range(220, 380), s.day) * (1 + 0.06 * trust)) / 1000) * 1000;
     s.offers.deals.push({
       id: `dl${s.nextId++}`,
       publisherId: pub.id,
       advance,
-      royalty: Math.round(clamp(0.3 + s.company.reputation / 300 + rng.range(-0.05, 0.06), 0.22, 0.6) * 100) / 100,
-      minScore: Math.round(clamp(55 + pub.reputation / 8 + rng.range(-5, 5), 50, 85)),
+      royalty: Math.round(clamp(0.3 + s.company.reputation / 300 + 0.015 * trust + rng.range(-0.05, 0.06), 0.22, 0.65) * 100) / 100,
+      minScore: Math.round(clamp(55 + pub.reputation / 8 - trust + rng.range(-5, 5), 50, 85)),
       deadlineDay: s.day + Math.round(rng.range(200, 420)),
       reach: Math.round(clamp(1.15 + pub.reputation / 80 + pub.staff / 1500, 1.15, 2.4) * 100) / 100,
       marketingBudget: Math.round(money(rng.range(10_000, 40_000) * (1 + pub.reputation / 50), s.day)),

@@ -918,6 +918,8 @@ export interface GameState {
   mediaDeals?: MediaDeal[];
   /** Platform holders' favour (systems/partners.ts), 0..100, neutral 50. */
   partners?: Record<string, number>;
+  /** How much each publisher trusts you (−5..+6): delivered on time and on quality, or not. */
+  publisherTrust?: Record<string, number>;
   /** Official player community (systems/community.ts): members, health 0..100, moderation level, a fading mood swing. */
   community?: { founded: number; members: number; health: number; mods: 0 | 1 | 2; mood?: number; toxicWarned?: boolean };
   schemaVersion: number;

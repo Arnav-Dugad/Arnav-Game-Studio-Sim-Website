@@ -174,7 +174,11 @@ function Publishing() {
                 <li key={o.id} className="flex items-center gap-3 rounded-xl border border-line p-2.5 text-xs">
                   <CompanyBadge name={c?.name ?? o.publisherId} color={c?.color ?? '#888'} size={34} />
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold">{c?.name}</div>
+                    <div className="text-sm font-semibold">
+                      {c?.name}
+                      {(s.publisherTrust?.[o.publisherId] ?? 0) >= 2 && <span className="ml-1.5 text-xs font-normal text-good">· trusts you</span>}
+                      {(s.publisherTrust?.[o.publisherId] ?? 0) <= -1.5 && <span className="ml-1.5 text-xs font-normal text-bad">· wary of you</span>}
+                    </div>
                     <div className="text-ink3">
                       {fmtMoney(o.advance)} advance · {Math.round(o.royalty * 100)}% royalty · {Math.round(o.reach * 100)}% reach · {o.minScore}+ score · deadline {formatDate(o.deadlineDay, false)}
                     </div>
