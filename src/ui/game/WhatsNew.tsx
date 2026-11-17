@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18w';
+export const WHATS_NEW_VERSION = '2026-11-18x';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'heart', title: 'Hobbies', body: 'Everyone has a hobby now — baking, running, music, retro gaming, gardening, board games and more (shown on their card). It changes what they chat about and where they spend their breaks, and on Fridays the bakers bring in treats.' },
   { icon: 'medal', title: 'Hall of Classics', body: 'Ten years on, the best games of all time are inducted into the Golden Pixel Hall of Classics — front-page news, reputation, fans for the series and a new generation discovering it. Will yours make it? (Plus a little chime when fan mail arrives.)' },
   { icon: 'camera', title: 'Studio card', body: 'Company → History → Studio card: a shareable image of your run — your studio, the numbers, your three best games fanned out and the founder. Save it as a PNG and show it off.' },
   { icon: 'sparkle', title: 'Media & licensing', body: 'Company → IP → Licensing: turn your series into comics, board games, toy lines, cartoons, TV shows, films and theme-park rides. Take the money and run, or keep creative control for half the fee and a much better shot at a hit. Hits grow the fan base and send viewers back to your games; flops embarrass the series.' },

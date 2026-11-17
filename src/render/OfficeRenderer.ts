@@ -3,6 +3,7 @@
  * Staff "life" (walking to the coffee machine, chatting, slumping when burnt out) mirrors the
  * sim's activity flags but uses its own non-deterministic timing, so visuals never affect the sim.
  */
+import { hobbyOf } from '@/data/hobbies';
 import { pinnedArt } from '@/sim/systems/fanMail';
 import { workAnniversary } from '@/sim/systems/staff';
 import { Application, Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
@@ -1138,6 +1139,15 @@ export class OfficeRenderer {
         for (const b of near) this.say(b, pickOne([`${yrs} years, ${firstName(st.name)}! 🎉`, 'Happy work anniversary!', 'Here’s to the next five!']), 2.4);
       }
     }
+    // Friday treats: a baker or cook brings something in
+    if (!firstFrame && weekday(s.day) === 4) {
+      const chef = here.find((x) => !x.talk && ['baking', 'cooking'].includes(hobbyOf(x.id).id));
+      if (chef && Math.random() < 0.5) {
+        const st = s.staff[chef.id];
+        this.say(chef, hobbyOf(chef.id).id === 'baking' ? pickOne(['I brought cookies! 🍪', 'Banana bread, anyone? 🍞', 'Cupcakes in the kitchen! 🧁']) : pickOne(['Leftover curry for all! 🍛', 'I made dumplings! 🥟']), 3);
+        for (const b of here.filter((x) => x !== chef && !x.talk && Math.hypot(x.x - chef.x, x.y - chef.y) < 180).slice(0, 2)) this.say(b, pickOne([`Thanks, ${st ? firstName(st.name) : 'chef'}! 😋`, 'Yum!', 'You’re the best!']), 2.4);
+      }
+    }
     // love is in the air: a new couple, and wedding gossip while they're on honeymoon
     let gossip = 0;
     for (const st of Object.values(s.staff)) {
@@ -1422,7 +1432,11 @@ export class OfficeRenderer {
     const occ = occupancy(s, floor);
     const options = s.office.items.filter((it) => it.floor === floor && (spots ? spots[it.item] : RESEARCH_SPOTS.has(it.item)));
     if (!options.length) return false;
-    const it = options[Math.floor(Math.random() * options.length)]!;
+    // people drift towards what they love (their hobby)
+    const likes = spots ? hobbyOf(a.id).likes : [];
+    const liked = options.filter((o) => likes.includes(o.item));
+    const pool = liked.length && Math.random() < 0.6 ? liked : options;
+    const it = pool[Math.floor(Math.random() * pool.length)]!;
     const fp = footprint(it);
     const free: [number, number][] = [];
     for (let dy = -1; dy <= fp.h; dy++)

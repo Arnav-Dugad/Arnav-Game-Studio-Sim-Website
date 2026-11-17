@@ -7,6 +7,7 @@ import { fromDay } from '@/sim/calendar';
 import { GENRE_BY_ID } from '@/data/genres';
 import { hasTrait } from '@/sim/systems/staff';
 import { isRainy } from './seasons';
+import { hobbyOf } from '@/data/hobbies';
 import type { GameState, Staff } from '@/sim/types';
 
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
@@ -82,6 +83,10 @@ export function chatExchange(s: GameState, a: Staff, b: Staff): Exchange {
   if (hasTrait(a, 'visionary')) topics.push({ w: 2, make: () => ['I had an idea…', 'Tell me more!'] });
   if (hasTrait(a, 'mentor') && b.level === 'junior') topics.push({ w: 3, make: () => ['Want a tip?', 'Yes please!'] });
   if (a.personId) topics.push({ w: 2, make: () => ['Back in my day…', 'Here we go 😄'] });
+  // hobbies (and the odd shared one)
+  const ha = hobbyOf(a.id);
+  topics.push({ w: 2.2, make: () => pick(ha.chat) });
+  if (hobbyOf(b.id).id === ha.id) topics.push({ w: 2, make: () => [`You’re into ${ha.name.toLowerCase()} too?`, `Since forever! ${ha.emoji}`] });
   const total = topics.reduce((t, x) => t + x.w, 0);
   let r = Math.random() * total;
   for (const tp of topics) {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { hobbyOf } from '@/data/hobbies';
 import { StudioCardModal } from './StudioCard';
 import { TALK_AWAY_DAYS, TALK_YEAR, talkBlocked, talkCost, talkTitle, talkableGames } from '@/sim/systems/talks';
 import { lifeLine } from '@/sim/systems/lifeEvents';
@@ -674,11 +675,14 @@ function TalkSection({ staffId }: { staffId: string }) {
 function Relationships({ staffId }: { staffId: string }) {
   const s = useGame((g) => g.s)!;
   const list = relationsOf(s, staffId).filter((r) => Math.abs(r.v) >= 15).slice(0, 5);
-  if (!list.length && !(s.staff[staffId] && lifeLine(s, s.staff[staffId]!))) return null;
+  if (!s.staff[staffId]) return null;
   const label = (v: number) => (v >= BEST_FRIENDS ? 'Best friends' : v >= 25 ? 'Friends' : v > -15 ? 'Colleagues' : v > FEUD ? 'Tension' : 'Feud');
   return (
     <Section title="Relationships">
-      {lifeLine(s, s.staff[staffId]!) && <p className="mb-1.5 text-xs text-ink2">❤️ {lifeLine(s, s.staff[staffId]!)}</p>}
+      <p className="mb-1.5 text-xs text-ink2">
+        {hobbyOf(staffId).emoji} Into {hobbyOf(staffId).name.toLowerCase()}
+        {lifeLine(s, s.staff[staffId]!) && <> · ❤️ {lifeLine(s, s.staff[staffId]!)}</>}
+      </p>
       <ul className="space-y-1 text-xs">
         {list.map(({ other, v }) => (
           <li key={other.id} className="flex items-center gap-2">
