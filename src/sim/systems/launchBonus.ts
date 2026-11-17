@@ -34,6 +34,7 @@ export function payLaunchBonus(s: GameState, releaseId: string): string | null {
   const team = bonusTeam(s, r);
   spend(s, 'salaries', bonusCost(s, r));
   r.bonusPaid = true;
+  r.bonusDay = s.day;
   for (const st of team) {
     st.loyalty = clamp(st.loyalty + 4, 0, 100);
     if (st.mood && st.mood.until > s.day && st.mood.v < 0) st.mood = { ...st.mood, v: Math.min(0, st.mood.v + 3) };

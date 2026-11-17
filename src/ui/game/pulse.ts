@@ -32,6 +32,13 @@ const HINTS: Record<string, string> = {
   'Pledge broken': 'Time — and keeping your word next time',
 };
 
+/** A cheap fingerprint of what feeds the pulse, for caching. */
+export function pulseKey(s: GameState): string {
+  const crunch = Object.values(s.projects).filter((p) => p.kind === 'game' && p.crunch).length;
+  const payroll = Math.round(Object.values(s.staff).reduce((t, x) => t + x.salary, 0) / 1000);
+  return `${s.company.name}|${Math.floor(s.day / 30)}|${Object.keys(s.staff).length}|${s.office.rev ?? 0}|${crunch}|${payroll}|${JSON.stringify(s.company.policies)}`;
+}
+
 /** Everything that moves morale by 2+ points for someone, folded studio-wide. Personal moods are left out. */
 export function teamPulse(s: GameState): { drags: PulseItem[]; boosts: PulseItem[] } {
   const acc = new Map<string, { sum: number; n: number }>();
@@ -40,14 +47,18 @@ export function teamPulse(s: GameState): { drags: PulseItem[]; boosts: PulseItem
     for (const p of moraleTarget(s, st).parts) {
       if (p.kind !== 'add' || Math.abs(p.value) < 2 || p.label === 'Baseline') continue;
       if (st.mood && p.label === st.mood.label) continue; // a personal mood, not a studio thing
-      const key = p.label.startsWith('Crunch') ? 'Crunch' : p.label;
+      // a factor can lift some people and drag others (pay vs market): keep the two apart
+      const key = (p.label.startsWith('Crunch') ? 'Crunch' : p.label) + (p.value > 0 ? '\u0000+' : '');
       const a = acc.get(key) ?? { sum: 0, n: 0 };
       a.sum += p.value;
       a.n += 1;
       acc.set(key, a);
     }
   }
-  const items = [...acc.entries()].map(([label, a]) => ({ label, avg: a.sum / a.n, people: a.n, hint: HINTS[label] }));
+  const items = [...acc.entries()].map(([key, a]) => {
+    const label = key.replace('\u0000+', '');
+    return { label, avg: a.sum / a.n, people: a.n, hint: HINTS[label] };
+  });
   const weight = (i: PulseItem) => Math.abs(i.avg) * i.people;
   return {
     drags: items.filter((i) => i.avg < 0).sort((a, b) => weight(b) - weight(a)).slice(0, 3),

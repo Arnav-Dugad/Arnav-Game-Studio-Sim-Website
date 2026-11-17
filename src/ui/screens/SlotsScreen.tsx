@@ -415,6 +415,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
             ))}
           </div>
         </div>
+        {!o.daily && (
         <Field label="Founder strengths">
           <Segmented
             ariaLabel="Founder strengths"
@@ -427,14 +428,15 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
             ]}
           />
         </Field>
-        <Field label="Mode" hint={o.daily ? `Today’s challenge (${dailyLabel(o.daily)}): ${SCENARIO_BY_ID[o.scenario]?.name} — ${SCENARIO_BY_ID[o.scenario]?.tagline} Everyone playing today gets the same world, so compare runs with a friend.` : o.scenario ? SCENARIO_BY_ID[o.scenario]?.blurb : 'The full sandbox story: play as long as you like.'}>
+        )}
+        <Field label="Mode" hint={o.daily ? `Today’s challenge (${dailyLabel(o.daily)}): ${SCENARIO_BY_ID[o.scenario]?.name} — ${SCENARIO_BY_ID[o.scenario]?.tagline} Everyone starts from the same world today (standard difficulty, an all-rounder founder), so compare runs with a friend.` : o.scenario ? SCENARIO_BY_ID[o.scenario]?.blurb : 'The full sandbox story: play as long as you like.'}>
           <Segmented
             ariaLabel="Mode"
             value={o.daily ? 'daily' : o.scenario ? 'scenario' : 'free'}
             onChange={(v) => {
               if (v === 'daily') {
                 const key = todayKey();
-                setO((x) => ({ ...x, daily: key, scenario: dailyPick(key).scenario }));
+                setO((x) => ({ ...x, daily: key, scenario: dailyPick(key).scenario, difficulty: 'standard', founderFocus: 'balanced' })); // everyone plays the same challenge
               } else setO((x) => ({ ...x, daily: undefined, scenario: v === 'scenario' ? (SCENARIOS[0]?.id ?? '') : '' }));
             }}
             options={[
@@ -478,6 +480,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
           <Segmented ariaLabel="Start year" value={o.startYear} onChange={(v) => set('startYear', v)} options={[1980, 1985, 1995, 2005, 2015].map((y) => ({ value: y, label: String(y) }))} />
         </Field>
         )}
+        {!o.daily && (
         <Field label="Difficulty">
           <Segmented<Difficulty>
             ariaLabel="Difficulty"
@@ -490,6 +493,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
             ]}
           />
         </Field>
+        )}
         <div className="space-y-2 text-sm">
           <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 px-3 py-2">
             <span>

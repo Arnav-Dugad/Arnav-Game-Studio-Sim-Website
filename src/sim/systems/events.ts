@@ -71,7 +71,7 @@ const untranslatedNovel = (s: GameState) =>
   });
 /** A buggy console game in polish that hasn't been through certification yet. */
 const certRisk = (s: GameState) =>
-  activeGames(s).find((p) => p.phase >= 2 && !p.certified && p.bugs > 0.08 * (p.design + p.tech) && p.concept.platforms.some((id) => { const k = platformInfo(s, id)?.kind; return k === 'console' || k === 'handheld'; }));
+  activeGames(s).find((p) => p.phase >= 2 && !p.certified && p.bugs > 0.08 * (p.design + p.tech) && p.concept.platforms.some((id) => { const pl = platformInfo(s, id); return !!pl && pl.maker !== 'player' && (pl.kind === 'console' || pl.kind === 'handheld'); }));
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
@@ -849,13 +849,15 @@ export const EVENT_DEFS: EventDef[] = [
       const p = certRisk(s);
       if (!p) return null;
       const cost = money(8_000, s.day);
-      const holder = p.concept.platforms.map((id) => platformInfo(s, id)).find((pl) => pl && (pl.kind === 'console' || pl.kind === 'handheld'));
+      const holder = p.concept.platforms.map((id) => platformInfo(s, id)).find((pl) => pl && pl.maker !== 'player' && (pl.kind === 'console' || pl.kind === 'handheld'));
+      p.extraDays += 7; // it can't ship while it's failed: held for at least a week whatever you decide
+      p.certified = true;
       return {
         title: `${p.concept.name} failed certification`,
         body: `${holder ? `${holder.name}’s` : 'The platform holder’s'} testers sent ${p.concept.name} back with a list of crash bugs. It can’t ship on their console until they’re fixed.`,
         options: [
-          { id: 'rush', label: `Pay for an expedited re-test (${fmtMoney(cost)})`, preview: `One more week; fixes the worst of it (bugs −10%)${lateNote(p)}`, disabled: s.company.cash < cost },
-          { id: 'fix', label: 'Fix it properly and resubmit', preview: `Two more weeks; bugs −25%${lateNote(p)}` },
+          { id: 'rush', label: `Pay for an expedited re-test (${fmtMoney(cost)})`, preview: `A week’s hold; fixes the worst of it (bugs −10%)${lateNote(p)}`, disabled: s.company.cash < cost },
+          { id: 'fix', label: 'Fix it properly and resubmit', preview: `Two weeks’ hold; bugs −25%${lateNote(p)}` },
         ],
         ctx: { project: p.id, cost },
       };
@@ -864,15 +866,15 @@ export const EVENT_DEFS: EventDef[] = [
       const p = s.projects[String(e.ctx.project)];
       if (!p || p.kind !== 'game') return;
       const cost = Number(e.ctx.cost);
-      if (opt === 'rush' && s.company.cash >= cost) {
+      if (opt === 'rush') {
+        // can't pay any more? the week's hold stands, but nothing gets fixed
+        if (s.company.cash < cost) return;
         spend(s, 'other_expense', cost);
-        p.extraDays += 7;
         p.bugs *= 0.9;
       } else {
-        p.extraDays += 14;
+        p.extraDays += 7;
         p.bugs *= 0.75;
       }
-      p.certified = true;
     },
   },
   {

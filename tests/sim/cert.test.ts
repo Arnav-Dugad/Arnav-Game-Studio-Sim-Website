@@ -26,9 +26,10 @@ describe('platform certification', () => {
     it(`${opt}: fixes bugs, costs time, and only happens once`, () => {
       const { s, p } = buggyConsoleGame();
       const c = { s, rng: new Rng(s.rng), out: [] };
-      expect(fireEvent(c, 'cert_fail')).toBe(true);
-      const ev = s.pendingEvents.find((e) => e.defId === 'cert_fail')!;
       const extra = p.extraDays;
+      expect(fireEvent(c, 'cert_fail')).toBe(true); // failing holds the game straight away
+      expect(p.extraDays - extra).toBe(7);
+      const ev = s.pendingEvents.find((e) => e.defId === 'cert_fail')!;
       dispatch(s, { type: 'resolveEvent', uid: ev.uid, option: opt });
       expect(p.extraDays - extra).toBe(days);
       expect(p.bugs).toBeCloseTo(bugs, 5);

@@ -3,7 +3,7 @@
  * density, and multi-select with bulk actions (assign to a project, research, idle, vacation, training,
  * raises, letting people go).
  */
-import { teamPulse, type PulseItem } from '../game/pulse';
+import { pulseKey, teamPulse, type PulseItem } from '../game/pulse';
 import { ambitionText } from '@/sim/systems/ambitions';
 import { useMemo, useState, type ReactNode } from 'react';
 import { SKILLS, type Skill } from '@/data/types';
@@ -746,9 +746,9 @@ function Pulse() {
     const team = Object.values(s.staff);
     return team.length > 0 && team.reduce((a, x) => a + x.morale, 0) / team.length < 45;
   });
-  const month = Math.floor(s.day / 30);
+  const key = pulseKey(s);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const pulse = useMemo(() => (open ? teamPulse(s) : null), [open, month]);
+  const pulse = useMemo(() => (open ? teamPulse(s) : null), [open, key]);
   const row = (i: PulseItem, good: boolean) => (
     <li key={i.label} className="flex items-start gap-2">
       <span className={cx('num w-10 shrink-0 text-right font-semibold', good ? 'text-good' : 'text-bad')}>

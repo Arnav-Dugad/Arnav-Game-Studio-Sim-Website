@@ -1160,11 +1160,11 @@ export class OfficeRenderer {
     // launch bonuses: everyone who got a cheque waves it about
     for (const id of s.releaseOrder.slice(-3)) {
       const r = s.releases[id];
-      if (!r?.bonusPaid || this.bonusSeen.has(r.id) || s.day - r.day > 70) continue;
-      this.bonusSeen.add(r.id);
+      if (!r?.bonusPaid || r.bonusDay === undefined || this.bonusSeen.has(r.id) || s.day - r.bonusDay > 3) continue;
       for (const c of r.credits ?? []) {
         const a = this.agents.get(c.id);
         if (!a || !a.c.visible || a.floor !== floor) continue;
+        this.bonusSeen.add(r.id);
         this.showBubble(a, '💸');
         a.bubbleT = 3;
         a.anim.joy = 1.2;

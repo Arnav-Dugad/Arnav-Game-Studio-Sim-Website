@@ -1,5 +1,5 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
-import { teamPulse, type PulseItem } from './pulse';
+import { pulseKey, teamPulse, type PulseItem } from './pulse';
 import { campaignBlocked, campaignFor } from '@/sim/systems/awardsCampaign';
 import { sabbaticalBlocked } from '@/sim/systems/staff';
 import { formatDate, fromDay } from '@/sim/calendar';
@@ -104,7 +104,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   if (!s.company.policies.interns && yr >= INTERN_YEAR && staff.length >= 8 && freeDesks(s) >= 2) out.push({ id: 'interns', tone: 'info', icon: 'people', text: 'You have room for summer interns: cheap, eager and high-potential.', action: { label: 'Policies', run: () => open('staff', 'policies') } });
   // the one thing dragging most of the studio down (pulse cached per month)
   if (staff.length >= 8 && !urgentOnly) {
-    const key = `${Math.floor(s.day / 30)}|${staff.length}|${s.office.rev ?? 0}`;
+    const key = pulseKey(s);
     if (pulseCache.key !== key) pulseCache = { key, drag: teamPulse(s).drags[0] };
     const d = pulseCache.drag;
     if (d && d.avg <= -8 && d.people >= staff.length * 0.4)
