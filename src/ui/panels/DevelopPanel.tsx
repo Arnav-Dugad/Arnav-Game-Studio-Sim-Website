@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { PRICE_MUL, priceTierAllowed } from '@/sim/systems/pricing';
+import type { PriceTier } from '@/sim/types';
 import { CODEV_YEAR, codevPartners, codevTerms } from '@/sim/systems/codev';
 import { CAMPAIGN_DAYS, STRETCH, STRETCH_DAYS, STRETCH_NAMES, TIERS, campaignCost, campaignGoal, crowdfundBlocked, expectedPledges } from '@/sim/systems/crowdfunding';
 import { EA_PRICE, EA_STALE_WEEKS, EA_YEAR, earlyAccessBlocked, earlyAccessCost, earlyAccessRating } from '@/sim/systems/earlyAccess';
@@ -11,11 +13,11 @@ import { COMPANY_BY_ID } from '@/data/companies';
 import { AUDIENCES, type Audience, type GenreId, type Monetization } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
 import { aOrAn, fmtMoney, fmtUnits, hasFlag, money } from '@/sim/util';
-import { availablePlatforms, genrePopularity } from '@/sim/systems/market';
+import { availablePlatforms, genrePopularity, platformInfo } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore, workShare } from '@/sim/systems/dev';
-import { expansionPlatforms, expansionSizeOk, launchTitleMul, salesPotential } from '@/sim/systems/release';
+import { expansionPlatforms, expansionSizeOk, gamePrice, launchTitleMul, salesPotential } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size, Staff } from '@/sim/types';
@@ -513,6 +515,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const locked = !!baseRel;
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
+  const [priceTier, setPriceTier] = useState<PriceTier>('standard');
   const [features, setFeatures] = useState<string[]>([]);
   const home = s.company.homeRegion ?? 'na';
   const [localized, setLocalized] = useState<RegionId[]>([]);
@@ -571,8 +574,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const liveFeatures = features.filter((id) => !featuresBlocked(s, [id], monet));
   const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
   const conceptPreview = useMemo(
-    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs }),
-    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features, locs],
+    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs, priceTier }),
+    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features, locs, priceTier],
   );
   const forecast = useMemo(() => {
     if (!platforms.length) return null;
@@ -586,7 +589,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs, priceTier },
     });
     if (r.ok) {
       sound.play('success');
@@ -788,6 +791,24 @@ function NewGame({ onDone }: { onDone: () => void }) {
             }))}
           />
         </div>
+        {priceTierAllowed({ monetization: monet, expansionOf: expansionRel?.id, deal: deal ? { ...deal } : undefined }) && platforms.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <Segmented<PriceTier>
+              ariaLabel="Launch price"
+              value={priceTier}
+              onChange={setPriceTier}
+              options={(['budget', 'standard', 'premium'] as PriceTier[]).map((tier) => {
+                const pl = platformInfo(s, platforms[0]!);
+                const price = pl ? gamePrice(s, pl, size, monet) * PRICE_MUL[tier] : 0;
+                const label = { budget: 'Budget', standard: 'Standard', premium: 'Premium' }[tier];
+                return { value: tier, label: price ? label + ' · $' + price.toFixed(price < 10 ? 2 : 0) : label };
+              })}
+            />
+            <span className="text-ink3">
+              {priceTier === 'budget' ? 'About 30% more buyers (and fans), a little less money per copy; players love the value.' : priceTier === 'premium' ? 'More money per copy, fewer buyers. Players resent it unless the game is great (85+).' : 'The going rate for a game like this.'}
+            </span>
+          </div>
+        )}
       </Section>
 
       <Section title={`Signature features (${features.length}/${MAX_FEATURES})`} right={<span className="text-xs text-ink3">Optional · more scope, more payoff in the right genre</span>}>

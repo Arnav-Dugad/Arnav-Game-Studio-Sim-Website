@@ -2,6 +2,8 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import type { PriceTier } from './types';
+import { priceTierAllowed } from './systems/pricing';
 import { checkIn } from './systems/checkIns';
 import { docOnCancel } from './systems/documentary';
 import type { MascotDesign } from './types';
@@ -73,6 +75,8 @@ export interface StartGamePayload {
   features?: string[];
   /** Extra regions to localise for. */
   localized?: RegionId[];
+  /** Launch price tier (full-price, self-published new games only). */
+  priceTier?: PriceTier;
   team: string[];
   focus?: [Focus3, Focus3, Focus3];
 }
@@ -440,6 +444,7 @@ function apply(c: Ctx, a: Action): string | null {
           remasterOf: orig?.id,
           expansionOf: base?.id,
           ...(feats.length ? { features: feats } : {}),
+          ...((g.priceTier === 'budget' || g.priceTier === 'premium') && priceTierAllowed({ monetization: g.monetization, expansionOf: base?.id, deal: g.dealId ? ({} as never) : undefined }) ? { priceTier: g.priceTier } : {}),
           ...(locs.length ? { localized: locs } : {}),
           ...((s.company.branches ?? []).length ? { branchLocalized: [...(s.company.branches ?? [])] } : {}),
           deal: deal ? { publisherId: deal.publisherId, advance: dealAdvanceFor(deal, g.size, s.day), royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,

@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { PRICE_MUL, priceDemandMul, priceTierOf, priceUserEffect } from './pricing';
 import { docOnRelease } from './documentary';
 import { codevShareVoid } from './codev';
 import { communityNudge, communityUserBonus } from './community';
@@ -235,6 +236,9 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   sb.mul(`Review appeal (${Math.round(effScore)})`, attach * 10);
   sb.mul('Hype', 1 + hype * 0.45);
   sb.mul('Monetization', monet.units);
+  const tier = priceTierOf(concept);
+  const priceMul = priceDemandMul(tier, effScore);
+  if (tier !== 'standard') sb.mul(tier === 'budget' ? 'Budget price (more people buy)' : 'Premium price (fewer people buy)', priceMul);
   if (fr) sb.mul('Franchise fatigue', fr ? 1 - fr.fatigue * 0.45 : 1);
   let featSales = 1;
   for (const id of concept.features ?? []) {
@@ -261,7 +265,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
         Math.sqrt(topicPopularity(s, concept.topic));
       const launch = launchTitleMul(s, pl);
       if (launch > 1.005) launchTitles.push({ name: pl.name, mul: launch });
-      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales;
+      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales * priceMul;
       return { platform: pid, potential: Math.max(0, potential), units: 0, pl };
     });
   for (const lt of launchTitles) sb.mul(`Launch title on ${lt.name} (early adopters buy everything)`, lt.mul);
@@ -349,6 +353,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   else if (cf) ub.add('Delivered to backers on time', 2);
   if (ea && eaWeeks >= 78) ub.add('Took years to leave Early Access', -4);
   else if (ea && eaWeeks >= 8 && ea.rating >= 55) ub.add('Shaped by Early Access players', 2);
+  const pu = priceUserEffect(priceTierOf(p.concept), score);
+  if (pu) ub.add(pu > 0 ? 'Great value' : 'Feels overpriced', pu);
   const cmb = communityUserBonus(s);
   if (cmb) ub.add(cmb > 0 ? 'A healthy community' : 'A toxic community', cmb);
   ub.add('Players vary', rng.normal(0, 3));
@@ -368,7 +374,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
-  const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization) * (p.concept.expansionOf ? BALANCE.EXPANSION_PRICE : 1) * (hasValue(s, 'players') ? CULTURE_FX.playersPrice : 1) * (hasValue(s, 'profit') ? CULTURE_FX.profitPrice : 1);
+  const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization) * (p.concept.expansionOf ? BALANCE.EXPANSION_PRICE : 1) * (hasValue(s, 'players') ? CULTURE_FX.playersPrice : 1) * (hasValue(s, 'profit') ? CULTURE_FX.profitPrice : 1) * PRICE_MUL[priceTierOf(p.concept)];
   const baseDecay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
   // Mod communities keep PC games selling for years.
   const pcOnly = p.concept.platforms.every((pid) => platformInfo(s, pid)?.kind === 'computer');

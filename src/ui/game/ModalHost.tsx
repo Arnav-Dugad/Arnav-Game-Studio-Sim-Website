@@ -430,6 +430,8 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             {r.numberOne && <Pill tone="gold">#1 chart-topper</Pill>}
             {r.classic && <Pill tone="gold">Hall of Classics {r.classic}</Pill>}
             {r.shadowDrop && <Pill tone="tech">Shadow drop</Pill>}
+            {r.concept.priceTier === 'budget' && <Pill tone="good">Budget price</Pill>}
+            {r.concept.priceTier === 'premium' && <Pill tone="gold">Premium price</Pill>}
             {r.documentary && (
               <span title={r.documentary.outcome ? undefined : `The documentary “Making ${r.name}” premieres ${formatDate(r.documentary.premiere)}`}>
                 <Pill tone={!r.documentary.outcome ? 'neutral' : r.documentary.outcome === 'acclaimed' || r.documentary.outcome === 'warm' ? 'good' : r.documentary.outcome === 'mixed' ? 'neutral' : 'bad'}>

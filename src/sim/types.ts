@@ -173,6 +173,8 @@ export interface MascotDesign {
   acc: MascotAcc;
 }
 
+export type PriceTier = 'budget' | 'standard' | 'premium';
+
 export interface YearbookPhoto {
   year: number;
   people: number;
@@ -258,6 +260,8 @@ export interface Concept {
   size: Size;
   monetization: Monetization;
   engineId: Id;
+  /** Launch price tier for full-price games (systems/pricing.ts); standard if unset. */
+  priceTier?: PriceTier;
   franchiseId?: Id;
   /** Publisher deal id if published by a third party. */
   deal?: PublisherDeal;
