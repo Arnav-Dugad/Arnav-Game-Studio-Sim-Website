@@ -115,6 +115,8 @@ export interface Staff {
   wasIntern?: boolean;
   /** After a standing ovation, rival recruiters are watching until this day. */
   spotlightUntil?: number;
+  /** A former colleague who came back (the day they rejoined). */
+  rejoined?: number;
   /** The last one-on-one: when, what they said, and what it was about (systems/checkIns.ts). */
   checkIn?: { day: number; line: string; topic: string };
 }

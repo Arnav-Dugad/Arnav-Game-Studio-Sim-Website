@@ -236,6 +236,7 @@ export function candidateToStaff(s: GameState, cand: Candidate, id: string, sala
     contributed: 0,
     gamesShipped: 0,
     poachCooldown: 120,
+    ...(cand.returning ? { rejoined: s.day } : {}),
   };
 }
 

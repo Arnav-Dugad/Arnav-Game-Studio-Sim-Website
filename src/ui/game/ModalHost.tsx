@@ -836,6 +836,7 @@ function Relationships({ staffId }: { staffId: string }) {
       <p className="mb-1.5 text-xs text-ink2">
         {hobbyOf(staffId).emoji} Into {hobbyOf(staffId).name.toLowerCase()} · 🎮 loves {GENRE_BY_ID[favouriteGenre(staffId)].name} games
         {lifeLine(s, s.staff[staffId]!) && <> · ❤️ {lifeLine(s, s.staff[staffId]!)}</>}
+        {s.staff[staffId]!.rejoined !== undefined && <> · 🔁 came back in {fromDay(s.staff[staffId]!.rejoined!).year}</>}
       </p>
       {(s.staff[staffId]!.honours ?? []).length > 0 && <p className="mb-1.5 text-xs text-gold">🏆 {s.staff[staffId]!.honours!.join(' · ')}</p>}
       <ul className="space-y-1 text-xs">
