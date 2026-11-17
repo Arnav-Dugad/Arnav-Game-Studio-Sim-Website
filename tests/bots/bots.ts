@@ -336,6 +336,21 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
   if (!o.aggressive && o.mode !== 'random') {
     if (!(s.company.values ?? []).length && Object.keys(s.staff).length >= 6) dispatch(s, { type: 'setValues', values: o.mode === 'trend' ? ['innovation', 'players'] : ['craft', 'balance'] });
     if (s.company.cash > monthlyBurn(s) * 12) dispatch(s, { type: 'teamRetreat' });
+    if (s.company.policies.parentalLeave === undefined) dispatch(s, { type: 'setPolicy', parentalLeave: 'generous' });
+    // a talk a year from the most senior person with a shipped game
+    const speaker = Object.values(s.staff).find((x) => x.level === 'lead' || x.role === 'founder');
+    const credited = speaker && Object.values(s.releases).filter((r) => (r.credits ?? []).some((c) => c.id === speaker.id));
+    if (speaker && credited?.length) dispatch(s, { type: 'giveTalk', staffId: speaker.id, releaseId: credited[credited.length - 1]!.id });
+    // crowdfund and early access self-published games when the timing is right
+    for (const p of Object.values(s.projects)) {
+      if (p.kind !== 'game') continue;
+      if (p.phase === 0 && !p.crowdfund) dispatch(s, { type: 'crowdfund', projectId: p.id, tier: 'modest' });
+      if (p.phase === 1 && !p.earlyAccess && p.concept.size !== 'small') dispatch(s, { type: 'earlyAccess', projectId: p.id });
+    }
+    // license the biggest series
+    const big = Object.values(s.franchises).sort((a, b) => b.fans - a.fans)[0];
+    if (big) for (const k of ['comic', 'toys', 'animated', 'movie'] as const) dispatch(s, { type: 'mediaDeal', franchiseId: big.id, kind: k, control: 'involved' });
+    for (const m of (s.fanMail ?? []).filter((x) => x.kind === 'art' && !x.pinned).slice(0, 2)) dispatch(s, { type: 'pinFanArt', id: m.id, on: true });
     // pair juniors with seniors in the same craft
     const seniors = Object.values(s.staff).filter((x) => (x.level === 'senior' || x.level === 'lead') && !x.mentorId);
     for (const j of Object.values(s.staff).filter((x) => (x.level === 'junior' || x.level === 'mid') && !x.mentorId).slice(0, 3)) {
@@ -437,6 +452,12 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => (s.offers.deals.length ? { type: 'negotiateDeal', dealId: rng.pick(s.offers.deals).id, ask: rng.pick(['advance', 'royalty', 'everything'] as never[]) } : null),
   (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'sabbatical', staffId: rng.pick(st) } : null; },
   () => ({ type: 'undoPlace' }),
+  (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'earlyAccess', projectId: rng.chance(0.9) ? rng.pick(p) : 'nope' } : null; },
+  (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'crowdfund', projectId: rng.pick(p), tier: rng.pick(['modest', 'ambitious', 'moonshot', 'bogus'] as never[]) } : null; },
+  (_s, rng) => ({ type: 'setPolicy', parentalLeave: rng.pick(['minimal', 'standard', 'generous', 'bogus'] as never[]) }),
+  (s, rng) => (s.fanMail?.length ? { type: 'pinFanArt', id: rng.pick(s.fanMail).id, on: rng.chance(0.7) } : { type: 'readFanMail' }),
+  (s, rng) => { const st = Object.keys(s.staff); const r = Object.keys(s.releases); return st.length ? { type: 'giveTalk', staffId: rng.pick(st), releaseId: r.length && rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
+  (s, rng) => { const f = Object.keys(s.franchises); return f.length ? { type: 'mediaDeal', franchiseId: rng.pick(f), kind: rng.pick(['comic', 'board', 'toys', 'animated', 'tv', 'movie', 'ride', 'opera'] as never[]), control: rng.pick(['licensed', 'involved', 'nope'] as never[]) } : null; },
   (s, rng) => { const f = Object.keys(s.franchises); return { type: 'fanCon', franchiseId: f.length && rng.chance(0.8) ? rng.pick(f) : 'nope' }; },
   (s, rng) => { const st = Object.keys(s.staff); return st.length > 1 ? { type: 'setMentor', staffId: rng.pick(st), mentorId: rng.chance(0.2) ? null : rng.pick(st) } : null; },
   (_s, rng) => ({ type: rng.chance(0.7) ? 'openBranch' : 'closeBranch', region: rng.pick(['na', 'eu', 'jp', 'row', 'moon'] as never[]) }),

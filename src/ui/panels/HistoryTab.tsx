@@ -3,7 +3,7 @@ import { ACHIEVEMENTS } from '@/sim/systems/achievements';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import type { GameState } from '@/sim/types';
-import { Empty, cx } from '../components/ui';
+import { Button, Empty, cx } from '../components/ui';
 import { Icon, type IconName } from '../icons';
 import { useGame } from '../store';
 
@@ -85,6 +85,11 @@ export function HistoryTab() {
   });
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" icon="camera" onClick={() => useGame.getState().openModalNow({ kind: 'studioCard' })}>
+          Studio card
+        </Button>
+      </div>
       <Records />
       <ol className="ml-3 border-l border-line">{rows}</ol>
     </div>

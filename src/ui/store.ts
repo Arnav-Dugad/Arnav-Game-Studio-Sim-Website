@@ -33,7 +33,8 @@ export type Modal =
   | { kind: 'guide' }
   | { kind: 'rival'; rivalId: string }
   | { kind: 'gala'; year: number }
-  | { kind: 'identity' };
+  | { kind: 'identity' }
+  | { kind: 'studioCard' };
 
 export interface Toast {
   id: number;

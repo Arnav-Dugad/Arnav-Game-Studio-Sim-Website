@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { StudioCardModal } from './StudioCard';
 import { TALK_AWAY_DAYS, TALK_YEAR, talkBlocked, talkCost, talkTitle, talkableGames } from '@/sim/systems/talks';
 import { lifeLine } from '@/sim/systems/lifeEvents';
 import { BugBashModal } from './BugBash';
@@ -83,6 +84,8 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       return <MajorNewsModal newsId={modal.newsId} onClose={pop} />;
     case 'gala':
       return <GalaModal year={modal.year} onClose={pop} />;
+    case 'studioCard':
+      return <StudioCardModal onClose={pop} />;
     case 'identity':
       return <IdentityModal onClose={pop} />;
     case 'shortcuts':
