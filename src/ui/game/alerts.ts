@@ -67,7 +67,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   const dreams = staff.filter((x) => x.ambition && x.ambition.until - s.day < 45);
   if (dreams.length) out.push({ id: 'ambitions', tone: 'warn', icon: 'star', text: `${dreams.length} ${dreams.length === 1 ? 'ambition runs' : 'ambitions run'} out soon — help them and they’ll be far more loyal.`, action: { label: 'See who', run: () => open('staff', 'ambition') } });
   const avgMorale = staff.reduce((t, x) => t + x.morale, 0) / Math.max(1, staff.length);
-  if (staff.length >= 5 && avgMorale < 45) out.push({ id: 'morale', tone: 'bad', icon: 'heart', text: `Studio morale is low (${Math.round(avgMorale)}%). Try raises, vacations, a nicer office or ending crunch.`, action: { label: 'Policies', run: () => open('staff', 'policies') } });
+  if (staff.length >= 5 && avgMorale < 45) out.push({ id: 'morale', tone: 'bad', icon: 'heart', text: `Studio morale is low (${Math.round(avgMorale)}%). The Team pulse shows what’s dragging it down.`, action: { label: 'Why?', run: () => open('staff', 'team') } });
   const crunching = projects.filter((p) => p.kind === 'game' && p.crunch).length;
   if (crunching) out.push({ id: 'crunch', tone: 'info', icon: 'fire', text: `${crunching} game${crunching > 1 ? 's are' : ' is'} in crunch: faster, but bugs and burnout pile up.`, action: { label: 'Develop', run: () => open('develop') } });
   // Research
