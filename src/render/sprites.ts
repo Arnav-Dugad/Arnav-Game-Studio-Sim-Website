@@ -152,6 +152,15 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       }
       break;
     }
+    case 'pet_tortoise': {
+      // the enclosure (the tortoise itself roams)
+      shadow(g, 6, 10, W - 12, H - 14);
+      g.roundRect(8, H - 26, W - 16, 16, 4).fill(0x8a6440);
+      g.roundRect(10, H - 24, W - 20, 12, 3).fill(0xd9c27a);
+      for (let i = 0; i < 6; i++) g.rect(12 + i * ((W - 26) / 5), H - 22 + (i % 2) * 3, 4, 1).fill({ color: 0xb59b55, alpha: 0.8 });
+      g.ellipse(W - 16, H - 18, 3, 2).fill(0x5f9e6e);
+      break;
+    }
     case 'robot_vacuum': {
       // the charging dock (the robot itself roams)
       shadow(g, 10, 12, W - 20, H - 16);
@@ -596,6 +605,8 @@ export function itemLift(id: ItemId): number {
       return 4;
     case 'robot_vacuum':
       return 4;
+    case 'pet_tortoise':
+      return 6;
     case 'karaoke':
       return 30;
     case 'claw_machine':

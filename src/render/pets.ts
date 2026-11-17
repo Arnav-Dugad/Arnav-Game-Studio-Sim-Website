@@ -7,7 +7,7 @@ import { findPath, footprint, occupancy, tierDef } from '@/sim/systems/office';
 import type { GameState, PlacedItem } from '@/sim/types';
 import { T } from './sprites';
 
-export type PetKind = 'cat' | 'dog' | 'robot';
+export type PetKind = 'cat' | 'dog' | 'robot' | 'tortoise';
 
 const CAT_NAMES = ['Pixel', 'Byte', 'Mochi', 'Sprite', 'Glitch', 'Biscuit', 'Luna', 'Nugget', 'Cheddar', 'Miso', 'Tofu', 'Widget'];
 const DOG_NAMES = ['Turbo', 'Buster', 'Patch', 'Joystick', 'Rex', 'Waffles', 'Bailey', 'Ziggy', 'Pretzel', 'Scout', 'Noodle', 'Bit'];
@@ -21,7 +21,7 @@ function hash(s: string): number {
 }
 
 export function petName(it: Pick<PlacedItem, 'id' | 'item'>): string {
-  const names = it.item === 'pet_dog' ? DOG_NAMES : it.item === 'robot_vacuum' ? ['Roomby', 'Dustin', 'Sir Sucks-a-Lot', 'Zippy', 'R2-Clean', 'Mopsy', 'Hoover Dam', 'Bolt'] : CAT_NAMES;
+  const names = it.item === 'pet_tortoise' ? ['Speedy', 'Sheldon', 'Turbo', 'Tank', 'Methuselah', 'Shelly', 'Zoom', 'Pebble'] : it.item === 'pet_dog' ? DOG_NAMES : it.item === 'robot_vacuum' ? ['Roomby', 'Dustin', 'Sir Sucks-a-Lot', 'Zippy', 'R2-Clean', 'Mopsy', 'Hoover Dam', 'Bolt'] : CAT_NAMES;
   return names[hash(it.id) % names.length]!;
 }
 
@@ -104,7 +104,7 @@ export class PetSystem {
 
   /** Keep one pet per bed on the visible floor. */
   sync(s: GameState, floor: number): void {
-    const beds = s.office.items.filter((i) => i.floor === floor && (i.item === 'pet_cat' || i.item === 'pet_dog' || i.item === 'robot_vacuum'));
+    const beds = s.office.items.filter((i) => i.floor === floor && (i.item === 'pet_cat' || i.item === 'pet_dog' || i.item === 'robot_vacuum' || i.item === 'pet_tortoise'));
     const key = `${floor}|${s.office.rev ?? 0}|${beds.map((b) => `${b.id}@${b.x},${b.y}`).join(';')}`;
     if (key === this.key) return;
     this.key = key;
@@ -128,7 +128,7 @@ export class PetSystem {
         existing.y = bed[1];
         continue;
       }
-      const kind: PetKind = b.item === 'pet_dog' ? 'dog' : b.item === 'robot_vacuum' ? 'robot' : 'cat';
+      const kind: PetKind = b.item === 'pet_dog' ? 'dog' : b.item === 'robot_vacuum' ? 'robot' : b.item === 'pet_tortoise' ? 'tortoise' : 'cat';
       const furs = kind === 'dog' ? DOG_FUR : CAT_FUR;
       const c = new Container();
       const body = new Graphics();
@@ -162,7 +162,7 @@ export class PetSystem {
         fussT: 0,
         tailBase: [0, 0],
         label: null,
-        speed: kind === 'dog' ? 2.6 : 1.9,
+        speed: kind === 'dog' ? 2.6 : kind === 'tortoise' ? 0.45 : 1.9,
       });
     }
   }
@@ -182,7 +182,7 @@ export class PetSystem {
         p.label.style.fill = night ? 0xf1ede6 : 0x2a2622;
         p.label.style.stroke = { color: night ? 0x15130f : 0xffffff, width: 3 };
         p.label.text = `${p.name}
-${p.kind === 'cat' ? 'studio cat' : p.kind === 'robot' ? 'robot vacuum' : 'office dog'} · ${p.mode === 'sleep' ? (p.kind === 'robot' ? 'charging' : 'napping') : p.mode === 'desk' ? 'on a keyboard' : p.mode === 'follow' ? 'following someone' : p.mode === 'walk' ? 'exploring' : 'hanging out'}`;
+${p.kind === 'cat' ? 'studio cat' : p.kind === 'robot' ? 'robot vacuum' : p.kind === 'tortoise' ? 'office tortoise' : 'office dog'} · ${p.mode === 'sleep' ? (p.kind === 'robot' ? 'charging' : p.kind === 'tortoise' ? 'napping in its shell' : 'napping') : p.mode === 'desk' ? 'on a keyboard' : p.mode === 'follow' ? 'following someone' : p.mode === 'walk' ? 'exploring' : 'hanging out'}`;
         p.label.visible = true;
       } else if (p.label) p.label.visible = false;
     }
@@ -228,6 +228,17 @@ ${p.kind === 'cat' ? 'studio cat' : p.kind === 'robot' ? 'robot vacuum' : 'offic
   private decide(s: GameState, floor: number, p: Pet, host: PetHost): void {
     const people = host.people();
     const r = Math.random();
+    if (p.kind === 'tortoise') {
+      // a long nap, or a very slow stroll to somewhere nearby
+      if (r < 0.45) {
+        this.go(s, floor, p, p.bed, 'sleep');
+        p.wait = 20 + Math.random() * 25;
+      } else {
+        this.go(s, floor, p, this.randomFree(s, floor), 'sit');
+        p.wait = 6 + Math.random() * 8;
+      }
+      return;
+    }
     if (p.kind === 'robot') {
       // clean somewhere, then go home to charge
       if (r < 0.3) {
@@ -318,7 +329,7 @@ ${p.kind === 'cat' ? 'studio cat' : p.kind === 'robot' ? 'robot vacuum' : 'offic
         const target = p.path[0];
         if (!target) {
           p.mode = p.next;
-          p.speed = p.kind === 'dog' ? 2.6 : 1.9;
+          p.speed = p.kind === 'dog' ? 2.6 : p.kind === 'tortoise' ? 0.45 : 1.9;
           if (p.mode === 'desk' && p.deskOf) {
             const n = p.name;
             host.react(p.deskOf, Math.random() < 0.5 ? `${n}, that’s my keyboard!` : `${n}, I’m working!`, Math.random() < 0.5 ? 'palm' : 'laugh');
@@ -365,7 +376,7 @@ ${p.kind === 'cat' ? 'studio cat' : p.kind === 'robot' ? 'robot vacuum' : 'offic
         const near = peopleNow().find((x) => x.id !== p.deskOf && Math.hypot(x.x - p.x, x.y - p.y) < 34 && x.mode !== 'walk');
         if (!near) p.fussT = 0.4; // look again in a moment, not every frame
         else if (Math.random() < dt * 3) {
-          const lines = p.kind === 'robot' ? [`Hi ${p.name}!`, 'It ate my cable again!', `Good job, ${p.name}.`, 'Mind my feet!'] : p.kind === 'cat' ? CAT_LINES(p.name) : DOG_LINES(p.name);
+          const lines = p.kind === 'tortoise' ? [`Hi ${p.name}! Take your time.`, `${p.name} made it to the kitchen!`, 'Slow and steady 🐢', `Look, ${p.name} is moving!`] : p.kind === 'robot' ? [`Hi ${p.name}!`, 'It ate my cable again!', `Good job, ${p.name}.`, 'Mind my feet!'] : p.kind === 'cat' ? CAT_LINES(p.name) : DOG_LINES(p.name);
           host.react(near.id, lines[Math.floor(Math.random() * lines.length)]!, Math.random() < 0.5 ? 'laugh' : 'wave');
           p.heartT = 1.6;
           p.fussT = 12 + Math.random() * 10;
@@ -381,9 +392,9 @@ ${p.kind === 'cat' ? 'studio cat' : p.kind === 'robot' ? 'robot vacuum' : 'offic
     const pose = p.mode === 'sleep' && p.path.length === 0 ? 'sleep' : moving ? 'walk' : 'sit';
     if (pose !== p.pose) {
       p.pose = pose;
-      p.tailBase = p.kind === 'robot' ? drawRobot(p.body, p.tail, pose) : p.kind === 'cat' ? drawCat(p.body, p.tail, p.fur, pose) : drawDog(p.body, p.tail, p.fur, pose);
+      p.tailBase = p.kind === 'tortoise' ? drawTortoise(p.body, p.tail, pose) : p.kind === 'robot' ? drawRobot(p.body, p.tail, pose) : p.kind === 'cat' ? drawCat(p.body, p.tail, p.fur, pose) : drawDog(p.body, p.tail, p.fur, pose);
     }
-    const bob = p.kind === 'robot' ? 0 : pose === 'walk' && !reducedMotion ? Math.abs(Math.sin(p.t * (p.speed > 3 ? 22 : 14))) * 1.6 : pose === 'sleep' ? Math.sin(p.t * 1.6) * 0.4 : 0;
+    const bob = p.kind === 'robot' || p.kind === 'tortoise' ? 0 : pose === 'walk' && !reducedMotion ? Math.abs(Math.sin(p.t * (p.speed > 3 ? 22 : 14))) * 1.6 : pose === 'sleep' ? Math.sin(p.t * 1.6) * 0.4 : 0;
     p.body.position.set(0, -bob);
     p.body.scale.y = pose === 'sleep' ? 1 + Math.sin(p.t * 1.6) * 0.04 : 1;
     if (p.kind === 'dog') p.tail.rotation = pose === 'sleep' ? 0 : Math.sin(p.t * (p.heartT > 0 || p.mode === 'follow' ? 26 : 9)) * 0.45;
@@ -404,6 +415,22 @@ ${p.kind === 'cat' ? 'studio cat' : p.kind === 'robot' ? 'robot vacuum' : 'offic
     }
     p.heart.position.set(4, -26 - (p.heartT > 0 ? (1.6 - p.heartT) * 6 : Math.sin(p.t) * 2));
   }
+}
+
+function drawTortoise(g: Graphics, tail: Graphics, pose: string): [number, number] {
+  g.clear();
+  tail.clear();
+  g.ellipse(0, 0, 8, 2.4).fill({ color: 0x000000, alpha: 0.18 });
+  if (pose !== 'sleep') {
+    // head and feet poke out
+    g.circle(8, -3, 2.2).fill(0x9bbf6a);
+    g.circle(9, -3.6, 0.5).fill(0x111111);
+    for (const fx of [-5, 5]) g.ellipse(fx, -0.6, 1.8, 1.2).fill(0x9bbf6a);
+  }
+  g.ellipse(0, -3.2, 7.5, 4.6).fill(0x6b7f3a);
+  g.ellipse(0, -3.8, 6, 3.4).fill(0x8a9f4a);
+  for (const [hx, hy] of [[-2.6, -4.2], [2.6, -4.2], [0, -2.6], [0, -5.6]] as const) g.circle(hx, hy, 1.3).fill({ color: 0x5a6a2e, alpha: 0.8 });
+  return [0, 0];
 }
 
 function drawRobot(g: Graphics, tail: Graphics, pose: string): [number, number] {

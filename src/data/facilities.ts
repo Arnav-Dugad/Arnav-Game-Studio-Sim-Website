@@ -51,7 +51,8 @@ export type ItemId =
   | 'bonsai'
   | 'zen_corner'
   | 'screening_room'
-  | 'parrot_perch';
+  | 'parrot_perch'
+  | 'pet_tortoise';
 
 export interface ItemDef {
   id: ItemId;
@@ -120,6 +121,7 @@ export const ITEMS: readonly ItemDef[] = [
   { id: 'zen_corner', name: 'Meditation Corner', category: 'energy', w: 2, h: 2, cost: 6_500, upkeep: 25, year: 2005, energy: 20, aura: 3, radius: 2, noise: -2, effect: 'wellness', power: 0.15, desc: 'Cushions, a water feature and soft light. Breaks restore 20 energy; burnout builds 15% slower within six tiles. Very quiet.' },
   { id: 'screening_room', name: 'Screening Room', category: 'decor', w: 3, h: 2, cost: 18_000, upkeep: 60, year: 1990, aura: 6, radius: 3, noise: 1.5, desc: 'A big screen and comfy seats for trailers, rival games and movie nights. Big morale aura.' },
   { id: 'parrot_perch', name: 'Office Parrot', category: 'decor', w: 1, h: 1, cost: 900, upkeep: 8, year: 1980, aura: 4, radius: 3, noise: 1.5, desc: 'A chatty parrot on a perch. It repeats what it hears around the office — usually at the worst moment.' },
+  { id: 'pet_tortoise', name: 'Office Tortoise', category: 'decor', w: 1, h: 1, cost: 300, upkeep: 3, year: 1980, aura: 3, radius: 3, noise: -0.5, desc: 'A very slow, very calm office tortoise and its little enclosure. Watching it is strangely soothing.' },
   { id: 'neon_sign', name: 'Neon Sign', category: 'decor', w: 1, h: 1, cost: 1_200, upkeep: 10, year: 1984, aura: 5, radius: 3, desc: 'Your studio name in glowing glass.' },
   { id: 'trophy_shelf', name: 'Trophy Shelf', category: 'decor', w: 2, h: 1, cost: 1_000, upkeep: 0, year: 1980, aura: 2, radius: 3, effect: 'trophies', power: 1, desc: 'Shows the awards you have actually won (up to eight on display). Each award adds morale.' },
   { id: 'whiteboard', name: 'Whiteboard', category: 'room', w: 2, h: 1, cost: 300, upkeep: 0, year: 1980, aura: 1, radius: 2, effect: 'meeting', power: 0.03, desc: 'Brainstorm space. Small synergy boost nearby.' },
