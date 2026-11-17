@@ -21,7 +21,8 @@ export interface Rig {
   propKind: Prop;
   mouthKey: string;
   hat: Graphics;
-  hatKey: string;
+  hatKind: string;
+  hatColor: number;
 }
 
 export interface Anim {
@@ -80,14 +81,14 @@ export function createRig(fig: Graphics, look: Look): Rig {
   prop.position.set(0, 9);
   const hat = new Graphics();
   root.addChild(fig, eyesOpen, eyesClosed, mouth, hat, armL, armR);
-  return { root, armL, armR, sleeveL, sleeveR, eyesOpen, eyesClosed, mouth, prop, propKind: 'none', mouthKey: '', hat, hatKey: 'none' };
+  return { root, armL, armR, sleeveL, sleeveR, eyesOpen, eyesClosed, mouth, prop, propKind: 'none', mouthKey: '', hat, hatKind: 'none', hatColor: -1 };
 }
 
 /** Seasonal and party headwear. */
 export function setHat(r: Rig, kind: 'none' | 'santa' | 'witch' | 'party' | 'cap', color = 0xe07a5f): void {
-  const key = `${kind}|${color}`;
-  if (r.hatKey === key) return;
-  r.hatKey = key;
+  if (r.hatKind === kind && (kind === 'none' || r.hatColor === color)) return;
+  r.hatKind = kind;
+  r.hatColor = color;
   const g = r.hat;
   g.clear();
   if (kind === 'santa') {
@@ -190,6 +191,8 @@ export interface AnimInput {
   reducedMotion: boolean;
 }
 
+const TIMERS = ['joy', 'sad', 'wave', 'stretch', 'yawn', 'phone', 'scratch', 'palm', 'idea', 'laugh', 'highfive'] as const;
+
 /** Advance one frame. Returns the extra vertical bob (jumps). */
 export function animate(r: Rig, a: Anim, i: AnimInput): number {
   const { dt, t } = i;
@@ -197,7 +200,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   // timers
   a.blink -= dt;
   if (a.blink < -0.13) a.blink = 2 + Math.random() * 4;
-  for (const k of ['joy', 'sad', 'wave', 'stretch', 'yawn', 'phone', 'scratch', 'palm', 'idea', 'laugh', 'highfive'] as const) if (a[k] > 0) a[k] -= dt;
+  for (const k of TIMERS) if (a[k] > 0) a[k] -= dt;
   // idle fidgets
   a.fidget -= dt;
   if (a.fidget <= 0 && !i.reducedMotion) {
@@ -207,7 +210,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
     else if (i.pose === 'stand' && i.era >= 2008 && (i.mode === 'wander' || i.mode === 'station' || i.mode === 'fun') && Math.random() < 0.5) a.phone = 3 + Math.random() * 3;
   }
   // head geometry for this pose (matches drawPerson)
-  const bodyY = i.pose === 'sit' ? -12 : i.pose === 'slump' ? -12 : -14;
+  const bodyY = i.pose === 'sit' ? -12 : -14;
   const headX = i.pose === 'slump' ? 3 : 0;
   const headY = i.pose === 'slump' ? bodyY - 8 : bodyY - 17;
   r.eyesOpen.position.set(headX, headY + 0.8);

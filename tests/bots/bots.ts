@@ -1,6 +1,7 @@
 /**
  * Headless bot players. They interact ONLY through dispatch(), exactly like the UI.
  */
+import { LOC_YEAR, REGIONS, regionMix } from '../../src/data/regions';
 import { BALANCE } from '../../src/data/balance';
 import { GENRES, GENRE_BY_ID } from '../../src/data/genres';
 import { TOPICS } from '../../src/data/topics';
@@ -151,6 +152,9 @@ function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' |
   const monet = genre === 'mmo' && yearOf(s) >= 1997 ? 'subscription' : 'premium';
   // sequel to best franchise sometimes
   const fr = Object.values(s.franchises).filter((f) => f.genre === genre && f.bestScore >= 75 && s.day - f.lastDay > 700)[0];
+  // planners translate for regions that add 8%+ when they have cash to spare
+  const yrNow = fromDay(s.day).year;
+  const localized = opts.mode !== 'random' && yrNow >= LOC_YEAR && !thin && size !== 'small' ? REGIONS.filter((r) => r.id !== (s.company.homeRegion ?? 'na') && regionMix(yrNow, genre, s.company.homeRegion ?? 'na', [r.id]).mul >= 1.08).map((r) => r.id) : [];
   const res = dispatch(s, {
     type: 'startGame',
     game: {
@@ -164,6 +168,7 @@ function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' |
       engineId: engine.id,
       franchiseId: fr?.id,
       dealId: deal?.id,
+      localized,
       team: team.slice(0, cap),
       focus: idealFocus(genre),
       features: opts.mode === 'random' ? undefined : GAME_FEATURES.filter((f) => f.fits[genre] && !featuresBlocked(s, [f.id], monet)).slice(0, 2).map((f) => f.id),
@@ -410,7 +415,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => (s.hardware.length ? { type: rng.chance(0.5) ? 'retireConsole' : 'cancelConsole', id: rng.pick(s.hardware).id } : null),
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
-  (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'startGame', game: { name: 'Feat', genre: rng.pick(['rpg', 'shooter', 'puzzle'] as const), topic: 'fantasy', platforms: [availablePlatforms(s)[0]?.id ?? 'pc'], audience: 'teen', size: 'small', monetization: rng.pick(['premium', 'f2p'] as const), engineId: 'e0', team: st.slice(0, 1), features: rng.shuffle(GAME_FEATURES.map((f) => f.id).concat('bogus')).slice(0, rng.int(0, 5)) } } : null; },
+  (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'startGame', game: { name: 'Feat', genre: rng.pick(['rpg', 'shooter', 'puzzle'] as const), topic: 'fantasy', platforms: [availablePlatforms(s)[0]?.id ?? 'pc'], audience: 'teen', size: 'small', monetization: rng.pick(['premium', 'f2p'] as const), engineId: 'e0', team: st.slice(0, 1), features: rng.shuffle(GAME_FEATURES.map((f) => f.id).concat('bogus')).slice(0, rng.int(0, 5)), localized: rng.shuffle(['na', 'eu', 'jp', 'row', 'mars'] as never[]).slice(0, rng.int(0, 5)) } } : null; },
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'openBeta', projectId: rng.pick(p) } : null; },
   (s, rng) => { const r = Object.values(s.releases); return r.length ? { type: 'foundLeague', releaseId: rng.pick(r).id, tier: rng.pick(['regional', 'pro', 'world', 'mega'] as never[]), name: rng.chance(0.1) ? '' : 'Fuzz League' } : null; },
   (s, rng) => (s.leagues?.length ? { type: 'closeLeague', id: rng.pick(s.leagues).id } : null),

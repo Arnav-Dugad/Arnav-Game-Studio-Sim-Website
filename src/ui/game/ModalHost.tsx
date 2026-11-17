@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { BuzzList, BuzzMeter } from '../components/BuzzList';
+import { releaseBuzz } from './buzz';
+import { REGIONS, REGION_BY_ID } from '@/data/regions';
 import { AMBITION_PENALTY, AMBITION_REWARD, ambitionHint, ambitionText } from '@/sim/systems/ambitions';
 import { GENRE_BY_ID } from '@/data/genres';
 import { TOPIC_BY_ID } from '@/data/topics';
@@ -416,7 +419,26 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
           ))}
         </ul>
       </Section>
+      {r.regionMix && (
+        <Section title="Players by region" right={<span className="text-xs text-ink3">{r.concept.localized?.length ? `Localised: ${r.concept.localized.map((x) => REGION_BY_ID[x].short).join(', ')}` : 'Not localised'}</span>}>
+          <ul className="space-y-1 text-xs">
+            {REGIONS.map((rg) => {
+              const v = r.regionMix![rg.id] ?? 0;
+              return (
+                <li key={rg.id} className="flex items-center gap-2">
+                  <span className="w-28 shrink-0">{rg.name}</span>
+                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-bg2">
+                    <span className="block h-full rounded-full bg-accent" style={{ width: `${Math.round(v * 100)}%` }} />
+                  </span>
+                  <span className="num w-20 shrink-0 text-right text-ink2">{fmtUnits(r.units * v)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      )}
       <PostLaunch releaseId={releaseId} />
+      <ReleaseBuzz releaseId={releaseId} />
       <div className="mt-2 flex flex-wrap justify-end gap-2">
         {!r.concept.remasterOf && !r.concept.expansionOf && r.score >= EXPANSION_MIN_SCORE && s.day - r.day < EXPANSION_MAX_AGE_YEARS * 365.25 && (
           <Button
@@ -461,6 +483,22 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         )}
       </div>
     </Modal>
+  );
+}
+
+function ReleaseBuzz({ releaseId }: { releaseId: string }) {
+  const s = useGame((g) => g.s)!;
+  const r = s.releases[releaseId];
+  if (!r) return null;
+  const posts = releaseBuzz(s, r, 30);
+  if (!posts.length) return null;
+  return (
+    <Section title="What players are saying">
+      <div className="mb-2">
+        <BuzzMeter posts={posts} />
+      </div>
+      <BuzzList posts={posts.slice(0, 6)} showGame={false} />
+    </Section>
   );
 }
 
@@ -625,8 +663,8 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
                     </div>
                   </div>
                 </div>
-                {st.ambition.kind === 'raise' && (
-                  <Button size="sm" className="mt-2" onClick={() => run({ type: 'setSalary', staffId, salary: st.ambition!.target! }, 'Raise given')}>
+                {st.ambition.kind === 'raise' && st.salary < (st.ambition.target ?? 0) && (
+                  <Button size="sm" className="mt-2" onClick={() => run({ type: 'setSalary', staffId, salary: Math.max(st.salary, st.ambition!.target!) }, 'Raise given')}>
                     Give the raise ({fmtMoney(st.ambition.target!)}/yr)
                   </Button>
                 )}

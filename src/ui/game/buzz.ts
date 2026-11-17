@@ -155,15 +155,17 @@ export function releaseBuzz(s: GameState, rel: Release, max = 12): BuzzPost[] {
     // most talk is at launch; a trickle after
     const r = rng(`${rel.id}|${w}`);
     const expected = pop * (w < 2 ? 2.2 : w < 8 ? 1 : w < 26 ? 0.35 : 0.12);
-    let n = Math.floor(expected) + (r() < expected % 1 ? 1 : 0);
-    while (n-- > 0 && out.length < max) {
+    const n = Math.floor(expected) + (r() < expected % 1 ? 1 : 0);
+    for (let k = n - 1; k >= 0 && out.length < max; k--) {
+      // each post has its own seed, so earlier posts appearing never reshuffle later ones
+      const r = rng(`${rel.id}|${w}|${k}`);
       const day = rel.day + w * 7 + Math.floor(r() * 7);
       if (day > s.day) continue;
       const year = fromDay(day).year;
       const medium = mediumFor(year);
       const line = draw(linesFor(s, rel, w, r), r);
       const reach = Math.pow(10, pop) * (0.3 + r() * 1.7) * (medium === 'letter' ? 0 : medium === 'bbs' ? 0.05 : medium === 'forum' ? 0.4 : 3);
-      out.push({ id: `${rel.id}|${w}|${n}`, releaseId: rel.id, game: rel.name, day, medium, author: author(r, medium, year), text: line.text, tone: line.tone, likes: Math.round(reach) });
+      out.push({ id: `${rel.id}|${w}|${k}`, releaseId: rel.id, game: rel.name, day, medium, author: author(r, medium, year), text: line.text, tone: line.tone, likes: Math.round(reach) });
     }
   }
   return out.sort((a, b) => b.day - a.day);

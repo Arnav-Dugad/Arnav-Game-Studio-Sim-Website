@@ -1,4 +1,5 @@
 import type { Area, Audience, GenreId, IndustryFlag, Monetization, NewsCategory, Skill } from '../data/types';
+import type { RegionId } from '../data/regions';
 import type { TraitId } from '../data/traits';
 import type { ItemId } from '../data/facilities';
 import type { Difficulty } from '../data/balance';
@@ -78,6 +79,8 @@ export interface Staff {
   /** A personal morale term (a fulfilled or ignored ambition). */
   mood?: { v: number; until: number; label: string };
   dreamsMet?: number;
+  /** A raise granted for an ambition: cutting below it before `until` breaks the promise. */
+  promise?: { salary: number; until: number };
 }
 
 export type Assignment =
@@ -160,6 +163,8 @@ export interface Concept {
   expansionOf?: Id;
   /** Signature features (data/gameFeatures.ts), up to three. */
   features?: string[];
+  /** Regions the game is translated for (the studio's home region always is). */
+  localized?: RegionId[];
 }
 
 export interface PublisherDeal {
@@ -310,6 +315,8 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Share of players by region at launch (data/regions.ts). */
+  regionMix?: Record<RegionId, number>;
   /** Storefront discounts run so far, and when the last one started. */
   saleCount?: number;
   lastSaleDay?: number;
@@ -646,6 +653,8 @@ export interface LifetimeStats {
 
 export interface Company {
   name: string;
+  /** Where the studio is based (its own language is always supported). Defaults to North America. */
+  homeRegion?: RegionId;
   founderName: string;
   color: string;
   /** Studio emblem (an icon id) and badge shape; the monogram is used without one. */

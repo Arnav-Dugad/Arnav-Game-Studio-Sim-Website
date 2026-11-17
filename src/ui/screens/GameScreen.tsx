@@ -199,7 +199,12 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
           const st = g.s;
           if (!st || !rendererRef.current) return;
           const staffN = Object.keys(st.staff).length;
-          const blob = await rendererRef.current.snapshot(st.company.name, `${formatDate(st.day)} · ${staffN} ${staffN === 1 ? 'person' : 'people'} · ${st.releaseOrder.length} games released`);
+          let blob: Blob | null;
+          try {
+            blob = await rendererRef.current.snapshot(st.company.name, `${formatDate(st.day)} · ${staffN} ${staffN === 1 ? 'person' : 'people'} · ${st.releaseOrder.length} games released`);
+          } catch {
+            blob = null;
+          }
           if (!blob) return g.toast({ text: 'Couldn’t take the photo', tone: 'bad' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');

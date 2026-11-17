@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { REGIONS, regionShares, type RegionId } from '@/data/regions';
 import { GENRES, GENRE_BY_ID } from '@/data/genres';
 import { COMPANY_BY_ID } from '@/data/companies';
 import { PERSON_BY_ID } from '@/data/people';
@@ -31,6 +32,7 @@ export default function MarketPanel() {
         options={[
           { value: 'platforms', label: 'Platforms' },
           { value: 'trends', label: 'Trends' },
+          { value: 'world', label: 'World' },
           { value: 'rivals', label: 'Rivals' },
           { value: 'releases', label: 'Rival releases' },
           { value: 'upcoming', label: 'Coming soon' },
@@ -39,6 +41,7 @@ export default function MarketPanel() {
       />
       {tab === 'platforms' && <Platforms />}
       {tab === 'trends' && <Trends />}
+      {tab === 'world' && <World />}
       {tab === 'rivals' && <Rivals />}
       {tab === 'releases' && <RivalReleases />}
       {tab === 'upcoming' && <Upcoming />}
@@ -103,6 +106,51 @@ function Platforms() {
           })}
         </ul>
       </Section>
+    </div>
+  );
+}
+
+/** The world's regions: who plays, what they like, and how your games do there. */
+function World() {
+  const s = useGame((g) => g.s)!;
+  const yr = fromDay(s.day).year;
+  const shares = regionShares(yr);
+  const home = s.company.homeRegion ?? 'na';
+  const mine = s.releaseOrder.slice(-12).map((id) => s.releases[id]!).filter((r) => r?.regionMix);
+  const myUnits = (id: RegionId) => mine.reduce((t, r) => t + r.units * (r.regionMix![id] ?? 0), 0);
+  const totalMine = REGIONS.reduce((t, r) => t + myUnits(r.id), 0);
+  const avail = GENRES.filter((g) => g.year <= yr);
+  return (
+    <div className="space-y-3">
+      {REGIONS.map((r) => {
+        const loves = avail.filter((g) => (r.taste[g.id] ?? 1) >= 1.15).sort((a, b) => (r.taste[b.id] ?? 1) - (r.taste[a.id] ?? 1));
+        const cool = avail.filter((g) => (r.taste[g.id] ?? 1) <= 0.85);
+        return (
+          <section key={r.id} className="rounded-2xl border border-line p-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <h3 className="font-display text-sm font-semibold">
+                {r.name} {r.id === home && <Pill tone="gold">Home</Pill>}
+              </h3>
+              <span className="num text-sm font-semibold">{Math.round(shares[r.id] * 100)}% of players</span>
+            </div>
+            <p className="mt-0.5 text-xs text-ink2">{r.blurb}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1 text-[11px]">
+              {loves.map((g) => (
+                <span key={g.id} className="rounded-full bg-good/15 px-2 py-0.5 font-semibold text-good">
+                  ♥ {g.name}
+                </span>
+              ))}
+              {cool.map((g) => (
+                <span key={g.id} className="rounded-full bg-bg2 px-2 py-0.5 text-ink3">
+                  {g.name}
+                </span>
+              ))}
+            </div>
+            {totalMine > 0 && <div className="mt-1.5 text-[11px] text-ink3">Your recent games: {Math.round((myUnits(r.id) / totalMine) * 100)}% of copies sold here</div>}
+          </section>
+        );
+      })}
+      <p className="text-[11px] text-ink3">Localise a game (in the new-game setup) to reach a region’s players properly. The world shifts: Japan’s golden age fades, and the rest of the world becomes the biggest market of all.</p>
     </div>
   );
 }

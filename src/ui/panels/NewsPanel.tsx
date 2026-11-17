@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { NewsCategory } from '@/data/types';
 import { formatDate } from '@/sim/calendar';
+import { BuzzList, BuzzMeter } from '../components/BuzzList';
 import { Empty, Segmented, cx } from '../components/ui';
+import { studioBuzz } from '../game/buzz';
 import { Icon, type IconName } from '../icons';
 import { useGame } from '../store';
 
@@ -19,12 +21,13 @@ export default function NewsPanel() {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
   const panelTab = useGame((g) => g.panelTab);
-  const [cat, setCat] = useState<NewsCategory | 'all' | 'awards'>(() => (panelTab === 'awards' ? 'awards' : 'all'));
+  const [cat, setCat] = useState<NewsCategory | 'all' | 'awards' | 'buzz'>(() => (panelTab === 'awards' ? 'awards' : panelTab === 'buzz' ? 'buzz' : 'all'));
   // Follow requests to jump to a tab while the panel is already open (e.g. the gala's "All results").
   const [seenTab, setSeenTab] = useState(panelTab);
   if (panelTab !== seenTab) {
     setSeenTab(panelTab);
     if (panelTab === 'awards') setCat('awards');
+    if (panelTab === 'buzz') setCat('buzz');
   }
   const news = [...s.news].reverse().filter((n) => cat === 'all' || n.category === cat);
   return (
@@ -37,6 +40,7 @@ export default function NewsPanel() {
         options={[
           { value: 'all', label: 'All' },
           { value: 'studio', label: 'You' },
+          { value: 'buzz', label: 'Buzz' },
           { value: 'industry', label: 'Industry' },
           { value: 'platform', label: 'Platforms' },
           { value: 'rival', label: 'Rivals' },
@@ -47,6 +51,8 @@ export default function NewsPanel() {
       />
       {cat === 'awards' ? (
         <Awards />
+      ) : cat === 'buzz' ? (
+        <Buzz />
       ) : (
         <>
       {news.length === 0 && <Empty icon="news" title="Nothing here yet" />}
@@ -66,6 +72,22 @@ export default function NewsPanel() {
       </ol>
         </>
       )}
+    </div>
+  );
+}
+
+/** What players are saying about your recent games. */
+function Buzz() {
+  const s = useGame((g) => g.s)!;
+  const posts = studioBuzz(s, 50);
+  if (!posts.length) return <Empty icon="people" title="No buzz yet">Release a game and players will start talking about it here.</Empty>;
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl bg-bg2/50 p-2.5">
+        <div className="mb-1 text-xs text-ink3">Player sentiment across your recent games</div>
+        <BuzzMeter posts={posts} />
+      </div>
+      <BuzzList posts={posts} />
     </div>
   );
 }

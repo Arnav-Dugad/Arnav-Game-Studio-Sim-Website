@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { LOC_COST, LOC_WORK, LOC_YEAR, REGIONS, REGION_BY_ID, regionMix, regionShares, type RegionId } from '@/data/regions';
 import { BALANCE } from '@/data/balance';
 import { GENRE_BY_ID } from '@/data/genres';
 import { TOPIC_BY_ID } from '@/data/topics';
@@ -342,6 +343,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
   const [features, setFeatures] = useState<string[]>([]);
+  const home = s.company.homeRegion ?? 'na';
+  const [localized, setLocalized] = useState<RegionId[]>([]);
   const expPlats = expansionRel ? expansionPlatforms(s, expansionRel) : null;
   const plats = availablePlatforms(s)
     .filter((p) => !expPlats || expPlats.includes(p.id))
@@ -366,6 +369,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
     if (still.length) setPlatforms(still.slice(0, 6));
     if (s.engines[c.engineId]) setEngineId(c.engineId);
     setFeatures((c.features ?? []).filter((id) => !featuresBlocked(s, [id], c.monetization)));
+    setLocalized((c.localized ?? []).filter((r) => r !== home));
     sound.play('click');
   };
   const idle = Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
@@ -385,17 +389,18 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const ideal = learned ? idealFocus(genre) : undefined;
   const franchises = Object.values(s.franchises).filter((f) => f.bestScore > 0 || f.origin);
   const teamStaff = team.map((id) => s.staff[id]!).filter(Boolean);
-  const work = workShare({ remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features });
+  const locs = useMemo(() => (yr >= LOC_YEAR ? localized.filter((r) => r !== home) : []), [yr, localized, home]);
+  const work = workShare({ remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs });
   const cost = estimateCost(s, size, teamStaff, work);
-  const featCost = features.reduce((tt, id) => tt + money(FEATURE_BY_ID[id]?.cost ?? 0, s.day), 0);
+  const featCost = features.reduce((tt, id) => tt + money(FEATURE_BY_ID[id]?.cost ?? 0, s.day), 0) + locs.length * money(LOC_COST[size], s.day);
   const kitCost = platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
   const deal = s.offers.deals.find((d) => d.id === dealId);
   const liveDealId = deal ? dealId : ''; // the offer may have expired since it was picked
   const liveFeatures = features.filter((id) => !featuresBlocked(s, [id], monet));
   const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
   const conceptPreview = useMemo(
-    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features }),
-    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features],
+    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs }),
+    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features, locs],
   );
   const forecast = useMemo(() => {
     if (!platforms.length) return null;
@@ -409,7 +414,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs },
     });
     if (r.ok) {
       sound.play('success');
@@ -619,6 +624,38 @@ function NewGame({ onDone }: { onDone: () => void }) {
         </div>
         <p className="mt-2 text-[11px] text-ink3">Features add scope (the percentage is extra work) and lift quality in genres they suit; a poor fit drags a little. Some change sales or how players feel — hover for details.</p>
       </Section>
+
+      {yr >= LOC_YEAR && (
+        <Section title="Localisation" right={<span className="text-xs text-ink3">Optional · {REGION_BY_ID[home].name} is home</span>}>
+          <div className="grid gap-1.5 sm:grid-cols-3">
+            {REGIONS.filter((r) => r.id !== home).map((r) => {
+              const on = locs.includes(r.id);
+              const gain = regionMix(yr, genre, home, [r.id]).mul - 1;
+              const taste = r.taste[genre] ?? 1;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setLocalized((x) => (on ? x.filter((y) => y !== r.id) : [...x, r.id]))}
+                  title={r.blurb}
+                  className={cx('rounded-xl border px-2.5 py-2 text-left text-xs transition', on ? 'border-accent bg-accent/10' : 'border-line hover:bg-bg2')}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-semibold">{r.name}</span>
+                    <span className={cx('num font-bold', gain >= 0.08 ? 'text-good' : gain < 0.03 ? 'text-ink3' : 'text-ink2')}>+{Math.round(gain * 100)}%</span>
+                  </div>
+                  <div className="text-ink3">
+                    {Math.round(regionShares(yr)[r.id] * 100)}% of players · {taste >= 1.2 ? `loves ${GENRE_BY_ID[genre].name}` : taste <= 0.8 ? `cool on ${GENRE_BY_ID[genre].name}` : `likes ${GENRE_BY_ID[genre].name}`}
+                  </div>
+                  <div className="num text-ink3">{fmtMoney(money(LOC_COST[size], s.day))} · +{Math.round(LOC_WORK * 100)}% work</div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11px] text-ink3">Translated versions reach players who’d otherwise pass. The gain depends on how much each region likes this genre and how much text it has.</p>
+        </Section>
+      )}
 
       <Section title="5 · Platforms" right={<span className="text-xs text-ink3">Each extra platform costs ~6% efficiency</span>}>
         <div className="grid gap-1.5 sm:grid-cols-2">

@@ -63,7 +63,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (!st) return null;
       const yearAgo = st.history.length > 52 ? st.history[st.history.length - 53]! : st.ipoPrice;
       const change = yearAgo > 0 ? st.price / yearAgo - 1 : 0;
-      const profit = s.finance.ledger.slice(-12).reduce((t, m) => t + Object.values(m.income).reduce((a, v) => a + (v ?? 0), 0) - Object.values(m.expense).reduce((a, v) => a + (v ?? 0), 0), 0);
+      const profit = s.finance.ledger.slice(-13, -1).reduce((t, m) => t + Object.values(m.income).reduce((a, v) => a + (v ?? 0), 0) - Object.values(m.expense).reduce((a, v) => a + (v ?? 0), 0), 0);
       const dividend = Math.max(0, Math.round(profit * 0.25));
       const pct = Math.round(change * 100);
       const control = st.founderShares / st.shares;
@@ -77,7 +77,7 @@ export const EVENT_DEFS: EventDef[] = [
             { id: 'fight', label: 'Fight the vote', preview: `Win chance about ${Math.round(Math.min(90, 25 + control * 80 + s.company.reputation / 4))}%. Win: board mood +15. Lose: share price −12%, reputation −4.` },
             { id: 'concede', label: 'Accept the cost-cutting mandate', preview: 'Board mood +20; staff morale −8 for six months' },
           ],
-          ctx: { profit, dividend, control, change, revolt: 1 },
+          ctx: { profit, dividend, control, change, revolt: 1, revenue: 0 },
         };
       return {
         title: `Annual shareholder meeting`,
@@ -87,7 +87,7 @@ export const EVENT_DEFS: EventDef[] = [
           { id: 'bold', label: 'Promise bold growth', preview: 'Share price +6%, board mood +6 — but profit expectations rise 30%' },
           { id: 'steady', label: 'Steady as she goes', preview: change >= 0 ? 'Board mood +2' : 'Board mood −6 (they wanted a plan)' },
         ],
-        ctx: { profit, dividend, control, change, revolt: 0 },
+        ctx: { profit, dividend, control, change, revolt: 0, revenue: s.finance.ledger.slice(-13, -1).reduce((t, m) => t + Object.values(m.income).reduce((a, v) => a + (v ?? 0), 0), 0) },
       };
     },
     resolve: ({ s, rng }, e, opt) => {
@@ -103,7 +103,8 @@ export const EVENT_DEFS: EventDef[] = [
           pushNews(s, { category: 'studio', headline: `${s.company.name} pays a ${fmtMoney(d)} dividend`, tone: 'good' });
         }
       } else if (opt === 'bold') {
-        st.expectation *= 1.3;
+        // a promise is a promise: even a loss-making studio now owes a quarterly profit
+        st.expectation = Math.max(st.expectation * 1.3, Number(e.ctx.revenue ?? 0) * 0.025);
         st.price *= 1.06;
         st.boardMood = clamp(st.boardMood + 6, 0, 100);
         pushNews(s, { category: 'studio', headline: `${s.company.name} promises shareholders bold growth`, tone: 'neutral' });

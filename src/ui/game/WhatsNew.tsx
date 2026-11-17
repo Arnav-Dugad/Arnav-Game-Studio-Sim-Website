@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17r';
+export const WHATS_NEW_VERSION = '2026-11-17s';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'globe', title: 'World regions & localisation', body: 'North America, Europe, Japan and the rest of the world each have their own tastes and a share of players that shifts over the decades. Choose your home region when founding a studio, and localise games (from 1983) to reach players abroad — an RPG in Japan, a strategy game in Europe. Market → World; each game shows its players by region.' },
   { icon: 'people', title: 'Visitors', body: 'People drop by: couriers with parcels, the pizza run during crunch, journalists chasing a preview of your hyped game, investors calling on the founder, candidates arriving for interviews.' },
   { icon: 'bell', title: 'Shareholder meetings', body: 'Public studios face their shareholders every May: pay a dividend, promise bold growth or hold steady — and if the board turns on you, fight a no-confidence vote or accept a cost-cutting mandate.' },
   { icon: 'star', title: 'Staff ambitions', body: 'People now form personal goals — make a game in a genre they love, ship a hit, earn a raise, do research, master their craft, get a better desk, take a holiday. Help them before the deadline for a big loyalty and morale boost; ignore them and they feel overlooked. Staff → Team → Ambitions.' },

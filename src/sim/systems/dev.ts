@@ -2,6 +2,7 @@
  * Development pipeline: daily progress for game / contract / engine projects, bug creation and QA,
  * phase gates, and the quality model (with full breakdown).
  */
+import { LOC_WORK } from '../../data/regions';
 import { FEATURE_BY_ID } from '../../data/gameFeatures';
 import { BALANCE } from '../../data/balance';
 import { GENRE_BY_ID } from '../../data/genres';
@@ -271,9 +272,9 @@ export function devProgress(p: GameProject): number {
 }
 
 /** Share of a full game's work: remasters and expansions are smaller jobs. */
-export function workShare(c: { remasterOf?: string; expansionOf?: string; features?: string[] }): number {
+export function workShare(c: { remasterOf?: string; expansionOf?: string; features?: string[]; localized?: readonly string[] }): number {
   const base = c.remasterOf ? BALANCE.REMASTER_WORK : c.expansionOf ? BALANCE.EXPANSION_WORK : 1;
-  return base * featureWork(c.features);
+  return base * featureWork(c.features) * (1 + LOC_WORK * (c.localized?.length ?? 0));
 }
 
 /** Extra scope from signature features (clamped so a game can't balloon or shrink too far). */

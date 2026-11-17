@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { REGION_BY_ID, regionMix } from '../../data/regions';
 import { ambitionOnShip } from './ambitions';
 import { exclusiveBuzz } from './hardware';
 import { catalogSalesMul } from './subscription';
@@ -247,6 +248,12 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
       return { platform: pid, potential: Math.max(0, potential), units: 0, pl };
     });
   for (const lt of launchTitles) sb.mul(`Launch title on ${lt.name} (early adopters buy everything)`, lt.mul);
+  // Localisation: translated versions reach players abroad who'd otherwise pass.
+  const loc = regionMix(fromDay(s.day).year, concept.genre, s.company.homeRegion ?? 'na', concept.localized ?? []);
+  if (loc.mul > 1.0005) {
+    for (const ps of platforms) ps.potential *= loc.mul;
+    sb.mul(`Localised for ${(concept.localized ?? []).map((r) => REGION_BY_ID[r].short).join(', ')}`, loc.mul);
+  }
   if (fr && fr.fans > 0) {
     const fanBuy = fr.fans * clamp((effScore - 40) / 50, 0.05, 1) * fatigueMul;
     for (const ps of platforms) ps.potential += fanBuy * (((s.market.users[ps.platform] ?? 0) * 1e6) / Math.max(1, totalUsers));
@@ -333,6 +340,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     id,
     name: p.concept.name,
     concept: p.concept,
+    regionMix: regionMix(fromDay(s.day).year, p.concept.genre, s.company.homeRegion ?? 'na', p.concept.localized ?? []).mix,
     day: s.day,
     quality,
     score,

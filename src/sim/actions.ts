@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { LOC_COST, LOC_YEAR, REGION_BY_ID, type RegionId } from '../data/regions';
 import { BALANCE } from '../data/balance';
 import { ENGINE_BY_ID } from '../data/engines';
 import { ITEM_BY_ID, type ItemId } from '../data/facilities';
@@ -50,6 +51,8 @@ export interface StartGamePayload {
   expansionOf?: string;
   /** Signature features (up to three). */
   features?: string[];
+  /** Extra regions to localise for. */
+  localized?: RegionId[];
   team: string[];
   focus?: [Focus3, Focus3, Focus3];
 }
@@ -301,10 +304,16 @@ function apply(c: Ctx, a: Action): string | null {
       const feats = [...new Set(g.features ?? [])];
       const featErr = featuresBlocked(s, feats, g.monetization);
       if (featErr) return featErr;
-      const featCost = feats.reduce((t, id) => t + money(FEATURE_BY_ID[id]!.cost ?? 0, s.day), 0);
+      const featCost0 = feats.reduce((t, id) => t + money(FEATURE_BY_ID[id]!.cost ?? 0, s.day), 0);
+      const home = s.company.homeRegion ?? 'na';
+      const locs = [...new Set(g.localized ?? [])].filter((r) => r !== home);
+      if (locs.some((r) => !REGION_BY_ID[r])) return 'Unknown region';
+      if (locs.length && yr < LOC_YEAR) return `Localisation is available from ${LOC_YEAR}`;
+      const locCost = locs.length * money(LOC_COST[g.size], s.day);
+      const featCost = featCost0 + locCost;
       // dev kits
       const kitCost = g.platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
-      if (kitCost + featCost > 0 && kitCost + featCost > s.company.cash) return `Need ${fmtMoney(kitCost + featCost)} for dev kits and licences`;
+      if (kitCost + featCost > 0 && kitCost + featCost > s.company.cash) return `Need ${fmtMoney(kitCost + featCost)} for dev kits, licences and localisation`;
       const deal = g.dealId ? s.offers.deals.find((d) => d.id === g.dealId) : undefined;
       if (g.dealId && !deal) return 'That publisher deal expired';
       if (!deal && !s.research.done.includes('biz_self_publishing') && yr >= 1983 && s.releaseOrder.length >= 1) {
@@ -335,11 +344,12 @@ function apply(c: Ctx, a: Action): string | null {
           remasterOf: orig?.id,
           expansionOf: base?.id,
           ...(feats.length ? { features: feats } : {}),
+          ...(locs.length ? { localized: locs } : {}),
           deal: deal ? { publisherId: deal.publisherId, advance: dealAdvanceFor(deal, g.size, s.day), royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
         },
         phase: 0,
         phaseDay: 0,
-        phaseDays: [0, 1, 2].map((ph) => Math.max(4, Math.round(phaseLength(g.size, ph) * workShare({ remasterOf: orig?.id, expansionOf: base?.id, features: feats })))) as [number, number, number],
+        phaseDays: [0, 1, 2].map((ph) => Math.max(4, Math.round(phaseLength(g.size, ph) * workShare({ remasterOf: orig?.id, expansionOf: base?.id, features: feats, localized: locs })))) as [number, number, number],
         focus: g.focus ?? defaultFocus(g.genre),
         points: { engine: 0, gameplay: 0, story: 0, level: 0, dialogue: 0, ai: 0, world: 0, graphics: 0, sound: 0 },
         design: 0,

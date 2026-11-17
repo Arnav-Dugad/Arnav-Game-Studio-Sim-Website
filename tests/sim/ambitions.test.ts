@@ -38,6 +38,22 @@ describe('staff ambitions', () => {
     expect(st.mood?.label).toBe('Dream come true');
   });
 
+  it('taking a promised raise back is a broken promise', () => {
+    const s = game();
+    dispatch(s, { type: 'cheat', cheat: { op: 'spawnStaff', role: 'programmer', skill: 40, salary: 30_000 } });
+    const st = Object.values(s.staff).find((x) => x.role !== 'founder')!;
+    const old = st.salary;
+    st.ambition = { kind: 'raise', since: s.day, until: s.day + 100, target: old + 5000 };
+    dispatch(s, { type: 'setSalary', staffId: st.id, salary: old + 5000 });
+    const c: Ctx = { s, rng: new Rng(s.rng), out: [] };
+    ambitionsWeekly(c);
+    const after = st.loyalty;
+    dispatch(s, { type: 'setSalary', staffId: st.id, salary: old });
+    ambitionsWeekly(c);
+    expect(st.loyalty).toBeLessThan(after);
+    expect(st.mood?.label).toBe('Raise taken back');
+  });
+
   it('an ignored ambition lapses with a loyalty hit', () => {
     const s = game();
     dispatch(s, { type: 'cheat', cheat: { op: 'spawnStaff', role: 'programmer', skill: 40, salary: 30_000 } });

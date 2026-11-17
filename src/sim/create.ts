@@ -1,4 +1,5 @@
 import { BALANCE, type Difficulty } from '../data/balance';
+import type { RegionId } from '../data/regions';
 import { GENRES } from '../data/genres';
 import { TOPICS } from '../data/topics';
 import { HISTORICAL_EVENTS } from '../data/events';
@@ -31,6 +32,8 @@ export interface NewGameOptions {
   autopause?: boolean;
   /** Creative sandbox: infinite money, no bankruptcy, free building; the run is marked as cheated. */
   sandbox?: boolean;
+  /** Where the studio is founded. */
+  homeRegion?: RegionId;
 }
 
 export function createGame(o: NewGameOptions): GameState {
@@ -52,6 +55,7 @@ export function createGame(o: NewGameOptions): GameState {
     company: {
       name: o.companyName,
       founderName: o.founderName,
+      homeRegion: o.homeRegion ?? 'na',
       color: o.color ?? '#e07a5f',
       reputation: startYear > 1980 ? 6 : 0,
       fans: 0,

@@ -338,7 +338,8 @@ ${p.kind === 'cat' ? 'studio cat' : 'office dog'} · ${p.mode === 'sleep' ? 'nap
       // people fuss over a pet that comes close
       if (p.mode !== 'walk' && p.mode !== 'sleep' && p.fussT <= 0) {
         const near = peopleNow().find((x) => x.id !== p.deskOf && Math.hypot(x.x - p.x, x.y - p.y) < 34 && x.mode !== 'walk');
-        if (near && Math.random() < dt * 3) {
+        if (!near) p.fussT = 0.4; // look again in a moment, not every frame
+        else if (Math.random() < dt * 3) {
           const lines = p.kind === 'cat' ? CAT_LINES(p.name) : DOG_LINES(p.name);
           host.react(near.id, lines[Math.floor(Math.random() * lines.length)]!, Math.random() < 0.5 ? 'laugh' : 'wave');
           p.heartT = 1.6;

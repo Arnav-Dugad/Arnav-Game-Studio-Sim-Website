@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { REGIONS, REGION_BY_ID, type RegionId } from '@/data/regions';
 import { createGame } from '@/sim/create';
 import { fmtMoney } from '@/sim/util';
 import type { Difficulty } from '@/data/balance';
@@ -307,6 +308,7 @@ interface NewOpts {
   difficulty: Difficulty;
   startYear: number;
   founderFocus: 'design' | 'programming' | 'balanced';
+  homeRegion: RegionId;
   endless: boolean;
   tutorial: boolean;
   sandbox: boolean;
@@ -322,6 +324,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
     difficulty: 'standard',
     startYear: 1980,
     founderFocus: 'balanced',
+    homeRegion: 'na',
     endless: false,
     tutorial: true,
     sandbox: false,
@@ -378,6 +381,9 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
               { value: 'programming', label: 'Programmer' },
             ]}
           />
+        </Field>
+        <Field label="Home region" hint={`${REGION_BY_ID[o.homeRegion].blurb} Your games ship in its language; translating for other regions is optional.`}>
+          <Segmented<RegionId> ariaLabel="Home region" value={o.homeRegion} onChange={(v) => set('homeRegion', v)} options={REGIONS.map((r) => ({ value: r.id, label: r.id === 'row' ? 'Elsewhere' : r.name }))} />
         </Field>
         <Field label="Start year" hint={o.startYear === 1980 ? 'The full story — recommended.' : 'Later starts give you the era’s standard tech but tougher, more crowded markets.'}>
           <Segmented ariaLabel="Start year" value={o.startYear} onChange={(v) => set('startYear', v)} options={[1980, 1985, 1995, 2005, 2015].map((y) => ({ value: y, label: String(y) }))} />

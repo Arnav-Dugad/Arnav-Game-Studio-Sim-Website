@@ -253,11 +253,17 @@ export function computeLayout(s: GameState): LayoutCache {
           if ((dx || dy) && x >= 0 && y >= 0 && x < t.w && y < t.h) crowd += deskGrid[y * t.w + x]!;
         }
       let decor = 0;
+      let pet = 0;
       let noise = 0;
       let training = 0;
       for (const e of emitters) {
         const dist = Math.max(Math.abs(e.cx - desk.x), Math.abs(e.cy - desk.y));
-        if (e.d.aura && e.d.radius && dist <= e.d.radius + 0.5) decor += e.d.aura * (1 - dist / (e.d.radius + 1.5));
+        if (e.d.aura && e.d.radius && dist <= e.d.radius + 0.5) {
+          const v = e.d.aura * (1 - dist / (e.d.radius + 1.5));
+          // a pet roams: the best one nearby counts, more pets don't stack
+          if (e.d.id === 'pet_cat' || e.d.id === 'pet_dog') pet = Math.max(pet, v);
+          else decor += v;
+        }
         if (e.d.noise && dist <= 3.5) noise += e.d.noise * (1 - dist / 4.5);
         if (e.d.effect === 'training' && dist <= 3) training += (e.d.power ?? 0) * 0.5;
       }
@@ -269,7 +275,7 @@ export function computeLayout(s: GameState): LayoutCache {
         energyDist: bestDist,
         energyGain: bestGain,
         crowding: crowd,
-        decor: Math.max(0, decor),
+        decor: Math.max(0, decor + pet),
         noise,
         trainingBoost: training,
       };

@@ -954,6 +954,7 @@ export class OfficeRenderer {
     if (s.day === this.lastDay) return;
     const firstFrame = this.lastDay < 0;
     this.lastDay = s.day;
+    this.bdayGreeted.clear();
     const here = [...this.agents.values()].filter((a) => a.c.visible && a.floor === floor);
     if (!here.length) return;
     if (!firstFrame && this.season?.newYear && this.season.dom === 1) {
@@ -1006,10 +1007,11 @@ export class OfficeRenderer {
     return {
       people: () => {
         const out: { id: string; x: number; y: number; mode: string; desk?: [number, number]; working: boolean }[] = [];
+        const byId = new Map(s.office.items.map((i) => [i.id, i]));
         for (const a of this.agents.values()) {
           if (!a.c.visible || a.floor !== floor) continue;
           const st = s.staff[a.id];
-          const d = a.mode === 'desk' && a.deskId ? s.office.items.find((i) => i.id === a.deskId) : undefined;
+          const d = a.mode === 'desk' && a.deskId ? byId.get(a.deskId) : undefined;
           const desk: [number, number] | undefined = d ? [d.x * T + T / 2, d.y * T + T * 0.72] : undefined;
           out.push({ id: a.id, x: a.x, y: a.y, mode: a.mode, desk, working: !!st && st.activity === 'work' });
         }
@@ -1377,6 +1379,7 @@ export class OfficeRenderer {
       this.ghost.visible = false;
       hidden.push(this.ghost);
     }
+    this.pets.hover(null, null, this.P.night);
     try {
       const b = this.world.getLocalBounds();
       const res = Math.max(0.5, Math.min(2, 4096 / Math.max(b.width, b.height)));

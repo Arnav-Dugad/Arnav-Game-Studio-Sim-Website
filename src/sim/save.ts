@@ -4,7 +4,7 @@
  */
 import type { GameState } from './types';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 type Raw = Record<string, unknown> & { schemaVersion?: number };
 
@@ -26,6 +26,11 @@ export const MIGRATIONS: Record<number, (raw: Raw) => Raw> = {
   2: (raw) => {
     raw.hardware ??= [];
     raw.schemaVersion = 3;
+    return raw;
+  },
+  // v3 → v4: pets, ambitions, regions (all optional fields; older builds must refuse these saves).
+  3: (raw) => {
+    raw.schemaVersion = 4;
     return raw;
   },
 };

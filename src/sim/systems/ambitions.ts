@@ -5,7 +5,6 @@
  * they feel ignored.
  */
 import { GENRES, GENRE_BY_ID } from '../../data/genres';
-import { ITEMS } from '../../data/facilities';
 import type { GenreId } from '../../data/types';
 import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
@@ -14,7 +13,6 @@ import type { Ambition, GameState, Staff } from '../types';
 export type { Ambition, AmbitionKind } from '../types';
 import { clamp } from '../breakdown';
 import { pushNews } from '../util';
-import { layout } from './office';
 import { ROLE_SKILLS, hasTrait, marketSalary } from './staff';
 
 
@@ -60,22 +58,13 @@ export function ambitionHint(a: Ambition): string {
     case 'skill':
       return 'Send them on training, or keep them working in their craft.';
     case 'desk':
-      return 'Give them a higher-tier desk (Build → Desks).';
+      return 'No longer needed.';
     case 'holiday':
       return 'Send them on vacation.';
   }
 }
 
-function deskTier(s: GameState, st: Staff): number {
-  return st.deskId ? (layout(s).deskTierById[st.deskId] ?? 0) : 0;
-}
 
-function bestDeskTier(s: GameState): number {
-  const yr = fromDay(s.day).year;
-  let best = 0;
-  for (const d of ITEMS) if (d.category === 'desk' && d.year <= yr && (!d.research || s.research.done.includes(d.research))) best = Math.max(best, d.deskTier ?? 0);
-  return best;
-}
 
 function setMood(s: GameState, st: Staff, v: number, days: number, label: string): void {
   st.mood = { v, until: s.day + days, label };
@@ -84,6 +73,7 @@ function setMood(s: GameState, st: Staff, v: number, days: number, label: string
 
 function fulfil(c: Ctx, st: Staff, why: string): void {
   const { s } = c;
+  if (st.ambition?.kind === 'raise') st.promise = { salary: st.ambition.target ?? st.salary, until: s.day + 365 };
   st.ambition = undefined;
   st.loyalty = clamp(st.loyalty + AMBITION_REWARD.loyalty, 0, 100);
   setMood(s, st, AMBITION_REWARD.morale, AMBITION_REWARD.moraleDays, 'Dream come true');
@@ -124,8 +114,6 @@ function newAmbition(c: Ctx, st: Staff): Ambition | null {
   if (st.assignment.kind !== 'research') opts.push({ w: hasTrait(st, 'visionary') ? 2 : 1, make: () => ({ kind: 'research', since: s.day, until, progress: 0 }) });
   const [primary] = ROLE_SKILLS[st.role] ?? [];
   if (primary && st.skills[primary] < Math.min(98, st.potential - 3)) opts.push({ w: 2, make: () => ({ kind: 'skill', since: s.day, until, skill: primary, target: Math.min(100, Math.round(st.skills[primary] + 6)) }) });
-  const tier = deskTier(s, st);
-  if (st.deskId && bestDeskTier(s) > tier + 0.01) opts.push({ w: 1.5, make: () => ({ kind: 'desk', since: s.day, until: s.day + rng.int(120, 220), target: tier }) });
   if (st.burnout > 35 && (st.lastVacationDay === undefined || s.day - st.lastVacationDay > 200)) opts.push({ w: 3, make: () => ({ kind: 'holiday', since: s.day, until: s.day + rng.int(60, 120) }) });
   const total = opts.reduce((t, o) => t + o.w, 0);
   let r = rng.next() * total;
@@ -136,19 +124,38 @@ function newAmbition(c: Ctx, st: Staff): Ambition | null {
   return null;
 }
 
-/** Weekly: progress, fulfil, lapse, and new ambitions. */
+/** Daily: research days count only while actually on research. */
+export function ambitionsDaily(s: GameState): void {
+  for (const st of Object.values(s.staff)) if (st.ambition?.kind === 'research' && st.assignment.kind === 'research') st.ambition.progress = (st.ambition.progress ?? 0) + 1;
+}
+
+/** Weekly: progress, fulfil, lapse, broken promises, and new ambitions. */
 export function ambitionsWeekly(c: Ctx): void {
   const { s, rng } = c;
   const staff = Object.values(s.staff).filter((st) => st.role !== 'founder');
   for (const st of staff) {
+    const pr = st.promise;
+    if (!pr) continue;
+    if (s.day > pr.until) st.promise = undefined;
+    else if (st.salary < pr.salary - 1) {
+      st.promise = undefined;
+      st.loyalty = clamp(st.loyalty - 20, 0, 100);
+      setMood(s, st, -8, 120, 'Raise taken back');
+      pushNews(s, { category: 'staff', headline: `${st.name} feels betrayed`, body: 'Their promised raise was quietly reversed.', tone: 'bad' });
+    }
+  }
+  for (const st of staff) {
     const a = st.ambition;
     if (!a) continue;
-    if (a.kind === 'research' && st.assignment.kind === 'research') a.progress = (a.progress ?? 0) + 7;
+    // Desk ambitions are retired (staff can't be moved to a chosen desk): drop them quietly.
+    if (a.kind === 'desk') {
+      st.ambition = undefined;
+      continue;
+    }
     const met =
       (a.kind === 'raise' && st.salary >= (a.target ?? Infinity)) ||
       (a.kind === 'research' && (a.progress ?? 0) >= RESEARCH_DAYS) ||
       (a.kind === 'skill' && st.skills[a.skill!] >= (a.target ?? Infinity)) ||
-      (a.kind === 'desk' && deskTier(s, st) > (a.target ?? Infinity) + 0.01) ||
       (a.kind === 'holiday' && st.lastVacationDay !== undefined && st.lastVacationDay >= a.since);
     if (met) fulfil(c, st, ambitionText(st, a).replace(/ \(.*\)$/, '').replace(/^./, (x) => x.toLowerCase()));
     else if (s.day > a.until) lapse(c, st, a);
