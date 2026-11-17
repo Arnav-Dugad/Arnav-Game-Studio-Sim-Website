@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { OPEN_SOURCE_AGE_YEARS, openSourceBlocked } from '@/sim/systems/giving';
 import { RESEARCH, RESEARCH_BY_ID, type ResearchBranch } from '@/data/research';
 import { ENGINES } from '@/data/engines';
 import { fromDay } from '@/sim/calendar';
@@ -166,14 +167,19 @@ function Engines() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold">
-                    {e.name} {e.licensedFrom && <Pill tone="tech">licensed</Pill>}
+                    {e.name} {e.licensedFrom && <Pill tone="tech">licensed</Pill>} {e.openSourced && <Pill tone="good">open source</Pill>}
                   </div>
                   <div className="text-xs text-ink3">
                     Tech {e.tech} · maturity {Math.round(e.maturity * 100)}% · {e.gamesShipped} games{e.royalty ? ` · ${Math.round(e.royalty * 100)}% royalty` : ''}
                     {e.licensees > 0 && ` · licensed to ${e.licensees} studios`}
                   </div>
                 </div>
-                {!e.licensedFrom && e.licensees === 0 && s.research.done.includes('biz_engine_licensing') && e.tech >= 4 && (
+                {!e.licensedFrom && !e.openSourced && s.day - e.builtDay >= OPEN_SOURCE_AGE_YEARS * 365 && e.builtDay > 0 && (
+                  <Button size="sm" variant="ghost" disabled={!!openSourceBlocked(s, e.id)} title={openSourceBlocked(s, e.id) ?? 'Release the code for free: reputation, proud programmers — and no more licensing income from it'} onClick={() => useGame.getState().actOrToast({ type: 'openSourceEngine', engineId: e.id }, `${e.name} is open source!`)}>
+                    Open-source
+                  </Button>
+                )}
+                {!e.licensedFrom && !e.openSourced && e.licensees === 0 && s.research.done.includes('biz_engine_licensing') && e.tech >= 4 && (
                   <Button size="sm" onClick={() => useGame.getState().actOrToast({ type: 'licenseOut', engineId: e.id })}>
                     License out
                   </Button>

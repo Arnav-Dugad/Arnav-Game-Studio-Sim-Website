@@ -263,6 +263,22 @@ function Policies() {
           <input type="checkbox" checked={!!p.wellness} onChange={(e) => act({ type: 'setPolicy', wellness: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
       </Section>
+      <Section title="Giving back">
+        <Segmented
+          ariaLabel="Charity pledge"
+          value={String(p.charity ?? 0)}
+          onChange={(v) => act({ type: 'setPolicy', charity: Number(v) as 0 | 1 | 5 })}
+          options={[
+            { value: '0', label: 'No pledge' },
+            { value: '1', label: '1% of profit (+1 morale)' },
+            { value: '5', label: '5% of profit (+3 morale)' },
+          ]}
+        />
+        <p className="mt-1 text-xs text-ink3">
+          Each month, the pledged share of last month’s profit goes to good causes: staff feel the work means more, and goodwill slowly builds (a little reputation). Nothing is given in a loss-making month.
+          {(s.progress.stats.donated ?? 0) > 0 && ` Given so far: ${fmtMoney(s.progress.stats.donated ?? 0)}.`}
+        </p>
+      </Section>
       <Section title="Summer internships">
         <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
           <span>

@@ -357,6 +357,8 @@ export interface Engine {
   royalty: number;
   /** Licensed OUT to others: monthly income. */
   licensees: number;
+  /** Released as open source (no more licensing income). */
+  openSourced?: boolean;
 }
 
 export interface CriticReview {
@@ -792,6 +794,7 @@ export interface LifetimeStats {
   mediaHits?: number;
   interns?: number;
   internsHired?: number;
+  donated?: number;
   classics?: number;
   ovations?: number;
   /** Games that topped the weekly chart. */
@@ -816,6 +819,8 @@ export interface Company {
   /** Conference talks: the year of the studio's last talk, and job-seeker buzz from a good one. */
   lastTalkYear?: number;
   lastTalkDay?: number;
+  /** Highest charity pledge held during the current month (what gets paid). */
+  charityOwed?: 0 | 1 | 5;
   talkBuzzUntil?: number;
   /** Venture funding before the IPO: rounds raised, investors' share of the company, and when the last round closed. */
   fundingRounds?: number;
@@ -842,6 +847,8 @@ export interface Company {
     fourDayWeek: boolean;
     /** Wellness program: a monthly cost per head for morale and slower burnout. */
     wellness?: boolean;
+    /** Share of monthly profit pledged to charity. */
+    charity?: 0 | 1 | 5;
     /** Summer internship program (1985+). */
     interns?: boolean;
     /** Parental leave: two, six (default) or sixteen weeks. */

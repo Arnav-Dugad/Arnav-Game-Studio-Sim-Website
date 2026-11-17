@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { openSourceEngine } from './systems/giving';
 import { devkitMul } from './systems/partners';
 import type { MediaKind } from './types';
 import { signMediaDeal } from './systems/media';
@@ -153,6 +154,7 @@ export type Action =
   | { type: 'raiseFunding' }
   | { type: 'earlyAccess'; projectId: string }
   | { type: 'pinFanArt'; id: string; on: boolean }
+  | { type: 'openSourceEngine'; engineId: string }
   | { type: 'giveTalk'; staffId: string; releaseId: string }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
   | { type: 'readFanMail' }
@@ -170,7 +172,7 @@ export type Action =
   | { type: 'setSubsidiary'; id: string; budget: 'low' | 'normal' | 'high'; focusGenre?: GenreId }
   | { type: 'sellFranchise'; franchiseId: string }
   | { type: 'resolveEvent'; uid: number; option: string }
-  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; parentalLeave?: 'minimal' | 'standard' | 'generous'; interns?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean }
+  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; charity?: 0 | 1 | 5; parentalLeave?: 'minimal' | 'standard' | 'generous'; interns?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean }
   | { type: 'setRecruiting'; level: number }
   | { type: 'buyDevkit'; platform: string }
   | { type: 'continueEndless' }
@@ -845,6 +847,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!e || e.licensedFrom) return 'Can only license your own engines';
       if (!s.research.done.includes('biz_engine_licensing')) return 'Research Engine Licensing first';
       if (e.licensees > 0) return 'Already on the market';
+      if (e.openSourced) return 'It’s open source now';
       e.licensees = Math.max(1, Math.round(s.company.reputation / 25));
       pushNews(s, { category: 'studio', headline: `${e.name} engine now available for licensing`, tone: 'good' });
       return null;
@@ -963,6 +966,8 @@ function apply(c: Ctx, a: Action): string | null {
       return signMediaDeal(s, a.franchiseId, a.kind, a.control);
     case 'giveTalk':
       return giveTalk(c, a.staffId, a.releaseId);
+    case 'openSourceEngine':
+      return openSourceEngine(s, a.engineId);
     case 'pinFanArt':
       return pinFanArt(s, a.id, a.on);
     case 'readFanMail':
@@ -1075,6 +1080,11 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.fourDayWeek !== undefined) s.company.policies.fourDayWeek = a.fourDayWeek;
       if (a.wellness !== undefined) s.company.policies.wellness = !!a.wellness;
       if (a.interns !== undefined) s.company.policies.interns = !!a.interns;
+      if (a.charity !== undefined) {
+        if (![0, 1, 5].includes(a.charity)) return 'Pick 0%, 1% or 5%';
+        s.company.policies.charity = a.charity;
+        s.company.charityOwed = Math.max(s.company.charityOwed ?? 0, a.charity) as 0 | 1 | 5; // a pledge held this month is honoured
+      }
       if (a.parentalLeave !== undefined) {
         if (!['minimal', 'standard', 'generous'].includes(a.parentalLeave)) return 'Unknown parental leave policy';
         s.company.policies.parentalLeave = a.parentalLeave;
