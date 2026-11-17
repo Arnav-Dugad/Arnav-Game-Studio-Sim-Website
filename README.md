@@ -34,6 +34,14 @@
   - Bankruptcy is a real fail state.
 - **Reviews.** Critic outlets with their own biases and generated blurbs, user scores, franchises, fans, fatigue and yearly awards.
 - **A living office.** Staff walk over to colleagues and chat in speech bubbles about what's really happening: your current game, last week's reviews, a rival's hit, crunch, awards, the new office, the era's tech. Their personalities and moods show. On breaks they play arcade games and ping-pong, lounge on sofas, browse bookshelves and gather at the water cooler. Seniors drop by juniors' desks to help, researchers think at whiteboards, workers show role-specific thoughts (a programmer's 🐛 when bugs pile up), and new hires say hello.
+- **Characters that feel alive.** Every person has arms, eyes and a mouth: they blink and breathe, smile or frown with their mood, type, gesture while talking, sip coffee, wave hello, stretch, yawn, check their phone, facepalm at bugs, high-five friends, and dance or droop as reviews land. Visitors drop by (couriers, the pizza run during crunch, journalists, investors, interview candidates), and a Studio Cat or Office Dog roams the floor.
+- **Seasons, birthdays and photos.** Snow on the windows, December lights and a tree, Halloween pumpkins, party balloons, staff birthdays with party hats — and Menu → Office photo saves a captioned picture of your studio.
+- **Office ambience.** A generative soundscape: keyboards that follow how many people are working (clacky in the 80s), chatter, coffee, desk phones and the pets.
+- **World regions & localisation.** North America, Europe, Japan and the rest of the world each have their own tastes and an era-shifting share of players. Choose your home region and localise games to reach players abroad.
+- **Studio culture.** Pick up to two values (Quality First, Ship Fast, Player Obsessed, Profit Driven, Innovation, Work-Life Balance), each a real trade-off.
+- **Staff ambitions.** People set personal goals with deadlines; help them for loyalty and morale, or watch them feel overlooked.
+- **Shareholders.** Public studios face an annual meeting: dividends, bold growth promises and, if the board turns, a no-confidence vote.
+- **Player buzz.** What players say about your games, in the medium of the era — magazine mailbags, bulletin boards, forums, social posts and streams.
 - **Runs a big studio without busywork.**
   - **Studio Overview (O):** lists everything that needs attention, each with a one-click fix.
   - **Team tab:** filters, search, grouping and compact rows for hundreds of people, plus bulk actions (assign, research, vacation, training, raises).
