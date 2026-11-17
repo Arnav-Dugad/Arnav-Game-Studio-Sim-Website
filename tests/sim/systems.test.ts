@@ -684,6 +684,18 @@ describe('retirement', () => {
   });
 });
 
+describe('decade in review', () => {
+  it('each new decade brings a headline look back, featuring your studio', () => {
+    const s = game(1982, 6);
+    s.day = toDay(1989, 12, 30);
+    const ev = advance(s, 5);
+    const n = s.news.find((x) => x.headline.includes('’80s'));
+    expect(n).toBeTruthy();
+    expect(n!.body).toContain(s.company.name);
+    expect(ev.some((e) => e.type === 'news' && e.major && e.newsId === n!.id)).toBe(true);
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

@@ -11,6 +11,7 @@ import { expireEvents, rollRandomEvent } from './systems/events';
 import { hardwareMonthly } from './systems/hardware';
 import { subscriptionMonthly } from './systems/subscription';
 import { cheatsDaily } from './cheats';
+import { decadeReview } from './systems/decade';
 import { esportsMonthly } from './systems/esports';
 import { publishingMonthly } from './systems/publishing';
 import { financeMonthly, quarterlyEarnings, solvencyCheck, stockWeekly, valuation, yearlyTaxes } from './systems/finance';
@@ -68,6 +69,7 @@ export function tick(c: Ctx): void {
     if (d.month === 1) {
       yearlyTaxes(c);
       yearlyAwards(c, d.year - 1); // the ceremony covers every release of last year, December included
+      if (d.year % 10 === 0) decadeReview(c, d.year - 10);
       updateFuturePlatforms(c);
       c.out.push({ type: 'year', year: d.year });
     }
