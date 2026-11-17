@@ -586,6 +586,14 @@ export class OfficeRenderer {
       for (let x = 1; x < t.w - 1; x += 3) {
         g.roundRect(x * T + 4, -1.1 * T, 2 * T - 8, 0.75 * T, 4).fill(P.windowFrame);
         g.roundRect(x * T + 7, -1.1 * T + 3, 2 * T - 14, 0.75 * T - 6, 3).fill(P.window);
+        if (P.night) {
+          // a night sky: a few stars, and the moon in one window
+          for (let k = 0; k < 4; k++) g.circle(x * T + 12 + ((x * 37 + k * 23) % (2 * T - 24)), -1.1 * T + 7 + ((x * 11 + k * 13) % (0.75 * T - 16)), k % 3 === 0 ? 1.1 : 0.7).fill({ color: 0xfff6d8, alpha: 0.85 });
+          if (x === 4) {
+            g.circle(x * T + 2 * T - 20, -1.1 * T + 12, 4.5).fill(0xf6efd9);
+            g.circle(x * T + 2 * T - 18, -1.1 * T + 10.5, 4.2).fill(P.window);
+          }
+        }
         g.rect(x * T + T - 1, -1.1 * T + 3, 2, 0.75 * T - 6).fill(P.windowFrame);
         if (!P.night) g.poly([x * T + 10, -1.1 * T + 6, x * T + 22, -1.1 * T + 6, x * T + 12, -0.4 * T, x * T + 4, -0.4 * T]).fill({ color: 0xffffff, alpha: 0.25 });
       }
