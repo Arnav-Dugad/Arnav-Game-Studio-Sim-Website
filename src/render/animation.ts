@@ -323,6 +323,12 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
     l = -0.75;
     rr = 0.55 + Math.sin(t * 13) * 0.22;
     prop = 'guitar';
+  } else if (i.leisure === '🏋️') {
+    // lifting: both arms pump up and down
+    const lift = Math.abs(Math.sin(t * 4 + ph));
+    l = 1.2 + lift * 1.6;
+    rr = -1.2 - lift * 1.6;
+    jump = lift * 0.8;
   } else if (i.leisure === '🎮' || i.leisure === '🕹️' || i.leisure === '⚽' || i.leisure === '🧸') {
     l = -0.5 + Math.sin(t * 18) * 0.15;
     rr = 0.5 + Math.sin(t * 17 + 1) * 0.15;

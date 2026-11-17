@@ -150,6 +150,22 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       }
       break;
     }
+    case 'gym': {
+      shadow(g, 3, 4, W - 6, H - 4);
+      g.roundRect(4, 4, W - 8, H - 8, 6).fill({ color: 0x3b3f48, alpha: 0.9 });
+      // treadmill
+      g.roundRect(10, H * 0.25, W * 0.28, H * 0.55, 3).fill(0x22262e);
+      g.rect(12, H * 0.3, W * 0.28 - 4, H * 0.45).fill(0x4a4f58);
+      g.roundRect(10, H * 0.18, W * 0.28, 5, 2).fill(0x6d7685);
+      // rowing machine
+      g.roundRect(W * 0.42, H * 0.55, W * 0.3, 6, 3).fill(0x9aa4b2);
+      g.circle(W * 0.44, H * 0.58, 6).fill(0x2a2622);
+      // dumbbell rack
+      g.roundRect(W * 0.78, H * 0.2, W * 0.14, H * 0.6, 2).fill(0x6b4a2e);
+      for (let i = 0; i < 4; i++) g.roundRect(W * 0.79, H * 0.24 + i * 11, W * 0.12, 4, 2).fill(i % 2 ? P.accentDesign : P.accentTech);
+      g.roundRect(W * 0.42, H * 0.2, W * 0.3, H * 0.22, 4).fill(P.accentAudio);
+      break;
+    }
     case 'foosball': {
       shadow(g, 4, 6, W - 8, H - 8);
       box(g, { x: 6, y: 6, w: W - 12, h: H - 14, height: 14, top: 0x2f8a63, front: 0x6b4a2e, r: 4 });
@@ -456,6 +472,8 @@ export function itemLift(id: ItemId): number {
     case 'pet_cat':
     case 'pet_dog':
       return 8;
+    case 'gym':
+      return 6;
     case 'claw_machine':
     case 'mascot_statue':
       return 38;

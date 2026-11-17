@@ -231,7 +231,7 @@ export function computeLayout(s: GameState): LayoutCache {
         const fp = footprint(it);
         return { d, cx: it.x + fp.w / 2 - 0.5, cy: it.y + fp.h / 2 - 0.5 };
       })
-      .filter((e) => e.d.aura || e.d.noise || e.d.effect === 'training');
+      .filter((e) => e.d.aura || e.d.noise || e.d.effect === 'training' || e.d.effect === 'wellness');
     for (const desk of desks) {
       const seat = adjacentFree(s, desk, occ);
       let bestDist = Infinity;
@@ -262,6 +262,7 @@ export function computeLayout(s: GameState): LayoutCache {
       let pet = 0;
       let noise = 0;
       let training = 0;
+      let wellness = 0;
       for (const e of emitters) {
         const dist = Math.max(Math.abs(e.cx - desk.x), Math.abs(e.cy - desk.y));
         if (e.d.aura && e.d.radius && dist <= e.d.radius + 0.5) {
@@ -272,6 +273,7 @@ export function computeLayout(s: GameState): LayoutCache {
         }
         if (e.d.noise && dist <= 3.5) noise += e.d.noise * (1 - dist / 4.5);
         if (e.d.effect === 'training' && dist <= 3) training += (e.d.power ?? 0) * 0.5;
+        if (e.d.effect === 'wellness' && dist <= 6) wellness = Math.max(wellness, e.d.power ?? 0);
       }
       cache.desks[desk.id] = {
         deskId: desk.id,
@@ -284,6 +286,7 @@ export function computeLayout(s: GameState): LayoutCache {
         decor: Math.max(0, decor + pet),
         noise,
         trainingBoost: training,
+        wellness,
       };
       cache.deskTierById[desk.id] = ITEM_BY_ID[desk.item].deskTier ?? 1;
     }

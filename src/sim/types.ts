@@ -138,6 +138,8 @@ export interface DeskMetrics {
   decor: number;
   noise: number;
   trainingBoost: number;
+  /** Burnout build-up reduction from a nearby gym (0..0.25). */
+  wellness?: number;
 }
 
 /** Derived from office layout; recomputed when the office changes. Not saved. */

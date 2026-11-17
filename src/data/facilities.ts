@@ -42,7 +42,8 @@ export type ItemId =
   | 'claw_machine'
   | 'guitar_corner'
   | 'globe'
-  | 'mascot_statue';
+  | 'mascot_statue'
+  | 'gym';
 
 export interface ItemDef {
   id: ItemId;
@@ -64,7 +65,7 @@ export interface ItemDef {
   /** Noise emitted (negative for focus-friendly items). */
   noise?: number;
   /** Special effect keys interpreted by the sim. */
-  effect?: 'qa' | 'servers' | 'audio' | 'mocap' | 'training' | 'research' | 'marketing' | 'meeting' | 'trophies';
+  effect?: 'qa' | 'servers' | 'audio' | 'mocap' | 'training' | 'research' | 'marketing' | 'meeting' | 'trophies' | 'wellness';
   /** Effect strength. */
   power?: number;
   /** Extra unlock condition: a franchise with three games. */
@@ -102,6 +103,7 @@ export const ITEMS: readonly ItemDef[] = [
   { id: 'guitar_corner', name: 'Guitar Corner', category: 'decor', w: 1, h: 1, cost: 900, upkeep: 0, year: 1980, aura: 4, radius: 2, noise: 1, desc: 'An acoustic on a stand for impromptu jam sessions.' },
   { id: 'globe', name: 'Antique Globe', category: 'decor', w: 1, h: 1, cost: 600, upkeep: 0, year: 1980, aura: 3, radius: 2, noise: -0.5, desc: 'For planning world domination (and localisation).' },
   { id: 'mascot_statue', name: 'Mascot Statue', category: 'decor', w: 1, h: 1, cost: 15_000, upkeep: 20, year: 1980, aura: 10, radius: 4, requires: 'franchise3', desc: 'A statue of your series’ hero in the lobby. Unlocks with a three-game franchise. Huge morale aura.' },
+  { id: 'gym', name: 'Studio Gym', category: 'energy', w: 3, h: 2, cost: 40_000, upkeep: 300, year: 1995, energy: 25, aura: 4, radius: 3, noise: 1, effect: 'wellness', power: 0.25, desc: 'Treadmills and a rowing machine. Breaks restore 25 energy, and burnout builds 25% slower for anyone seated within six tiles.' },
   { id: 'neon_sign', name: 'Neon Sign', category: 'decor', w: 1, h: 1, cost: 1_200, upkeep: 10, year: 1984, aura: 5, radius: 3, desc: 'Your studio name in glowing glass.' },
   { id: 'trophy_shelf', name: 'Trophy Shelf', category: 'decor', w: 2, h: 1, cost: 1_000, upkeep: 0, year: 1980, aura: 2, radius: 3, effect: 'trophies', power: 1, desc: 'Shows the awards you have actually won (up to eight on display). Each award adds morale.' },
   { id: 'whiteboard', name: 'Whiteboard', category: 'room', w: 2, h: 1, cost: 300, upkeep: 0, year: 1980, aura: 1, radius: 2, effect: 'meeting', power: 0.03, desc: 'Brainstorm space. Small synergy boost nearby.' },

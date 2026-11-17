@@ -447,6 +447,7 @@ export function updateStaffDaily(c: Ctx): void {
     if (hasTrait(st, 'burnout_prone')) bGain *= 1.5;
     if (hasTrait(st, 'chill')) bGain *= 0.7;
     if (hasValue(s, 'balance')) bGain *= CULTURE_FX.balanceBurnout;
+    if (desk?.wellness) bGain *= 1 - desk.wellness;
     if (bGain > 0) st.burnout += bGain;
     else if (st.energy > 55) st.burnout -= BALANCE.BURNOUT_DECAY * (s.company.policies.fourDayWeek ? 1.4 : 1);
     st.burnout = clamp(st.burnout, 0, 100);
