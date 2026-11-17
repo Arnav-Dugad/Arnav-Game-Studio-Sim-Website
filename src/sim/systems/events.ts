@@ -291,7 +291,7 @@ export const EVENT_DEFS: EventDef[] = [
         body: `A wonderfully garbled line in the translated version of ${rel.name} has become a meme. Players are quoting it everywhere.`,
         options: [
           { id: 'embrace', label: 'Embrace it: print it on T-shirts', preview: 'Fans and hype up; a little less serious' },
-          { id: 'patch', label: `Patch the translation (${fmtMoney(money(4_000, s.day))})`, preview: 'User score +1, the moment passes' },
+          { id: 'patch', label: `Patch the translation (${fmtMoney(money(4_000, s.day))})`, preview: 'User score +1, the moment passes', disabled: s.company.cash < money(4_000, s.day), cost: money(4_000, s.day) },
         ],
         ctx: { rel: rel.id },
       };
@@ -714,7 +714,7 @@ export const EVENT_DEFS: EventDef[] = [
         body: `${who.name}, who spent ${who.years} years at ${s.company.name}, has written a book about life at the studio. The press wants your comment.`,
         options: [
           { id: 'embrace', label: 'Read it and celebrate it', preview: avg >= 60 ? 'It’s mostly fond — reputation +1' : 'Risky: it may not be kind' },
-          { id: 'lawyers', label: 'Send the lawyers', preview: `Costs ${fmtMoney(money(20_000, s.day))}; reputation −1 for looking defensive` },
+          { id: 'lawyers', label: 'Send the lawyers', preview: `Costs ${fmtMoney(money(20_000, s.day))}; reputation −1 for looking defensive`, disabled: s.company.cash < money(20_000, s.day), cost: money(20_000, s.day) },
           { id: 'ignore', label: 'No comment', preview: 'Let it pass' },
         ],
         ctx: { name: who.name, avg: Math.round(avg) },
@@ -1314,7 +1314,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Office argument',
         body: `${a.name} and ${b.name} had a loud disagreement about the direction of the project. The team is unsettled.`,
         options: [
-          { id: 'mediate', label: `Bring in a mediator (${fmtMoney(money(1500, s.day))})`, preview: 'Both morale +5' },
+          { id: 'mediate', label: `Bring in a mediator (${fmtMoney(money(1500, s.day))})`, preview: 'Both morale +5', disabled: s.company.cash < money(1500, s.day), cost: money(1500, s.day) },
           { id: 'talk', label: 'Talk to them yourself', preview: '70%: resolved. 30%: both morale −6' },
           { id: 'ignore', label: 'Let them sort it out', preview: 'Both morale −10; small chance one quits' },
         ],
@@ -1352,7 +1352,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Team retreat request',
         body: 'The team asks for a weekend retreat to recharge and bond.',
         options: [
-          { id: 'go', label: `Book it (${fmtMoney(cost)})`, preview: 'Studio morale +10 for 3 months, energy refilled' },
+          { id: 'go', label: `Book it (${fmtMoney(cost)})`, preview: 'Studio morale +10 for 3 months, energy refilled', disabled: s.company.cash < cost, cost: cost },
           { id: 'no', label: 'Not this year', preview: 'Morale −3 for a month' },
         ],
         ctx: { cost },
@@ -1375,7 +1375,7 @@ export const EVENT_DEFS: EventDef[] = [
       title: 'Late night at the office',
       body: 'The crunch team is still here at midnight. Someone suggests pizza.',
       options: [
-        { id: 'pizza', label: `Order pizza for everyone (${fmtMoney(money(150, s.day))})`, preview: 'Morale +4 for 2 weeks' },
+        { id: 'pizza', label: `Order pizza for everyone (${fmtMoney(money(150, s.day))})`, preview: 'Morale +4 for 2 weeks', disabled: s.company.cash < money(150, s.day), cost: money(150, s.day) },
         { id: 'home', label: 'Send everyone home', preview: 'Energy +20, lose a day of crunch output' },
         { id: 'nothing', label: 'Keep going', preview: 'Nothing changes' },
       ],
@@ -1812,7 +1812,7 @@ export const EVENT_DEFS: EventDef[] = [
         body: `An early build of ${p.concept.name} is circulating online.`,
         options: [
           { id: 'embrace', label: 'Embrace the buzz', preview: 'Hype +0.2, team morale −4' },
-          { id: 'legal', label: `Send lawyers (${fmtMoney(money(8_000, s.day))})`, preview: 'Hype unchanged' },
+          { id: 'legal', label: `Send lawyers (${fmtMoney(money(8_000, s.day))})`, preview: 'Hype unchanged', disabled: s.company.cash < money(8_000, s.day), cost: money(8_000, s.day) },
         ],
         ctx: { project: p.id },
       };
@@ -1908,7 +1908,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Piracy worries',
         body: `Sales and marketing want strict DRM on the PC version of ${p.concept.name}.`,
         options: [
-          { id: 'drm', label: `License strict DRM (${fmtMoney(money(12_000, s.day))})`, preview: 'Hype −0.1 (players hate it)' },
+          { id: 'drm', label: `License strict DRM (${fmtMoney(money(12_000, s.day))})`, preview: 'Hype −0.1 (players hate it)', disabled: s.company.cash < money(12_000, s.day), cost: money(12_000, s.day) },
           { id: 'none', label: 'Ship DRM-free', preview: 'Reputation +2 with players' },
         ],
         ctx: { project: p.id },
@@ -1992,7 +1992,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Speedrunners adore your game',
         body: `${r.name} is a hit at a charity speedrun marathon.`,
         options: [
-          { id: 'support', label: `Sponsor the marathon (${fmtMoney(money(5_000, s.day))})`, preview: 'Fans +5%, reputation +1, sales bump' },
+          { id: 'support', label: `Sponsor the marathon (${fmtMoney(money(5_000, s.day))})`, preview: 'Fans +5%, reputation +1, sales bump', disabled: s.company.cash < money(5_000, s.day), cost: money(5_000, s.day) },
           { id: 'enjoy', label: 'Just enjoy the moment', preview: 'Small sales bump' },
         ],
         ctx: { rel: r.id },
@@ -2082,7 +2082,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Cover story offer',
         body: `A leading magazine wants ${p.concept.name} on its cover — if you pay for an exclusive photo shoot.`,
         options: [
-          { id: 'yes', label: `Do the shoot (${fmtMoney(money(6_000, s.day))})`, preview: 'Hype +0.35' },
+          { id: 'yes', label: `Do the shoot (${fmtMoney(money(6_000, s.day))})`, preview: 'Hype +0.35', disabled: s.company.cash < money(6_000, s.day), cost: money(6_000, s.day) },
           { id: 'no', label: 'Pass', preview: 'No change' },
         ],
         ctx: { project: p.id },
@@ -2255,8 +2255,8 @@ export const EVENT_DEFS: EventDef[] = [
         title: `${hw.name} units are failing`,
         body: `Forums are full of owners reporting a fault that bricks their ${hw.name}. Retailers are asking what you'll do about it.`,
         options: [
-          { id: 'recall', label: `Free repairs for everyone (${fmtMoney(recall)})`, preview: 'Expensive, but reputation +2 and buyers trust the brand' },
-          { id: 'warranty', label: `Quietly extend the warranty (${fmtMoney(recall * 0.4)})`, preview: 'Cheaper; reputation −3' },
+          { id: 'recall', label: `Free repairs for everyone (${fmtMoney(recall)})`, preview: 'Expensive, but reputation +2 and buyers trust the brand', disabled: s.company.cash < recall, cost: recall },
+          { id: 'warranty', label: `Quietly extend the warranty (${fmtMoney(recall * 0.4)})`, preview: 'Cheaper; reputation −3', disabled: s.company.cash < recall * 0.4, cost: recall * 0.4 },
           { id: 'deny', label: 'Deny there is a problem', preview: 'Free; reputation −8 and hardware sales slump' },
         ],
         ctx: { hw: hw.id, recall },
@@ -2293,8 +2293,8 @@ export const EVENT_DEFS: EventDef[] = [
         title: `The ${hw.name} has been cracked`,
         body: `Hackers have published a way to run copied games on the ${hw.name}. Publishers on your platform are nervous.`,
         options: [
-          { id: 'patch', label: `Rush out a security update (${fmtMoney(patch)})`, preview: 'Closes the hole' },
-          { id: 'sue', label: `Take the hackers to court (${fmtMoney(patch / 3)})`, preview: '60%: shut it down. 40%: bad press, reputation −3, piracy spreads' },
+          { id: 'patch', label: `Rush out a security update (${fmtMoney(patch)})`, preview: 'Closes the hole', disabled: s.company.cash < patch, cost: patch },
+          { id: 'sue', label: `Take the hackers to court (${fmtMoney(patch / 3)})`, preview: '60%: shut it down. 40%: bad press, reputation −3, piracy spreads', disabled: s.company.cash < patch / 3, cost: patch / 3 },
           { id: 'ignore', label: 'Ignore it', preview: 'More consoles sell, but software and licence fees drop for 18 months' },
         ],
         ctx: { hw: hw.id, patch },
