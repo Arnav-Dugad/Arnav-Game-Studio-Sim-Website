@@ -24,7 +24,7 @@ function rows<T>(items: T[]): T[][] {
   return out;
 }
 
-const Photo = memo(function Photo({ p, company }: { p: YearbookPhoto; company: string }) {
+const Photo = memo(function Photo({ p, company, honours }: { p: YearbookPhoto; company: string; honours?: string }) {
   const rs = rows(p.faces);
   const bg = BACKDROP[(p.tier - 1) % BACKDROP.length] ?? BACKDROP[0]!;
   return (
@@ -63,6 +63,7 @@ const Photo = memo(function Photo({ p, company }: { p: YearbookPhoto; company: s
             {p.awards > 0 && <>{p.games.length > 0 ? ' · ' : ''}🏆 {p.awards}</>}
           </div>
         )}
+        {honours && <div className="mt-0.5 text-[11px] text-gold">🏆 {honours}</div>}
       </figcaption>
     </figure>
   );
@@ -78,7 +79,7 @@ export function YearbookTab() {
       <p className="mb-3 text-xs text-ink3">Every New Year’s Day the team lines up for a photo — the founder in front, then whoever’s been here longest. Their faces show how the year went.</p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {book.map((p) => (
-          <Photo key={p.year} p={p} company={s.company.name} />
+          <Photo key={p.year} p={p} company={s.company.name} honours={(s.studioAwards ?? []).find((a) => a.year === p.year)?.winners.map((w) => `${w.category}: ${w.name.split(' ')[0]}`).join(' · ')} />
         ))}
       </div>
     </div>
