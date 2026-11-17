@@ -12,6 +12,7 @@ import { Icon } from '../icons';
 import { useGame, type PanelId } from '../store';
 import { daysLeft, projectName, studioAlerts } from '../game/alerts';
 import { furnish } from '../game/BuildBar';
+import { comingUp } from '../game/calendar';
 
 export default function OverviewPanel() {
   const s = useGame((g) => g.s)!;
@@ -19,6 +20,7 @@ export default function OverviewPanel() {
   const openPanel = useGame((g) => g.openPanel);
   const pushModal = useGame((g) => g.pushModal);
   const open = (p: PanelId, tab?: string) => openPanel(p, tab ?? null);
+  const upcoming = comingUp(s);
   const alerts = studioAlerts(s, open, (id) => pushModal({ kind: 'gate', projectId: id }), furnish);
   const projects = Object.values(s.projects);
   const selling = Object.values(s.releases)
@@ -84,6 +86,25 @@ export default function OverviewPanel() {
               );
             })}
           </ul>
+        )}
+      </Section>
+
+      <Section title="Coming up">
+        {upcoming.length === 0 ? (
+          <p className="text-xs text-ink3">Nothing scheduled in the next few months.</p>
+        ) : (
+          <ol className="space-y-1">
+            {upcoming.map((e, i) => (
+              <li key={i} className="flex items-center gap-2 text-xs">
+                <span className="num w-20 shrink-0 text-ink3">{formatDate(e.day, true)}</span>
+                <span className={cx('grid size-6 shrink-0 place-items-center rounded-lg', e.tone === 'good' ? 'bg-good/15 text-good' : e.tone === 'bad' ? 'bg-bad/15 text-bad' : e.tone === 'gold' ? 'bg-gold/20 text-gold' : 'bg-bg2 text-ink2')}>
+                  <Icon name={e.icon} size={13} />
+                </span>
+                <span className="min-w-0 flex-1 truncate">{e.text}</span>
+                <span className="num shrink-0 text-[11px] text-ink3">{Math.ceil((e.day - s.day) / 7) <= 1 ? 'this week' : `${Math.ceil((e.day - s.day) / 7)} wks`}</span>
+              </li>
+            ))}
+          </ol>
         )}
       </Section>
 
