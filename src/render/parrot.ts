@@ -8,6 +8,9 @@ import { T } from './sprites';
 
 interface Bird {
   c: Container;
+  body: Graphics;
+  wing: Graphics;
+  t: number;
   bubble: Container;
   bg: Graphics;
   text: Text;
@@ -45,7 +48,18 @@ export class ParrotSystem {
       this.reset();
       for (const p of perches) {
         const c = new Container();
-        c.position.set(p.x * T + T / 2 + 4, p.y * T - 38);
+        c.position.set(p.x * T + T / 2 + 4, p.y * T - 32);
+        // the bird, sitting on the bar (perch top is ~46px above the tile's bottom edge)
+        const body = new Graphics();
+        body.ellipse(-2, 26, 6, 8).fill(0x2f9e57);
+        body.circle(0, 18, 4.5).fill(0x2f9e57);
+        body.poly([3, 17, 7, 19, 3, 21]).fill(0xf2c450);
+        body.circle(1, 17, 1).fill(0x111111);
+        body.poly([-6, 30, -8, 40, -3, 33]).fill(0xd8323c);
+        const wing = new Graphics();
+        wing.ellipse(0, 0, 3, 5).fill(0x3d85c6);
+        wing.position.set(-4, 27);
+        c.addChild(body, wing);
         c.zIndex = (p.y + 1) * T + 2;
         const bubble = new Container();
         const bg = new Graphics();
@@ -55,11 +69,17 @@ export class ParrotSystem {
         bubble.visible = false;
         c.addChild(bubble);
         this.layer.addChild(c);
-        this.birds.set(p.id, { c, bubble, bg, text, wait: 4 + Math.random() * 8, show: 0 });
+        this.birds.set(p.id, { c, body, wing, t: Math.random() * 10, bubble, bg, text, wait: 4 + Math.random() * 8, show: 0 });
       }
     }
     if (reducedMotion) return;
     for (const b of this.birds.values()) {
+      // bob, and flap while talking
+      b.t += dt;
+      const talking = b.show > 0;
+      b.body.position.y = Math.sin(b.t * (talking ? 9 : 2.2)) * (talking ? 1.2 : 0.6);
+      b.wing.position.y = 27 + b.body.position.y;
+      b.wing.rotation = talking ? Math.sin(b.t * 18) * 0.6 : Math.sin(b.t * 1.3) * 0.08;
       if (b.show > 0) {
         b.show -= dt;
         if (b.show <= 0) b.bubble.visible = false;

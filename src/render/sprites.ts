@@ -184,13 +184,7 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       g.rect(W / 2 - 1.5, H - 46, 3, 36).fill(0x6b4430); // pole
       g.ellipse(W / 2, H - 10, 9, 3).fill(0x4a3020);
       g.rect(W / 2 - 12, H - 46, 24, 3).fill(0x8a5a3c); // bar
-      // the parrot
-      g.ellipse(W / 2 + 2, H - 54, 6, 8).fill(0x2f9e57);
-      g.circle(W / 2 + 4, H - 62, 4.5).fill(0x2f9e57);
-      g.poly([W / 2 + 7, H - 63, W / 2 + 11, H - 61, W / 2 + 7, H - 59]).fill(0xf2c450);
-      g.circle(W / 2 + 5, H - 63, 1).fill(0x111111);
-      g.poly([W / 2 - 2, H - 50, W / 2 - 4, H - 40, W / 2 + 1, H - 47]).fill(0xd8323c);
-      g.ellipse(W / 2, H - 53, 3, 5).fill(0x3d85c6);
+      // (the parrot itself is animated by render/parrot.ts)
       break;
     }
     case 'bonsai': {
