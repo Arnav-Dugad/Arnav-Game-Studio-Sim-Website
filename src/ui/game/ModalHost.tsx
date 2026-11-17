@@ -387,6 +387,13 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             {r.concept.expansionOf && s.releases[r.concept.expansionOf] && <Pill tone="tech">Expansion for {s.releases[r.concept.expansionOf]!.name}</Pill>}
             {r.concept.remasterOf && <Pill tone="gold">Remaster</Pill>}
             {r.modded && <Pill tone="tech">Mod support</Pill>}
+            {(r.copycats ?? 0) > 0 && (
+              <span title={s.rivalGames.filter((g) => g.copycatOf === r.id).map((g) => `${g.name} (${s.rivals[g.company]?.name ?? g.company})`).join(', ') || undefined}>
+                <Pill tone="bad">
+                  {r.copycats} knock-off{r.copycats === 1 ? '' : 's'}
+                </Pill>
+              </span>
+            )}
             {expansionsOf(s, r).released.length > 0 && <Pill tone="tech">{expansionsOf(s, r).released.length} expansion{expansionsOf(s, r).released.length > 1 ? 's' : ''}</Pill>}
             <Pill tone={profit >= 0 ? 'good' : 'bad'}>
               {profit >= 0 ? 'Profit' : 'Loss'} {fmtMoney(Math.abs(profit))}
