@@ -26,17 +26,17 @@ export interface GameFeatureDef {
 }
 
 export const GAME_FEATURES: GameFeatureDef[] = [
-  { id: 'branching', name: 'Branching story', year: 1985, work: 0.12, fits: { rpg: 1.06, adventure: 1.07 }, misfit: 0.98, desc: 'Choices that change the ending. Story-driven players love it.' },
-  { id: 'procedural', name: 'Procedural worlds', year: 1984, work: -0.08, fits: { rpg: 1.03, strategy: 1.03, sandbox: 1.05, simulation: 1.03 }, misfit: 0.96, desc: 'Generated levels: cheaper to build and endlessly replayable, but bland in hand-crafted genres.' },
-  { id: 'splitscreen', name: 'Split-screen multiplayer', year: 1985, work: 0.06, fits: { racing: 1.05, sports: 1.05, fighting: 1.05, platformer: 1.04, casual: 1.04 }, misfit: 0.99, desc: 'Couch play with friends.' },
-  { id: 'level_editor', name: 'Level editor', year: 1988, work: 0.1, fits: { strategy: 1.04, puzzle: 1.04, platformer: 1.04, sandbox: 1.06, racing: 1.02 }, misfit: 0.99, user: 2, desc: 'Players build and share their own levels.' },
-  { id: 'licensed_music', name: 'Licensed soundtrack', year: 1995, work: 0, cost: 60_000, fits: { racing: 1.05, sports: 1.05, rhythm: 1.06, action: 1.02 }, misfit: 1, sales: 1.03, desc: 'Real hits on the soundtrack. Costs a licence up front.' },
-  { id: 'online_mp', name: 'Online multiplayer', year: 1996, research: 'online_basic', work: 0.15, fits: { shooter: 1.07, sports: 1.05, racing: 1.05, strategy: 1.05, fighting: 1.05, mmo: 1.04 }, misfit: 0.98, sales: 1.05, desc: 'Play against the world. A must for competitive genres.' },
-  { id: 'open_world', name: 'Open world', year: 1999, research: 'gfx_3d_1', work: 0.3, fits: { rpg: 1.08, action: 1.06, adventure: 1.06, sandbox: 1.07, racing: 1.03 }, misfit: 0.96, sales: 1.05, desc: 'A huge world to explore. Lots of work; transformative in the right genre.' },
-  { id: 'coop', name: 'Online co-op', year: 2002, research: 'online_basic', work: 0.1, fits: { action: 1.05, shooter: 1.05, rpg: 1.04, platformer: 1.04, adventure: 1.03 }, misfit: 0.99, user: 1, desc: 'Play the campaign together.' },
-  { id: 'crafting', name: 'Crafting', year: 2009, work: 0.1, fits: { sandbox: 1.07, rpg: 1.04, simulation: 1.04, mmo: 1.04 }, misfit: 0.98, desc: 'Gather, build, survive.' },
+  { id: 'branching', name: 'Branching story', year: 1985, work: 0.12, fits: { rpg: 1.036, adventure: 1.042 }, misfit: 0.98, desc: 'Choices that change the ending. Story-driven players love it.' },
+  { id: 'procedural', name: 'Procedural worlds', year: 1984, work: -0.08, fits: { rpg: 1.018, strategy: 1.018, sandbox: 1.03, simulation: 1.018 }, misfit: 0.96, desc: 'Generated levels: cheaper to build and endlessly replayable, but bland in hand-crafted genres.' },
+  { id: 'splitscreen', name: 'Split-screen multiplayer', year: 1985, work: 0.06, fits: { racing: 1.03, sports: 1.03, fighting: 1.03, platformer: 1.024, casual: 1.024 }, misfit: 0.99, desc: 'Couch play with friends.' },
+  { id: 'level_editor', name: 'Level editor', year: 1988, work: 0.1, fits: { strategy: 1.024, puzzle: 1.024, platformer: 1.024, sandbox: 1.036, racing: 1.012 }, misfit: 0.99, user: 2, desc: 'Players build and share their own levels.' },
+  { id: 'licensed_music', name: 'Licensed soundtrack', year: 1995, work: 0, cost: 60_000, fits: { racing: 1.03, sports: 1.03, rhythm: 1.036, action: 1.012 }, misfit: 1, sales: 1.03, desc: 'Real hits on the soundtrack. Costs a licence up front.' },
+  { id: 'online_mp', name: 'Online multiplayer', year: 1996, research: 'online_basic', work: 0.15, fits: { shooter: 1.042, sports: 1.03, racing: 1.03, strategy: 1.03, fighting: 1.03, mmo: 1.024 }, misfit: 0.98, sales: 1.05, desc: 'Play against the world. A must for competitive genres.' },
+  { id: 'open_world', name: 'Open world', year: 1999, research: 'gfx_3d_1', work: 0.3, fits: { rpg: 1.048, action: 1.036, adventure: 1.036, sandbox: 1.042, racing: 1.018 }, misfit: 0.96, sales: 1.05, desc: 'A huge world to explore. Lots of work; transformative in the right genre.' },
+  { id: 'coop', name: 'Online co-op', year: 2002, research: 'online_basic', work: 0.1, fits: { action: 1.03, shooter: 1.03, rpg: 1.024, platformer: 1.024, adventure: 1.018 }, misfit: 0.99, user: 1, desc: 'Play the campaign together.' },
+  { id: 'crafting', name: 'Crafting', year: 2009, work: 0.1, fits: { sandbox: 1.042, rpg: 1.024, simulation: 1.024, mmo: 1.024 }, misfit: 0.98, desc: 'Gather, build, survive.' },
   { id: 'accessibility', name: 'Accessibility options', year: 2015, work: 0.05, fits: {}, misfit: 1, user: 2, sales: 1.03, desc: 'Remappable controls, subtitles, colour-blind modes. More people can play, and they notice.' },
-  { id: 'photo_mode', name: 'Photo mode', year: 2016, work: 0.03, fits: { adventure: 1.02, racing: 1.02, rpg: 1.01 }, misfit: 1, sales: 1.02, desc: 'Players share screenshots: free marketing.' },
+  { id: 'photo_mode', name: 'Photo mode', year: 2016, work: 0.03, fits: { adventure: 1.012, racing: 1.012, rpg: 1.006 }, misfit: 1, sales: 1.02, desc: 'Players share screenshots: free marketing.' },
   { id: 'battle_pass', name: 'Battle pass', year: 2017, work: 0.05, fits: {}, misfit: 1, sales: 1.12, user: -3, monet: ['f2p', 'live_service'], desc: 'Seasonal rewards that keep players paying. Effective, and a little resented.' },
 ];
 

@@ -354,6 +354,8 @@ export interface Subsidiary {
   budget: 'low' | 'normal' | 'high';
   focusGenre?: GenreId;
   nextReleaseDay: number;
+  /** Day of the previous release (revenue covers the time since). */
+  lastReleaseDay?: number;
   releases: number;
   revenue: number;
   bought: number;

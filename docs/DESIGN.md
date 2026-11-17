@@ -819,4 +819,6 @@ This section records decisions made during the build that differ from, or add to
     - A new alert flags projects nobody is working on.
     - Deep links to filtered staff views work while the panel is open.
     - The dock idle count excludes the founder.
+- **Signature features** (`src/data/gameFeatures.ts`). Up to three per game, each unlocked by era and research. A feature adds scope: its work share scales both the phase days and the quality benchmark, so the extra effort itself doesn't inflate quality. Each gives a quality multiplier of ×1.01–1.05 in genres it suits and ×0.96–0.99 elsewhere. Some change sales (online multiplayer, open world, licensed music, accessibility, photo mode, battle pass) or user score (level editor +2, accessibility +2, co-op +1, battle pass −3). The licensed soundtrack costs money up front.
+- **Subsidiary economics rebalanced.** Per-release revenue used to scale with headcount even though bigger subsidiaries also release more often, so yearly income grew superlinearly: a 200-person subsidiary netted about 10× its costs. Revenue is now a year's output per head (75k in 1980 dollars × (score/100)^4 × budget) scaled to the time each release covers. Tycoon valuations fell from $58–168B to $24–46B, and random-play bots no longer survive on one lucky acquisition.
 

@@ -8,6 +8,9 @@ import { TOPICS } from '../../data/topics';
 import { fromDay } from '../calendar';
 import { livePlatforms } from './market';
 
+/** Yearly revenue per subsidiary employee at a perfect score (1980 dollars). */
+const SUB_REVENUE_PER_HEAD = 75_000;
+
 const BUDGET = { low: { cost: 0.7, q: -6, rev: 0.75 }, normal: { cost: 1, q: 0, rev: 1 }, high: { cost: 1.5, q: 7, rev: 1.3 } } as const;
 
 export function subsidiariesMonthly(c: Ctx): void {
@@ -21,7 +24,11 @@ export function subsidiariesMonthly(c: Ctx): void {
     const yr = fromDay(s.day).year;
     const topic = rng.pick(TOPICS.filter((t) => t.year <= yr)).id;
     const score = clamp(Math.round(rng.normal(55 + sub.quality * 30 + b.q + s.company.reputation / 15, 8)), 20, 97);
-    const revenue = Math.round(Math.pow(score / 100, 4) * sub.staff * 110_000 * b.rev * inflation(s.day) * rng.range(0.5, 1.6));
+    // A year's worth of output per person, scaled to the time this release covers (bigger studios ship more often,
+    // so per-release revenue must not also scale with headcount — that made big subsidiaries print money).
+    const covered = clamp((s.day - (sub.lastReleaseDay ?? s.day - 365)) / 365, 0.3, 1.5);
+    const revenue = Math.round(Math.pow(score / 100, 4) * sub.staff * SUB_REVENUE_PER_HEAD * covered * b.rev * inflation(s.day) * rng.range(0.6, 1.4));
+    sub.lastReleaseDay = s.day;
     earn(s, 'subsidiaries', revenue);
     sub.revenue += revenue;
     sub.releases += 1;
