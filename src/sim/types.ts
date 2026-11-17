@@ -319,6 +319,10 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Live events run (systems/liveEvents.ts): the current one, how many so far, and the last. */
+  liveEvent?: { until: number; mul: number; name: string };
+  liveEvents?: number;
+  lastLiveEventDay?: number;
   /** Share of players by region at launch (data/regions.ts). */
   regionMix?: Record<RegionId, number>;
   /** Storefront discounts run so far, and when the last one started. */

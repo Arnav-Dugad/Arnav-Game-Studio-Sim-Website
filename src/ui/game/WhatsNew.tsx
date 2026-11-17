@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-17w';
+export const WHATS_NEW_VERSION = '2026-11-17x';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'sparkle', title: 'Live events', body: 'Run seasonal events in your subscription, free-to-play and live-service games (open the game → Post-launch): a Halloween Spooktacular or Winter Festival costs about a month of live income and lifts it for three months — most for well-loved games.' },
   { icon: 'trophy', title: 'Employee of the Month & team retreats', body: 'Each month your top contributor wins Employee of the Month (a medal on their shirt and a morale boost). Once a year, book a team retreat (Staff → Policies): everyone rested, morale up, friendships closer.' },
   { icon: 'people', title: 'Friendships & feuds', body: 'Colleagues on the same project grow close (or clash). Best friends on a team lift morale and team chemistry; feuds drag both down and need your call — mediate, split them up or let it ride. See who gets on with whom on each staff card.' },
   { icon: 'music', title: 'Office ambience', body: 'Hear your studio: keyboards clatter with the number of people working (clacky in the 80s), chatter murmurs, the coffee machine gurgles, desk phones ring and the pets chime in. Settings → Office ambience.' },

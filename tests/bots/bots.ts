@@ -416,6 +416,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
   () => ({ type: 'teamRetreat' }),
+  (s, rng) => { const r = Object.values(s.releases); return r.length ? { type: 'liveEvent', releaseId: rng.pick(r).id } : null; },
   (_s, rng) => ({ type: 'setValues', values: rng.shuffle(['craft', 'speed', 'players', 'profit', 'innovation', 'balance', 'nope'] as never[]).slice(0, rng.int(0, 3)) }),
   (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'startGame', game: { name: 'Feat', genre: rng.pick(['rpg', 'shooter', 'puzzle'] as const), topic: 'fantasy', platforms: [availablePlatforms(s)[0]?.id ?? 'pc'], audience: 'teen', size: 'small', monetization: rng.pick(['premium', 'f2p'] as const), engineId: 'e0', team: st.slice(0, 1), features: rng.shuffle(GAME_FEATURES.map((f) => f.id).concat('bogus')).slice(0, rng.int(0, 5)), localized: rng.shuffle(['na', 'eu', 'jp', 'row', 'mars'] as never[]).slice(0, rng.int(0, 5)) } } : null; },
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'openBeta', projectId: rng.pick(p) } : null; },

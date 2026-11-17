@@ -1215,3 +1215,28 @@ describe('publishing label (review regressions)', () => {
     expect(g.platforms.length).toBeGreaterThan(0);
   });
 });
+
+describe('live events', () => {
+  it('lift live income for a live game, with a cooldown; premium games cannot run them', () => {
+    const s = game(2012, 77);
+    s.company.cash = 50_000_000;
+    startSmall(s, { monetization: 'f2p' });
+    for (let i = 0; i < 300 && !s.releaseOrder.length; i++) {
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const r = s.releases[s.releaseOrder[0]!]!;
+    expect(dispatch(s, { type: 'liveEvent', releaseId: r.id }).ok).toBe(false); // too new
+    advance(s, 70);
+    r.liveIncome = Math.max(r.liveIncome, 20_000);
+    r.userScore = 82;
+    const ok = dispatch(s, { type: 'liveEvent', releaseId: r.id });
+    expect(ok.ok).toBe(true);
+    expect(r.liveEvent!.mul).toBeGreaterThan(1.5);
+    expect(dispatch(s, { type: 'liveEvent', releaseId: r.id }).ok).toBe(false); // cooldown
+    r.concept = { ...r.concept, monetization: 'premium' };
+    s.day += 200;
+    expect(dispatch(s, { type: 'liveEvent', releaseId: r.id }).ok).toBe(false);
+  });
+});

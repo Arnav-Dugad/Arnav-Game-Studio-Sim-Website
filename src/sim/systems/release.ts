@@ -587,6 +587,10 @@ export function updateLiveMonthly(c: Ctx): void {
       const tail = BALANCE.MONETIZATION[m].tailMul;
       const base = (rel.net / Math.max(1, age)) * 0.12 * (tail - 0.9) * (s.research.done.includes('online_liveops') ? 1.3 : 1);
       rel.liveIncome = Math.max(0, base * Math.pow(0.96, age) * clamp(rel.userScore / 75, 0.3, 1.3));
+      if (rel.liveEvent) {
+        if (s.day <= rel.liveEvent.until) rel.liveIncome *= rel.liveEvent.mul;
+        else rel.liveEvent = undefined;
+      }
       if (rel.liveIncome > 50) {
         earn(s, 'live', rel.liveIncome);
         rel.net += rel.liveIncome;

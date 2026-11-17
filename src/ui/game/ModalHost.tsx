@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { liveEventBlocked, liveEventBoost, liveEventCost, liveEventName } from '@/sim/systems/liveEvents';
 import { BEST_FRIENDS, FEUD, relationsOf } from '@/sim/systems/relations';
 import { BuzzList, BuzzMeter } from '../components/BuzzList';
 import { releaseBuzz } from './buzz';
@@ -999,6 +1000,7 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
   const saleWhy = canRunSale(s, r);
   const showSale = r.concept.monetization === 'premium' || r.concept.monetization === 'premium_dlc';
   const tooOld = s.day - r.day > 365 * 4;
+  const isLive = r.concept.monetization === 'subscription' || r.concept.monetization === 'f2p' || r.concept.monetization === 'live_service';
   const run = (a: Parameters<typeof act>[0], ok: string) => {
     const res = act(a);
     toast(res.ok ? { text: ok, tone: 'good', icon: 'wrench' } : { text: res.error, tone: 'bad' });
@@ -1035,6 +1037,18 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
             </div>
           )}
         </div>
+        {isLive && (
+          <div className="rounded-xl border border-line p-3 text-xs sm:col-span-2">
+            <div className="text-sm font-semibold">Live event</div>
+            <p className="mt-0.5 text-ink3">
+              Limited-time content brings players back: about a month of live income now for +{Math.round((liveEventBoost(s, r) - 1) * 100)}% for three months. Well-loved games gain the most; players tire of back-to-back events.
+              {r.liveEvent && s.day <= r.liveEvent.until ? ` The ${r.liveEvent.name} runs until ${formatDate(r.liveEvent.until)}.` : ''} {r.liveEvents ? `Events so far: ${r.liveEvents}.` : ''}
+            </p>
+            <Button size="sm" className="mt-2" icon="sparkle" disabled={!!liveEventBlocked(s, r)} title={liveEventBlocked(s, r) ?? undefined} onClick={() => run({ type: 'liveEvent', releaseId }, `The ${liveEventName(s.day)} is live!`)}>
+              {liveEventBlocked(s, r) ?? `Run the ${liveEventName(s.day)} · ${fmtMoney(liveEventCost(s, r))}`}
+            </Button>
+          </div>
+        )}
         {showSale && (
           <div className="rounded-xl border border-line p-3 text-xs sm:col-span-2">
             <div className="text-sm font-semibold">Storefront sale</div>
