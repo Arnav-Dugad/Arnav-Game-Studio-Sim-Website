@@ -416,6 +416,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
   () => ({ type: 'teamRetreat' }),
+  (s, rng) => { const r = Object.values(s.releases); const p = availablePlatforms(s); return r.length && p.length ? { type: 'rerelease', releaseId: rng.pick(r).id, platform: rng.pick(p).id } : null; },
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'focusTest', projectId: rng.pick(p) } : null; },
   (_s, rng) => ({ type: 'setPolicy', wellness: rng.chance(0.5) }),
   (_s, rng) => ({ type: 'copyFloor', from: rng.int(-1, 4), to: rng.int(-1, 4) }),

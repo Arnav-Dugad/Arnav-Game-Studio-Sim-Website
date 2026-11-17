@@ -13,7 +13,7 @@ import { SKILLS, type Skill } from '@/data/types';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
-import { canExpand, canPatch, canRemaster, canRunSale, EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, expansionsOf, patchCost, portCost, SALE_DISCOUNTS, saleForecast } from '@/sim/systems/release';
+import { EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, SALE_DISCOUNTS, canExpand, canPatch, canRemaster, canRunSale, expansionsOf, patchCost, portCost, rereleaseBlocked, rereleaseCost, saleForecast } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
 import { SABBATICAL, marketSalary, menteesOf, mentorBlocked, productivity, moraleTarget, retirementDay, ROLE_NAMES, sabbaticalBlocked, vacationBlocked } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
@@ -1199,8 +1199,24 @@ function PostLaunch({ releaseId }: { releaseId: string }) {
         <div className="rounded-xl border border-line p-3 text-xs">
           <div className="text-sm font-semibold">Port to another platform</div>
           <p className="mt-0.5 text-ink3">An outsourced port launches with a fresh (smaller) sales curve.</p>
-          {tooOld || !ports.length || r.concept.monetization === 'subscription' ? (
-            <p className="mt-2 text-ink3">{r.concept.monetization === 'subscription' ? 'Subscription games can’t be ported.' : tooOld ? 'Too old to port profitably.' : 'No other platforms available.'}</p>
+          {tooOld && ports.length && !rereleaseBlocked(s, r) ? (
+            <div className="mt-2">
+              <p className="text-ink3">A classic now: re-release it on a modern storefront for a nostalgic audience (once).</p>
+              <div className="mt-1.5 flex gap-2">
+                <select className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-2" value={port} onChange={(e) => setPort(e.target.value)} aria-label="Re-release on">
+                  {ports.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <Button size="sm" icon="sparkle" disabled={!port} onClick={() => run({ type: 'rerelease', releaseId, platform: port }, `${r.name} is back!`)}>
+                  Re-release · {fmtMoney(rereleaseCost(s, r))}
+                </Button>
+              </div>
+            </div>
+          ) : tooOld || !ports.length || r.concept.monetization === 'subscription' ? (
+            <p className="mt-2 text-ink3">{r.concept.monetization === 'subscription' ? 'Subscription games can’t be ported.' : tooOld ? (r.rereleased ? 'Already re-released as a classic.' : rereleaseBlocked(s, r) ?? 'Too old to port profitably.') : 'No other platforms available.'}</p>
           ) : (
             <div className="mt-2 flex gap-2">
               <select className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-2" value={port} onChange={(e) => setPort(e.target.value)} aria-label="Port to">

@@ -28,7 +28,7 @@ import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
-import { applyPatch, applyPort, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, SALE_DISCOUNTS, type SaleDiscount } from './systems/release';
+import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount } from './systems/release';
 import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
@@ -133,6 +133,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'rerelease'; releaseId: string; platform: string }
   | { type: 'focusTest'; projectId: string }
   | { type: 'copyFloor'; from: number; to: number }
   | { type: 'raiseFunding' }
@@ -1264,6 +1265,21 @@ function apply(c: Ctx, a: Action): string | null {
       spend(s, 'other_expense', portCost(s, rel));
       applyPort(s, rel, a.platform);
       pushNews(s, { category: 'studio', headline: `${rel.name} is out now on ${pl.name}`, tone: 'good' });
+      return null;
+    }
+    case 'rerelease': {
+      const rel = s.releases[a.releaseId];
+      if (!rel) return 'No such game';
+      const why = rereleaseBlocked(s, rel);
+      if (why) return why;
+      if (rel.concept.platforms.includes(a.platform)) return 'Already on that platform';
+      const pl = platformInfo(s, a.platform);
+      if (!pl || !isPlatformAvailable(s, pl)) return 'Platform not available';
+      const cost = rereleaseCost(s, rel);
+      if (s.company.cash < cost) return 'Not enough cash';
+      spend(s, 'other_expense', cost);
+      applyRerelease(s, rel, a.platform);
+      pushNews(s, { category: 'studio', headline: `Classic ${rel.name} returns on ${pl.name}`, body: 'A whole new generation discovers it — and old fans buy it again.', tone: 'good' });
       return null;
     }
     case 'designConsole': {

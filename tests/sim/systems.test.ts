@@ -1359,3 +1359,26 @@ describe('focus test', () => {
     expect(dispatch(s, { type: 'focusTest', projectId: p.id }).ok).toBe(true);
   });
 });
+
+describe('classic re-releases', () => {
+  it('2006+, 12-year-old 70+ games, once, on a modern platform', () => {
+    const s = game(1990, 95);
+    startSmall(s);
+    for (let i = 0; i < 300 && !s.releaseOrder.length; i++) {
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const r = s.releases[s.releaseOrder[0]!]!;
+    r.score = 82;
+    s.company.cash = 10_000_000;
+    s.cheats = { noEvents: true, noBankruptcy: true };
+    const plat = () => availablePlatforms(s).find((p) => !r.concept.platforms.includes(p.id))!.id;
+    expect(dispatch(s, { type: 'rerelease', releaseId: r.id, platform: plat() }).ok).toBe(false); // too new
+    s.day += 365 * 17;
+    const before = r.platforms.length;
+    expect(dispatch(s, { type: 'rerelease', releaseId: r.id, platform: plat() }).ok).toBe(true);
+    expect(r.platforms.length).toBe(before + 1);
+    expect(dispatch(s, { type: 'rerelease', releaseId: r.id, platform: plat() }).ok).toBe(false); // once
+  });
+});

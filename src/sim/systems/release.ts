@@ -870,6 +870,28 @@ export function applyPatch(s: GameState, rel: Release): number {
   return rel.userScore - before;
 }
 
+/** Why a classic can't get a digital re-release (or null). 2006+, 12+ years old, 70+ score, once. */
+export function rereleaseBlocked(s: GameState, rel: Release): string | null {
+  if (fromDay(s.day).year < 2006) return 'Digital storefronts for classics arrive around 2006';
+  if (s.day - rel.day < 365 * 12) return 'Only games 12+ years old count as classics';
+  if (rel.score < 70) return 'Only well-loved games (70+) are worth re-releasing';
+  if (rel.rereleased) return 'Already re-released';
+  if (rel.concept.expansionOf) return 'Expansions come with their base game';
+  return null;
+}
+
+export function rereleaseCost(s: GameState, rel: Release): number {
+  return Math.round(portCost(s, rel) * 0.35);
+}
+
+/** Emulated re-release on a modern platform: a nostalgic niche (40% of a normal port). */
+export function applyRerelease(s: GameState, rel: Release, platform: string): void {
+  applyPort(s, rel, platform);
+  const ps = rel.platforms[rel.platforms.length - 1];
+  if (ps) ps.potential *= 0.4;
+  rel.rereleased = true;
+}
+
 export function portCost(s: GameState, rel: Release): number {
   return Math.round(PORT_COST[rel.concept.size] * inflation(s.day));
 }

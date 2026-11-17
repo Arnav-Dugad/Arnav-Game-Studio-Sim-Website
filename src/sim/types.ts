@@ -341,6 +341,8 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Re-released on a modern storefront (once). */
+  rereleased?: boolean;
   /** Copies sold in the most recent week. */
   lastWeekUnits?: number;
   /** Topped the weekly sales chart. */
