@@ -125,6 +125,13 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && useGame.getState().build && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+        e.preventDefault();
+        const r = useGame.getState().act({ type: 'undoPlace' });
+        if (r.ok) sound.play('sell');
+        else useGame.getState().toast({ text: r.error, tone: 'neutral' });
+        return;
+      }
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.ctrlKey || e.metaKey || e.altKey) return;
       const g = useGame.getState();
       if (g.modals.length) return;

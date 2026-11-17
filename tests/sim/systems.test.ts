@@ -1281,3 +1281,18 @@ describe('fan conventions', () => {
     expect(dispatch(s, { type: 'fanCon', franchiseId: 'fx' }).ok).toBe(false);
   });
 });
+
+describe('undo placement', () => {
+  it('refunds today’s last placement in full and only today', () => {
+    const s = game(1990, 51);
+    s.company.cash = 100_000;
+    const cash = s.company.cash;
+    expect(dispatch(s, { type: 'placeItem', item: 'plant_large', floor: 0, x: 1, y: 1, rot: 0 }).ok).toBe(true);
+    expect(s.company.cash).toBeLessThan(cash);
+    expect(dispatch(s, { type: 'undoPlace' }).ok).toBe(true);
+    expect(s.company.cash).toBeCloseTo(cash, 6);
+    expect(dispatch(s, { type: 'placeItem', item: 'plant_large', floor: 0, x: 1, y: 1, rot: 0 }).ok).toBe(true);
+    s.day += 1;
+    expect(dispatch(s, { type: 'undoPlace' }).ok).toBe(false);
+  });
+});

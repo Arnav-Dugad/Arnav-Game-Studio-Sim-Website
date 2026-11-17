@@ -121,6 +121,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'undoPlace' }
   | { type: 'fanCon'; franchiseId: string }
   | { type: 'bugBash'; projectId: string; hits: number }
   | { type: 'setMentor'; staffId: string; mentorId: string | null }
@@ -650,7 +651,7 @@ function apply(c: Ctx, a: Action): string | null {
       const ok = canPlace(s, def, a.floor, a.x, a.y, a.rot);
       if (!ok.ok) return ok.reason ?? 'Can’t place there';
       spend(s, 'office', cost);
-      s.office.items.push({ id: `i${s.office.nextItemId++}`, item: a.item, floor: a.floor, x: a.x, y: a.y, rot: a.rot });
+      s.office.items.push({ id: `i${s.office.nextItemId++}`, item: a.item, floor: a.floor, x: a.x, y: a.y, rot: a.rot, placedDay: s.day, paid: cost });
       touchOffice(s);
       assignDesks(s);
       return null;
@@ -664,6 +665,19 @@ function apply(c: Ctx, a: Action): string | null {
       it.x = a.x;
       it.y = a.y;
       it.rot = a.rot;
+      touchOffice(s);
+      assignDesks(s);
+      return null;
+    }
+    case 'undoPlace': {
+      // take back today's most recent placement, at full refund (the expense is reversed, not booked as income)
+      const it = [...s.office.items].reverse().find((i) => i.placedDay === s.day);
+      if (!it) return 'Nothing placed today to undo';
+      s.office.items = s.office.items.filter((i) => i.id !== it.id);
+      const paid = it.paid ?? 0;
+      s.company.cash += paid;
+      const led = s.finance.ledger[s.finance.ledger.length - 1];
+      if (led?.expense.office) led.expense.office = Math.max(0, led.expense.office - paid);
       touchOffice(s);
       assignDesks(s);
       return null;

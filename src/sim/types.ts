@@ -109,6 +109,9 @@ export interface PlacedItem {
   x: number;
   y: number;
   rot: 0 | 1; // 1 = rotated 90°
+  /** When it was placed and what it cost (for same-day undo). */
+  placedDay?: number;
+  paid?: number;
 }
 
 export type FloorStyle = 'auto' | 'wood' | 'carpet' | 'concrete' | 'tiles' | 'checker';

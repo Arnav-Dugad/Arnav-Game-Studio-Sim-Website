@@ -1128,6 +1128,7 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
     ['` (backtick)', 'Cheats'],
     ['W A S D / arrows', 'Pan the office'],
     ['+ / − / 0', 'Zoom in / out / fit'],
+    ['Ctrl + Z', 'Undo today’s last placement (build mode, full refund)'],
     ['P', 'Office photo'],
     ['V', 'Cinematic mode (the camera wanders the office)'],
     ['Shift + P', 'Save now'],
