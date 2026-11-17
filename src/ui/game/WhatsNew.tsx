@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20d';
+export const WHATS_NEW_VERSION = '2026-11-20e';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'handshake', title: 'Co-development', body: 'From 1985, bring another studio onto a medium-or-bigger game before polish (Develop → the project → Co-develop). Their team works alongside yours every day; in return they take 20–50% of the game’s revenue for good. The best studios only partner with studios they respect.' },
   { icon: 'people', title: 'Player community', body: 'Company → Community (2005+): open official forums (a chat server later) and fund moderators. Health follows how players feel — great games, patches and live events help; crunch scandals and disappointing launches hurt. A healthy community lifts user scores and crowdfunding and talks down review bombs; a toxic one piles on.' },
   { icon: 'play', title: 'Cut the trailer', body: 'A new mini-game for announced games (Develop → the project → Cut trailer): pick four shots in 25 seconds — open with a hook, take a breath, build to a climax, end on the title card. A great cut adds up to +0.4 hype, and a perfect one goes viral.' },
   { icon: 'calendar', title: 'Coming up', body: 'The Overview now has a calendar of the next four months: your launches and deadlines, crowdfunding and Early Access dates, rival releases, new consoles, trade shows, sale seasons, the Gala, interns and more.' },

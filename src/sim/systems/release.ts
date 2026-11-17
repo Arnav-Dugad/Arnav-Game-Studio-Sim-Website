@@ -397,6 +397,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     serverLoad: ['mmo'].includes(p.concept.genre) || ['subscription', 'f2p', 'live_service'].includes(p.concept.monetization) ? 1 : 0,
     why: { sales: salesWhy, user: ub.done() },
     ...(p.beta ? { betaTested: true } : {}),
+    ...(p.coDev ? { coDev: { name: p.coDev.name, share: p.coDev.share } } : {}),
     ...(ea ? { earlyAccess: { weeks: eaWeeks, units: ea.units, net: Math.round(ea.net) } } : {}),
     ...(cf ? { crowdfund: { raised: cf.raised, backers: cf.backers, late: cfLate } } : {}),
     ...(modded ? { modded: true } : {}),
@@ -588,6 +589,7 @@ export function updateSalesWeekly(c: Ctx): void {
     // royalties & splits
     let toPlayer = net;
     if (rel.concept.deal) toPlayer = net * rel.concept.deal.royalty;
+    if (rel.coDev) toPlayer *= 1 - rel.coDev.share;
     const eng = s.engines[rel.concept.engineId];
     if (eng && eng.royalty > 0) {
       const roy = toPlayer * eng.royalty;

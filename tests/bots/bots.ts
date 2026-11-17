@@ -455,6 +455,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'sabbatical', staffId: rng.pick(st) } : null; },
   () => ({ type: 'undoPlace' }),
   () => ({ type: 'foundCommunity' }),
+  (s, rng) => { const p = Object.keys(s.projects); const r = Object.keys(s.rivals); return p.length && r.length ? { type: 'coDevelop', projectId: rng.pick(p), rivalId: rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
   (_s, rng) => ({ type: 'setModeration', level: rng.pick([0, 1, 2, 5] as never[]) }),
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'trailerCut', projectId: rng.pick(p), points: rng.int(-2, 12) } : null; },
   (_s, rng) => ({ type: 'setPolicy', charity: rng.pick([0, 1, 5, 7] as never[]) }),

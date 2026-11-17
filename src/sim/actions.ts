@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { signCodev } from './systems/codev';
 import { communityNudge, foundCommunity, setModeration } from './systems/community';
 import { openSourceEngine } from './systems/giving';
 import { devkitMul } from './systems/partners';
@@ -157,6 +158,7 @@ export type Action =
   | { type: 'pinFanArt'; id: string; on: boolean }
   | { type: 'trailerCut'; projectId: string; points: number }
   | { type: 'foundCommunity' }
+  | { type: 'coDevelop'; projectId: string; rivalId: string }
   | { type: 'setModeration'; level: 0 | 1 | 2 }
   | { type: 'openSourceEngine'; engineId: string }
   | { type: 'giveTalk'; staffId: string; releaseId: string }
@@ -937,6 +939,8 @@ function apply(c: Ctx, a: Action): string | null {
       invalidateMentees(s);
       return null;
     }
+    case 'coDevelop':
+      return signCodev(s, a.projectId, a.rivalId);
     case 'foundCommunity':
       return foundCommunity(s);
     case 'setModeration':

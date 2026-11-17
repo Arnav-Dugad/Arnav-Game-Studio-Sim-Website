@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CODEV_YEAR, codevPartners, codevTerms } from '@/sim/systems/codev';
 import { CAMPAIGN_DAYS, STRETCH, STRETCH_DAYS, STRETCH_NAMES, TIERS, campaignCost, campaignGoal, crowdfundBlocked, expectedPledges } from '@/sim/systems/crowdfunding';
 import { EA_PRICE, EA_STALE_WEEKS, EA_YEAR, earlyAccessBlocked, earlyAccessCost, earlyAccessRating } from '@/sim/systems/earlyAccess';
 import { LOC_COST, LOC_WORK, LOC_YEAR, REGIONS, REGION_BY_ID, regionMix, regionShares, type RegionId } from '@/data/regions';
@@ -95,6 +96,7 @@ function GameCard({ p }: { p: GameProject }) {
   const [showTeam, setShowTeam] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [showCf, setShowCf] = useState(false);
+  const [showCo, setShowCo] = useState(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const eaRating = useMemo(() => (p.phase >= 1 && p.phase <= 2 && !p.earlyAccess ? earlyAccessRating(s, p) : 0), [s.day, p.id, p.phase, p.earlyAccess]);
   const total = p.phaseDays[0] + p.phaseDays[1] + p.phaseDays[2];
@@ -162,6 +164,11 @@ function GameCard({ p }: { p: GameProject }) {
           {p.team.length > 8 && <span className="grid size-6 place-items-center rounded-full bg-bg2 text-[10px] ring-2 ring-[var(--panel)]">+{p.team.length - 8}</span>}
         </div>
         <span>
+          {p.coDev && (
+            <>
+              with <b className="text-ink">{p.coDev.name}</b> ({Math.round(p.coDev.share * 100)}%) ·{' '}
+            </>
+          )}
           {p.earlyAccess && (
             <>
               <span title={`On sale for ${Math.floor((s.day - p.earlyAccess.day) / 7)} weeks · ${fmtMoney(p.earlyAccess.net)} earned so far${p.earlyAccess.stale ? ' · players are losing patience' : ''}`}>
@@ -234,6 +241,11 @@ function GameCard({ p }: { p: GameProject }) {
             Open beta
           </Button>
         )}
+        {!p.coDev && p.phase <= 1 && !p.concept.deal && p.concept.size !== 'small' && fromDay(s.day).year >= CODEV_YEAR && (
+          <Button size="sm" icon="handshake" onClick={() => setShowCo((x) => !x)} aria-expanded={showCo}>
+            Co-develop
+          </Button>
+        )}
         {!p.crowdfund && p.phase <= 1 && !p.concept.deal && hasFlag(s, 'crowdfunding') && (
           <Button size="sm" icon="crowd" onClick={() => setShowCf((x) => !x)} aria-expanded={showCf} title={crowdfundBlocked(s, p) ?? 'Ask fans to fund the game: 30 days, all or nothing'}>
             Crowdfund
@@ -260,6 +272,33 @@ function GameCard({ p }: { p: GameProject }) {
         )}
       </div>
       {showTeam && <TeamEditor p={p} />}
+      {showCo && !p.coDev && (
+        <div className="mt-2 rounded-xl bg-bg2/60 p-2.5 text-xs">
+          <div className="font-semibold">Bring in a co-development partner</div>
+          <p className="mt-0.5 text-ink3">Their team works on the game every day alongside yours (a little buggier — coordination is hard). In return they take a share of its net revenue, for good. Better studios bring more and ask more.</p>
+          <ul className="mt-2 space-y-1">
+            {codevPartners(s).map((r) => {
+              const terms = codevTerms(s, p, r);
+              return (
+                <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg bg-panel/70 px-2 py-1.5">
+                  <span className="min-w-0">
+                    <b className="truncate">{r.name}</b>
+                    <span className="block text-ink3">{typeof terms === 'string' ? terms : `about ${terms.power.toFixed(1)} extra developers · wants ${Math.round(terms.share * 100)}% of revenue`}</span>
+                  </span>
+                  {typeof terms !== 'string' && (
+                    <Button size="sm" onClick={() => {
+                      run({ type: 'coDevelop', projectId: p.id, rivalId: r.id });
+                      setShowCo(false);
+                    }}>
+                      Partner up
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       {showCf && !p.crowdfund && (
         <div className="mt-2 rounded-xl bg-bg2/60 p-2.5 text-xs">
           <div className="font-semibold">Crowdfunding campaign</div>

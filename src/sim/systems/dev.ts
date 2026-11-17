@@ -193,6 +193,21 @@ function progressGame(c: Ctx, p: GameProject): void {
       }
       if (hasTrait(st, 'visionary')) p.novelty += 0.0015;
     }
+    // a co-development partner's team works alongside yours
+    if (p.coDev) {
+      for (let i = 0; i < 3; i++) {
+        const a = areas[i]!;
+        const w = focus[i]! / fsum;
+        if (w <= 0) continue;
+        const pts = w * p.coDev.power * BALANCE.POINTS_PER_DAY * (s.cheats?.workMul ?? 1);
+        p.points[a] += pts;
+        if (DESIGN_AREAS.has(a)) p.design += pts;
+        else {
+          p.tech += pts;
+          p.bugs += pts * BALANCE.BUG_RATE * 1.15; // coordination is hard
+        }
+      }
+    }
     // QA fixing: always a little, much more in polish
     const polish = p.phase >= 2;
     let fix = 0;

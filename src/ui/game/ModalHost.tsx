@@ -411,6 +411,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             {r.numberOne && <Pill tone="gold">#1 chart-topper</Pill>}
             {r.classic && <Pill tone="gold">Hall of Classics {r.classic}</Pill>}
             {r.featuredBy && <Pill tone="good">Featured by {r.featuredBy.join(' & ')}</Pill>}
+            {r.coDev && <Pill tone="tech">Co-developed with {r.coDev.name} ({Math.round(r.coDev.share * 100)}%)</Pill>}
             {(r.copycats ?? 0) > 0 && (
               <span title={s.rivalGames.filter((g) => g.copycatOf === r.id).map((g) => `${g.name} (${s.rivals[g.company]?.name ?? g.company})`).join(', ') || undefined}>
                 <Pill tone="bad">

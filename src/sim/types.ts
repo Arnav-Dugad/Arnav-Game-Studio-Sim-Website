@@ -307,6 +307,8 @@ export interface GameProject {
   focusTest?: { phase: number; predicted: number; wantMore?: string };
   /** A bug bash has been run (once per game). */
   bugBashed?: boolean;
+  /** A co-development partner: their contribution and revenue share. */
+  coDev?: { rivalId: string; name: string; power: number; share: number };
   /** The trailer's score (0..8) once cut (once per game). */
   trailerCut?: number;
   /** On sale in Early Access since `day`: the players' current rating and what it has sold so far. */
@@ -420,6 +422,8 @@ export interface Release {
   earlyAccess?: { weeks: number; units: number; net: number };
   /** Crowdfunded: what backers pledged, and how many days late it shipped against the promise (0 = on time). */
   crowdfund?: { raised: number; backers: number; late: number };
+  /** Co-developed: the partner's name and share of net revenue. */
+  coDev?: { name: string; share: number };
   /** Platform holders who featured it on their storefront at launch. */
   featuredBy?: string[];
   /** Favour granted for launching as an exclusive (taken back if ported within a year). */
