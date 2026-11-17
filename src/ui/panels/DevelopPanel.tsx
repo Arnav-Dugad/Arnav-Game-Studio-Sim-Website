@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { knownFor } from '@/sim/systems/renown';
-import { PRICE_MUL, priceTierAllowed } from '@/sim/systems/pricing';
+import { priceTierAllowed } from '@/sim/systems/pricing';
 import type { PriceTier } from '@/sim/types';
 import { CODEV_YEAR, codevPartners, codevTerms } from '@/sim/systems/codev';
 import { CAMPAIGN_DAYS, STRETCH, STRETCH_DAYS, STRETCH_NAMES, TIERS, campaignCost, campaignGoal, crowdfundBlocked, expectedPledges } from '@/sim/systems/crowdfunding';
@@ -18,7 +18,7 @@ import { availablePlatforms, genrePopularity, platformInfo } from '@/sim/systems
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore, workShare } from '@/sim/systems/dev';
-import { expansionPlatforms, expansionSizeOk, gamePrice, launchTitleMul, salesPotential } from '@/sim/systems/release';
+import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, salesPotential } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size, Staff } from '@/sim/types';
@@ -802,13 +802,13 @@ function NewGame({ onDone }: { onDone: () => void }) {
               onChange={setPriceTier}
               options={(['budget', 'standard', 'premium'] as PriceTier[]).map((tier) => {
                 const pl = platformInfo(s, platforms[0]!);
-                const price = pl ? gamePrice(s, pl, size, monet) * PRICE_MUL[tier] : 0;
+                const price = pl ? launchPrice(s, pl, { ...conceptPreview, priceTier: tier }) : 0;
                 const label = { budget: 'Budget', standard: 'Standard', premium: 'Premium' }[tier];
                 return { value: tier, label: price ? label + ' · $' + price.toFixed(price < 10 ? 2 : 0) : label };
               })}
             />
             <span className="text-ink3">
-              {priceTier === 'budget' ? 'About 30% more buyers (and fans), a little less money per copy; players love the value.' : priceTier === 'premium' ? 'More money per copy, fewer buyers. Players resent it unless the game is great (85+).' : 'The going rate for a game like this.'}
+              {priceTier === 'budget' ? 'About 30% more buyers (and fans) at 30% less per copy — less money overall, but players love the value.' : priceTier === 'premium' ? 'More money per copy, fewer buyers. Players resent it unless the game is great (85+).' : 'The going rate for a game like this.'}
             </span>
           </div>
         )}

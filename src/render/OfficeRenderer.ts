@@ -1141,7 +1141,8 @@ export class OfficeRenderer {
       this.checkInSeen.set(id, ci.day);
       const a = this.agents.get(id);
       if (!a || !a.c.visible || a.floor !== floor) continue;
-      const short = ci.line.split(/(?<=[.?!])\s/)[0] ?? ci.line;
+      const parts = ci.line.split(/(?<=[.?!])\s/);
+      const short = (parts[0] && parts[0].length >= 12 ? parts[0] : parts.slice(0, 2).join(' ')) || ci.line;
       this.say(a, short.length > 46 ? `${short.slice(0, 44)}…` : short, 3.2);
     }
   }

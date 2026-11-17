@@ -33,4 +33,26 @@ describe('review blurbs', () => {
       }
     }
   });
+
+  it('only knocks things that actually dragged the game down', () => {
+    const s = createGame({ seed: 1, companyName: 'R', founderName: 'R', startYear: 1980, autopause: false });
+    const quality: Breakdown = {
+      total: 0.66,
+      parts: [
+        { label: 'Development effort', value: 0.8, kind: 'base' },
+        { label: 'Action × Aliens fit', value: 1.05, kind: 'mul' },
+        { label: 'Audience fit', value: 1.0, kind: 'mul' },
+        { label: 'Engine tech (2.0)', value: 1.04, kind: 'mul' },
+        { label: 'Fresh idea', value: 1.03, kind: 'mul' },
+      ],
+    };
+    for (let seed = 1; seed <= 40; seed++) {
+      const { reviews } = generateReviews(new Rng(seedRng(seed)), s, quality, 66, 0, 'action', 'Fine Game');
+      for (const r of reviews) {
+        const sentences = r.blurb.match(/[^.!?]+[.!?]/g)?.map((x) => x.trim()) ?? [];
+        const knocked = sentences.map((x) => keyOf(CRITIQUE, x)).filter(Boolean);
+        for (const k of knocked) expect(['balance', 'focus']).toContain(k);
+      }
+    }
+  });
 });

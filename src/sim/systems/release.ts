@@ -99,11 +99,11 @@ function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, g
     let gk = best && best.value > 1 ? partKey(best.label) : 'focus';
     if (gk === 'effort' && !effortGood) gk = 'focus'; // don't praise effort that wasn't there
     // never praise and knock the same thing in one breath
-    const bw = worsts.map((w) => partKey(w.label)).filter((k) => k !== gk);
-    let bk = worst && partKey(worst.label) !== gk ? partKey(worst.label) : (bw[0] ?? (gk === 'effort' ? 'focus' : 'effort'));
+    const bw = worsts.filter((w) => w.value < 1).map((w) => partKey(w.label)).filter((k) => k !== gk && !!CRITIQUE[k]);
+    let bk = bw.length ? bw[idx % bw.length]! : gk === 'focus' ? 'balance' : 'focus';
     if (bk === 'effort' && effortGood) bk = gk === 'focus' ? 'balance' : 'focus';
     const good = rng.pick(PRAISE[gk] ?? PRAISE.focus!);
-    const bad = rng.pick(CRITIQUE[bk] ?? CRITIQUE.effort!);
+    const bad = rng.pick(CRITIQUE[bk] ?? CRITIQUE.balance!);
     line = `${good} ${bad}`;
   } else {
     const k = worst && worst.value < 0.95 ? partKey(worst.label) : effortGood ? 'focus' : 'effort';
@@ -213,6 +213,11 @@ function sellingUsersM(s: GameState, pid: string, pl: PlatformInfo): number {
   if (age < 0 || age > 365 || pl.own) return now;
   const ahead = activeUsersM(pl, Math.max(s.day, pl.launchDay + 180)) * demandMul(s, pl);
   return Math.max(now, ahead * 0.7);
+}
+
+/** What a game will actually cost at launch: base price, expansion discount, culture and price tier. */
+export function launchPrice(s: GameState, pl: PlatformInfo, c: GameProject['concept']): number {
+  return gamePrice(s, pl, c.size, c.monetization) * (c.expansionOf ? BALANCE.EXPANSION_PRICE : 1) * (hasValue(s, 'players') ? CULTURE_FX.playersPrice : 1) * (hasValue(s, 'profit') ? CULTURE_FX.profitPrice : 1) * PRICE_MUL[priceTierOf(c)];
 }
 
 export function salesPotential(s: GameState, concept: GameProject['concept'], effScore: number, rawHype: number) {
@@ -380,7 +385,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
-  const price = gamePrice(s, pricePl, p.concept.size, p.concept.monetization) * (p.concept.expansionOf ? BALANCE.EXPANSION_PRICE : 1) * (hasValue(s, 'players') ? CULTURE_FX.playersPrice : 1) * (hasValue(s, 'profit') ? CULTURE_FX.profitPrice : 1) * PRICE_MUL[priceTierOf(p.concept)];
+  const price = launchPrice(s, pricePl, p.concept);
   const baseDecay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
   // Mod communities keep PC games selling for years.
   const pcOnly = p.concept.platforms.every((pid) => platformInfo(s, pid)?.kind === 'computer');

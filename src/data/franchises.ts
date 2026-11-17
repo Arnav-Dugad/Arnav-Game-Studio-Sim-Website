@@ -1213,7 +1213,7 @@ export const FRANCHISES: readonly FranchiseDef[] = [
     id: 'hearthstone',
     name: 'Hearthstone',
     company: 'blizzard',
-    transfers: [['microsoft', 2023]],
+    transfers: BLIZZARD_OWNERS,
     genre: 'cards',
     topic: 'fantasy',
     audience: 'everyone',

@@ -80,7 +80,7 @@ export function earlyAccessWeekly(c: Ctx): void {
     ea.rating = clamp(Math.round(earlyAccessRating(s, p) + rng.normal(0, 1.5)), 1, 100);
     const pcs = eaPcPlatforms(s, p);
     if (pcs.length) {
-      const pot = salesPotential(s, { ...p.concept, platforms: pcs }, ea.rating, p.hype);
+      const pot = salesPotential(s, { ...p.concept, platforms: pcs, priceTier: undefined }, ea.rating, p.hype); // EA has its own price
       const pcPot = pot.platforms.reduce((t, x) => t + x.potential, 0);
       const appeal = ea.rating >= 75 ? 1.3 : ea.rating >= 60 ? 1 : ea.rating >= 50 ? 0.6 : 0.3;
       const fade = 0.35 + 0.65 * Math.exp(-weeks / 26);

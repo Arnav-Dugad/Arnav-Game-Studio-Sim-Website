@@ -8,7 +8,6 @@ import { clamp } from '../breakdown';
 import { formatDate } from '../calendar';
 import { GENRE_BY_ID } from '../../data/genres';
 import type { GameState, Staff } from '../types';
-import { ambitionText } from './ambitions';
 import { favouriteGenre, isAway, marketSalary, moraleTarget, onFavouriteGenre } from './staff';
 import { fmtMoney } from '../util';
 
@@ -40,7 +39,7 @@ export function checkInBlocked(s: GameState, st: Staff | undefined): string | nu
 /** What's really on their mind, most pressing first. */
 export function checkInTopic(s: GameState, st: Staff): { topic: CheckInTopic; line: string } {
   const first = (n: string) => n.split(' ')[0] ?? n;
-  if (st.burnout >= 60) return { topic: 'burnout', line: 'Honestly? I’m running on empty. I need a proper break.' };
+  if (st.burnout >= 60) return { topic: 'burnout', line: 'I’m running on empty. Honestly, I need a proper break.' };
   const parts = moraleTarget(s, st).parts.filter((p) => p.kind === 'add' && p.value <= -5).sort((a, b) => a.value - b.value);
   const worst = parts[0];
   if (worst) {
@@ -58,9 +57,30 @@ export function checkInTopic(s: GameState, st: Staff): { topic: CheckInTopic; li
     if (l.startsWith('Burnout')) return { topic: 'burnout', line: 'I’m more tired than I’ve been in a long time.' };
     return { topic: 'morale', line: 'A few things have been getting to me lately. Thanks for asking.' };
   }
-  if (st.ambition) return { topic: 'ambition', line: `I really want to ${ambitionText(st, st.ambition).replace(/ \(.*\)$/, '').replace(/^./, (x) => x.toLowerCase())}.` };
+  if (st.ambition) return { topic: 'ambition', line: ambitionLine(st.ambition) };
   if (!onFavouriteGenre(s, st)) return { topic: 'genre', line: `Someday I’d love to make a ${GENRE_BY_ID[favouriteGenre(st.id)].name.toLowerCase()} game here.` };
   return { topic: 'happy', line: `Honestly, things are great. Thanks for checking in${st.role === 'qa' ? ' — and for the bug database' : ''}, ${first(s.company.founderName)}.` };
+}
+
+function ambitionLine(a: NonNullable<Staff['ambition']>): string {
+  switch (a.kind) {
+    case 'genre':
+      return `I’d really love to make a ${GENRE_BY_ID[a.genre!]?.name.toLowerCase() ?? 'new kind of'} game.`;
+    case 'hit':
+      return 'I want to make something great — an 80+ game. I think we can.';
+    case 'first':
+      return 'I can’t wait to see my name in the credits of a game we ship.';
+    case 'raise':
+      return `I’ve been hoping for a raise — ${Math.round((a.target ?? 0) / 1000)}k would make a real difference.`;
+    case 'research':
+      return 'I’d love a month to dig into research.';
+    case 'skill':
+      return `I’m working hard on my ${a.skill ?? 'craft'}. I want to get really good.`;
+    case 'holiday':
+      return 'I could really use a proper holiday.';
+    default:
+      return 'There’s something I’ve been wanting to do here. Thanks for asking.';
+  }
 }
 
 /** Sit down with someone: they tell you what's on their mind and feel heard. */
@@ -70,6 +90,7 @@ export function checkIn(s: GameState, staffId: string): string | null {
   if (why || !st) return why;
   const { topic, line } = checkInTopic(s, st);
   st.checkIn = { day: s.day, line, topic };
+  s.progress.stats.checkIns = (s.progress.stats.checkIns ?? 0) + 1;
   s.company.checkInLog = [...(s.company.checkInLog ?? []).filter((d) => s.day - d < WINDOW), s.day];
   st.loyalty = clamp(st.loyalty + 2, 0, 100);
   if (topic === 'burnout') st.burnout = Math.max(0, st.burnout - 8);

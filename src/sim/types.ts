@@ -841,6 +841,8 @@ export interface LifetimeStats {
   internsHired?: number;
   donated?: number;
   perfectTrailers?: number;
+  /** One-on-ones held. */
+  checkIns?: number;
   classics?: number;
   ovations?: number;
   /** Games that topped the weekly chart. */
