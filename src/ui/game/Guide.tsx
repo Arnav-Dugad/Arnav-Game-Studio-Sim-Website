@@ -9,7 +9,7 @@ const SECTIONS: { id: string; title: string; body: [string, string][] }[] = [
       ['Concept', 'Pick genre × topic × platform × audience. Some combinations are great, some are awful — you learn which by shipping. Your design notes (Market → Trends) remember what worked.'],
       ['Focus sliders', 'Each phase has three focus areas. Genres care about different things: RPGs want story and dialogue, racing games want engine and graphics. Gold marks show what worked for you before.'],
       ['Effort & size', 'Bigger games need bigger teams. A score depends on the effort your team puts in compared with what the era expects — the bar rises every year.'],
-      ['Bugs & QA', 'Tech work creates bugs; QA skill (and QA lab stations) fix them during polish. Crunch is faster but buggier and burns people out.'],
+      ['Bugs & QA', 'Tech work creates bugs; QA skill (and QA lab stations) fix them during polish. Crunch is faster but buggier and burns people out. From 1986 a buggy console game can fail certification and cost you a week or two.'],
       ['Engines', 'Research features, then build your own engine (Research → Engines) or license one. Old engines look dated on new hardware.'],
       ['Release timing', 'Boxed games sell best in November–December. Competing with a big release in the same genre hurts.'],
       ['Price tiers', 'Self-published full-price games pick a launch price: Budget (about 30% more buyers and fans at 30% less per copy; players love the value), Standard, or Premium (more per copy, fewer buyers — forgiven only on an 85+ game). Publishers set their own prices.'],
