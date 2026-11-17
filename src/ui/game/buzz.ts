@@ -126,6 +126,7 @@ function linesFor(s: GameState, rel: Release, week: number, r: () => number): Li
   if (rel.concept.expansionOf) L.push({ w: 2, tone: 'good', text: 'More content? Yes please.' });
   // Awards, mods, beta, platform, era
   if (rel.awards.length) L.push({ w: 3, tone: 'good', text: pick(['Deserved every award.', `${rel.awards[0]}! Well earned.`]) });
+  if ((rel.copycats ?? 0) > 0 && week > 6) L.push({ w: 2, tone: 'good', text: pick([`Everyone’s copying ${name} now.`, 'Played the knock-off. The original is better.', 'Accept no imitations.']) });
   if (rel.modded && week > 4) L.push({ w: 2, tone: 'good', text: pick(['The mod scene is wild.', 'Installed 40 mods. No regrets.']) });
   if (rel.betaTested && week < 6) L.push({ w: 1, tone: 'good', text: 'Played the beta — launch is so much smoother.' });
   if (plat) L.push({ w: 0.7, tone: 'neutral', text: pick([`Playing it on ${plat}.`, `Runs well on my ${plat}.`, `Picked it up for ${plat}.`]) });

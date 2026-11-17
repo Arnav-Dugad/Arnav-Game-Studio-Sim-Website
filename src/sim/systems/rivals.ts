@@ -14,7 +14,7 @@ import { fromDay, parseYM } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
 import type { GameState, Rival, RivalGame } from '../types';
-import { inflation, money, pushNews } from '../util';
+import { addRep, inflation, money, pushNews } from '../util';
 import { livePlatforms } from './market';
 
 /** Flattened schedule of real franchise releases, sorted by day. */
@@ -194,6 +194,22 @@ export function rivalsMonthly(c: Ctx): void {
     if (r.cash < 0) r.staff = Math.max(3, Math.round(r.staff * 0.97));
     // real companies never go fully bankrupt off-script
     if (!r.procedural && r.cash < 0) r.cash = money(50_000, s.day);
+  }
+  // Copycats: a big hit of yours inspires knock-offs from rivals (two at most)
+  const rivals = Object.values(s.rivals).filter((r) => r.alive && !r.ownedByPlayer);
+  for (const id of s.releaseOrder.slice(-6)) {
+    const rel = s.releases[id];
+    if (!rel || rel.score < 85 || s.day - rel.day > 240 || s.day - rel.day < 45 || (rel.copycats ?? 0) >= 2 || !rivals.length || !live.length) continue;
+    if (!rng.chance(0.3)) continue;
+    const r = rng.pick(rivals);
+    const score = clamp(Math.round(rng.normal(62, 9)), 30, 84);
+    const units = Math.round(rel.units * rng.range(0.05, 0.25));
+    const plats = rel.concept.platforms.filter((p) => live.some((l) => l.id === p));
+    const name = rng.chance(0.5) ? `${genTitle(rng, rel.concept.topic)}` : `${rel.name.split(/[:\s]/)[0]} ${rng.pick(['Rush', 'Legends', 'Mania', 'Heroes', 'World', 'Tycoon', 'Blitz'])}`;
+    addRivalGame(s, { name, company: r.id, genre: rel.concept.genre, topic: rel.concept.topic, platforms: plats.length ? plats : [live[0]!.id], day: s.day, score, units, copycatOf: rel.id });
+    rel.copycats = (rel.copycats ?? 0) + 1;
+    addRep(s, 0.5, 'Imitated by rivals');
+    pushNews(s, { category: 'rival', headline: `${r.name} rushes out ${name}`, body: `It’s… very inspired by ${rel.name}. Critics give it ${score}.`, tone: 'neutral' });
   }
   // Spawn procedural indie studios occasionally
   const indies = Object.values(s.rivals).filter((r) => r.procedural && r.alive).length;

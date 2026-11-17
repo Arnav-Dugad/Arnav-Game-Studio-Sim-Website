@@ -327,6 +327,8 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Rival knock-offs it has inspired so far. */
+  copycats?: number;
   /** Who made it (names and roles as they were at launch). */
   credits?: { id: string; name: string; role: string; level: string }[];
   /** Live events run (systems/liveEvents.ts): the current one, how many so far, and the last. */
@@ -370,6 +372,8 @@ export interface RivalGame {
   publishedByPlayer?: boolean;
   /** Already faced one of your games in a showdown. */
   contested?: boolean;
+  /** A knock-off of one of your hits (release id). */
+  copycatOf?: Id;
 }
 
 export interface Rival {
