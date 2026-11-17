@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MOD_BUDGET, communityBlocked, communityCost, communityPledgeMul, communityUserBonus, hubName } from '@/sim/systems/community';
 import { MEDIA, MEDIA_KINDS, mediaBlocked, mediaFee } from '@/sim/systems/media';
 import { fanConBlocked, fanConCost, negotiateOdds } from '@/sim/actions';
 import { COMPANY_BY_ID } from '@/data/companies';
@@ -42,6 +43,7 @@ export default function CompanyPanel() {
           { value: 'esports', label: 'Esports' },
           { value: 'history', label: 'History' },
           { value: 'yearbook', label: 'Yearbook' },
+          { value: 'community', label: 'Community' },
         ]}
       />
       {tab === 'culture' && <CultureTab />}
@@ -53,6 +55,7 @@ export default function CompanyPanel() {
       {tab === 'esports' && <EsportsTab />}
       {tab === 'history' && <HistoryTab />}
       {tab === 'yearbook' && <YearbookTab />}
+      {tab === 'community' && <CommunityTab />}
     </div>
   );
 }
@@ -534,6 +537,61 @@ function MediaList() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** The official player community: found it, moderate it, watch its mood. */
+function CommunityTab() {
+  const s = useGame((g) => g.s)!;
+  const cm = s.community;
+  if (!cm) {
+    const why = communityBlocked(s);
+    return (
+      <div className="rounded-2xl border border-line p-3 text-sm">
+        <div className="font-semibold">Start an official {hubName(s)}</div>
+        <p className="mt-1 text-xs text-ink3">
+          Give your fans a home. A healthy community lifts user scores at launch (up to +2), brings more crowdfunding backers and talks people out of review bombs. A neglected one turns toxic — and piles on. Health follows how players feel: great games, patches and live events help; crunch scandals and disappointing launches hurt. Moderators keep it civil.
+        </p>
+        <Button className="mt-2" size="sm" icon="people" disabled={!!why} title={why ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'foundCommunity' }, 'Community open! 🎉')}>
+          Open it · {fmtMoney(communityCost(s))}
+        </Button>
+        {why && <p className="mt-1 text-xs text-ink3">{why}</p>}
+      </div>
+    );
+  }
+  const tone = cm.health >= 70 ? 'text-good' : cm.health < 35 ? 'text-bad' : 'text-ink';
+  const mood = cm.health >= 80 ? 'Thriving and welcoming' : cm.health >= 60 ? 'Friendly, mostly' : cm.health >= 40 ? 'Restless' : cm.health >= 25 ? 'Angry' : 'Toxic';
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl bg-bg2/60 p-2.5">
+          <div className="text-xs text-ink3">Members</div>
+          <div className="num text-lg font-semibold">{fmtUnits(cm.members)}</div>
+        </div>
+        <div className="rounded-xl bg-bg2/60 p-2.5">
+          <div className="text-xs text-ink3">Health</div>
+          <div className={cx('num text-lg font-semibold', tone)}>{Math.round(cm.health)}</div>
+        </div>
+        <div className="rounded-xl bg-bg2/60 p-2.5">
+          <div className="text-xs text-ink3">Mood</div>
+          <div className={cx('text-sm font-semibold', tone)}>{mood}</div>
+        </div>
+      </div>
+      <p className="text-xs text-ink3">
+        At launch: user score {communityUserBonus(s) >= 0 ? '+' : ''}
+        {communityUserBonus(s)} · crowdfunding ×{communityPledgeMul(s).toFixed(2)} · review bombs {cm.health < 35 ? 'far more likely' : cm.health > 70 ? 'much rarer' : 'as usual'}.
+      </p>
+      <div>
+        <div className="mb-1 text-xs font-semibold text-ink3">Moderation</div>
+        <Segmented
+          ariaLabel="Moderation budget"
+          value={String(cm.mods)}
+          onChange={(v) => useGame.getState().act({ type: 'setModeration', level: Number(v) as 0 | 1 | 2 })}
+          options={[0, 1, 2].map((l) => ({ value: String(l), label: l === 0 ? 'None' : `${l === 1 ? 'Part-time' : 'Full team'} · ${fmtMoney(money(MOD_BUDGET[l as 0 | 1 | 2], s.day))}/mo` }))}
+        />
+        <p className="mt-1 text-xs text-ink3">Moderators lift health (+8 per level) and help the community grow.</p>
+      </div>
     </div>
   );
 }

@@ -337,6 +337,7 @@ function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; a
     if (!(s.company.values ?? []).length && Object.keys(s.staff).length >= 6) dispatch(s, { type: 'setValues', values: o.mode === 'trend' ? ['innovation', 'players'] : ['craft', 'balance'] });
     if (s.company.cash > monthlyBurn(s) * 12) dispatch(s, { type: 'teamRetreat' });
     if (s.company.policies.parentalLeave === undefined) dispatch(s, { type: 'setPolicy', parentalLeave: 'generous', interns: true });
+    if (!s.community) dispatch(s, { type: 'foundCommunity' });
     for (const e of s.pendingEvents.filter((x) => x.defId === 'intern_offer')) dispatch(s, { type: 'resolveEvent', uid: e.uid, option: 'hire' });
     // a talk a year from the most senior person with a shipped game
     const speaker = Object.values(s.staff).find((x) => x.level === 'lead' || x.role === 'founder');
@@ -453,6 +454,9 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => (s.offers.deals.length ? { type: 'negotiateDeal', dealId: rng.pick(s.offers.deals).id, ask: rng.pick(['advance', 'royalty', 'everything'] as never[]) } : null),
   (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'sabbatical', staffId: rng.pick(st) } : null; },
   () => ({ type: 'undoPlace' }),
+  () => ({ type: 'foundCommunity' }),
+  (_s, rng) => ({ type: 'setModeration', level: rng.pick([0, 1, 2, 5] as never[]) }),
+  (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'trailerCut', projectId: rng.pick(p), points: rng.int(-2, 12) } : null; },
   (_s, rng) => ({ type: 'setPolicy', charity: rng.pick([0, 1, 5, 7] as never[]) }),
   (s, rng) => { const e = Object.keys(s.engines); return e.length ? { type: 'openSourceEngine', engineId: rng.pick(e) } : null; },
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'earlyAccess', projectId: rng.chance(0.9) ? rng.pick(p) : 'nope' } : null; },

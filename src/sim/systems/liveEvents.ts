@@ -3,6 +3,7 @@
  * about a month's live income and lifts it for three months — more for a well-loved game, a little less
  * each time players have seen one recently.
  */
+import { communityNudge } from './community';
 import { clamp } from '../breakdown';
 import { fromDay } from '../calendar';
 import type { GameState, Release } from '../types';
@@ -51,6 +52,7 @@ export function runLiveEvent(s: GameState, releaseId: string): string | null {
   r.lastLiveEventDay = s.day;
   if ((r.liveEvents ?? 0) <= 2 && !r.liveScoreBumps) r.userScore = clamp(r.userScore + 1, 0, 100);
   if ((r.liveEvents ?? 0) >= 2) r.liveScoreBumps = true;
+  communityNudge(s, 3);
   pushNews(s, { category: 'studio', headline: `${r.name}: the ${r.liveEvent.name} is live`, body: `Players flock back for limited-time content (+${Math.round((mul - 1) * 100)}% live income for three months).`, tone: 'good' });
   return null;
 }

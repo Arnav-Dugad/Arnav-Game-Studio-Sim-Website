@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { communityNudge } from './community';
 import { hireIntern, starIntern } from './interns';
 import { campaignGoal, crowdfundBlocked, startCrowdfund } from './crowdfunding';
 import { BALANCE } from '../../data/balance';
@@ -860,6 +861,7 @@ export const EVENT_DEFS: EventDef[] = [
       } else {
         addRep(s, -(4), 'Denied crunch reports');
         mod(s, -6, 60, 'Crunch denial');
+        communityNudge(s, -12);
       }
     },
   },
@@ -1314,7 +1316,9 @@ export const EVENT_DEFS: EventDef[] = [
       if (yr(s) < 2010) return 0;
       const last = s.releaseOrder.length ? s.releases[s.releaseOrder[s.releaseOrder.length - 1]!]! : undefined;
       if (!last || s.day - last.day > 90) return 0;
-      return last.concept.monetization !== 'premium' ? 0.8 : 0.2;
+      const base = last.concept.monetization !== 'premium' ? 0.8 : 0.2;
+      // a healthy community talks people down; a toxic one piles on
+      return s.community ? base * (s.community.health < 35 ? 2.5 : s.community.health > 70 ? 0.4 : 1) : base;
     },
     make: ({ s }) => {
       const r = s.releases[s.releaseOrder[s.releaseOrder.length - 1]!]!;
@@ -1334,7 +1338,11 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt === 'listen') {
         r.userScore = clamp(r.userScore + 4, 1, 100);
         s.company.fans *= 1.03;
-      } else r.userScore = clamp(r.userScore - 6, 1, 100);
+        communityNudge(s, 6);
+      } else {
+        r.userScore = clamp(r.userScore - 6, 1, 100);
+        communityNudge(s, -8);
+      }
     },
   },
   {

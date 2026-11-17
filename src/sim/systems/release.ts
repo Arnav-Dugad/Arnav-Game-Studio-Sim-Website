@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { communityNudge, communityUserBonus } from './community';
 import { partnersOnRelease } from './partners';
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
@@ -336,6 +337,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   else if (cf) ub.add('Delivered to backers on time', 2);
   if (ea && eaWeeks >= 78) ub.add('Took years to leave Early Access', -4);
   else if (ea && eaWeeks >= 8 && ea.rating >= 55) ub.add('Shaped by Early Access players', 2);
+  const cmb = communityUserBonus(s);
+  if (cmb) ub.add(cmb > 0 ? 'A healthy community' : 'A toxic community', cmb);
   ub.add('Players vary', rng.normal(0, 3));
   ub.clamp(1, 100);
   const userScore = Math.round(ub.value);
@@ -472,6 +475,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     tone: score >= 70 ? 'good' : score >= 50 ? 'neutral' : 'bad',
   });
   // Journal: teach the player what worked
+  communityNudge(s, (userScore - 70) / 2);
   learnFromRelease(s, p, quality);
   finishProject(s, p.id);
   c.out.push({ type: 'release', releaseId: id });

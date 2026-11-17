@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { communityNudge, foundCommunity, setModeration } from './systems/community';
 import { openSourceEngine } from './systems/giving';
 import { devkitMul } from './systems/partners';
 import type { MediaKind } from './types';
@@ -155,6 +156,8 @@ export type Action =
   | { type: 'earlyAccess'; projectId: string }
   | { type: 'pinFanArt'; id: string; on: boolean }
   | { type: 'trailerCut'; projectId: string; points: number }
+  | { type: 'foundCommunity' }
+  | { type: 'setModeration'; level: 0 | 1 | 2 }
   | { type: 'openSourceEngine'; engineId: string }
   | { type: 'giveTalk'; staffId: string; releaseId: string }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
@@ -934,6 +937,10 @@ function apply(c: Ctx, a: Action): string | null {
       invalidateMentees(s);
       return null;
     }
+    case 'foundCommunity':
+      return foundCommunity(s);
+    case 'setModeration':
+      return setModeration(s, a.level);
     case 'trailerCut': {
       const p = s.projects[a.projectId];
       if (!p || p.kind !== 'game') return 'No such game';
@@ -1188,6 +1195,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (s.company.cash < cost) return 'Not enough cash';
       spend(s, 'other_expense', cost);
       const gain = applyPatch(s, rel);
+      communityNudge(s, 4);
       pushNews(s, { category: 'studio', headline: `Patch for ${rel.name} fixes bugs (user score +${gain})`, tone: 'good' });
       return null;
     }

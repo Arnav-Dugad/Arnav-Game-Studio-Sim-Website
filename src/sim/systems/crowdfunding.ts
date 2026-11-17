@@ -4,6 +4,7 @@
  * Funded campaigns pay out (minus fees), turn backers into fans and unlock stretch goals — more content that also
  * means more polish time. Backers are promised a delivery date, and they remember whether you kept it.
  */
+import { communityPledgeMul } from './community';
 import { clamp } from '../breakdown';
 import type { Ctx } from '../ctx';
 import type { GameProject, GameState } from '../types';
@@ -56,7 +57,7 @@ export function expectedPledges(s: GameState, p: GameProject): number {
   const last = s.company.lastCampaignDay;
   const fatigue = last !== undefined && s.day - last < 730 ? 0.6 + 0.4 * ((s.day - last) / 730) : 1;
   const backers = size * fatigue * (900 + s.company.fans * 0.012 + (fr?.fans ?? 0) * 0.03) * (0.5 + 0.5 * Math.min(2, p.hype)) * (0.6 + s.company.reputation / 100) * pitch;
-  return Math.round(backers * pledgeSize(s));
+  return Math.round(backers * pledgeSize(s) * communityPledgeMul(s));
 }
 
 export function campaignGoal(s: GameState, p: GameProject, tier: CampaignTier): number {
