@@ -1,9 +1,11 @@
 import type { IconName } from '../icons';
 import { Icon } from '../icons';
 import { cx } from '../components/ui';
+import { studioAlerts } from './alerts';
 import { useGame, type PanelId } from '../store';
 
 const ITEMS: { id: PanelId; icon: IconName; label: string; key: string }[] = [
+  { id: 'overview', icon: 'house', label: 'Overview', key: 'O' },
   { id: 'develop', icon: 'develop', label: 'Develop', key: 'N' },
   { id: 'staff', icon: 'staff', label: 'Staff', key: 'H' },
   { id: 'office', icon: 'build', label: 'Office', key: 'B' },
@@ -25,6 +27,7 @@ export function Rail() {
     develop: s ? Object.values(s.projects).filter((p) => p.kind === 'game' && p.awaitingGate).length : 0,
     staff: s ? Object.values(s.staff).filter((x) => x.burnout > 70 || x.morale < 30 || (x.assignment.kind === 'idle' && x.role !== 'founder' && !x.vacationDays)).length : 0,
     research: s && !s.research.active && Object.values(s.staff).some((x) => x.assignment.kind === 'research') ? 1 : 0,
+    overview: s ? studioAlerts(s, () => undefined, () => undefined).filter((x) => x.tone === 'bad').length : 0,
   };
   return (
     <nav

@@ -852,6 +852,7 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
   const rows: [string, string][] = [
     ['Space', 'Pause / resume'],
     ['1 · 2 · 3', 'Speed 1× · 2× · 4×'],
+    ['O', 'Studio overview (what needs attention)'],
     ['N', 'Develop'],
     ['H', 'Staff & hiring'],
     ['B', 'Office / build'],

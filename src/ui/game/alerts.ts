@@ -1,0 +1,76 @@
+/** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
+import { formatDate } from '@/sim/calendar';
+import { fmtMoney } from '@/sim/util';
+import { monthlyBurn, trailingRevenue } from '@/sim/systems/finance';
+import { devProgress, qualityToScore } from '@/sim/systems/dev';
+import { platformInfo } from '@/sim/systems/market';
+import { tierDef } from '@/sim/systems/office';
+import { isAway } from '@/sim/systems/staff';
+import type { GameProject, GameState, Project } from '@/sim/types';
+import type { IconName } from '../icons';
+import type { PanelId } from '../store';
+import { atRisk } from '../panels/staffTools';
+
+export interface Alert {
+  id: string;
+  tone: 'bad' | 'warn' | 'info';
+  icon: IconName;
+  text: string;
+  action?: { label: string; run: () => void };
+}
+
+export function daysLeft(p: GameProject): number {
+  if (p.phase >= 3) return p.extraDays;
+  let d = p.phaseDays[p.phase as 0 | 1 | 2] - p.phaseDay + p.extraDays;
+  for (let ph = p.phase + 1; ph < 3; ph++) d += p.phaseDays[ph as 0 | 1 | 2];
+  return Math.max(0, d);
+}
+
+export function projectName(p: Project): string {
+  return p.kind === 'game' ? p.concept.name : p.kind === 'contract' ? p.title : `Engine: ${p.name}`;
+}
+
+export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => void, pushGate: (id: string) => void): Alert[] {
+  const out: Alert[] = [];
+  const staff = Object.values(s.staff);
+  const projects = Object.values(s.projects);
+  // Money
+  const burn = monthlyBurn(s);
+  const income = trailingRevenue(s) / 12;
+  const net = income - burn;
+  if (s.company.cash < 0) out.push({ id: 'cash-neg', tone: 'bad', icon: 'warning', text: `You're ${fmtMoney(-s.company.cash)} in the red. Take a loan, cut costs or land a contract fast.`, action: { label: 'Finance', run: () => open('finance') } });
+  else if (net < 0 && s.company.cash < -net * 6)
+    out.push({ id: 'runway', tone: 'warn', icon: 'hourglass', text: `About ${Math.max(0, Math.floor(s.company.cash / -net))} months of cash left at this burn rate (${fmtMoney(-net)}/mo).`, action: { label: 'Finance', run: () => open('finance') } });
+  // Decisions waiting
+  for (const p of projects) if (p.kind === 'game' && p.awaitingGate) out.push({ id: `gate-${p.id}`, tone: 'warn', icon: 'develop', text: `${p.concept.name} is waiting for your phase review.`, action: { label: 'Review', run: () => pushGate(p.id) } });
+  if (s.pendingEvents.length) out.push({ id: 'events', tone: 'info', icon: 'mail', text: `${s.pendingEvents.length} decision${s.pendingEvents.length > 1 ? 's' : ''} waiting in your inbox.` });
+  // People
+  const risk = staff.filter(atRisk).length;
+  if (risk) out.push({ id: 'risk', tone: risk >= 5 ? 'bad' : 'warn', icon: 'heart', text: `${risk} ${risk === 1 ? 'person needs' : 'people need'} attention (burnout, low morale or exhausted).`, action: { label: 'See who', run: () => open('staff', 'risk') } });
+  const idle = staff.filter((x) => x.assignment.kind === 'idle' && !isAway(x) && x.role !== 'founder').length;
+  if (idle) out.push({ id: 'idle', tone: idle >= 5 ? 'warn' : 'info', icon: 'hourglass', text: `${idle} ${idle === 1 ? 'person is' : 'people are'} idle — paid, but not working.`, action: { label: 'Assign', run: () => open('staff', 'idle') } });
+  const avgMorale = staff.reduce((t, x) => t + x.morale, 0) / Math.max(1, staff.length);
+  if (staff.length >= 5 && avgMorale < 45) out.push({ id: 'morale', tone: 'bad', icon: 'heart', text: `Studio morale is low (${Math.round(avgMorale)}%). Try raises, vacations, a nicer office or ending crunch.`, action: { label: 'Policies', run: () => open('staff', 'policies') } });
+  const crunching = projects.filter((p) => p.kind === 'game' && p.crunch).length;
+  if (crunching) out.push({ id: 'crunch', tone: 'info', icon: 'fire', text: `${crunching} game${crunching > 1 ? 's are' : ' is'} in crunch: faster, but bugs and burnout pile up.`, action: { label: 'Develop', run: () => open('develop') } });
+  // Research
+  if (!s.research.active && staff.some((x) => x.assignment.kind === 'research')) out.push({ id: 'research', tone: 'warn', icon: 'research', text: 'Your researchers have nothing to research.', action: { label: 'Pick research', run: () => open('research') } });
+  // Office
+  const cap = tierDef(s.office.tier).staffCap;
+  if (staff.length >= cap) out.push({ id: 'office', tone: 'info', icon: 'build', text: `Your office is full (${staff.length}/${cap}). Move to grow the team.`, action: { label: 'Office', run: () => open('office') } });
+  // Projects at risk
+  for (const p of projects) {
+    if (p.kind !== 'game') continue;
+    for (const pid of p.concept.platforms) {
+      const pl = platformInfo(s, pid);
+      if (pl && pl.endDay !== null && pl.endDay - s.day < 365 && !pl.own) out.push({ id: `plat-${p.id}-${pid}`, tone: 'warn', icon: 'controller', text: `${pl.name} is being phased out — ${p.concept.name} targets it.`, action: { label: 'Develop', run: () => open('develop') } });
+    }
+    if (p.concept.deal && s.day + daysLeft(p) > p.concept.deal.deadlineDay) out.push({ id: `late-${p.id}`, tone: 'bad', icon: 'calendar', text: `${p.concept.name} will miss its publisher deadline (${formatDate(p.concept.deal.deadlineDay, false)}).`, action: { label: 'Develop', run: () => open('develop') } });
+    const est = p.qualityPreview ? qualityToScore(p.qualityPreview.total) : null;
+    if (est !== null && devProgress(p) > 0.4 && est < 50) out.push({ id: `weak-${p.id}`, tone: 'warn', icon: 'chart', text: `${p.concept.name} is tracking toward a weak score (~${Math.round(est)}). More polish, a better team or a focus change could help.`, action: { label: 'Develop', run: () => open('develop') } });
+  }
+  for (const p of projects) if (p.kind === 'contract' && s.day > p.deadlineDay - 14) out.push({ id: `contract-${p.id}`, tone: 'warn', icon: 'contract', text: `Contract "${p.title}" is due ${p.deadlineDay < s.day ? 'already' : 'within two weeks'}.`, action: { label: 'Develop', run: () => open('develop') } });
+  const order = { bad: 0, warn: 1, info: 2 };
+  return out.sort((a, b) => order[a.tone] - order[b.tone]);
+}
+

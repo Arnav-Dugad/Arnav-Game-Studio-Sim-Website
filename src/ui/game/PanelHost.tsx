@@ -15,6 +15,7 @@ const GoalsPanel = lazy(() => import('../panels/GoalsPanel'));
 const SettingsPanel = lazy(() => import('../panels/SettingsPanel'));
 const ReleasesPanel = lazy(() => import('../panels/ReleasesPanel'));
 const CheatsPanel = lazy(() => import('../panels/CheatsPanel'));
+const OverviewPanel = lazy(() => import('../panels/OverviewPanel'));
 
 const TITLES: Record<PanelId, string> = {
   develop: 'Develop',
@@ -29,6 +30,7 @@ const TITLES: Record<PanelId, string> = {
   settings: 'Settings',
   releases: 'Your Games',
   cheats: 'Cheats',
+  overview: 'Studio Overview',
 };
 
 const PANELS: Record<PanelId, () => ReactNode> = {
@@ -44,6 +46,7 @@ const PANELS: Record<PanelId, () => ReactNode> = {
   settings: () => <SettingsPanel />,
   releases: () => <ReleasesPanel />,
   cheats: () => <CheatsPanel />,
+  overview: () => <OverviewPanel />,
 };
 
 export function PanelHost() {

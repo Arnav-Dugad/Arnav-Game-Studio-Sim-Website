@@ -52,7 +52,10 @@ export function TeamTab() {
   useGame((g) => g.v);
   const pushModal = useGame((g) => g.pushModal);
   const [q, setQ] = useState('');
-  const [filter, setFilter] = useState<Filter>(() => (useGame.getState().panelTab === 'idle' ? 'idle' : 'all'));
+  const [filter, setFilter] = useState<Filter>(() => {
+    const t = useGame.getState().panelTab;
+    return t === 'idle' ? 'idle' : t === 'risk' ? 'risk' : 'all';
+  });
   const [role, setRole] = useState<Role | 'all'>('all');
   const [sort, setSort] = useState<Sort>('skill');
   const [group, setGroup] = useState<Group>('none');

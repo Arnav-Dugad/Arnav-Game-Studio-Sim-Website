@@ -16,7 +16,7 @@ import { sound } from './sound';
 export type Speed = 0 | 1 | 2 | 4;
 export const MS_PER_DAY: Record<Exclude<Speed, 0>, number> = { 1: 400, 2: 200, 4: 100 };
 
-export type PanelId = 'develop' | 'staff' | 'office' | 'research' | 'market' | 'finance' | 'company' | 'news' | 'goals' | 'settings' | 'releases' | 'cheats';
+export type PanelId = 'develop' | 'staff' | 'office' | 'research' | 'market' | 'finance' | 'company' | 'news' | 'goals' | 'settings' | 'releases' | 'cheats' | 'overview';
 
 export type Modal =
   | { kind: 'event'; uid: number }
