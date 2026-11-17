@@ -935,11 +935,59 @@ function MajorNewsModal({ newsId, onClose }: { newsId: number; onClose: () => vo
   const s = useGame((g) => g.s)!;
   const n = s.news.find((x) => x.id === newsId);
   if (!n) return null;
+  const yr = fromDay(n.day).year;
+  const era = yr < 1995 ? 'paper' : yr < 2008 ? 'tabloid' : 'web';
+  const mine = n.category === 'studio';
   return (
     <Modal open onClose={onClose} title="Breaking news">
-      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Breaking news · {formatDate(n.day, false)}</div>
-      <h2 className="mt-2 font-display text-2xl font-semibold leading-tight">{n.headline}</h2>
-      {n.body && <p className="mt-2 text-sm text-ink2">{n.body}</p>}
+      {era === 'paper' && (
+        <article className="mt-7 rounded-md border border-[#cfc6b3] bg-[#f6f0e2] p-4 text-[#2a2622] shadow-inner" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
+          <div className="border-b-4 border-double border-[#2a2622] pb-1 text-center text-3xl font-bold tracking-tight">The Gaming Times</div>
+          <div className="flex justify-between border-b border-[#2a2622] py-0.5 text-[10px] uppercase tracking-widest">
+            <span>{formatDate(n.day)}</span>
+            <span>Late edition · 25¢</span>
+          </div>
+          <h2 className="mt-3 text-center text-3xl font-bold uppercase leading-tight">{n.headline}</h2>
+          <div className="mt-3 flex gap-3">
+            {mine && <CompanyBadge className="shrink-0" name={s.company.name} color={s.company.color} emblem={s.company.logo?.emblem} shape={s.company.logo?.shape} size={64} />}
+            {n.body && <p className="text-sm leading-relaxed [column-gap:1rem] sm:columns-2">{n.body}</p>}
+          </div>
+        </article>
+      )}
+      {era === 'tabloid' && (
+        <article className="mt-7 overflow-hidden rounded-xl bg-[#111] text-white">
+          <div className="flex items-center justify-between bg-[#d8323c] px-3 py-1.5">
+            <span className="text-2xl font-black italic tracking-tight">PIXEL WEEKLY</span>
+            <span className="text-[10px] font-bold uppercase">{formatDate(n.day, false)} · Special issue</span>
+          </div>
+          <div className="flex gap-3 p-4">
+            {mine && <CompanyBadge className="shrink-0" name={s.company.name} color={s.company.color} emblem={s.company.logo?.emblem} shape={s.company.logo?.shape} size={72} />}
+            <div>
+              <span className="rounded bg-[#f2c450] px-1.5 py-0.5 text-[10px] font-black uppercase text-black">Exclusive!</span>
+              <h2 className="mt-1 text-2xl font-black uppercase leading-tight">{n.headline}</h2>
+              {n.body && <p className="mt-1 text-sm text-white/80">{n.body}</p>}
+            </div>
+          </div>
+        </article>
+      )}
+      {era === 'web' && (
+        <article className="mt-7 overflow-hidden rounded-xl border border-line bg-panel2">
+          <div className="flex items-center gap-2 border-b border-line px-3 py-2">
+            <span className="grid size-6 place-items-center rounded-md bg-accent text-xs font-black text-accent-ink">G</span>
+            <span className="font-display text-sm font-semibold">GameWire</span>
+            <span className="ml-auto rounded-full bg-bad/15 px-2 py-0.5 text-[10px] font-bold uppercase text-bad">● Live</span>
+          </div>
+          <div className="flex gap-3 p-4">
+            {mine && <CompanyBadge className="shrink-0" name={s.company.name} color={s.company.color} emblem={s.company.logo?.emblem} shape={s.company.logo?.shape} size={64} />}
+            <div className="min-w-0">
+              <div className="text-[11px] text-ink3">{formatDate(n.day)} · {mine ? 'Studios' : 'Industry'}</div>
+              <h2 className="mt-0.5 font-display text-2xl font-semibold leading-tight">{n.headline}</h2>
+              {n.body && <p className="mt-1 text-sm text-ink2">{n.body}</p>}
+              <div className="mt-2 text-[11px] text-ink3">♥ {((2 + (n.id % 9)) * 1.3).toFixed(1)}k · ↻ {(n.id % 7) + 1}k shares</div>
+            </div>
+          </div>
+        </article>
+      )}
       <div className="mt-4 flex justify-end">
         <Button variant="primary" onClick={onClose}>
           Continue

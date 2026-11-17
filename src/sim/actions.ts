@@ -790,7 +790,8 @@ function apply(c: Ctx, a: Action): string | null {
       const e = ipoEligible(s);
       if (!e.ok) return e.why;
       doIPO(s, a.pct);
-      pushNews(s, { category: 'studio', headline: `${s.company.name} goes public!`, tone: 'good' });
+      const ipoNews = pushNews(s, { category: 'studio', headline: `${s.company.name} goes public!`, body: `Shares open at ${fmtMoney(s.finance.stock?.price ?? 0)}. ${s.company.founderName} rings the opening bell.`, tone: 'good' });
+      c.out.push({ type: 'news', newsId: ipoNews.id, major: true });
       return null;
     }
     case 'openBranch': {
@@ -853,7 +854,8 @@ function apply(c: Ctx, a: Action): string | null {
       s.progress.stats.acquisitions += 1;
       // Real companies bring their franchises
       if (!r.procedural) adoptFranchises(s, r.id);
-      pushNews(s, { category: 'studio', headline: `${s.company.name} acquires ${r.name}`, tone: 'good' });
+      const acqNews = pushNews(s, { category: 'studio', headline: `${s.company.name} acquires ${r.name}`, body: `A ${fmtMoney(t.price)} deal: their studio, their people and their games are now part of ${s.company.name}.`, tone: 'good' });
+      c.out.push({ type: 'news', newsId: acqNews.id, major: true });
       addRep(s, 3, 'Acquired a studio');
       return null;
     }
