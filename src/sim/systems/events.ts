@@ -701,6 +701,47 @@ export const EVENT_DEFS: EventDef[] = [
       } else if (!fond) addRep(s, -0.5, 'An unflattering memoir');
     },
   },
+  {
+    id: 'lootbox_regulation',
+    art: 'audit',
+    cooldown: 2000,
+    weight: (s) => (yr(s) >= 2018 && Object.values(s.releases).some((r) => r.active && (r.concept.features ?? []).includes('loot_boxes')) ? 0.5 : 0),
+    make: ({ s }) => {
+      const games = Object.values(s.releases).filter((r) => r.active && (r.concept.features ?? []).includes('loot_boxes'));
+      if (!games.length) return null;
+      const fine = money(60_000, s.day) * games.length;
+      return {
+        title: 'Regulators take aim at loot boxes',
+        body: `Several countries want to classify paid random rewards as gambling. ${games.map((g) => g.name).slice(0, 3).join(', ')} ${games.length === 1 ? 'is' : 'are'} in the spotlight.`,
+        options: [
+          { id: 'remove', label: 'Patch them out everywhere', preview: 'Players cheer (user score +4, community happier); those games earn less from now on' },
+          { id: 'odds', label: 'Publish the odds and add limits', preview: 'User score +1; a modest compliance bill' },
+          { id: 'fight', label: 'Lobby and fight it', preview: `Reputation −3 and ${fmtMoney(fine)} in legal costs; keep the revenue` },
+        ],
+        ctx: { fine },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const games = Object.values(s.releases).filter((r) => r.active && (r.concept.features ?? []).includes('loot_boxes'));
+      if (opt === 'remove') {
+        for (const r of games) {
+          r.userScore = clamp(r.userScore + 4, 1, 100);
+          for (const ps of r.platforms) ps.potential *= 0.88;
+          r.liveIncome = Math.round(r.liveIncome * 0.85);
+          r.concept = { ...r.concept, features: (r.concept.features ?? []).filter((f) => f !== 'loot_boxes') };
+        }
+        communityNudge(s, 8);
+        addRep(s, 1, 'Removed loot boxes');
+      } else if (opt === 'odds') {
+        for (const r of games) r.userScore = clamp(r.userScore + 1, 1, 100);
+        spend(s, 'other_expense', money(10_000, s.day) * games.length);
+      } else {
+        spend(s, 'other_expense', Number(e.ctx.fine));
+        addRep(s, -3, 'Fought loot box regulation');
+        communityNudge(s, -6);
+      }
+    },
+  },
   // ── During development ────────────────────────────────────────────────────
   {
     id: 'feature_creep',

@@ -44,6 +44,7 @@ export const GAME_FEATURES: GameFeatureDef[] = [
   { id: 'motion_controls', name: 'Motion controls', year: 2006, work: 0.06, fits: { sports: 1.036, casual: 1.042, rhythm: 1.03 }, misfit: 0.96, sales: 1.03, desc: 'Swing, wave and dance. A hit with families; a gimmick anywhere else.' },
   { id: 'speedrun_mode', name: 'Speedrun mode', year: 2010, work: 0.03, fits: { platformer: 1.03, action: 1.012, racing: 1.018, puzzle: 1.012 }, misfit: 0.985, user: 1, desc: 'A timer, splits and leaderboards. The speedrunning community will adopt you.' },
   { id: 'cliffhanger', name: 'Cliffhanger ending', year: 1988, work: 0.02, fits: { rpg: 1.006, adventure: 1.012, action: 1.006 }, misfit: 0.99, user: -2, desc: 'End on a shock. Players grumble now — but the sequel starts with built-in hype, and paying it off delights them.' },
+  { id: 'loot_boxes', name: 'Loot boxes', year: 2009, work: 0.03, fits: {}, misfit: 1, sales: 1.15, user: -5, monet: ['f2p', 'live_service'], desc: 'Randomised paid rewards. Very profitable, widely disliked — and regulators are watching.' },
   { id: 'battle_pass', name: 'Battle pass', year: 2017, work: 0.05, fits: {}, misfit: 1, sales: 1.12, user: -3, monet: ['f2p', 'live_service'], desc: 'Seasonal rewards that keep players paying. Effective, and a little resented.' },
 ];
 
