@@ -135,6 +135,7 @@ export function suggestConcept(s: GameState, rand: () => number = Math.random): 
       if (tp > 1.15) why.push(`${t.name} is trending`);
       if (knowsCombo(s, g.id, t.id)) {
         const fit = comboFitValue(g.id, t.id);
+        if (fit <= 0) continue; // you know this one doesn't work
         score *= [0.5, 0.9, 1.15, 1.35][fit] ?? 1;
         if (fit >= 2) why.push('you’ve seen this pairing work');
       }

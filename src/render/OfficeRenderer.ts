@@ -144,6 +144,7 @@ export class OfficeRenderer {
   private hoverStaff: string | null = null;
   private petHover = false;
   private itemLabel?: Text;
+  private itemLabelKey = '';
   private drag: { x: number; y: number; camX: number; camY: number; moved: boolean; button: number; mouse: boolean; t: number } | null = null;
   private painted: string | null = null;
   private pointers = new Map<number, { x: number; y: number }>();
@@ -1530,8 +1531,14 @@ export class OfficeRenderer {
       this.itemLabel.zIndex = 1e7;
       this.itemLayer.addChild(this.itemLabel);
     }
-    const def = ITEM_BY_ID[it.item];
     const fp = footprint(it);
+    const key = `${it.id}|${this.P.night}`;
+    if (key === this.itemLabelKey && this.itemLabel.visible) {
+      this.itemLabel.scale.set(Math.min(1, 1.4 / this.zoom));
+      return;
+    }
+    this.itemLabelKey = key;
+    const def = ITEM_BY_ID[it.item];
     const bits: string[] = [];
     if (def.energy) bits.push(`breaks +${def.energy} energy`);
     if (def.aura) bits.push(`morale aura ${def.aura}`);

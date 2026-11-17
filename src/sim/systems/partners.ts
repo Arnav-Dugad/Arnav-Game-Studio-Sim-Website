@@ -66,6 +66,8 @@ export function partnersOnRelease(s: GameState, rel: Release): void {
 
 /** Monthly: favour drifts back toward neutral. */
 export function partnersMonthly(s: GameState): void {
+  // publishers' memories fade too
+  for (const [k, v] of Object.entries(s.publisherTrust ?? {})) s.publisherTrust![k] = Math.round(v * 0.98 * 100) / 100;
   for (const [m, v] of Object.entries(s.partners ?? {})) {
     const next = v + (FAVOUR_NEUTRAL - v) * 0.02;
     s.partners![m] = Math.round(next * 10) / 10;

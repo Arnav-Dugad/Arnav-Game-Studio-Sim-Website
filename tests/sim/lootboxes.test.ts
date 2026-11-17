@@ -28,7 +28,10 @@ describe('loot boxes', () => {
       expect(fireEvent(c, 'lootbox_regulation')).toBe(true);
       const ev = s2.pendingEvents.find((e) => e.defId === 'lootbox_regulation')!;
       expect(dispatch(s2, { type: 'resolveEvent', uid: ev.uid, option: opt }).ok).toBe(true);
-      if (opt === 'remove') expect(Object.values(s2.releases)[0]!.concept.features).not.toContain('loot_boxes');
+      if (opt === 'remove') {
+        expect(Object.values(s2.releases)[0]!.concept.features).not.toContain('loot_boxes');
+        expect(Object.values(s2.releases)[0]!.liveMul).toBeCloseTo(0.75);
+      }
     }
   });
 });

@@ -2,7 +2,7 @@
  * Staff: generation, salary, productivity, morale, energy, burnout, loyalty, growth, quitting.
  */
 import type { GenreId } from '../../data/types';
-import { GENRES, GENRE_BY_ID } from '../../data/genres';
+import { GENRE_BY_ID } from '../../data/genres';
 import { relationMorale } from './relations';
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
@@ -279,6 +279,9 @@ export function menteesOf(s: GameState, mentorId: string): Staff[] {
   return Object.values(s.staff).filter((x) => x.mentorId === mentorId);
 }
 
+/** Frozen so adding genres later never changes anyone's favourite. */
+const FAV_GENRES: readonly GenreId[] = ['action', 'adventure', 'rpg', 'strategy', 'simulation', 'puzzle', 'platformer', 'shooter', 'racing', 'sports', 'fighting', 'casual', 'rhythm', 'mmo', 'sandbox'];
+
 /** Everyone has a favourite genre (stable per person, from their id). */
 export function favouriteGenre(id: string): GenreId {
   let h = 2166136261;
@@ -287,7 +290,7 @@ export function favouriteGenre(id: string): GenreId {
     h ^= key.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  return GENRES[(h >>> 0) % GENRES.length]!.id;
+  return FAV_GENRES[(h >>> 0) % FAV_GENRES.length]!;
 }
 
 /** Is this person working on a game in their favourite genre? */

@@ -559,9 +559,9 @@ export const EVENT_DEFS: EventDef[] = [
     id: 'preservation_society',
     art: 'letters',
     cooldown: 900,
-    weight: (s) => (yr(s) >= 2000 && Object.values(s.releases).some((r) => s.day - r.day > 365 * 15 && r.score >= 70) ? 0.25 : 0),
+    weight: (s) => (yr(s) >= 2000 && Object.values(s.releases).some((r) => !r.archived && s.day - r.day > 365 * 15 && r.score >= 70) ? 0.25 : 0),
     make: ({ s }) => {
-      const r = Object.values(s.releases).filter((x) => s.day - x.day > 365 * 15 && x.score >= 70).sort((a, b) => b.score - a.score)[0];
+      const r = Object.values(s.releases).filter((x) => !x.archived && s.day - x.day > 365 * 15 && x.score >= 70).sort((a, b) => b.score - a.score)[0];
       if (!r) return null;
       return {
         title: 'A game preservation society writes',
@@ -576,6 +576,7 @@ export const EVENT_DEFS: EventDef[] = [
     resolve: ({ s }, e, opt) => {
       if (opt !== 'donate') return;
       const r = s.releases[String(e.ctx.rel)];
+      if (r) r.archived = true;
       addRep(s, 1.5 * (1 - s.company.reputation / 130), 'Donated to game preservation');
       s.company.fans = Math.round(s.company.fans * 1.01);
       pushNews(s, { category: 'industry', headline: `${r?.name ?? 'A classic'}’s source code goes to the archive`, body: 'Preservationists call it “a gift to the history of games”.', tone: 'good' });
@@ -714,8 +715,8 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Regulators take aim at loot boxes',
         body: `Several countries want to classify paid random rewards as gambling. ${games.map((g) => g.name).slice(0, 3).join(', ')} ${games.length === 1 ? 'is' : 'are'} in the spotlight.`,
         options: [
-          { id: 'remove', label: 'Patch them out everywhere', preview: 'Players cheer (user score +4, community happier); those games earn less from now on' },
-          { id: 'odds', label: 'Publish the odds and add limits', preview: 'User score +1; a modest compliance bill' },
+          { id: 'remove', label: 'Patch them out everywhere', preview: 'Players cheer (user score +3, community happier); those games earn about 25% less from now on' },
+          { id: 'odds', label: 'Publish the odds and add limits', preview: 'User score +1; a compliance bill and about 8% less live income' },
           { id: 'fight', label: 'Lobby and fight it', preview: `Reputation −3 and ${fmtMoney(fine)} in legal costs; keep the revenue` },
         ],
         ctx: { fine },
@@ -725,15 +726,18 @@ export const EVENT_DEFS: EventDef[] = [
       const games = Object.values(s.releases).filter((r) => r.active && (r.concept.features ?? []).includes('loot_boxes'));
       if (opt === 'remove') {
         for (const r of games) {
-          r.userScore = clamp(r.userScore + 4, 1, 100);
+          r.userScore = clamp(r.userScore + 3, 1, 100);
           for (const ps of r.platforms) ps.potential *= 0.88;
-          r.liveIncome = Math.round(r.liveIncome * 0.85);
+          r.liveMul = (r.liveMul ?? 1) * 0.75;
           r.concept = { ...r.concept, features: (r.concept.features ?? []).filter((f) => f !== 'loot_boxes') };
         }
         communityNudge(s, 8);
         addRep(s, 1, 'Removed loot boxes');
       } else if (opt === 'odds') {
-        for (const r of games) r.userScore = clamp(r.userScore + 1, 1, 100);
+        for (const r of games) {
+          r.userScore = clamp(r.userScore + 1, 1, 100);
+          r.liveMul = (r.liveMul ?? 1) * 0.92;
+        }
         spend(s, 'other_expense', money(10_000, s.day) * games.length);
       } else {
         spend(s, 'other_expense', Number(e.ctx.fine));

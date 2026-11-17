@@ -190,7 +190,7 @@ function GameCard({ p }: { p: GameProject }) {
             </>
           )}
           Hype <b className="num text-ink">{p.hype.toFixed(2)}</b>
-          {p.announcedDay === undefined && (fromDay(s.day).year >= 2015 ? ' · unannounced (a shadow drop if it stays that way)' : ' · unannounced')}
+          {p.announcedDay === undefined && (fromDay(s.day).year >= 2015 && !p.concept.expansionOf ? ' · unannounced (a shadow drop if it stays that way)' : ' · unannounced')}
         </span>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -589,9 +589,9 @@ function NewGame({ onDone }: { onDone: () => void }) {
           </Button>
         </div>
       )}
-      {!baseRel && !locked && (
+      {!baseRel && !locked && !franchiseId && (
         <div className="flex items-center justify-between gap-2 rounded-xl bg-bg2/60 px-3 py-2 text-xs">
-          <span className="min-w-0 text-ink2">{inspiration ? <>💡 <b className="text-ink">{GENRE_BY_ID[inspiration.genre].name} × {TOPIC_BY_ID[inspiration.topic]?.name}</b> — {inspiration.why}</> : 'Stuck for an idea? Get a suggestion from the trends and what your studio knows.'}</span>
+          <span className="min-w-0 text-ink2">{inspiration && inspiration.genre === genre && inspiration.topic === topic ? <>💡 <b className="text-ink">{GENRE_BY_ID[inspiration.genre].name} × {TOPIC_BY_ID[inspiration.topic]?.name}</b> — {inspiration.why}</> : 'Stuck for an idea? Get a suggestion from the trends and what your studio knows.'}</span>
           <Button size="sm" icon="lightbulb" onClick={() => {
               const idea = suggestConcept(s);
               if (!idea) return;

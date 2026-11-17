@@ -77,14 +77,14 @@ export function studioAwards(c: Ctx): void {
     return;
   }
   const startOfYear = toDay(year, 1, 1);
-  const contrib = (st: Staff) => st.contributed - (st.yearMark ?? 0);
+  const contrib = (st: Staff) => st.contributed - (st.yearMark ?? st.contribMark ?? st.contributed); // older saves: no mark yet
   const winners: { category: string; id: string; name: string }[] = [];
   const crown = (category: string, st: Staff | undefined) => {
     if (!st) return;
     winners.push({ category, id: st.id, name: st.name });
     st.honours = [...(st.honours ?? []), `${category} ${year}`].slice(-8);
     st.loyalty = clamp(st.loyalty + 8, 0, 100);
-    if (!st.mood || st.mood.until <= s.day || st.mood.v < 6) st.mood = { v: 6, until: s.day + 60, label: `Won ${category}` };
+    if (!st.mood || st.mood.until <= s.day || (st.mood.v >= 0 && st.mood.v < 6)) st.mood = { v: 6, until: s.day + 60, label: `Won ${category}` };
   };
   const pool = staff.filter((x) => x.role !== 'founder');
   crown('MVP', [...pool].sort((a, b) => contrib(b) - contrib(a))[0]);

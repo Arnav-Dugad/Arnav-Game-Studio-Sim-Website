@@ -435,6 +435,10 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** A lasting multiplier on live income (e.g. after patching out loot boxes). */
+  liveMul?: number;
+  /** Archived by a preservation society. */
+  archived?: boolean;
   /** Released without ever being announced (2015+). */
   shadowDrop?: boolean;
   /** Spent time in Early Access before its 1.0 launch (already counted in units/gross/net). */

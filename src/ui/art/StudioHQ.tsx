@@ -26,14 +26,19 @@ export function StudioHQ({ tier, name, month = 6, accent = '#e07a5f', width = 32
       <circle cx={7} cy={-16} r={7} fill={tree} />
     </g>
   );
-  const sign = (x: number, y: number, w: number) => (
+  const sign = (x: number, y: number, w: number) => {
+    // small signs shorten the name rather than shrink it to nothing
+    const max = Math.max(4, Math.floor((w - 6) / (5 * 0.66)));
+    const text = label.length > max ? `${label.slice(0, max - 1)}…` : label;
+    return (
     <g>
       <rect x={x} y={y} width={w} height={14} rx={3} fill="#2a2622" />
-      <text x={x + w / 2} y={y + 9.5} textAnchor="middle" fontSize={Math.min(8, (w - 6) / Math.max(1, label.length * 0.66))} fontWeight={800} fill="#fff4e6" fontFamily="'Inter','Segoe UI',system-ui,sans-serif" letterSpacing="0.04em">
-        {label.toUpperCase()}
+      <text x={x + w / 2} y={y + 9.5} textAnchor="middle" fontSize={Math.max(5, Math.min(8, (w - 6) / Math.max(1, text.length * 0.66)))} fontWeight={800} fill="#fff4e6" fontFamily="'Inter','Segoe UI',system-ui,sans-serif" letterSpacing="0.04em">
+        {text.toUpperCase()}
       </text>
     </g>
-  );
+    );
+  };
   let building: React.ReactNode;
   switch (Math.max(1, Math.min(6, tier))) {
     case 1:

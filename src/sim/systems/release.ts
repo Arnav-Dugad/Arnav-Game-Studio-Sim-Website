@@ -349,7 +349,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   // a 1.0 launch after Early Access is old news to part of the audience
   // a shadow drop: never announced, released out of nowhere (2015+), the surprise is the marketing
   const shadowDrop = p.announcedDay === undefined && !ea && !p.crowdfund && !p.concept.expansionOf && fromDay(s.day).year >= 2015;
-  const pot = salesPotential(s, p.concept, effScore, (ea && ea.units > 0 ? p.hype * 0.85 : p.hype) + (shadowDrop ? 0.6 * clamp((score - 60) / 25, 0, 1) : 0));
+  const pot = salesPotential(s, p.concept, effScore, (ea && ea.units > 0 ? p.hype * 0.85 : p.hype) + (shadowDrop ? Math.max(0, 0.6 * clamp((score - 60) / 25, 0, 1) * clamp(0.3 + s.company.reputation / 60, 0.3, 1) - p.hype) : 0));
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
@@ -472,7 +472,10 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   if (deal) {
     // the publisher remembers how this went
     const late = s.day > deal.deadlineDay ? Math.ceil((s.day - deal.deadlineDay) / 30) : 0;
-    const d = (late ? -1 - late * 0.5 : 1) + (score >= deal.minScore ? 1 : -1.5) + (score >= deal.minScore + 10 ? 1 : 0);
+    const rank = { small: 1, medium: 2, large: 3, aaa: 4 } as const;
+    const weight = Math.min(1, rank[p.concept.size] / rank[deal.size ?? p.concept.size]);
+    const raw = (late ? -1 - late * 0.5 : 1) + (score >= deal.minScore ? 1 : -1.5) + (score >= deal.minScore + 10 ? 1 : 0);
+    const d = raw > 0 ? raw * weight : raw; // a tiny game earns little trust, but a let-down still hurts
     (s.publisherTrust ??= {})[deal.publisherId] = Math.round(clamp((s.publisherTrust[deal.publisherId] ?? 0) + d, -5, 6) * 10) / 10;
   }
   if (deal && score < deal.minScore) {
@@ -669,7 +672,7 @@ export function updateLiveMonthly(c: Ctx): void {
       if (age < 1) continue;
       const tail = BALANCE.MONETIZATION[m].tailMul;
       const base = (rel.net / Math.max(1, age)) * 0.12 * (tail - 0.9) * (s.research.done.includes('online_liveops') ? 1.3 : 1);
-      rel.liveIncome = Math.max(0, base * Math.pow(0.96, age) * clamp(rel.userScore / 75, 0.3, 1.3));
+      rel.liveIncome = Math.max(0, base * Math.pow(0.96, age) * clamp(rel.userScore / 75, 0.3, 1.3) * (rel.liveMul ?? 1));
       if (rel.liveEvent) {
         if (s.day <= rel.liveEvent.until) rel.liveIncome *= rel.liveEvent.mul;
         else rel.liveEvent = undefined;
@@ -898,9 +901,11 @@ export function applySale(s: GameState, rel: Release, discount: SaleDiscount): n
     // A sale replaces any unfinished wave (its leftover is folded in at the new price).
     const left = ps.revival ? Math.max(0, ps.revival.potential - ps.revival.units) * 0.5 : 0;
     ps.revival = { week: rel.week, potential: add + left, units: 0, priceMul: 1 - discount };
-    ps.extraPotential = (ps.extraPotential ?? 0) + add;
     // Some of those buyers would have paid full price later.
-    ps.potential = Math.max(0, ps.potential - add * SALE_CANNIBALIZE); // only ever lowers it
+    const cut = Math.min(ps.potential, add * SALE_CANNIBALIZE);
+    ps.potential -= cut; // only ever lowers it
+    // the cap (1.5× potential + extra) keeps room for the sale itself
+    ps.extraPotential = (ps.extraPotential ?? 0) + add + cut * 1.5;
     total += add;
   }
   rel.saleCount = (rel.saleCount ?? 0) + 1;
