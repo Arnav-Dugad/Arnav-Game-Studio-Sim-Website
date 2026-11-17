@@ -5,6 +5,7 @@
 import { exclusiveBuzz } from './hardware';
 import { catalogSalesMul } from './subscription';
 import { leagueOnRelease, leagueSalesMul } from './esports';
+import { FEATURE_BY_ID } from '../../data/gameFeatures';
 import { showdownOnRelease } from './rivalry';
 import { BALANCE } from '../../data/balance';
 import { GENRES, GENRE_BY_ID } from '../../data/genres';
@@ -216,6 +217,14 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   sb.mul('Hype', 1 + hype * 0.45);
   sb.mul('Monetization', monet.units);
   if (fr) sb.mul('Franchise fatigue', fr ? 1 - fr.fatigue * 0.45 : 1);
+  let featSales = 1;
+  for (const id of concept.features ?? []) {
+    const f = FEATURE_BY_ID[id];
+    if (f?.sales) {
+      featSales *= f.sales;
+      sb.mul(f.name, f.sales);
+    }
+  }
   let totalUsers = 0;
   const launchTitles: { name: string; mul: number }[] = [];
   const g = GENRE_BY_ID[concept.genre];
@@ -233,7 +242,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
         Math.sqrt(topicPopularity(s, concept.topic));
       const launch = launchTitleMul(s, pl);
       if (launch > 1.005) launchTitles.push({ name: pl.name, mul: launch });
-      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch;
+      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales;
       return { platform: pid, potential: Math.max(0, potential), units: 0, pl };
     });
   for (const lt of launchTitles) sb.mul(`Launch title on ${lt.name} (early adopters buy everything)`, lt.mul);
@@ -295,6 +304,10 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   else if (sequel && ownBest >= 70 && score >= ownBest + 3) ub.add('Raises the bar for the series', 2);
   if (fr) ub.add('Franchise fatigue', -fr.fatigue * 12);
   if (s.research.done.includes('ai_genai') && fromDay(s.day).year >= 2023) ub.add('Gen-AI backlash', -1.5);
+  for (const id of p.concept.features ?? []) {
+    const f = FEATURE_BY_ID[id];
+    if (f?.user) ub.add(f.name, f.user);
+  }
   const modded = moddable(s, p.concept);
   if (modded) ub.add('Mod support', 2);
   ub.add('Players vary', rng.normal(0, 3));

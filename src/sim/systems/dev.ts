@@ -2,6 +2,7 @@
  * Development pipeline: daily progress for game / contract / engine projects, bug creation and QA,
  * phase gates, and the quality model (with full breakdown).
  */
+import { FEATURE_BY_ID } from '../../data/gameFeatures';
 import { BALANCE } from '../../data/balance';
 import { GENRE_BY_ID } from '../../data/genres';
 import { TOPIC_BY_ID } from '../../data/topics';
@@ -270,8 +271,16 @@ export function devProgress(p: GameProject): number {
 }
 
 /** Share of a full game's work: remasters and expansions are smaller jobs. */
-export function workShare(c: { remasterOf?: string; expansionOf?: string }): number {
-  return c.remasterOf ? BALANCE.REMASTER_WORK : c.expansionOf ? BALANCE.EXPANSION_WORK : 1;
+export function workShare(c: { remasterOf?: string; expansionOf?: string; features?: string[] }): number {
+  const base = c.remasterOf ? BALANCE.REMASTER_WORK : c.expansionOf ? BALANCE.EXPANSION_WORK : 1;
+  return base * featureWork(c.features);
+}
+
+/** Extra scope from signature features (clamped so a game can't balloon or shrink too far). */
+export function featureWork(features: string[] | undefined): number {
+  let w = 1;
+  for (const id of features ?? []) w += FEATURE_BY_ID[id]?.work ?? 0;
+  return clamp(w, 0.85, 1.6);
 }
 
 /**
@@ -320,6 +329,13 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   bd.mul('Topic trend', clamp(0.97 + (topicPopularity(s, c.topic) - 1) * 0.08, 0.93, 1.06));
   // novelty / repetition
   if (orig) bd.mul(`Remaster of ${orig.name} (${Math.round(orig.score)})`, clamp(0.9 + (orig.score - 70) / 150, 0.9, 1.1));
+  for (const id of c.features ?? []) {
+    const f = FEATURE_BY_ID[id];
+    if (!f) continue;
+    const fit = f.fits[c.genre];
+    if (fit) bd.mul(`${f.name} (great for ${g.name})`, fit);
+    else if (f.misfit !== 1) bd.mul(`${f.name} (an odd fit for ${g.name})`, f.misfit);
+  }
   const base = c.expansionOf ? s.releases[c.expansionOf] : undefined;
   if (base) bd.mul(`Builds on ${base.name} (${Math.round(base.score)})`, clamp(1 + (base.score - 70) / 150, 0.95, 1.08));
   if (!c.franchiseId && !orig) {

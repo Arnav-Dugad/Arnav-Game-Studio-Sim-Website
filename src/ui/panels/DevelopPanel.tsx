@@ -10,9 +10,10 @@ import { aOrAn, fmtMoney, fmtUnits, money } from '@/sim/util';
 import { availablePlatforms } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
-import { qualityToScore } from '@/sim/systems/dev';
+import { qualityToScore, workShare } from '@/sim/systems/dev';
 import { expansionPlatforms, expansionSizeOk, launchTitleMul, salesPotential } from '@/sim/systems/release';
-import { betaBlocked, betaCost, dealAdvanceFor, devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
+import { betaBlocked, betaCost, dealAdvanceFor, devkitCost, featuresBlocked, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
+import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size, Staff } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { Cover } from '../art/Cover';
@@ -340,6 +341,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const locked = !!baseRel;
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
+  const [features, setFeatures] = useState<string[]>([]);
   const expPlats = expansionRel ? expansionPlatforms(s, expansionRel) : null;
   const plats = availablePlatforms(s)
     .filter((p) => !expPlats || expPlats.includes(p.id))
@@ -363,6 +365,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
     const still = c.platforms.filter((pid) => plats.some((p) => p.id === pid));
     if (still.length) setPlatforms(still.slice(0, 6));
     if (s.engines[c.engineId]) setEngineId(c.engineId);
+    setFeatures((c.features ?? []).filter((id) => !featuresBlocked(s, [id], c.monetization)));
     sound.play('click');
   };
   const idle = Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
@@ -382,14 +385,17 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const ideal = learned ? idealFocus(genre) : undefined;
   const franchises = Object.values(s.franchises).filter((f) => f.bestScore > 0 || f.origin);
   const teamStaff = team.map((id) => s.staff[id]!).filter(Boolean);
-  const cost = estimateCost(s, size, teamStaff, remasterRel ? BALANCE.REMASTER_WORK : expansionRel ? BALANCE.EXPANSION_WORK : 1);
+  const work = workShare({ remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features });
+  const cost = estimateCost(s, size, teamStaff, work);
+  const featCost = features.reduce((tt, id) => tt + money(FEATURE_BY_ID[id]?.cost ?? 0, s.day), 0);
   const kitCost = platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
   const deal = s.offers.deals.find((d) => d.id === dealId);
   const liveDealId = deal ? dealId : ''; // the offer may have expired since it was picked
+  const liveFeatures = features.filter((id) => !featuresBlocked(s, [id], monet));
   const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
   const conceptPreview = useMemo(
-    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id }),
-    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel],
+    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features }),
+    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features],
   );
   const forecast = useMemo(() => {
     if (!platforms.length) return null;
@@ -403,7 +409,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures },
     });
     if (r.ok) {
       sound.play('success');
@@ -564,7 +570,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             }}
             options={(['small', 'medium', 'large', 'aaa'] as Size[]).map((z) => {
               const why = sizeAllowed(s, z) ?? (expansionRel && !expansionSizeOk(expansionRel, z) ? 'An expansion can’t be bigger than its base game' : null);
-              return { value: z, label: SIZE_LABEL[z], disabled: !!why, title: why ?? `${Math.round(BALANCE.SIZE[z].days * (remasterRel ? BALANCE.REMASTER_WORK : expansionRel ? BALANCE.EXPANSION_WORK : 1))} days · up to ${BALANCE.SIZE[z].teamCap} people` };
+              return { value: z, label: SIZE_LABEL[z], disabled: !!why, title: why ?? `${Math.round(BALANCE.SIZE[z].days * work)} days · up to ${BALANCE.SIZE[z].teamCap} people` };
             })}
           />
         </div>
@@ -581,6 +587,37 @@ function NewGame({ onDone }: { onDone: () => void }) {
             }))}
           />
         </div>
+      </Section>
+
+      <Section title={`Signature features (${features.length}/${MAX_FEATURES})`} right={<span className="text-xs text-ink3">Optional · more scope, more payoff in the right genre</span>}>
+        <div className="flex flex-wrap gap-1.5">
+          {GAME_FEATURES.filter((f) => yr >= f.year).map((f) => {
+            const why = featuresBlocked(s, [f.id], monet);
+            const on = features.includes(f.id);
+            const fit = f.fits[genre];
+            const full = !on && features.length >= MAX_FEATURES;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={on}
+                disabled={!!why || full}
+                onClick={() => setFeatures((x) => (on ? x.filter((y) => y !== f.id) : [...x, f.id]))}
+                title={`${f.desc}${f.work ? ` · ${f.work > 0 ? '+' : ''}${Math.round(f.work * 100)}% work` : ''}${f.cost ? ` · ${fmtMoney(money(f.cost, s.day))} licence` : ''}${why ? ` · ${why}` : ''}`}
+                className={cx(
+                  'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:opacity-40',
+                  on ? 'border-accent bg-accent text-accent-ink' : 'border-line hover:bg-bg2',
+                )}
+              >
+                {f.name}
+                {fit && <span className={cx('rounded-full px-1.5 text-[10px] font-bold', on ? 'bg-white/25' : 'bg-good/15 text-good')}>great fit</span>}
+                {!fit && f.misfit < 1 && <span className={cx('rounded-full px-1.5 text-[10px] font-bold', on ? 'bg-white/25' : 'bg-bad/10 text-bad')}>odd fit</span>}
+                <span className="num text-[10px] opacity-70">{f.work ? `${f.work > 0 ? '+' : ''}${Math.round(f.work * 100)}%` : f.cost ? fmtMoney(money(f.cost, s.day)) : ''}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[11px] text-ink3">Features add scope (the percentage is extra work) and lift quality in genres they suit; a poor fit drags a little. Some change sales or how players feel — hover for details.</p>
       </Section>
 
       <Section title="5 · Platforms" right={<span className="text-xs text-ink3">Each extra platform costs ~6% efficiency</span>}>
@@ -678,7 +715,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           </Tip>
           <div className="rounded-xl bg-bg2/70 p-2">
             <div className="text-ink3">Est. cost</div>
-            <div className="num font-semibold">{fmtMoney(cost.total + kitCost)}</div>
+            <div className="num font-semibold">{fmtMoney(cost.total + kitCost + featCost)}</div>
           </div>
           <div className="rounded-xl bg-bg2/70 p-2">
             <div className="text-ink3">Dev kits</div>

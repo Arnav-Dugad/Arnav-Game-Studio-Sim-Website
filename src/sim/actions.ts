@@ -5,6 +5,7 @@
 import { BALANCE } from '../data/balance';
 import { ENGINE_BY_ID } from '../data/engines';
 import { ITEM_BY_ID, type ItemId } from '../data/facilities';
+import { FEATURE_BY_ID, MAX_FEATURES } from '../data/gameFeatures';
 import { GENRE_BY_ID } from '../data/genres';
 import { CHANNELS, TRADE_SHOWS } from '../data/marketing';
 import { RESEARCH_BY_ID } from '../data/research';
@@ -14,7 +15,7 @@ import { clamp } from './breakdown';
 import { fromDay } from './calendar';
 import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
-import { benchmarkPoints, engineBuildPoints, engineTechFor, gameQuality, phaseLength, qualityToScore } from './systems/dev';
+import { benchmarkPoints, engineBuildPoints, engineTechFor, gameQuality, phaseLength, qualityToScore, workShare } from './systems/dev';
 import { resolveEvent } from './systems/events';
 import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
@@ -47,6 +48,8 @@ export interface StartGamePayload {
   remasterOf?: string;
   /** Release id of the base game, for an expansion pack. */
   expansionOf?: string;
+  /** Signature features (up to three). */
+  features?: string[];
   team: string[];
   focus?: [Focus3, Focus3, Focus3];
 }
@@ -185,6 +188,20 @@ export function betaBlocked(s: GameState, p: GameProject): string | null {
   return null;
 }
 
+/** Why this set of signature features can't be used (null if fine). */
+export function featuresBlocked(s: GameState, ids: string[], monet: Monetization): string | null {
+  if (ids.length > MAX_FEATURES) return `Pick at most ${MAX_FEATURES} signature features`;
+  const yr = fromDay(s.day).year;
+  for (const id of ids) {
+    const f = FEATURE_BY_ID[id];
+    if (!f) return 'Unknown feature';
+    if (yr < f.year) return `${f.name} isn't possible until ${f.year}`;
+    if (f.research && !s.research.done.includes(f.research)) return `${f.name} needs ${RESEARCH_BY_ID[f.research]?.name ?? 'research'}`;
+    if (f.monet && !f.monet.includes(monet)) return `${f.name} only suits free-to-play or live games`;
+  }
+  return null;
+}
+
 /** A publisher pays the advance for the game size it offered for; a smaller game gets a proportionally smaller one. */
 export function dealAdvanceFor(deal: { advance: number; size?: Size }, size: Size, day: number): number {
   if (!deal.size) return deal.advance;
@@ -281,9 +298,13 @@ function apply(c: Ctx, a: Action): string | null {
         const ok = expansionPlatforms(s, base);
         if (g.platforms.some((pid) => !ok.includes(pid))) return 'An expansion ships on the base game’s platforms';
       }
+      const feats = [...new Set(g.features ?? [])];
+      const featErr = featuresBlocked(s, feats, g.monetization);
+      if (featErr) return featErr;
+      const featCost = feats.reduce((t, id) => t + money(FEATURE_BY_ID[id]!.cost ?? 0, s.day), 0);
       // dev kits
       const kitCost = g.platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
-      if (kitCost > 0 && kitCost > s.company.cash) return `Need ${fmtMoney(kitCost)} for dev kits`;
+      if (kitCost + featCost > 0 && kitCost + featCost > s.company.cash) return `Need ${fmtMoney(kitCost + featCost)} for dev kits and licences`;
       const deal = g.dealId ? s.offers.deals.find((d) => d.id === g.dealId) : undefined;
       if (g.dealId && !deal) return 'That publisher deal expired';
       if (!deal && !s.research.done.includes('biz_self_publishing') && yr >= 1983 && s.releaseOrder.length >= 1) {
@@ -291,6 +312,7 @@ function apply(c: Ctx, a: Action): string | null {
         const onlyComputers = g.platforms.every((p) => platformInfo(s, p)?.kind === 'computer');
         if (!onlyComputers) return 'Research Self-Publishing (or sign a publisher deal) to ship on consoles';
       }
+      if (featCost > 0) spend(s, 'other_expense', featCost);
       for (const p of g.platforms)
         if (!s.devkits.includes(p)) {
           spend(s, 'devkits', devkitCost(s, p));
@@ -312,11 +334,12 @@ function apply(c: Ctx, a: Action): string | null {
           franchiseId: g.franchiseId,
           remasterOf: orig?.id,
           expansionOf: base?.id,
+          ...(feats.length ? { features: feats } : {}),
           deal: deal ? { publisherId: deal.publisherId, advance: dealAdvanceFor(deal, g.size, s.day), royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
         },
         phase: 0,
         phaseDay: 0,
-        phaseDays: [0, 1, 2].map((ph) => Math.max(4, Math.round(phaseLength(g.size, ph) * (orig ? BALANCE.REMASTER_WORK : base ? BALANCE.EXPANSION_WORK : 1)))) as [number, number, number],
+        phaseDays: [0, 1, 2].map((ph) => Math.max(4, Math.round(phaseLength(g.size, ph) * workShare({ remasterOf: orig?.id, expansionOf: base?.id, features: feats })))) as [number, number, number],
         focus: g.focus ?? defaultFocus(g.genre),
         points: { engine: 0, gameplay: 0, story: 0, level: 0, dialogue: 0, ai: 0, world: 0, graphics: 0, sound: 0 },
         design: 0,

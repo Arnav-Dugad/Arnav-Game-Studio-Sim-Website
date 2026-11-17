@@ -866,6 +866,27 @@ describe('management review fixes', () => {
   });
 });
 
+describe('signature features', () => {
+  it('add scope, lift quality in suited genres, and are validated', () => {
+    const s = game(2001, 4);
+    s.research.done.push('gfx_3d_1', 'online_basic');
+    s.company.cash = 1e7;
+    const plat = availablePlatforms(s).find((x) => x.kind === 'computer')!.id;
+    const g = { name: 'F', genre: 'rpg' as const, topic: 'fantasy', platforms: [plat], audience: 'teen' as const, size: 'small' as const, monetization: 'premium' as const, engineId: 'e0', team: ['founder'] };
+    expect(dispatch(s, { type: 'startGame', game: { ...g, features: ['open_world', 'branching', 'coop', 'crafting'] } }).ok).toBe(false); // max 3
+    expect(dispatch(s, { type: 'startGame', game: { ...g, features: ['photo_mode'] } }).ok).toBe(false); // 2016
+    expect(dispatch(s, { type: 'startGame', game: { ...g, features: ['battle_pass'] } }).ok).toBe(false); // f2p only
+    expect(dispatch(s, { type: 'startGame', game: { ...g, features: ['open_world', 'branching'] } }).ok).toBe(true);
+    const p = Object.values(s.projects).find((x) => x.kind === 'game') as GameProject;
+    expect(p.concept.features).toEqual(['open_world', 'branching']);
+    const plainDays = BALANCE.SIZE.small.days * BALANCE.PHASE_SHARE[1];
+    expect(p.phaseDays[1]).toBeGreaterThan(plainDays * 1.3);
+    const q = gameQuality(s, p, true);
+    expect(q.parts.some((x) => x.label.startsWith('Open world (great for'))).toBe(true);
+    expect(q.parts.some((x) => x.label.startsWith('Branching story (great for'))).toBe(true);
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

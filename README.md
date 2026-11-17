@@ -40,6 +40,7 @@
   - **Hiring:** hire several people at once.
   - **Building:** drag to place a row of furniture, or click "Desks for everyone".
   - **Automation policies:** idle staff research, burnt-out staff go on vacation, and research keeps going.
+- **Signature features.** Give each game up to three features (open world, online multiplayer, branching story, battle pass and more), each unlocked in its era. They add scope and pay off in the genres they suit.
 - **Launch titles and expectations.** Ship in a platform's first months to sell to starved early adopters. Sequels are judged against the series' best, so disappoint the fans and some drift away.
 - **Open betas.** From 2005, test with real players during polish: fewer bugs, more hype and an early read on the score.
 - **A studio that ages.** Veterans retire after 30–40 years with a farewell party and join your alumni. Each decade ends with a look back at its Games of the Year, and winning a Golden Pixel award gets you a proper ceremony.

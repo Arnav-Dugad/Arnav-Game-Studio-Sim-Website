@@ -137,6 +137,8 @@ export interface Concept {
   remasterOf?: Id;
   /** Release id of the base game this expansion pack extends. */
   expansionOf?: Id;
+  /** Signature features (data/gameFeatures.ts), up to three. */
+  features?: string[];
 }
 
 export interface PublisherDeal {

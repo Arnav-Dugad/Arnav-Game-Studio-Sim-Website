@@ -8,7 +8,7 @@ import { RESEARCH } from '../../src/data/research';
 import { ITEMS, OFFICE_TIERS } from '../../src/data/facilities';
 import { CHANNELS, TRADE_SHOWS } from '../../src/data/marketing';
 import { PHASE_AREAS, type GenreId } from '../../src/data/types';
-import { dispatch, type Action } from '../../src/sim/actions';
+import { dispatch, featuresBlocked, type Action } from '../../src/sim/actions';
 import { fromDay } from '../../src/sim/calendar';
 import type { Rng } from '../../src/sim/rng';
 import { availablePlatforms, genrePopularity } from '../../src/sim/systems/market';
@@ -21,6 +21,7 @@ import { canLaunchSub, subLaunchCost, subRefPrice } from '../../src/sim/systems/
 import { showcaseBlocked, showcaseCost } from '../../src/sim/systems/showcase';
 import { dealAdvance, labelBlocked, signableIndies } from '../../src/sim/systems/publishing';
 import { canExpand, canRunSale, expansionPlatforms } from '../../src/sim/systems/release';
+import { GAME_FEATURES } from '../../src/data/gameFeatures';
 import { canFoundLeague, leagueCandidates, leagueSetupCost } from '../../src/sim/systems/esports';
 import { MARKETING, canDesignConsole, consoleSpec, liveConsoles, refPrice } from '../../src/sim/systems/hardware';
 import type { Focus3, GameState, Size } from '../../src/sim/types';
@@ -165,6 +166,7 @@ function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' |
       dealId: deal?.id,
       team: team.slice(0, cap),
       focus: idealFocus(genre),
+      features: opts.mode === 'random' ? undefined : GAME_FEATURES.filter((f) => f.fits[genre] && !featuresBlocked(s, [f.id], monet)).slice(0, 2).map((f) => f.id),
     },
   });
   if (!res.ok && process.env.BOT_DEBUG) console.log('startGame failed', fromDay(s.day).year, res.error, size, plats);
@@ -408,6 +410,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (s, rng) => (s.hardware.length ? { type: rng.chance(0.5) ? 'retireConsole' : 'cancelConsole', id: rng.pick(s.hardware).id } : null),
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
+  (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'startGame', game: { name: 'Feat', genre: rng.pick(['rpg', 'shooter', 'puzzle'] as const), topic: 'fantasy', platforms: [availablePlatforms(s)[0]?.id ?? 'pc'], audience: 'teen', size: 'small', monetization: rng.pick(['premium', 'f2p'] as const), engineId: 'e0', team: st.slice(0, 1), features: rng.shuffle(GAME_FEATURES.map((f) => f.id).concat('bogus')).slice(0, rng.int(0, 5)) } } : null; },
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'openBeta', projectId: rng.pick(p) } : null; },
   (s, rng) => { const r = Object.values(s.releases); return r.length ? { type: 'foundLeague', releaseId: rng.pick(r).id, tier: rng.pick(['regional', 'pro', 'world', 'mega'] as never[]), name: rng.chance(0.1) ? '' : 'Fuzz League' } : null; },
   (s, rng) => (s.leagues?.length ? { type: 'closeLeague', id: rng.pick(s.leagues).id } : null),
