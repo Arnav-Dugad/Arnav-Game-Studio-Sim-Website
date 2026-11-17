@@ -925,10 +925,10 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'april_fools',
     art: 'megaphone',
-    cooldown: 300,
+    cooldown: 700,
     weight: (s) => {
       const d = fromDay(s.day);
-      return d.year >= 1995 && d.month === 3 && d.day >= 25 && s.releaseOrder.length >= 2 ? 3 : 0;
+      return d.year >= 1995 && d.month === 3 && d.day >= 25 && s.releaseOrder.length >= 2 ? 1.2 : 0;
     },
     make: ({ rng }) => {
       const idea = rng.pick([
