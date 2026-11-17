@@ -11,6 +11,7 @@ import type { Ctx } from '../ctx';
 import type { GameState, Release, Size } from '../types';
 import { fmtMoney, fmtUnits, money, pushNews } from '../util';
 import { valuation } from './finance';
+import { checkAchievements } from './achievements';
 
 export type GoalDef =
   | { kind: 'releases'; n: number }
@@ -211,6 +212,7 @@ export function scenarioMonthly(c: Ctx): void {
   const all = def.goals.every((_, i) => sc.met[i] !== undefined);
   if (all) {
     sc.result = 'won';
+    checkAchievements(c);
     s.status = 'retired';
     s.endReason = `Scenario complete: ${def.name}, with ${Math.max(0, Math.round((sc.deadlineDay - s.day) / 365))} years to spare.`;
     c.out.push({ type: 'gameOver', reason: s.endReason });
