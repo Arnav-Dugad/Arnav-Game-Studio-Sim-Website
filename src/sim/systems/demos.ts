@@ -6,7 +6,7 @@
 import { fromDay } from '../calendar';
 import type { GameProject, GameState } from '../types';
 import { money, pushNews, spend } from '../util';
-import { qualityToScore } from './dev';
+import { gameQuality, qualityToScore } from './dev';
 
 export const DEMO_YEAR = 1990;
 
@@ -25,7 +25,7 @@ export function demoBlocked(s: GameState, p: GameProject): string | null {
 
 /** How players take the demo, from the game as it is today. */
 export function demoReception(score: number): { hype: number; tone: 'good' | 'neutral' | 'bad'; text: string } {
-  if (score >= 75) return { hype: 0.35, tone: 'good', text: 'Players love it — wishlists are pouring in.' };
+  if (score >= 75) return { hype: 0.35, tone: 'good', text: 'Players love it — word of mouth is spreading fast.' };
   if (score >= 60) return { hype: 0.08, tone: 'neutral', text: 'A decent response: some interest, no fireworks.' };
   return { hype: -0.25, tone: 'bad', text: 'Players found it rough. Some have quietly lost interest.' };
 }
@@ -36,7 +36,7 @@ export function releaseDemo(s: GameState, projectId: string): string | null {
   const why = demoBlocked(s, p);
   if (why) return why;
   spend(s, 'marketing', demoCost(s));
-  const score = p.qualityPreview ? Math.round(qualityToScore(p.qualityPreview.total)) : 50;
+  const score = Math.round(qualityToScore((p.qualityPreview ?? gameQuality(s, p, true)).total));
   const r = demoReception(score);
   p.demo = { day: s.day, score };
   p.hype = Math.max(0, Math.min(3, p.hype + r.hype));

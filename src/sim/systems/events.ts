@@ -868,10 +868,17 @@ export const EVENT_DEFS: EventDef[] = [
       if (!r) return;
       r.accessibilityAsked = true;
       const cost = Number(e.ctx.cost);
-      if (opt === 'patch' && s.company.cash >= cost) {
+      if (opt === 'patch') {
+        if (s.company.cash < cost) {
+          pushNews(s, { category: 'studio', headline: `No budget for ${r.name}’s accessibility patch`, body: 'The players who asked are disappointed.', tone: 'bad' });
+          return;
+        }
         spend(s, 'other_expense', cost);
         r.userScore = clamp(r.userScore + 2, 1, 100);
-        if (!r.delisted) for (const ps of r.platforms) ps.potential *= 1.02;
+        if (!r.delisted) {
+          for (const ps of r.platforms) ps.potential *= 1.02;
+          r.active = true;
+        }
         addRep(s, 1, `Accessibility patch for ${r.name}`);
         pushNews(s, { category: 'studio', headline: `${r.name} gets an accessibility patch`, body: 'Remappable controls, subtitles and a colour-blind mode — and a lot of grateful players.', tone: 'good' });
       } else addRep(s, 0.3, 'Promised accessibility options');
@@ -890,7 +897,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: `Streamers raise money playing ${r.name}`,
         body: `A 48-hour charity marathon of ${r.name} has raised ${fmtMoney(raised)} for a children’s hospital, with thousands watching. The organisers have tagged you.`,
         options: [
-          { id: 'match', label: `Match the donations (${fmtMoney(raised)})`, preview: 'Reputation +2, fans +5%, and the team is proud', disabled: s.company.cash < raised },
+          { id: 'match', label: `Match the donations (${fmtMoney(raised)})`, preview: `Reputation +${(2 * (1 - s.company.reputation / 130)).toFixed(1)}, fans +5%, and the team is proud`, disabled: s.company.cash < raised },
           { id: 'cheer', label: 'Send the team’s thanks on stream', preview: 'Fans +1%' },
         ],
         ctx: { rel: r.id, raised },
@@ -900,7 +907,11 @@ export const EVENT_DEFS: EventDef[] = [
       const r = s.releases[String(e.ctx.rel)];
       const raised = Number(e.ctx.raised);
       const fr = r?.concept.franchiseId ? s.franchises[r.concept.franchiseId] : undefined;
-      if (opt === 'match' && s.company.cash >= raised) {
+      if (opt === 'match') {
+        if (s.company.cash < raised) {
+          pushNews(s, { category: 'studio', headline: 'Couldn’t match the charity stream after all', body: 'The money wasn’t there by the time the stream ended. The team sent their thanks instead.', tone: 'neutral' });
+          return;
+        }
         spend(s, 'other_expense', raised);
         s.progress.stats.donated = (s.progress.stats.donated ?? 0) + raised;
         addRep(s, 2 * (1 - s.company.reputation / 130), 'Matched a charity stream');
@@ -914,9 +925,9 @@ export const EVENT_DEFS: EventDef[] = [
     id: 'easter_egg',
     art: 'letters',
     cooldown: 500,
-    weight: (s) => (activeGames(s).some((p) => p.phase >= 1 && !p.easterEgg && p.team.some((id) => s.staff[id] && s.staff[id]!.role !== 'founder')) ? 0.2 : 0),
+    weight: (s) => (activeGames(s).some((p) => p.phase === 1 && !p.easterEgg && p.team.some((id) => s.staff[id] && s.staff[id]!.role !== 'founder')) ? 0.2 : 0),
     make: ({ s, rng }) => {
-      const pool = activeGames(s).filter((p) => p.phase >= 1 && !p.easterEgg);
+      const pool = activeGames(s).filter((p) => p.phase === 1 && !p.easterEgg && p.team.some((id) => s.staff[id] && s.staff[id]!.role !== 'founder'));
       const p = pool.length ? rng.pick(pool) : undefined;
       const people = p ? p.team.map((id) => s.staff[id]).filter((x): x is Staff => !!x && x.role !== 'founder') : [];
       if (!p || !people.length) return null;
@@ -927,8 +938,8 @@ export const EVENT_DEFS: EventDef[] = [
         title: `${first} hid something in ${p.concept.name}`,
         body: `During a late-night playtest you stumble on it: ${what}. ${first} looks sheepish. “Nobody will ever find it… right?”`,
         options: [
-          { id: 'keep', label: 'Leave it in', preview: `A few months after launch players may find it: a little buzz for the game, and a proud ${first}` },
           { id: 'cut', label: 'Take it out', preview: `Keeps things tidy — ${first} is a bit deflated` },
+          { id: 'keep', label: 'Leave it in', preview: `A few months after launch players may find it: a little buzz for the game, and a proud ${first}` },
         ],
         ctx: { project: p.id, staff: st.id, what },
       };
@@ -1782,7 +1793,7 @@ export const EVENT_DEFS: EventDef[] = [
       };
     },
     resolve: ({ s }, e, opt) => {
-      if (opt !== 'sponsor') return;
+      if (opt !== 'sponsor' || s.company.cash < Number(e.ctx.cost)) return;
       spend(s, 'marketing', Number(e.ctx.cost));
       s.company.fans *= 1.08;
       addRep(s, 2, 'Esports sponsorship');
