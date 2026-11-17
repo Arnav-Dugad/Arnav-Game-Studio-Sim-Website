@@ -2596,9 +2596,9 @@ export function expireEvents(c: Ctx): void {
   const { s } = c;
   for (const e of [...s.pendingEvents]) {
     if (e.expiresDay <= s.day) {
-      const last = [...e.options].reverse().find((o) => !o.disabled && (o.cost === undefined || s.company.cash >= o.cost)) ?? e.options[e.options.length - 1];
-      if (last) resolveEvent(c, e.uid, last.id);
-      else s.pendingEvents = s.pendingEvents.filter((x) => x.uid !== e.uid);
+      const last = [...e.options].reverse().find((o) => !o.disabled && (o.cost === undefined || s.company.cash >= o.cost));
+      // nothing you can take any more: the moment passes without an outcome (never stuck pending)
+      if (!last || !resolveEvent(c, e.uid, last.id)) s.pendingEvents = s.pendingEvents.filter((x) => x.uid !== e.uid);
     }
   }
 }

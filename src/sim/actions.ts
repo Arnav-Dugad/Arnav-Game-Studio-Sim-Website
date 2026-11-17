@@ -181,6 +181,7 @@ export type Action =
   | { type: 'awardsCampaign'; releaseId: string }
   | { type: 'launchBonus'; releaseId: string }
   | { type: 'releaseDemo'; projectId: string }
+  | { type: 'dismissEvent'; uid: number }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
   | { type: 'readFanMail' }
   | { type: 'crowdfund'; projectId: string; tier: CampaignTier }
@@ -1061,6 +1062,13 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'mediaDeal':
       return signMediaDeal(s, a.franchiseId, a.kind, a.control);
+    case 'dismissEvent': {
+      const ev = s.pendingEvents.find((e) => e.uid === a.uid);
+      if (!ev) return 'Event no longer available';
+      if (!ev.options.every((o) => o.disabled || (o.cost !== undefined && s.company.cash < o.cost))) return 'Pick one of the options';
+      s.pendingEvents = s.pendingEvents.filter((e) => e.uid !== a.uid);
+      return null;
+    }
     case 'releaseDemo':
       return releaseDemo(s, a.projectId);
     case 'launchBonus':

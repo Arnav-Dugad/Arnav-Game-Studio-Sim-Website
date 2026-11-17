@@ -152,6 +152,17 @@ function EventModal({ uid, onClose }: { uid: number; onClose: () => void }) {
             <div className="text-xs text-ink3">{o.preview}</div>
           </button>
         ))}
+        {e.options.every((o) => o.disabled || (o.cost !== undefined && s.company.cash < o.cost)) && (
+          <button
+            type="button"
+            onClick={() => {
+              if (act({ type: 'dismissEvent', uid }).ok) onClose();
+            }}
+            className="w-full rounded-xl border border-dashed border-line p-3 text-left text-sm text-ink2 transition hover:bg-bg2"
+          >
+            Let it pass — you can’t afford any of these right now
+          </button>
+        )}
       </div>
     </Modal>
   );
