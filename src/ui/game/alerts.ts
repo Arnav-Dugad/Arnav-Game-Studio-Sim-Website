@@ -1,4 +1,5 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
+import { campaignBlocked, campaignFor } from '@/sim/systems/awardsCampaign';
 import { sabbaticalBlocked } from '@/sim/systems/staff';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { fmtMoney } from '@/sim/util';
@@ -14,7 +15,7 @@ import { INTERN_YEAR } from '@/sim/systems/interns';
 import { isAway } from '@/sim/systems/staff';
 import type { GameProject, GameState, Project } from '@/sim/types';
 import type { IconName } from '../icons';
-import type { PanelId } from '../store';
+import { useGame, type PanelId } from '../store';
 import { atRisk } from '../panels/staffTools';
 
 export interface Alert {
@@ -98,6 +99,14 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   if (bigSeries && !(s.mediaDeals ?? []).length && MEDIA_KINDS.some((k) => !mediaBlocked(s, bigSeries, k))) out.push({ id: 'media', tone: 'info', icon: 'sparkle', text: `${bigSeries.name} is popular enough to license — comics, toys, maybe more.`, action: { label: 'IP', run: () => open('company', 'ip') } });
   if (fromDay(s.day).month >= 6 && (s.company.lastTalkDay === undefined || s.day - s.company.lastTalkDay >= 300) && staff.some((x) => (x.level === 'senior' || x.level === 'lead' || x.role === 'founder') && !talkBlocked(s, x))) out.push({ id: 'talk', tone: 'info', icon: 'megaphone', text: 'This year’s Developers Summit slot is unused — a senior could give a talk (open their card).', action: { label: 'Staff', run: () => open('staff') } });
   if (!s.company.policies.interns && yr >= INTERN_YEAR && staff.length >= 8 && freeDesks(s) >= 2) out.push({ id: 'interns', tone: 'info', icon: 'people', text: 'You have room for summer interns: cheap, eager and high-potential.', action: { label: 'Policies', run: () => open('staff', 'policies') } });
+  // awards season: a contender without a campaign behind it
+  {
+    const contender = !campaignFor(s) ? s.releaseOrder.map((id) => s.releases[id]!).filter((r) => r && r.score >= 83 && !campaignBlocked(s, r)).sort((a, b) => b.score - a.score)[0] : undefined;
+    if (contender) {
+      const go = () => useGame.getState().openModalNow({ kind: 'release', releaseId: contender.id });
+      out.push({ id: 'awards', tone: 'info', icon: 'trophy', text: `Awards season: ${contender.name} (${Math.round(contender.score)}) is in the running at the Golden Pixel Gala. A campaign could tip it.`, action: { label: 'See it', run: go } });
+    }
+  }
   if ((s.fanMail ?? []).some((m) => m.kind === 'art') && !s.office.items.some((i) => i.item === 'fan_wall')) out.push({ id: 'fanwall', tone: 'info', icon: 'palette', text: 'Fans are sending drawings — build a Fan Art Wall to pin them up.', action: { label: 'Fan mail', run: () => open('news', 'mail') } });
   const order = { bad: 0, warn: 1, info: 2 };
   return out.sort((a, b) => order[a.tone] - order[b.tone]);
