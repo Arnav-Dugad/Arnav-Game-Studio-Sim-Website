@@ -441,10 +441,12 @@ export function drawItem(g: Graphics, id: ItemId, w: number, h: number, o: DrawO
       g.roundRect(4, -22, W - 8, H - 2, 3).fill(0xc79a63); // cork
       g.roundRect(4, -22, W - 8, H - 2, 3).stroke({ width: 2.4, color: P.woodDark });
       for (let i = 0; i < 14; i++) g.circle(10 + ((i * 37) % (W - 20)), -16 + ((i * 23) % (H - 10)), 0.6).fill({ color: 0x7a5530, alpha: 0.5 });
-      const art = (o.fanArt ?? []).slice(0, 8);
-      const cols = 4;
+      const wide = W >= H;
+      const cols = wide ? 4 : 1;
+      const rows = wide ? 2 : 4;
+      const art = (o.fanArt ?? []).slice(0, cols * rows);
       const pw = (W - 16) / cols - 3;
-      const ph = Math.min(pw * 1.25, (H - 8) / 2 - 3);
+      const ph = Math.min(wide ? pw * 1.25 : pw * 0.8, (H - 8) / rows - 3);
       art.forEach((a, i) => {
         const cx = 9 + (i % cols) * (pw + 3);
         const cy = -19 + Math.floor(i / cols) * (ph + 3);

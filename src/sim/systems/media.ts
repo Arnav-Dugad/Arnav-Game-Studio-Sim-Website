@@ -86,9 +86,12 @@ export function mediaMonthly(c: Ctx): void {
     const best = f?.bestScore ?? 70;
     const q = clamp(rng.normal(52 + (best - 70) * 0.6 + (deal.control === 'involved' ? 15 : 0) + d.bias(fromDay(s.day).year), 16), 0, 100);
     deal.quality = Math.round(q);
+    if (!f) {
+      deal.outcome = 'fine'; // the series was sold: someone else's problem now
+      continue;
+    }
     deal.outcome = q >= 65 ? 'hit' : q < 40 ? 'flop' : 'fine';
     const big = deal.kind === 'movie' || deal.kind === 'tv' || deal.kind === 'ride';
-    if (!f) continue; // the series was sold: someone else's problem now
     if (deal.outcome === 'hit') {
       f.fans = Math.round(f.fans * (1 + d.boost));
       addRep(s, (big ? 2 : 0.7) * (1 - s.company.reputation / 115), `The ${f.name} ${d.noun} was a hit`);

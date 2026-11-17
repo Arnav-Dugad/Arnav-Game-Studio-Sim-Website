@@ -33,7 +33,7 @@ export function talkBlocked(s: GameState, st: Staff): string | null {
   const yr = fromDay(s.day).year;
   if (yr < TALK_YEAR) return `The Developers Summit starts in ${TALK_YEAR}`;
   if (st.role !== 'founder' && st.level !== 'senior' && st.level !== 'lead') return 'Speakers are seniors and leads';
-  if (s.company.lastTalkYear === yr) return 'The studio has already had its talk this year';
+  if (s.company.lastTalkDay !== undefined && s.day - s.company.lastTalkDay < 300) return 'The studio has already had its talk this year';
   if (!talkableGames(s, st).length) return 'They need a shipped game to talk about';
   if (st.sickDays > 0 || (st.vacationDays ?? 0) > 0) return `${st.name} is away`;
   if (s.company.cash < talkCost(s)) return 'Not enough cash for the trip';
@@ -76,10 +76,11 @@ export function giveTalk(c: Ctx, staffId: string, releaseId: string): string | n
   if (!rel) return 'Pick a game they worked on';
   spend(s, 'other_expense', talkCost(s));
   s.company.lastTalkYear = fromDay(s.day).year;
+  s.company.lastTalkDay = s.day;
   const [primary] = ROLE_SKILLS[st.role];
   const skill = st.skills[primary];
   // honest post-mortems of flops are crowd favourites too
-  const story = rel.score < 55 ? 70 : rel.score;
+  const story = rel.score < 55 ? 65 : rel.score; // a candid post-mortem still draws a crowd
   const reception = clamp(rng.normal((skill + story) / 2 + (st.level === 'lead' ? 5 : 0), 10), 0, 100);
   const tier = reception >= 80 ? 'ovation' : reception >= 55 ? 'good' : 'mixed';
   const title = talkTitle(st, rel);
@@ -88,7 +89,8 @@ export function giveTalk(c: Ctx, staffId: string, releaseId: string): string | n
   st.vacationDays = TALK_AWAY_DAYS;
   st.leave = 'conference';
   st.loyalty = clamp(st.loyalty + 4, 0, 100);
-  st.mood = { v: tier === 'mixed' ? 1 : 6, until: s.day + 60, label: tier === 'mixed' ? 'Gave a talk' : 'Gave a great talk' };
+  const v = tier === 'mixed' ? 1 : 6;
+  if (!st.mood || st.mood.until < s.day || Math.abs(st.mood.v) <= v) st.mood = { v, until: s.day + 60, label: tier === 'mixed' ? 'Gave a talk' : 'Gave a great talk' };
   st.skills[primary] = clamp(st.skills[primary] + 1, 0, Math.max(st.skills[primary], st.potential));
   if (tier === 'ovation') st.spotlightUntil = s.day + TALK_BUZZ_DAYS;
   s.progress.stats.talks = (s.progress.stats.talks ?? 0) + 1;

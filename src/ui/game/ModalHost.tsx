@@ -667,7 +667,7 @@ function TalkSection({ staffId }: { staffId: string }) {
       <p className="mt-1 text-[11px] text-ink3">
         “{talkTitle(st, rel)}” — one speaking slot per studio each year ({fmtMoney(talkCost(s))}, {TALK_AWAY_DAYS} days away). A good talk builds reputation and brings better job applicants for three months; a standing ovation also puts {st.name.split(' ')[0]} in front of rival recruiters. Flops make great post-mortems.
       </p>
-      {why && s.company.lastTalkYear === fromDay(s.day).year && <p className="mt-0.5 text-[11px] text-ink3">This year’s slot is used — next year’s opens in January.</p>}
+      {why && s.company.lastTalkDay !== undefined && s.day - s.company.lastTalkDay < 300 && <p className="mt-0.5 text-[11px] text-ink3">This year’s slot is used — the next one opens {formatDate(s.company.lastTalkDay + 300)}.</p>}
     </Section>
   );
 }

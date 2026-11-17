@@ -444,7 +444,7 @@ function IP() {
                 {f.fatigue > 0.15 && ` · fatigue ${Math.round(f.fatigue * 100)}%`}
               </div>
             </div>
-            <Button size="sm" icon="sparkle" variant={openMedia === f.id ? 'primary' : 'secondary'} onClick={() => setOpenMedia((x) => (x === f.id ? null : f.id))} aria-expanded={openMedia === f.id}>
+            <Button size="sm" icon="sparkle" variant={openMedia === f.id ? 'primary' : 'secondary'} onClick={() => setOpenMedia((x) => (x === f.id ? null : f.id))} aria-expanded={openMedia === f.id} aria-controls="media-picker">
               Licensing
             </Button>
             {f.fans >= 300_000 && (
@@ -476,7 +476,7 @@ function MediaPicker({ franchiseId }: { franchiseId: string }) {
   const s = useGame((g) => g.s)!;
   const f = s.franchises[franchiseId]!;
   return (
-    <div className="rounded-2xl border border-line p-3 text-xs">
+    <div id="media-picker" role="region" aria-label={`License ${f.name}`} className="rounded-2xl border border-line p-3 text-xs">
       <div className="text-sm font-semibold">License {f.name}</div>
       <p className="mt-0.5 text-ink3">
         A licensee pays up front and makes it; it comes out months later. A hit grows the fan base (screen adaptations send people back to the latest game) and pays royalties; a flop embarrasses the series. Hands-off pays the full fee; keeping creative control pays half but makes a hit far likelier. Better games make better adaptations.

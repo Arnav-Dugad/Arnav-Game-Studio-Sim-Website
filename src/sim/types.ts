@@ -808,6 +808,7 @@ export interface Company {
   lastCampaignDay?: number;
   /** Conference talks: the year of the studio's last talk, and job-seeker buzz from a good one. */
   lastTalkYear?: number;
+  lastTalkDay?: number;
   talkBuzzUntil?: number;
   /** Venture funding before the IPO: rounds raised, investors' share of the company, and when the last round closed. */
   fundingRounds?: number;

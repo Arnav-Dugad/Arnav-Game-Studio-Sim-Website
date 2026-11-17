@@ -1417,6 +1417,13 @@ export const EVENT_DEFS: EventDef[] = [
     resolve: ({ s, rng }, e, opt) => {
       const fr = s.franchises[String(e.ctx.fr)];
       if (!fr || opt === 'decline') return;
+      if (opt === 'coproduce' && s.company.cash < Number(e.ctx.coCost)) return;
+      // record it as a film deal so licensing respects the same gap
+      const fans0 = fr.fans;
+      const record = (fee: number) => {
+        const out = fr.fans > fans0 ? 'hit' : fr.fans < fans0 ? 'flop' : 'fine';
+        (s.mediaDeals ??= []).push({ id: `md${s.day}_movie_${fr.id}`, franchiseId: fr.id, name: fr.name, kind: 'movie', control: opt === 'coproduce' ? 'involved' : 'licensed', startDay: s.day, releaseDay: s.day, fee, outcome: out });
+      };
       if (opt === 'license') {
         earn(s, 'licensing', Number(e.ctx.fee));
         if (rng.chance(0.5)) {
@@ -1438,6 +1445,7 @@ export const EVENT_DEFS: EventDef[] = [
           pushNews(s, { category: 'industry', headline: `The ${fr.name} movie underwhelms at the box office`, tone: 'bad' });
         }
       }
+      record(opt === 'license' ? Number(e.ctx.fee) : 0);
     },
   },
   {

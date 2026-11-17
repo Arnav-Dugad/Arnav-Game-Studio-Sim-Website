@@ -8,6 +8,7 @@ import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState, Release } from '../types';
 import { addRep, fmtUnits, pushNews } from '../util';
+import { platformInfo } from './market';
 
 export const CLASSIC_AGE_YEARS = 10;
 
@@ -32,20 +33,24 @@ export function hallOfClassics(c: Ctx, year: number): void {
   addRep(s, 2 * (1 - s.company.reputation / 130), `${pick.name} inducted into the Hall of Classics`);
   const fr = pick.concept.franchiseId ? s.franchises[pick.concept.franchiseId] : undefined;
   if (fr) fr.fans = Math.round(fr.fans * 1.05);
-  // a new generation discovers it
+  // a new generation discovers it — where it can still be bought
+  let revived = false;
   for (const ps of pick.platforms) {
+    const pl = platformInfo(s, ps.platform);
+    if (!pl || (pl.endDay !== null && s.day > pl.endDay + 365)) continue;
+    revived = true;
     const add = ps.potential * 0.04;
     if (add < 1) continue;
     const prev = ps.revival;
     ps.revival = { week: pick.week, potential: (prev ? prev.potential - prev.units : 0) + add, units: 0 };
     ps.extraPotential = (ps.extraPotential ?? 0) + add;
   }
-  pick.active = true;
+  if (revived) pick.active = true;
   pick.userScore = clamp(pick.userScore + 1, 1, 100);
   const n = pushNews(s, {
     category: 'studio',
     headline: `${pick.name} enters the Golden Pixel Hall of Classics`,
-    body: `${fromDay(pick.day).year}’s ${Math.round(pick.score)}-scoring hit (${fmtUnits(pick.units)} sold) joins the all-time greats. A new generation is discovering it.`,
+    body: `${fromDay(pick.day).year}’s ${Math.round(pick.score)}-scoring hit (${fmtUnits(pick.units)} sold) joins the all-time greats.${revived ? ' A new generation is discovering it.' : ''}`,
     tone: 'good',
   });
   c.out.push({ type: 'news', newsId: n.id, major: true });

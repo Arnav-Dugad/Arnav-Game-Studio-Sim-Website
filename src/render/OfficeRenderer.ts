@@ -515,6 +515,13 @@ export class OfficeRenderer {
     this.trophies = Math.min(8, s.progress.stats.awardsWon ?? 0);
     this.fanArt = pinnedArt(s).slice(0, 8).map((m) => ({ seed: m.seed, color: FAN_COLORS[m.seed % FAN_COLORS.length]! }));
     const fanKey = this.fanArt.map((a) => a.seed).join(',');
+    if (fanKey !== this.lastFanKey) {
+      this.lastFanKey = fanKey;
+      for (const [k, tex] of this.textures) if (k.startsWith('fan_wall|')) {
+        tex.destroy(true);
+        this.textures.delete(k);
+      }
+    }
     const iKey = `${s.office.rev ?? 0}|${s.office.tier}|${floor}|${eraBucket}|${this.P.night}|${s.office.items.length}|${this.trophies}|${fanKey}`;
     if (iKey !== this.itemsKey) {
       this.itemsKey = iKey;
@@ -631,6 +638,7 @@ export class OfficeRenderer {
 
   private trophies = 0;
   private fanArt: { seed: number; color: number }[] = [];
+  private lastFanKey = '';
   private agentColor: number | undefined;
 
   private texFor(id: ItemId, rot: 0 | 1, era: number): { tex: Texture; ox: number; oy: number } {

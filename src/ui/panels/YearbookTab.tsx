@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { tierDef } from '@/sim/systems/office';
 import { ROLE_NAMES } from '@/sim/systems/staff';
 import type { Role, YearbookPhoto } from '@/sim/types';
@@ -21,11 +22,11 @@ function rows<T>(items: T[]): T[][] {
   return out;
 }
 
-function Photo({ p, company }: { p: YearbookPhoto; company: string }) {
+const Photo = memo(function Photo({ p, company }: { p: YearbookPhoto; company: string }) {
   const rs = rows(p.faces);
   const bg = BACKDROP[(p.tier - 1) % BACKDROP.length] ?? BACKDROP[0]!;
   return (
-    <figure className="rounded-2xl border border-line bg-[#fbf8f2] p-2.5 shadow-sm dark:bg-[#2a2622]">
+    <figure className="rounded-2xl border border-line bg-bg2/50 p-2.5 shadow-sm">
       <div className="relative overflow-hidden rounded-lg px-2 pb-2 pt-3" style={{ background: `linear-gradient(${bg}, color-mix(in srgb, ${bg} 70%, #000 30%))` }}>
         <div className="absolute inset-x-0 bottom-0 h-1/3" style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.18))' }} />
         {/* back rows on top, the front row (founder first) at the bottom, overlapping like risers */}
@@ -63,11 +64,10 @@ function Photo({ p, company }: { p: YearbookPhoto; company: string }) {
       </figcaption>
     </figure>
   );
-}
+});
 
 export function YearbookTab() {
   const s = useGame((g) => g.s)!;
-  useGame((g) => g.v);
   const book = [...(s.yearbook ?? [])].reverse();
   if (!book.length) return <Empty icon="people" title="No photos yet">The first team photo is taken on New Year’s Day. Come back in January!</Empty>;
   return (

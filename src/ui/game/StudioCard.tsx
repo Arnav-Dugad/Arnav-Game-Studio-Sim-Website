@@ -103,7 +103,7 @@ export function StudioCardModal({ onClose }: { onClose: () => void }) {
           <text x={64} y={92} fill="#f2c450" fontFamily={SANS} fontSize={20} fontWeight={700} letterSpacing="0.2em">
             {`EST. ${s.settings.startYear} · ${year}`}
           </text>
-          <text x={64} y={160} fill="#fff4e6" fontFamily={SANS} fontSize={s.company.name.length > 18 ? 52 : 64} fontWeight={800}>
+          <text x={64} y={160} fill="#fff4e6" fontFamily={SANS} fontSize={Math.min(64, Math.floor(590 / Math.max(1, s.company.name.length * 0.6)))} fontWeight={800}>
             {s.company.name}
           </text>
           <text x={64} y={204} fill="#e8d5c4" fontFamily={SANS} fontSize={22}>

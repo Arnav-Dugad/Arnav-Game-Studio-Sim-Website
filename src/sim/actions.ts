@@ -1058,6 +1058,7 @@ function apply(c: Ctx, a: Action): string | null {
       const f = s.franchises[a.franchiseId];
       if (!f) return 'No such franchise';
       if (Object.values(s.projects).some((p) => p.kind === 'game' && p.concept.franchiseId === f.id)) return 'A sequel is in development';
+      if ((s.mediaDeals ?? []).some((d) => d.franchiseId === f.id && d.outcome === undefined)) return 'A licensing deal is still in production';
       const price = Math.max(money(5_000, s.day), (f.fans * 4 * (f.bestScore / 100) * inflation(s.day)) * 0.8);
       earn(s, 'asset_sales', price);
       delete s.franchises[f.id];

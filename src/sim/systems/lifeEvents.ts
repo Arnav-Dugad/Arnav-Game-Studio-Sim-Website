@@ -18,6 +18,7 @@ export const PARENTAL: Record<ParentalLeave, { days: number; loyalty: number; mo
 };
 
 export const HONEYMOON_DAYS = 10;
+const digestMixed = { v: false };
 /** Relationship two colleagues need before sparks fly. */
 export const ROMANCE = 85;
 /** In a studio bigger than this, life news is collected into one monthly note. */
@@ -38,6 +39,7 @@ const first = (n: string) => n.split(' ')[0];
 function note(s: GameState, digest: string[], small: boolean, headline: string, body: string | undefined, tone: 'good' | 'bad' | 'neutral', short: string): void {
   if (small) pushNews(s, { category: 'staff', headline, ...(body ? { body } : {}), tone });
   else digest.push(short);
+  if (!small && tone !== 'good') digestMixed.v = true;
 }
 
 function setMood(st: Staff, v: number, days: number, label: string, day: number): void {
@@ -56,6 +58,7 @@ export function lifeEventsMonthly(c: Ctx): void {
   if (!all.length) return;
   const small = all.length <= NEWS_LIMIT;
   const digest: string[] = [];
+  digestMixed.v = false;
   const stats = s.progress.stats;
 
   // office romance: very close colleagues may become a couple
@@ -149,7 +152,7 @@ export function lifeEventsMonthly(c: Ctx): void {
       }
     }
   }
-  if (digest.length) pushNews(s, { category: 'staff', headline: `Life at ${s.company.name}: ${digest.slice(0, 3).join(', ')}${digest.length > 3 ? ` and ${digest.length - 3} more` : ''}`, tone: 'good' });
+  if (digest.length) pushNews(s, { category: 'staff', headline: `Life at ${s.company.name}: ${digest.slice(0, 3).join(', ')}${digest.length > 3 ? ` and ${digest.length - 3} more` : ''}`, tone: digestMixed.v ? 'neutral' : 'good' });
 }
 
 export function lifeLine(s: GameState, st: Staff): string | null {

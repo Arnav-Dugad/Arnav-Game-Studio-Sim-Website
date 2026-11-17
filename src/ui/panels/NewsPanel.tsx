@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
+import type { FanMail } from '@/sim/types';
 import { FanArt } from '../art/Cover';
 import { MAX_PINNED, unreadFanMail } from '@/sim/systems/fanMail';
 import { Button } from '../components/ui';
@@ -151,36 +152,45 @@ function FanMailBox() {
         {hasWall ? `Pin drawings to your Fan Art Wall (${pinned}/${MAX_PINNED}): each adds a little morale.` : 'Build a Fan Art Wall (Build → Decor) to pin the drawings up.'}
       </p>
       <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-2">
-        {mail.map((m) =>
-          m.kind === 'art' ? (
-            <div key={m.id} className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-bg2/40 p-2.5">
-              <FanArt topic={m.topic} seed={m.seed} caption={m.text} by={`${m.from}${m.age ? `, ${m.age}` : ''}`} size={150} />
-              <div className="text-center text-[11px] text-ink3">
-                A drawing of <b className="text-ink2">{m.game}</b> · {formatDate(m.day)}
-              </div>
-              {hasWall && (
-                <Button size="sm" variant={m.pinned ? 'primary' : 'secondary'} onClick={() => useGame.getState().actOrToast({ type: 'pinFanArt', id: m.id, on: !m.pinned })}>
-                  {m.pinned ? 'Pinned 📌' : 'Pin to the wall'}
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div key={m.id} className="rounded-xl border border-line bg-[#fffdf6] p-3 text-[#2a2622] dark:bg-[#2b2620] dark:text-[#f1ede6]">
-              <p className="text-sm leading-snug" style={{ fontFamily: "'Comic Sans MS','Chalkboard SE','Comic Neue',cursive" }}>
-                Dear {s.company.name},<br />
-                {m.text}
-              </p>
-              <p className="mt-1.5 text-right text-xs" style={{ fontFamily: "'Comic Sans MS','Chalkboard SE','Comic Neue',cursive" }}>
-                — {m.from}
-                {m.age ? `, age ${m.age}` : ''}
-              </p>
-              <div className="mt-1 text-[11px] opacity-60">
-                About {m.game} · {formatDate(m.day)}
-              </div>
-            </div>
-          ),
-        )}
+        {mail.map((m) => (
+          <MailCard key={m.id} m={m} pinned={!!m.pinned} hasWall={hasWall} company={s.company.name} />
+        ))}
       </div>
     </div>
   );
 }
+
+const HAND = "'Comic Sans MS','Chalkboard SE','Comic Neue',cursive";
+
+/** One letter or drawing (memoised: the sim ticks many times a second). */
+const MailCard = memo(function MailCard({ m, pinned, hasWall, company }: { m: FanMail; pinned: boolean; hasWall: boolean; company: string }) {
+  if (m.kind === 'art')
+    return (
+      <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-bg2/40 p-2.5">
+        <FanArt topic={m.topic} seed={m.seed} caption={m.text} by={`${m.from}${m.age ? `, ${m.age}` : ''}`} size={150} />
+        <div className="text-center text-[11px] text-ink3">
+          A drawing of <b className="text-ink2">{m.game}</b> · {formatDate(m.day)}
+        </div>
+        {hasWall && (
+          <Button size="sm" variant={pinned ? 'primary' : 'secondary'} aria-pressed={pinned} onClick={() => useGame.getState().actOrToast({ type: 'pinFanArt', id: m.id, on: !pinned })}>
+            {pinned ? 'Pinned 📌' : 'Pin to the wall'}
+          </Button>
+        )}
+      </div>
+    );
+  return (
+    <div className="rounded-xl border border-line bg-bg2/40 p-3 text-ink">
+      <p className="text-sm leading-snug" style={{ fontFamily: HAND }}>
+        Dear {company},<br />
+        {m.text}
+      </p>
+      <p className="mt-1.5 text-right text-xs" style={{ fontFamily: HAND }}>
+        — {m.from}
+        {m.age ? `, age ${m.age}` : ''}
+      </p>
+      <div className="mt-1 text-[11px] text-ink3">
+        About {m.game} · {formatDate(m.day)}
+      </div>
+    </div>
+  );
+});
