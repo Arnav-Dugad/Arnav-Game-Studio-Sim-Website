@@ -111,6 +111,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'philanthropist', name: 'Philanthropist', desc: 'Give $1M to charity.', icon: 'heart', check: (s) => (s.progress.stats.donated ?? 0) >= 1_000_000 },
   { id: 'beloved_community', name: 'Wholesome', desc: 'Grow a community of 100k+ members with health 85+.', icon: 'people', check: (s) => !!s.community && s.community.members >= 100_000 && s.community.health >= 85 },
   { id: 'studio_awards', name: 'And the Award Goes To…', desc: 'Hold your first in-house Studio Awards.', icon: 'trophy', check: (s) => (s.studioAwards ?? []).length > 0 },
+  { id: 'shadow_drop', name: 'Out of Nowhere', desc: 'Shadow-drop a game that scores 80+.', icon: 'rocket', check: (s) => rels(s).some((r) => r.shadowDrop && r.score >= 80) },
+  { id: 'trusted', name: 'Reliable', desc: 'Earn a publisher’s full trust.', icon: 'handshake', check: (s) => Object.values(s.publisherTrust ?? {}).some((v) => v >= 5) },
+  { id: 'cliffhanger_payoff', name: 'Worth the Wait', desc: 'Pay off a cliffhanger with a sequel.', icon: 'sparkle', check: (s) => rels(s).some((r) => (r.why.user?.parts ?? []).some((x) => x.label.startsWith('Pays off'))) },
+  { id: 'final_cut', name: 'Final Cut', desc: 'Cut a perfect trailer (8/8).', icon: 'star', check: (s) => (s.progress.stats.perfectTrailers ?? 0) > 0 },
+  { id: 'better_together', name: 'Better Together', desc: 'Ship a co-developed game that scores 80+.', icon: 'handshake', check: (s) => rels(s).some((r) => !!r.coDev && r.score >= 80) },
   { id: 'garage_hit', name: 'Garage Miracle', desc: 'Score 85+ while still in the garage.', icon: 'wrench', check: (s) => s.office.tier === 1 && s.progress.stats.bestScore >= 85 },
 ];
 

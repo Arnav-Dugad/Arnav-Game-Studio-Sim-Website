@@ -959,6 +959,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!finite(a.points) || a.points < 0) return 'Invalid result';
       const pts = Math.min(8, Math.floor(a.points));
       p.trailerCut = pts;
+      if (pts >= 8) s.progress.stats.perfectTrailers = (s.progress.stats.perfectTrailers ?? 0) + 1;
       // a trailer can only show what's there: hype scales with the game's projected score
       const est = qualityToScore(gameQuality(s, p, true).total);
       p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + pts * 0.05 * clamp(est / 70, 0.4, 1.2) * (s.research.done.includes('biz_trailer_studio') ? 1.3 : 1));
