@@ -3,6 +3,7 @@
  * density, and multi-select with bulk actions (assign to a project, research, idle, vacation, training,
  * raises, letting people go).
  */
+import { teamPulse, type PulseItem } from '../game/pulse';
 import { ambitionText } from '@/sim/systems/ambitions';
 import { useMemo, useState, type ReactNode } from 'react';
 import { SKILLS, type Skill } from '@/data/types';
@@ -204,6 +205,8 @@ export function TeamTab() {
           </div>
         </div>
       </div>
+
+      {all.length >= 4 && <Pulse />}
 
       {all.length < 3 && (
         <div className="mb-3 flex items-center gap-3 rounded-xl border border-dashed border-line p-3 text-xs">
@@ -732,5 +735,43 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
         Clear
       </Button>
     </div>,
+  );
+}
+
+/** What's lifting and dragging morale studio-wide (computed when opened; refreshed monthly). */
+function Pulse() {
+  const s = useGame((g) => g.s)!;
+  const [open, setOpen] = useState(false);
+  const month = Math.floor(s.day / 30);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const pulse = useMemo(() => (open ? teamPulse(s) : null), [open, month]);
+  const row = (i: PulseItem, good: boolean) => (
+    <li key={i.label} className="flex items-start gap-2">
+      <span className={cx('num w-10 shrink-0 text-right font-semibold', good ? 'text-good' : 'text-bad')}>
+        {i.avg > 0 ? '+' : ''}
+        {i.avg.toFixed(1)}
+      </span>
+      <span className="min-w-0 flex-1">
+        {i.label} <span className="text-ink3">· {i.people} {i.people === 1 ? 'person' : 'people'}</span>
+        {!good && i.hint && <span className="block text-ink3">{i.hint}</span>}
+      </span>
+    </li>
+  );
+  return (
+    <details className="mb-3 rounded-xl border border-line px-3 py-2 text-xs" open={open} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
+      <summary className="cursor-pointer select-none font-semibold">Team pulse — what’s lifting and dragging morale</summary>
+      {pulse && (
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          <div>
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-bad">Dragging it down</div>
+            <ul className="space-y-1">{pulse.drags.length ? pulse.drags.map((i) => row(i, false)) : <li className="text-ink3">Nothing studio-wide.</li>}</ul>
+          </div>
+          <div>
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-good">Lifting it up</div>
+            <ul className="space-y-1">{pulse.boosts.length ? pulse.boosts.map((i) => row(i, true)) : <li className="text-ink3">Not much yet.</li>}</ul>
+          </div>
+        </div>
+      )}
+    </details>
   );
 }

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21h';
+export const WHATS_NEW_VERSION = '2026-11-21i';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'heart', title: 'Team pulse', body: 'Staff → Team now has a Team pulse: everything lifting and dragging morale across the whole studio, how many people each thing touches, and what you could do about it.' },
   { icon: 'calendar', title: 'Daily challenge', body: 'A new mode when founding a studio: one scenario and one world a day, the same for every player. Compare your run with a friend’s — daily runs are marked in the Hall of Fame.' },
   { icon: 'warning', title: 'Console certification', body: 'From 1986, a buggy console or handheld game in polish can fail the platform holder’s certification: pay for an expedited re-test (a week) or fix it properly (two weeks, more bugs gone). Good QA keeps you out of trouble. Plus new rival series: Yu-Gi-Oh!, Legends of Runeterra and Tokimeki Memorial.' },
   { icon: 'coin', title: 'Launch bonuses & public delays', body: 'After a launch, open the game and thank the team: a launch bonus for everyone who made it buys three months of better mood and more loyalty (once, within two months). And players now remember a public delay — forgiven if the game is great, held against it if it isn’t.' },
