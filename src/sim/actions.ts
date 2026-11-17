@@ -100,7 +100,7 @@ export type Action =
   | { type: 'cheat'; cheat: CheatOp }
   | { type: 'openBeta'; projectId: string }
   /** Place the best available desk in free spots until everyone has one. */
-  | { type: 'furnishDesks' }
+  | { type: 'furnishDesks'; extra?: number }
   | { type: 'setIdentity'; name?: string; color?: string; emblem?: string | null; shape?: BadgeShape }
   | { type: 'foundLeague'; releaseId: string; tier: LeagueTier; name: string }
   | { type: 'closeLeague'; id: string }
@@ -909,8 +909,9 @@ function apply(c: Ctx, a: Action): string | null {
       const def = desks[desks.length - 1];
       if (!def) return 'No desks available yet';
       assignDesks(s);
-      let need = Object.values(s.staff).filter((st) => !st.deskId).length;
-      if (need <= 0) return 'Everyone already has a desk';
+      const extra = Math.max(0, Math.min(200, Math.round(Number(a.extra) || 0)));
+      let need = Object.values(s.staff).filter((st) => !st.deskId).length + Math.max(0, extra - freeDesks(s));
+      if (need <= 0) return extra ? 'You already have enough free desks' : 'Everyone already has a desk';
       const cost = money(def.cost, s.day);
       const t = tierDef(s.office.tier);
       let placed = 0;

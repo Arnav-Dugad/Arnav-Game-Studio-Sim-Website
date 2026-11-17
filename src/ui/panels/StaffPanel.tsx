@@ -4,7 +4,7 @@ import { fmtMoney, money } from '@/sim/util';
 import { tierDef, freeDesks } from '@/sim/systems/office';
 import { ROLE_NAMES, marketSalary } from '@/sim/systems/staff';
 import type { Candidate } from '@/sim/types';
-import { Button, Empty, Pill, Section, Segmented, cx } from '../components/ui';
+import { Button, Empty, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
 import { useGame } from '../store';
 import { Face, SkillBars, Traits } from './staffBits';
 import { TeamTab } from './TeamTab';
@@ -37,64 +37,124 @@ export default function StaffPanel() {
   );
 }
 
+type HireSort = 'skill' | 'potential' | 'cheap' | 'value';
+const candSkill = (c: Candidate) => Math.max(...Object.values(c.skills));
+
 function Hire() {
   const s = useGame((g) => g.s)!;
+  useGame((g) => g.v);
   const [role, setRole] = useState<'all' | Candidate['role']>('all');
+  const [sort, setSort] = useState<HireSort>('skill');
+  const [picked, setPicked] = useState<string[]>([]);
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const cap = tierDef(s.office.tier).staffCap;
-  const full = Object.keys(s.staff).length >= cap;
+  const room = cap - Object.keys(s.staff).length;
+  const full = room <= 0;
   const desks = freeDesks(s);
+  const list = s.candidates
+    .filter((c) => role === 'all' || c.role === role)
+    .sort((a, b) =>
+      sort === 'potential' ? b.potential - a.potential : sort === 'cheap' ? a.askSalary - b.askSalary : sort === 'value' ? candSkill(b) / b.askSalary - candSkill(a) / a.askSalary : candSkill(b) - candSkill(a),
+    );
+  const sel = picked.filter((id) => s.candidates.some((c) => c.id === id));
+  const toggle = (id: string) => setPicked((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
+  const hireOne = (c: Candidate) => {
+    if (freeDesks(s) <= 0) act({ type: 'furnishDesks', extra: 1 });
+    const r = act({ type: 'hire', candidateId: c.id });
+    if (r.ok) toast({ text: `${c.name} joined the team!`, tone: 'good', icon: 'staff' });
+    else toast({ text: r.error, tone: 'bad' });
+  };
+  const hireSelected = () => {
+    const chosen = sel
+      .map((id) => s.candidates.find((c) => c.id === id)!)
+      .filter(Boolean)
+      .slice(0, Math.max(0, room));
+    if (!chosen.length) {
+      toast({ text: full ? 'Your office is full' : 'Pick some candidates first', tone: 'bad' });
+      return;
+    }
+    // Seat them first: add any missing desks in one go.
+    if (freeDesks(s) < chosen.length) act({ type: 'furnishDesks', extra: chosen.length });
+    let ok = 0;
+    let err = '';
+    for (const c of chosen) {
+      const r = act({ type: 'hire', candidateId: c.id });
+      if (r.ok) ok += 1;
+      else if (!err) err = `${c.name}: ${r.error}`;
+    }
+    setPicked([]);
+    toast(
+      ok === chosen.length
+        ? { text: `${ok} new hire${ok === 1 ? '' : 's'} joined!`, tone: 'good', icon: 'staff' }
+        : { text: `${ok} hired, ${chosen.length - ok} not${err ? ` (${err})` : ''}`, tone: ok ? 'neutral' : 'bad' },
+    );
+  };
   return (
-    <div>
+    <div className="pb-14">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
         <span>
           Free desks: <b className={desks <= 0 ? 'text-bad' : ''}>{desks}</b> · Office capacity {Object.keys(s.staff).length}/{cap}
         </span>
-        <Button size="sm" icon="refresh" onClick={() => useGame.getState().actOrToast({ type: 'refreshCandidates' }, 'Fresh candidates found')} title="Pay a recruiter for a fresh pool">
-          New candidates ({fmtMoney(money(1_200, s.day))})
-        </Button>
+        <span className="flex gap-1.5">
+          {desks <= 0 && !full && (
+            <Button size="sm" icon="plus" onClick={() => useGame.getState().actOrToast({ type: 'furnishDesks', extra: Math.min(5, room) }, 'Desks added')} title="Place up to five more of your best desk">
+              Add desks
+            </Button>
+          )}
+          <Button size="sm" icon="refresh" onClick={() => useGame.getState().actOrToast({ type: 'refreshCandidates' }, 'Fresh candidates found')} title="Pay a recruiter for a fresh pool">
+            New candidates ({fmtMoney(money(1_200, s.day))})
+          </Button>
+        </span>
       </div>
-      {desks <= 0 && !full && (
-        <p className="mb-2 text-xs text-warn">
-          Place another desk in the{' '}
-          <button className="underline" onClick={() => useGame.getState().openPanel('office')}>
-            Office
-          </button>{' '}
-          before hiring.
-        </p>
-      )}
       {full && <p className="mb-2 text-xs text-warn">Your office is full. Move to a bigger office to grow the team.</p>}
       {!s.candidates.length && <Empty icon="people" title="No candidates">The pool refreshes monthly. Reputation and recruiting attract better people.</Empty>}
       {s.candidates.length > 0 && (
-        <Segmented
-          ariaLabel="Filter by role"
-          value={role}
-          onChange={setRole}
-          className="mb-2"
-          options={[{ value: 'all' as const, label: 'All' }, ...[...new Set(s.candidates.map((c) => c.role))].map((r) => ({ value: r, label: ROLE_NAMES[r] }))]}
-        />
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <Segmented
+            ariaLabel="Filter by role"
+            value={role}
+            onChange={setRole}
+            options={[{ value: 'all' as const, label: 'All' }, ...[...new Set(s.candidates.map((c) => c.role))].map((r) => ({ value: r, label: ROLE_NAMES[r] }))]}
+          />
+          <select className={cx(inputCls, 'h-8 !w-36 text-xs')} value={sort} onChange={(e) => setSort(e.target.value as HireSort)} aria-label="Sort candidates">
+            <option value="skill">Best skill</option>
+            <option value="potential">Most potential</option>
+            <option value="value">Best value</option>
+            <option value="cheap">Cheapest</option>
+          </select>
+        </div>
       )}
       <div className="space-y-2">
-        {s.candidates.filter((c) => role === 'all' || c.role === role).map((c) => (
-          <CandidateCard key={c.id} c={c} disabled={full || desks <= 0} onHire={() => {
-            const r = act({ type: 'hire', candidateId: c.id });
-            if (r.ok) toast({ text: `${c.name} joined the team!`, tone: 'good', icon: 'staff' });
-            else toast({ text: r.error, tone: 'bad' });
-          }} />
+        {list.map((c) => (
+          <CandidateCard key={c.id} c={c} disabled={full} onHire={() => hireOne(c)} picked={sel.includes(c.id)} onPick={() => toggle(c.id)} />
         ))}
       </div>
+      {sel.length > 0 && (
+        <div className="glass sticky bottom-0 z-20 mt-3 flex items-center gap-2 rounded-2xl p-2 text-xs shadow-lg animate-fade-up">
+          <span className="font-semibold">{sel.length} picked</span>
+          <span className="text-ink3">· {fmtMoney(sel.reduce((t, id) => t + (s.candidates.find((c) => c.id === id)?.askSalary ?? 0), 0))}/yr</span>
+          <span className="flex-1" />
+          <Button size="sm" variant="ghost" onClick={() => setPicked([])}>
+            Clear
+          </Button>
+          <Button size="sm" variant="primary" icon="plus" disabled={full} onClick={hireSelected}>
+            Hire {Math.min(sel.length, Math.max(0, room))}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
-function CandidateCard({ c, onHire, disabled }: { c: Candidate; onHire: () => void; disabled: boolean }) {
+function CandidateCard({ c, onHire, disabled, picked, onPick }: { c: Candidate; onHire: () => void; disabled: boolean; picked?: boolean; onPick?: () => void }) {
   const s = useGame((g) => g.s)!;
   const person = c.personId ? PERSON_BY_ID[c.personId] : undefined;
   const market = marketSalary(s, c.skills);
   return (
-    <article className={cx('rounded-2xl border bg-panel2/50 p-3', person ? 'border-gold/60' : 'border-line')}>
+    <article className={cx('rounded-2xl border bg-panel2/50 p-3', picked ? 'border-accent bg-accent/10' : person ? 'border-gold/60' : 'border-line')}>
       <div className="flex items-start gap-3">
+        {onPick && <input type="checkbox" checked={!!picked} onChange={onPick} className="mt-3 size-4 shrink-0 accent-[var(--accent)]" aria-label={`Pick ${c.name}`} />}
         <Face p={c} size={44} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
