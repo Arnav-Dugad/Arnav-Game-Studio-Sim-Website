@@ -1179,8 +1179,12 @@ function apply(c: Ctx, a: Action): string | null {
       void ipValue;
       return null;
     }
-    case 'resolveEvent':
+    case 'resolveEvent': {
+      const ev = s.pendingEvents.find((e) => e.uid === a.uid);
+      const o = ev?.options.find((x) => x.id === a.option);
+      if (o?.cost !== undefined && s.company.cash < o.cost) return 'Not enough cash for that any more';
       return resolveEvent(c, a.uid, a.option) ? null : 'Event no longer available';
+    }
     case 'setPolicy': {
       if (a.salaryPolicy) s.company.policies.salaryPolicy = a.salaryPolicy;
       if (a.remote !== undefined) s.company.policies.remote = a.remote;

@@ -137,7 +137,8 @@ function EventModal({ uid, onClose }: { uid: number; onClose: () => void }) {
           <button
             key={o.id}
             type="button"
-            disabled={o.disabled}
+            disabled={o.disabled || (o.cost !== undefined && s.company.cash < o.cost)}
+            title={o.cost !== undefined && s.company.cash < o.cost ? 'Not enough cash' : undefined}
             onClick={() => {
               const r = act({ type: 'resolveEvent', uid, option: o.id });
               if (r.ok) {

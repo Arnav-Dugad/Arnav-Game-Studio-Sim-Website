@@ -675,6 +675,8 @@ export interface EventOption {
   /** Human-readable preview of effects. */
   preview: string;
   disabled?: boolean;
+  /** What it costs: it can't be chosen once the money isn't there. */
+  cost?: number;
 }
 
 export interface EventInstance {

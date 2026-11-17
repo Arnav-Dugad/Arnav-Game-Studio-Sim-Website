@@ -44,4 +44,15 @@ describe('accessibility and charity events', () => {
       expect(s.company.fans).toBeGreaterThanOrEqual(fans);
       if (opt === 'match') expect(s.progress.stats.donated).toBeGreaterThan(0);
     });
+
+  it('an option you can no longer afford is refused, and the event stays open', () => {
+    const { s } = world();
+    fireEvent({ s, rng: new Rng(s.rng), out: [] }, 'charity_stream');
+    const ev = s.pendingEvents.find((e) => e.defId === 'charity_stream')!;
+    s.company.cash = 0;
+    const r = dispatch(s, { type: 'resolveEvent', uid: ev.uid, option: 'match' });
+    expect(r.ok).toBe(false);
+    expect(s.pendingEvents.some((e) => e.uid === ev.uid)).toBe(true);
+    expect(s.company.cash).toBe(0);
+  });
 });
