@@ -846,6 +846,29 @@ export class OfficeRenderer {
     this.particles.push({ g, vx: (Math.random() - 0.5) * 8, vy: -14 - Math.random() * 10, life: 1.2 });
   }
 
+  /** The whole office celebrates: party bubbles over everyone and (unless motion is reduced) confetti. */
+  celebrate(confetti = true): void {
+    const agents = [...this.agents.values()].filter((a) => a.c.visible).slice(0, 80);
+    const GLYPHS_PARTY = ['🎉', '🥳', '🙌', '⭐'];
+    for (const a of agents) {
+      this.showBubble(a, GLYPHS_PARTY[Math.floor(Math.random() * GLYPHS_PARTY.length)]!);
+      a.bubbleT = 2.5 + Math.random();
+    }
+    if (!confetti) return;
+    const COLORS = [0xe07a5f, 0xf2c450, 0x5f9e6e, 0x3d85c6, 0x9b6bd3];
+    for (let i = 0; i < Math.min(60, agents.length * 3); i++) {
+      if (this.particles.length > 160) break;
+      const a = agents[Math.floor(Math.random() * agents.length)];
+      if (!a) break;
+      const g = new Graphics();
+      g.rect(-2, -1, 4, 2.5).fill(COLORS[i % COLORS.length]!);
+      g.rotation = Math.random() * Math.PI;
+      g.position.set(a.x + (Math.random() - 0.5) * 20, a.y - 40);
+      this.fxLayer.addChild(g);
+      this.particles.push({ g, vx: (Math.random() - 0.5) * 60, vy: -70 - Math.random() * 50, life: 1.6 });
+    }
+  }
+
   /** Coin burst at a world position (sales pops). */
   burst(count = 8): void {
     const s = this.cb.getState();

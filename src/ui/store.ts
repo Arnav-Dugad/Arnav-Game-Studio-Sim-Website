@@ -69,6 +69,8 @@ interface GameStore {
   modals: Modal[];
   toasts: Toast[];
   pops: Pop[];
+  /** Bumped when the office should celebrate (a hit launch, an award). */
+  cheer: number;
   build: BuildState | null;
   heat: HeatKind;
   floor: number;
@@ -113,6 +115,7 @@ export const useGame = create<GameStore>((set, get) => ({
   modals: [],
   toasts: [],
   pops: [],
+  cheer: 0,
   build: null,
   heat: 'none',
   floor: 0,
@@ -192,8 +195,12 @@ export function handleEvents(events: SimEvent[]): void {
   let pause = false;
   let income = 0;
   let gala = false;
+  let cheer = false;
   for (const e of events) {
     switch (e.type) {
+      case 'release':
+        if ((s.releases[e.releaseId]?.score ?? 0) >= 75) cheer = true;
+        break;
       case 'income':
         if (e.source === 'sales') income += e.amount;
         else g.toast({ text: `Contract paid ${fmtMoney(e.amount)}`, tone: 'good', icon: 'cash' });
@@ -270,6 +277,8 @@ export function handleEvents(events: SimEvent[]): void {
         break;
     }
   }
+  if (gala) cheer = true;
+  if (cheer) useGame.setState((st) => ({ cheer: st.cheer + 1 }));
   if (gala) {
     const year = g.s?.awardHistory?.[g.s.awardHistory.length - 1]?.year;
     if (year !== undefined && !g.modals.some((m) => m.kind === 'gala')) {

@@ -105,6 +105,12 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
     if (pops.length && useSettings.getState().numberPops) rendererRef.current?.burst(Math.min(12, 3 + pops.length * 2));
   }, [pops]);
 
+  // The team cheers when a hit launches or an award comes home.
+  const cheer = useGame((g) => g.cheer);
+  useEffect(() => {
+    if (cheer > 0) rendererRef.current?.celebrate(!prefersReducedMotion(useSettings.getState()));
+  }, [cheer]);
+
   if (!s) return null;
   const tier = tierDef(s.office.tier);
 
