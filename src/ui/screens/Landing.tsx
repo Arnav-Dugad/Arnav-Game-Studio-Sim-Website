@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SCENARIOS } from '@/sim/systems/scenarios';
 import { OfficeCanvas } from '@/render/OfficeCanvas';
 import { advance } from '@/sim/advance';
 import type { GameState } from '@/sim/types';
@@ -20,11 +21,12 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
   { icon: 'controller', title: `${PLATFORMS.length} real platforms`, body: 'From the Atari 2600 to the Switch 2. Install bases rise and fall on their real dates, and you choose where to bet.' },
   { icon: 'company', title: 'Legendary rivals', body: `${COMPANIES.length} real companies compete with you, releasing ${FRANCHISES.reduce((t, f) => t + f.releases.length, 0)} classic games on their real dates.` },
   { icon: 'build', title: 'A living office', body: 'Design your studio tile by tile. Your people blink, type, gossip about your reviews, high-five friends, play foosball, adopt an office cat — and the layout really changes the numbers.' },
-  { icon: 'people', title: 'People, not numbers', body: 'Ambitions, friendships and feuds, Employee of the Month, retreats, birthdays and farewells. Help your team chase their dreams and they’ll never leave.' },
+  { icon: 'people', title: 'People, not numbers', body: 'Ambitions, hobbies and favourite genres, friendships, office romances and weddings, new babies, summer interns, Studio Awards and a yearbook photo every New Year. Help your team chase their dreams and they’ll never leave.' },
   { icon: 'globe', title: 'A whole world to win', body: 'Four regions with their own tastes. Localise your games, open studios abroad, and watch Japan’s golden age give way to a mobile planet.' },
-  { icon: 'flag', title: 'Scenarios', body: 'Seven curated challenges, from Garage Days to Empire: survive the crash, build a Japanese RPG house, win Game of the Year as a two-person indie.' },
+  { icon: 'flag', title: 'Scenarios', body: `${SCENARIOS.length} curated challenges, from Garage Days to Empire: survive the crash, build a Japanese RPG house, crowdfund your dream, become a media mogul.` },
   { icon: 'sliders', title: 'Deep development', body: 'Genre × topic × platform × audience. Focus sliders per phase, bugs, crunch, delays, engines and research.' },
-  { icon: 'chart', title: 'Build an empire', body: 'Publishing deals, IPOs and acquisitions, expansion packs, esports leagues, a subscription pass — then launch your own console and take on the platform giants. Or go bankrupt trying.' },
+  { icon: 'chart', title: 'Build an empire', body: 'Crowdfunding and Early Access, co-development, publishing deals, IPOs and acquisitions, films and toy lines of your series, esports leagues, a subscription pass — then launch your own console. Or go bankrupt trying.' },
+  { icon: 'heart', title: 'Players who care', body: 'Fan mail and kids’ crayon drawings of your games, an official community to keep healthy, review bombs, a Hall of Classics — and the story of your studio, written from everything you did.' },
   { icon: 'trophy', title: 'Rivals, awards, legacy', body: 'Head-to-head showdowns with real studios, a yearly awards gala with real-history winners, and a trophy shelf in your office that fills up as you win.' },
   { icon: 'music', title: 'A soundtrack that ages with you', body: 'Music generated live in your browser: chiptune in the ’80s, FM in the ’90s, soft synths in the 2000s, lo-fi beats after. No downloads, no files.' },
   { icon: 'sparkle', title: 'Sandbox & cheats', body: 'Play it straight, or tick Sandbox mode and bend every rule: money, staff, review scores, trends, rivals and time itself.' },
