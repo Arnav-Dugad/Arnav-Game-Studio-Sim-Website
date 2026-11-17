@@ -73,6 +73,23 @@ describe('cheats', () => {
     expect(polished.releases[polished.releaseOrder[0]!]!.score).toBeGreaterThanOrEqual(plain.releases[plain.releaseOrder[0]!]!.score);
   });
 
+  it('a cheat that fails part-way changes nothing and still marks the run', () => {
+    const s = game(1995, 4);
+    const p1 = startGame(s);
+    advance(s, 5);
+    s.staff.x = { ...s.staff.founder!, id: 'x', name: 'X', assignment: { kind: 'idle' } };
+    const plat = availablePlatforms(s).find((p) => p.kind === 'computer')!.id;
+    const r = dispatch(s, { type: 'startGame', game: { name: 'H', genre: 'action', topic: 'scifi', platforms: [plat], audience: 'teen', size: 'small', monetization: 'premium', engineId: 'e0', team: ['x'] } });
+    expect(r.ok).toBe(true);
+    const phase = p1.phase;
+    expect(cheat(s, { op: 'finishProjects', polish: true }).ok).toBe(false); // H has no work yet
+    expect(p1.phase).toBe(phase);
+    expect(s.cheatsUsed).toBe(true);
+    const tier = s.office.tier;
+    expect(cheat(s, { op: 'officeTier', tier: 99 }).ok).toBe(false);
+    expect(s.office.tier).toBe(tier);
+  });
+
   it('persistent switches change how the world runs', () => {
     const s = game(1990, 9);
     s.company.cash = -5e6;

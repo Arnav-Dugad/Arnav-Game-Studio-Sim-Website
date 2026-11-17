@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { ACHIEVEMENTS } from '@/sim/systems/achievements';
 import { formatDate, fromDay } from '@/sim/calendar';
-import { fmtUnits } from '@/sim/util';
+import { fmtMoney, fmtUnits } from '@/sim/util';
 import type { GameState } from '@/sim/types';
 import { Empty, cx } from '../components/ui';
 import { Icon, type IconName } from '../icons';
@@ -82,5 +82,67 @@ export function HistoryTab() {
       </li>,
     );
   });
-  return <ol className="ml-3 border-l border-line">{rows}</ol>;
+  return (
+    <div className="space-y-4">
+      <Records />
+      <ol className="ml-3 border-l border-line">{rows}</ol>
+    </div>
+  );
+}
+
+/** All-time bests, at a glance. */
+function Records() {
+  const s = useGame((g) => g.s)!;
+  const rels = Object.values(s.releases);
+  if (!rels.length) return null;
+  const by = <T,>(xs: T[], f: (x: T) => number) => xs.reduce((a, b) => (f(b) > f(a) ? b : a));
+  const best = by(rels, (r) => r.score);
+  const seller = by(rels, (r) => r.units);
+  const earner = by(rels, (r) => r.net - r.devCost);
+  const frs = Object.values(s.franchises);
+  const fr = frs.length ? by(frs, (f) => f.fans) : undefined;
+  const years = new Map<number, number>();
+  for (const m of s.finance.ledger) {
+    const y = fromDay(m.day).year;
+    const inc = Object.values(m.income).reduce((t, v) => t + (v ?? 0), 0);
+    years.set(y, (years.get(y) ?? 0) + inc);
+  }
+  const bestYear = [...years.entries()].sort((a, b) => b[1] - a[1])[0];
+  const st = s.progress.stats;
+  const open = (id: string) => useGame.getState().pushModal({ kind: 'release', releaseId: id });
+  const tiles: { label: string; value: string; sub: string; icon: IconName; onClick?: () => void }[] = [
+    { label: 'Highest rated', value: best.name, sub: `Critics ${best.score} · users ${best.userScore}`, icon: 'star', onClick: () => open(best.id) },
+    { label: 'Best seller', value: seller.name, sub: `${fmtUnits(seller.units)} copies`, icon: 'disc', onClick: () => open(seller.id) },
+    { label: 'Most profitable', value: earner.name, sub: `${fmtMoney(earner.net - earner.devCost)} profit`, icon: 'money', onClick: () => open(earner.id) },
+  ];
+  if (fr && fr.fans > 0) tiles.push({ label: 'Biggest franchise', value: fr.name, sub: `${fmtUnits(fr.fans)} fans · ${fr.entries.length} game${fr.entries.length === 1 ? '' : 's'}`, icon: 'chain' });
+  if (bestYear && bestYear[1] > 0) tiles.push({ label: 'Best year', value: String(bestYear[0]), sub: `${fmtMoney(bestYear[1])} revenue`, icon: 'calendar' });
+  tiles.push({ label: 'Career', value: `${st.gamesReleased} games`, sub: `${fmtUnits(st.totalUnits)} sold · ${st.awardsWon} award${st.awardsWon === 1 ? '' : 's'} · ${st.hits} hit${st.hits === 1 ? '' : 's'}`, icon: 'trophy' });
+  return (
+    <section aria-label="Studio records">
+      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink3">Studio records</h3>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {tiles.map((x) => {
+          const body = (
+            <>
+              <div className="flex items-center gap-1.5 text-[11px] text-ink3">
+                <Icon name={x.icon} size={12} /> {x.label}
+              </div>
+              <div className="truncate text-sm font-semibold">{x.value}</div>
+              <div className="truncate text-[11px] text-ink3">{x.sub}</div>
+            </>
+          );
+          return x.onClick ? (
+            <button key={x.label} type="button" onClick={x.onClick} className="min-w-0 rounded-xl border border-line bg-bg2/40 p-2 text-left hover:bg-bg2">
+              {body}
+            </button>
+          ) : (
+            <div key={x.label} className="min-w-0 rounded-xl border border-line bg-bg2/40 p-2">
+              {body}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
 }

@@ -525,6 +525,32 @@ describe('expansion packs', () => {
   });
 });
 
+describe('expansion fairness (review fixes)', () => {
+  it('a tiny add-on for a big game sells to fewer owners, and never to more than 90% of them', () => {
+    const s = game(2005, 3);
+    s.research.done.push('biz_self_publishing');
+    startSmall(s, { platforms: [availablePlatforms(s).find((p) => p.kind === 'computer')!.id] });
+    for (let i = 0; i < 200 && !s.releaseOrder.length; i++) {
+      advance(s, 1);
+      for (const pr of Object.values(s.projects)) if (pr.kind === 'game' && pr.awaitingGate) dispatch(s, { type: 'continueGate', projectId: pr.id });
+      s.pendingEvents = [];
+    }
+    const base = s.releases[s.releaseOrder[0]!]!;
+    base.concept = { ...base.concept, size: 'aaa' };
+    for (const ps of base.platforms) ps.units = 1_000_000;
+    const exp = (size: 'small' | 'large') => ({ ...base.concept, size, expansionOf: base.id });
+    const units = (size: 'small' | 'large', score: number, hype: number) => salesPotential(s, exp(size), score, hype).platforms.reduce((t, x) => t + x.potential, 0);
+    expect(units('small', 80, 0)).toBeLessThan(units('large', 80, 0) * 0.6);
+    const owners = base.platforms.reduce((t, x) => t + x.units, 0);
+    // owners' share is capped at 90%; newcomers come on top
+    const pot = salesPotential(s, { ...exp('large'), size: 'aaa' }, 100, 3);
+    const newcomers = pot.salesWhy.parts.find((x) => x.label === 'Newcomers who buy both')?.value ?? 0;
+    const total = pot.platforms.reduce((t, x) => t + x.potential, 0);
+    expect(total - newcomers).toBeLessThanOrEqual(owners * 0.9 + 1);
+    expect(total - newcomers).toBeGreaterThan(owners * 0.85);
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

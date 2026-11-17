@@ -243,7 +243,8 @@ function StaffCheats() {
   const s = useGame((g) => g.s)!;
   const cheat = useCheat();
   const staff = Object.values(s.staff);
-  const [who, setWho] = useState('');
+  const [pickedWho, setWho] = useState('');
+  const who = s.staff[pickedWho] ? pickedWho : ''; // they may have left since
   const [vals, setVals] = useState<Record<StaffField, number>>({ skills: 100, potential: 100, morale: 100, energy: 100, burnout: 0 });
   const [use, setUse] = useState<Record<StaffField, boolean>>({ skills: true, potential: true, morale: true, energy: true, burnout: true });
   const [role, setRole] = useState<Role>('programmer');
@@ -340,12 +341,11 @@ function GameCheats() {
   const rels = [...s.releaseOrder].reverse().map((id) => s.releases[id]!).filter(Boolean);
   const frs = Object.values(s.franchises);
   const [hype, setHype] = useState(2);
-  const [relId, setRelId] = useState(rels[0]?.id ?? '');
-  const rel = s.releases[relId];
-  const [score, setScore] = useState(rel?.score ?? 90);
-  const [userScore, setUserScore] = useState(rel?.userScore ?? 90);
-  const [units, setUnits] = useState(1_000_000);
-  const [frId, setFrId] = useState('');
+  const [pickedRel, setRelId] = useState('');
+  // The picked game may not exist any more (or nothing was released when the panel opened).
+  const relId = rels.some((r) => r.id === pickedRel) ? pickedRel : (rels[0]?.id ?? '');
+  const [pickedFr, setFrId] = useState('');
+  const frId = frs.some((f) => f.id === pickedFr) ? pickedFr : '';
   const [frFans, setFrFans] = useState(5_000_000);
   return (
     <div className="space-y-3">
@@ -371,38 +371,14 @@ function GameCheats() {
       <Card title="Edit a released game" desc={rels.length ? undefined : 'Release a game first.'}>
         {rels.length > 0 && (
           <>
-            <select
-              className={inputCls}
-              value={relId}
-              aria-label="Game"
-              onChange={(e) => {
-                setRelId(e.target.value);
-                const r = s.releases[e.target.value];
-                if (r) {
-                  setScore(r.score);
-                  setUserScore(r.userScore);
-                }
-              }}
-            >
+            <select className={inputCls} value={relId} aria-label="Game" onChange={(e) => setRelId(e.target.value)}>
               {rels.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name} ({r.score}) · {fmtUnits(r.units)} sold
                 </option>
               ))}
             </select>
-            <div className="mt-2 space-y-1.5">
-              <Slider label="Critics" value={score} onChange={setScore} min={1} max={100} />
-              <Slider label="Users" value={userScore} onChange={setUserScore} min={1} max={100} />
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => cheat({ op: 'editRelease', releaseId: relId, score, userScore }, 'Scores updated')}>
-                Set scores
-              </Button>
-              <NumberInput label="Copies to add" value={units} onChange={setUnits} min={0} className="w-36" />
-              <Button size="sm" onClick={() => cheat({ op: 'editRelease', releaseId: relId, addUnits: units }, `Sold ${fmtUnits(units)} more copies`)}>
-                Add sales
-              </Button>
-            </div>
+            <ReleaseEditor key={relId} releaseId={relId} />
           </>
         )}
       </Card>
@@ -600,22 +576,8 @@ function MarketCheats() {
   const rivals = Object.values(s.rivals)
     .filter((r) => r.alive && !r.ownedByPlayer)
     .sort((a, b) => b.revenue12m - a.revenue12m);
-  const [rid, setRid] = useState(rivals[0]?.id ?? '');
-  const r = s.rivals[rid];
-  const [rep, setRep] = useState(r ? Math.round(r.reputation) : 50);
-  const [quality, setQuality] = useState(r ? Math.round(r.quality * 100) : 50);
-  const [staff, setStaff] = useState(r?.staff ?? 50);
-  const [cash, setCash] = useState(r ? Math.round(r.cash) : 0);
-  const pickRival = (id: string) => {
-    setRid(id);
-    const x = s.rivals[id];
-    if (x) {
-      setRep(Math.round(x.reputation));
-      setQuality(Math.round(x.quality * 100));
-      setStaff(x.staff);
-      setCash(Math.round(x.cash));
-    }
-  };
+  const [pickedRival, setRid] = useState('');
+  const rid = rivals.some((x) => x.id === pickedRival) ? pickedRival : (rivals[0]?.id ?? '');
   const genres = availableGenres(s).filter((g) => g.ok);
   const topics = availableTopics(s).filter((x) => x.ok);
   const [kind, setKind] = useState<'genre' | 'topic'>('genre');
@@ -630,7 +592,7 @@ function MarketCheats() {
           <p className="text-xs text-ink3">No active rivals.</p>
         ) : (
           <>
-            <select className={inputCls} value={rid} onChange={(e) => pickRival(e.target.value)} aria-label="Rival">
+            <select className={inputCls} value={rid} onChange={(e) => setRid(e.target.value)} aria-label="Rival">
               {rivals.map((x) => (
                 <option key={x.id} value={x.id}>
                   {x.name} · {x.staff} staff · rep {Math.round(x.reputation)}
@@ -638,25 +600,7 @@ function MarketCheats() {
                 </option>
               ))}
             </select>
-            <div className="mt-2 space-y-1.5">
-              <Slider label="Reputation" value={rep} onChange={setRep} min={0} max={100} />
-              <Slider label="Game quality" value={quality} onChange={setQuality} min={10} max={100} format={(v) => `${v}%`} />
-              <Slider label="Staff" value={staff} onChange={setStaff} min={3} max={8000} step={1} />
-              <label className="flex items-center gap-2 text-xs">
-                <span className="w-20 shrink-0 text-ink2">Cash</span>
-                <NumberInput label="Rival cash" value={cash} onChange={setCash} className="min-w-0 flex-1" />
-              </label>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => cheat({ op: 'rival', rivalId: rid, reputation: rep, quality: quality / 100, staff, cash: Number.isFinite(cash) ? cash : undefined }, `${r?.name ?? 'Rival'} updated`)}>
-                Apply
-              </Button>
-              {r?.procedural && (
-                <Button size="sm" variant="danger" onClick={() => cheat({ op: 'rival', rivalId: rid, close: true }, `${r.name} has closed`)}>
-                  Shut them down
-                </Button>
-              )}
-            </div>
+            <RivalEditor key={rid} rivalId={rid} />
           </>
         )}
       </Card>
@@ -705,6 +649,67 @@ function MarketCheats() {
         </div>
       </Card>
     </div>
+  );
+}
+
+function ReleaseEditor({ releaseId }: { releaseId: string }) {
+  const s = useGame((g) => g.s)!;
+  const cheat = useCheat();
+  const rel = s.releases[releaseId];
+  const [score, setScore] = useState(rel?.score ?? 90);
+  const [userScore, setUserScore] = useState(rel?.userScore ?? 90);
+  const [units, setUnits] = useState(1_000_000);
+  if (!rel) return null;
+  return (
+    <>
+      <div className="mt-2 space-y-1.5">
+        <Slider label="Critics" value={score} onChange={setScore} min={1} max={100} />
+        <Slider label="Users" value={userScore} onChange={setUserScore} min={1} max={100} />
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => cheat({ op: 'editRelease', releaseId, score, userScore }, 'Scores updated')}>
+          Set scores
+        </Button>
+        <NumberInput label="Copies to add" value={units} onChange={setUnits} min={0} className="w-36" />
+        <Button size="sm" onClick={() => cheat({ op: 'editRelease', releaseId, addUnits: units }, `Sold ${fmtUnits(units)} more copies`)}>
+          Add sales
+        </Button>
+      </div>
+    </>
+  );
+}
+
+function RivalEditor({ rivalId }: { rivalId: string }) {
+  const s = useGame((g) => g.s)!;
+  const cheat = useCheat();
+  const r = s.rivals[rivalId];
+  const [rep, setRep] = useState(r ? Math.round(r.reputation) : 50);
+  const [quality, setQuality] = useState(r ? Math.round(r.quality * 100) : 50);
+  const [staff, setStaff] = useState(r?.staff ?? 50);
+  const [cash, setCash] = useState(r ? Math.round(r.cash) : 0);
+  if (!r) return null;
+  return (
+    <>
+      <div className="mt-2 space-y-1.5">
+        <Slider label="Reputation" value={rep} onChange={setRep} min={0} max={100} />
+        <Slider label="Game quality" value={quality} onChange={setQuality} min={10} max={100} format={(v) => `${v}%`} />
+        <Slider label="Staff" value={staff} onChange={setStaff} min={3} max={8000} step={1} />
+        <label className="flex items-center gap-2 text-xs">
+          <span className="w-20 shrink-0 text-ink2">Cash</span>
+          <NumberInput label="Rival cash" value={cash} onChange={setCash} className="min-w-0 flex-1" />
+        </label>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => cheat({ op: 'rival', rivalId, reputation: rep, quality: quality / 100, staff, cash: Number.isFinite(cash) ? cash : undefined }, `${r.name} updated`)}>
+          Apply
+        </Button>
+        {r.procedural && (
+          <Button size="sm" variant="danger" onClick={() => cheat({ op: 'rival', rivalId, close: true }, `${r.name} has closed`)}>
+            Shut them down
+          </Button>
+        )}
+      </div>
+    </>
   );
 }
 

@@ -774,4 +774,12 @@ This section records decisions made during the build that differ from, or add to
   - **Structure:** each 8-bar section picks a key, a chord progression (I–V–vi–IV, ii–V–I–vi, i–VI–III–VII and others) and a tempo of 80–97 BPM. Over that it plays a pad chord, a root/fifth bass line, a sparse pentatonic melody that lands on chord tones on strong beats, and quiet percussion while time runs. The melody thins out when the game is paused.
   - **Instruments by era:** chiptune before 1990, FM to 2002, filtered pads after.
   - **Controls:** separate on/off and volume (`ase:music`). The audio context resumes on the first gesture.
+- **Fifth review pass** (expansions, sales, cheats, esports, music):
+  - **Expansions:** sales now scale with content, √(expansion days ÷ base days) capped at 1. Without this, a three-week add-on for a AAA game outsold a medium one. The owners' share is capped at 90%. Expansion buyers count as new fans at only 25%.
+  - **Storefront sales:** a sale now accounts for platforms winding down, and is refused once every platform is discontinued, so the forecast matches what sells. 30% of sale buyers are taken from future full-price sales.
+  - **Cheats:** a cheat marks the run before it changes anything. Finishing projects validates every project first, and office jumps check staff capacity up front.
+  - **Esports:** franchise fans count towards viewers only up to the game's own player base, which stops a fan snowball.
+  - **UI:** the esports and cheats pickers derive their selection from the current options, so a closed rival, a game that just got a league, or a departed employee can no longer leave a stale selection.
+  - **Music:** FM modulator nodes are released after use.
+  - **Events:** the duplicate `game_jam` event id is fixed, and a test now requires event ids to be unique.
 

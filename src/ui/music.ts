@@ -153,6 +153,10 @@ function voice(t: number, freq: number, dur: number, gain: number, era: Era, kin
       mg.connect(o.frequency);
       m.start(t);
       m.stop(t + dur + 0.05);
+      m.onended = () => {
+        m.disconnect();
+        mg.disconnect();
+      };
     }
   } else {
     o.type = kind === 'bass' ? 'sine' : kind === 'pad' ? 'sawtooth' : 'triangle';

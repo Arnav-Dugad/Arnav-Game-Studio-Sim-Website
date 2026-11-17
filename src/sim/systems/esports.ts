@@ -72,7 +72,8 @@ export function leagueCandidates(s: GameState): Release[] {
 export function leagueViewers(s: GameState, rel: Release, tier: LeagueTier, prestige: number) {
   const age = (s.day - rel.day) / 365.25;
   const fr = rel.concept.franchiseId ? s.franchises[rel.concept.franchiseId] : undefined;
-  const players = rel.units * Math.exp(-age / 5) + (fr?.fans ?? 0) * 0.5;
+  // Fans count, but only up to the game's own player base (so league-made fans can't snowball).
+  const players = rel.units * Math.exp(-age / 5) + Math.min(fr?.fans ?? 0, rel.units) * 0.5;
   const yr = fromDay(s.day).year;
   const b = new BD('Active players and fans', players);
   b.mul('Share who watch', 0.25);

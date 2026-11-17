@@ -12,7 +12,7 @@ import { SKILLS } from '../data/types';
 import { clamp } from './breakdown';
 import { fromDay } from './calendar';
 import type { Ctx } from './ctx';
-import type { CheatSettings, GameState, Role } from './types';
+import type { CheatSettings, GameProject, GameState, Role } from './types';
 import { earn, newId, pushNews, spend } from './util';
 import { candidateToStaff, generateCandidate, HIREABLE_ROLES } from './systems/staff';
 import { benchmarkPoints, workShare } from './systems/dev';
@@ -68,10 +68,9 @@ const inRange = (v: number | undefined, [lo, hi]: readonly [number, number]) => 
 
 export function applyCheat(c: Ctx, op: CheatOp): string | null {
   const { s } = c;
-  const err = run(c, op);
-  if (err) return err;
+  // Mark first: some cheats change several things before they can fail.
   markCheated(s);
-  return null;
+  return run(c, op);
 }
 
 function run(c: Ctx, op: CheatOp): string | null {
@@ -127,11 +126,12 @@ function run(c: Ctx, op: CheatOp): string | null {
       return null;
     }
     case 'finishProjects': {
+      const todo = Object.values(s.projects).filter((p): p is GameProject => p.kind === 'game' && p.phase < 3);
+      const idle = todo.find((p) => p.design + p.tech <= 0);
+      if (idle) return `Nobody has worked on ${idle.concept.name} yet — let the team start first`;
       let n = 0;
-      for (const p of Object.values(s.projects)) {
-        if (p.kind !== 'game' || p.phase >= 3) continue;
+      for (const p of todo) {
         const total = p.design + p.tech;
-        if (total <= 0) return `Nobody has worked on ${p.concept.name} yet — let the team start first`;
         // Extrapolate the work to the end at the current pace; polishing tops effort up to a strong level.
         const prog = Math.max(0.05, (p.phase + p.phaseDay / Math.max(1, p.phaseDays[Math.min(2, p.phase) as 0 | 1 | 2])) / 3);
         const bench = benchmarkPoints(p.concept.size, s.day) * workShare(p.concept);

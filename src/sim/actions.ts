@@ -823,6 +823,8 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.cheat.op !== 'officeTier') return applyCheat(c, a.cheat);
       const target = a.cheat.tier;
       if (!finite(target) || tierDef(target).tier !== target) return 'No such office';
+      if (Object.keys(s.staff).length > tierDef(target).staffCap) return 'Too many staff for that office';
+      markCheated(s);
       const prev = s.cheats?.freeBuild;
       s.cheats = { ...s.cheats, freeBuild: true };
       try {
@@ -832,8 +834,8 @@ function apply(c: Ctx, a: Action): string | null {
         }
       } finally {
         s.cheats = { ...s.cheats, freeBuild: prev };
+        if (!prev) delete s.cheats.freeBuild;
       }
-      markCheated(s);
       return null;
     }
     case 'foundLeague': {

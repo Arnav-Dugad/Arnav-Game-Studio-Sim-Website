@@ -127,11 +127,13 @@ function FoundLeague() {
   const s = useGame((g) => g.s)!;
   const act = useGame((g) => g.actOrToast);
   const cands = leagueCandidates(s).filter((r) => !canFoundLeague(s, r));
-  const [relId, setRelId] = useState(cands[0]?.id ?? '');
+  const [picked, setRelId] = useState('');
+  // The picked game may have just got a league (or appeared since the tab opened).
+  const relId = cands.some((r) => r.id === picked) ? picked : (cands[0]?.id ?? '');
   const [tier, setTier] = useState<LeagueTier>('regional');
   const rel = s.releases[relId];
-  const [name, setName] = useState(rel ? `${rel.name} ${TIER_NAME.regional}` : '');
-  const [touched, setTouched] = useState(false);
+  const [custom, setName] = useState<string | null>(null);
+  const name = custom ?? (rel ? `${rel.name} ${TIER_NAME[tier]}` : '');
   if (liveLeagues(s).length >= LEAGUE_MAX_LIVE)
     return <p className="text-xs text-ink3">You’re running the maximum of {LEAGUE_MAX_LIVE} leagues. End one to start another.</p>;
   if (!cands.length)
@@ -143,10 +145,6 @@ function FoundLeague() {
       </Section>
     );
   const why = canFoundLeague(s, rel);
-  const pick = (id: string, t: LeagueTier) => {
-    const r = s.releases[id];
-    if (!touched && r) setName(`${r.name} ${TIER_NAME[t]}`);
-  };
   const v = rel ? leagueViewers(s, rel, tier, START_PRESTIGE[tier]).viewers : 0;
   const profit = rel ? leagueMonthlyProfit(s, rel, tier, START_PRESTIGE[tier]) : 0;
   const cost = leagueSetupCost(s, tier);
@@ -159,7 +157,7 @@ function FoundLeague() {
             value={relId}
             onChange={(e) => {
               setRelId(e.target.value);
-              pick(e.target.value, tier);
+              setName(null);
             }}
           >
             {cands.map((r) => (
@@ -174,10 +172,7 @@ function FoundLeague() {
             className={inputCls}
             value={name}
             maxLength={40}
-            onChange={(e) => {
-              setName(e.target.value);
-              setTouched(true);
-            }}
+            onChange={(e) => setName(e.target.value)}
           />
         </Field>
       </div>
@@ -185,10 +180,7 @@ function FoundLeague() {
         <Segmented<LeagueTier>
           ariaLabel="League tier"
           value={tier}
-          onChange={(t) => {
-            setTier(t);
-            pick(relId, t);
-          }}
+          onChange={setTier}
           options={(['regional', 'pro', 'world'] as LeagueTier[]).map((t) => ({ value: t, label: LEAGUE_TIERS[t].label, title: `Setup ${fmtMoney(leagueSetupCost(s, t))} · running ${fmtMoney(leagueMonthlyCost(s, t))}/mo · prize pool ${fmtMoney(leaguePrize(s, t))}/yr` }))}
         />
       </div>
@@ -213,7 +205,9 @@ function FoundLeague() {
       <p className="mt-2 text-[11px] text-ink3">Prestige grows every season, so viewers and income climb over the first few years. Bigger tiers draw far more viewers but cost more.</p>
       <div className="mt-2 flex items-center justify-end gap-2">
         {why && <span className="text-xs text-ink3">{why}</span>}
-        <Button variant="primary" icon="trophy" disabled={!!why || s.company.cash < cost} onClick={() => act({ type: 'foundLeague', releaseId: relId, tier, name })}>
+        <Button variant="primary" icon="trophy" disabled={!!why || s.company.cash < cost} onClick={() => {
+            if (act({ type: 'foundLeague', releaseId: relId, tier, name })) setName(null);
+          }}>
           Found league · {fmtMoney(cost)}
         </Button>
       </div>

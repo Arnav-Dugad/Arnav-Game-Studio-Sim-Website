@@ -211,7 +211,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
     sb.add('Franchise fans (units)', Math.round(fanBuy));
   }
   const base = concept.expansionOf ? s.releases[concept.expansionOf] : undefined;
-  if (base) return expansionPotential(base, platforms, effScore, hype, attach);
+  if (base) return expansionPotential(base, concept.size, platforms, effScore, hype, attach);
   return { platforms, hype, salesWhy: sb.done(), attach };
 }
 
@@ -219,9 +219,11 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
  * Expansion packs sell mostly to people who own the base game (a share that climbs steeply with the
  * expansion's own reviews), plus a trickle of newcomers who buy both.
  */
-function expansionPotential<P extends { platform: string; potential: number }>(base: Release, platforms: P[], effScore: number, hype: number, attach: number) {
+function expansionPotential<P extends { platform: string; potential: number }>(base: Release, size: Size, platforms: P[], effScore: number, hype: number, attach: number) {
   const q = clamp(effScore, 0, 100) / 100;
-  const share = BALANCE.EXPANSION_ATTACH * Math.pow(q, 2.2) * (1 + hype * 0.25);
+  // A small add-on for a huge game appeals to fewer owners than a big one.
+  const content = Math.min(1, Math.sqrt(BALANCE.SIZE[size].days / BALANCE.SIZE[base.concept.size].days));
+  const share = Math.min(0.9, BALANCE.EXPANSION_ATTACH * Math.pow(q, 2.2) * (1 + hype * 0.25) * content);
   const owners = base.platforms.reduce((t, p) => t + p.units, 0);
   let fresh = 0;
   for (const ps of platforms) {
@@ -230,7 +232,10 @@ function expansionPotential<P extends { platform: string; potential: number }>(b
     fresh += newcomers;
     ps.potential = own * share + newcomers;
   }
-  const sb = new BD(`Owners of ${base.name}`, owners).mul(`Expansion appeal (${Math.round(effScore)})`, share).add('Newcomers who buy both', Math.round(fresh));
+  const sb = new BD(`Owners of ${base.name}`, owners)
+    .mul(`Expansion appeal (${Math.round(effScore)})`, share / content)
+    .mul('Amount of new content vs. the base game', content)
+    .add('Newcomers who buy both', Math.round(fresh));
   return { platforms, hype, salesWhy: sb.done(), attach };
 }
 
@@ -457,8 +462,9 @@ export function updateSalesWeekly(c: Ctx): void {
     if (rel.concept.franchiseId && units > 0) {
       const f = s.franchises[rel.concept.franchiseId];
       const liked = clamp((rel.userScore - 55) / 40, 0, 1);
-      if (f) f.fans += units * BALANCE.FAN_CONVERSION * liked * (s.research.done.includes('biz_community') ? 1.25 : 1);
-      s.company.fans += units * 0.04 * liked;
+      const fresh = rel.concept.expansionOf ? 0.25 : 1; // expansion buyers are mostly existing fans
+      if (f) f.fans += units * fresh * BALANCE.FAN_CONVERSION * liked * (s.research.done.includes('biz_community') ? 1.25 : 1);
+      s.company.fans += units * fresh * 0.04 * liked;
     }
     s.progress.stats.totalUnits += units;
     s.progress.stats.totalRevenue += toPlayer;
@@ -679,18 +685,28 @@ const SALE_LIFT: Record<SaleDiscount, number> = { 0.25: 0.06, 0.5: 0.13, 0.75: 0
 export const SALE_COOLDOWN_DAYS = 180;
 export const SALE_MIN_AGE_DAYS = 120;
 const SALE_MONET = new Set<string>(['premium', 'premium_dlc']);
+/** Share of sale buyers who would otherwise have bought at full price later. */
+const SALE_CANNIBALIZE = 0.3;
 
 /** Platforms where the game is sold digitally enough for a storefront sale to matter. */
 function saleShare(s: GameState, ps: PlatformSales): number {
   const pl = platformInfo(s, ps.platform);
-  return pl ? digitalShare(s, pl) : 0;
+  if (!pl) return 0;
+  const life = pl.endDay !== null && s.day > pl.endDay ? Math.exp(-(s.day - pl.endDay) / 250) : 1;
+  return digitalShare(s, pl) * life;
 }
 
 export function canRunSale(s: GameState, rel: Release): string | null {
   if (!SALE_MONET.has(rel.concept.monetization)) return 'Only one-off purchases go on sale';
   if (s.day - rel.day < SALE_MIN_AGE_DAYS) return `Too new — wait ${Math.ceil((SALE_MIN_AGE_DAYS - (s.day - rel.day)) / 7)} more weeks`;
   if (rel.lastSaleDay !== undefined && s.day - rel.lastSaleDay < SALE_COOLDOWN_DAYS) return `On sale recently — again in ${Math.ceil((SALE_COOLDOWN_DAYS - (s.day - rel.lastSaleDay)) / 7)} weeks`;
-  if (!rel.platforms.some((ps) => saleShare(s, ps) >= 0.2)) return 'Needs digital storefronts (most sales here are still boxed)';
+  if (!rel.platforms.some((ps) => saleShare(s, ps) >= 0.2)) {
+    const dead = rel.platforms.every((ps) => {
+      const pl = platformInfo(s, ps.platform);
+      return !pl || (pl.endDay !== null && s.day > pl.endDay);
+    });
+    return dead ? 'Its platforms are no longer sold — nobody is shopping there' : 'Needs digital storefronts (most sales here are still boxed)';
+  }
   return null;
 }
 
@@ -712,6 +728,8 @@ export function applySale(s: GameState, rel: Release, discount: SaleDiscount): n
     const left = ps.revival ? Math.max(0, ps.revival.potential - ps.revival.units) * 0.5 : 0;
     ps.revival = { week: rel.week, potential: add + left, units: 0, priceMul: 1 - discount };
     ps.extraPotential = (ps.extraPotential ?? 0) + add;
+    // Some of those buyers would have paid full price later.
+    ps.potential = Math.max(ps.units, ps.potential - add * SALE_CANNIBALIZE);
     total += add;
   }
   rel.saleCount = (rel.saleCount ?? 0) + 1;
