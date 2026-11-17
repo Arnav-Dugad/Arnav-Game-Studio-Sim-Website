@@ -11,10 +11,12 @@ export interface Settings {
   showTutorial: boolean;
   numberPops: boolean;
   edgePan: boolean;
+  /** Blue/orange instead of green/red for good/bad. */
+  colorblind: boolean;
 }
 
 const KEY = 'ase:settings';
-const DEFAULTS: Settings = { theme: 'system', motion: 'system', uiScale: 1, showTutorial: true, numberPops: true, edgePan: false };
+const DEFAULTS: Settings = { theme: 'system', motion: 'system', uiScale: 1, showTutorial: true, numberPops: true, edgePan: false, colorblind: false };
 
 function load(): Settings {
   try {
@@ -51,6 +53,7 @@ export function applySettings(s: Settings): void {
   const dark = s.theme === 'dark' || (s.theme === 'system' && systemDark());
   root.dataset.theme = dark ? 'dark' : 'light';
   root.dataset.reducedMotion = prefersReducedMotion(s) ? 'true' : 'false';
+  root.dataset.cb = s.colorblind ? 'true' : 'false';
   root.style.fontSize = `${Math.round(16 * s.uiScale)}px`;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', dark ? '#15130f' : '#f4efe7');

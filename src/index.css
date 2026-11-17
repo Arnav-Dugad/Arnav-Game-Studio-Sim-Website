@@ -75,6 +75,16 @@
   color-scheme: dark;
 }
 
+/* Colour-blind friendly: good/bad become blue/orange (distinguishable with red-green colour blindness). */
+[data-cb='true'][data-theme='light'] {
+  --good: #1f6fb2;
+  --bad: #c25e00;
+}
+[data-cb='true'][data-theme='dark'] {
+  --good: #5aaee8;
+  --bad: #f2933a;
+}
+
 html,
 body,
 #root {

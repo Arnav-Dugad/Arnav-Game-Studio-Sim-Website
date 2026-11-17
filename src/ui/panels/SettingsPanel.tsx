@@ -45,6 +45,9 @@ export default function SettingsPanel() {
           <Row label={`UI size ${Math.round(st.uiScale * 100)}%`}>
             <input type="range" min={0.9} max={1.25} step={0.05} value={st.uiScale} onChange={(e) => st.set({ uiScale: Number(e.target.value) })} aria-label="UI size" />
           </Row>
+          <Row label="Colour-blind friendly (blue/orange for good/bad)">
+            <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={st.colorblind} onChange={(e) => st.set({ colorblind: e.target.checked })} />
+          </Row>
           <Row label="Money pop-ups">
             <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={st.numberPops} onChange={(e) => st.set({ numberPops: e.target.checked })} />
           </Row>
