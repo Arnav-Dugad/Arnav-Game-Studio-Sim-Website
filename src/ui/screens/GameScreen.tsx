@@ -86,6 +86,28 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
   }, [slotId]);
 
   // Keyboard shortcuts
+  // Office photo (Menu → Office photo, or P)
+  const takePhoto = useCallback(async () => {
+      const g = useGame.getState();
+      const st = g.s;
+      if (!st || !rendererRef.current) return;
+      const staffN = Object.keys(st.staff).length;
+      let blob: Blob | null;
+      try {
+        blob = await rendererRef.current.snapshot(st.company.name, `${formatDate(st.day)} · ${staffN} ${staffN === 1 ? 'person' : 'people'} · ${st.releaseOrder.length} games released`);
+      } catch {
+        blob = null;
+      }
+      if (!blob) return g.toast({ text: 'Couldn’t take the photo', tone: 'bad' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${st.company.name.replace(/[^\w -]+/g, '').trim() || 'studio'} ${fromDay(st.day).year}.png`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      g.toast({ text: 'Office photo saved', tone: 'good', icon: 'camera' });
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
@@ -105,11 +127,12 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
         else g.openPanel(null);
       } else if (k === '?') g.pushModal({ kind: 'shortcuts' });
       else if (k === 'p' && e.shiftKey) void saveNow();
+      else if (k === 'p') void takePhoto();
       else if (KEYS[k] && !(k === 'r' && g.build)) g.openPanel(KEYS[k]!);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [saveNow]);
+  }, [saveNow, takePhoto]);
 
   // Coin bursts in the office when income lands
   const pops = useGame((g) => g.pops);
@@ -205,26 +228,7 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
           useGame.getState().unload();
         }}
         onZoom={(f) => (f === 0 ? rendererRef.current?.fit() : rendererRef.current?.zoomBy(f))}
-        onPhoto={async () => {
-          const g = useGame.getState();
-          const st = g.s;
-          if (!st || !rendererRef.current) return;
-          const staffN = Object.keys(st.staff).length;
-          let blob: Blob | null;
-          try {
-            blob = await rendererRef.current.snapshot(st.company.name, `${formatDate(st.day)} · ${staffN} ${staffN === 1 ? 'person' : 'people'} · ${st.releaseOrder.length} games released`);
-          } catch {
-            blob = null;
-          }
-          if (!blob) return g.toast({ text: 'Couldn’t take the photo', tone: 'bad' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${st.company.name.replace(/[^\w -]+/g, '').trim() || 'studio'} ${fromDay(st.day).year}.png`;
-          link.click();
-          setTimeout(() => URL.revokeObjectURL(url), 5000);
-          g.toast({ text: 'Office photo saved', tone: 'good', icon: 'camera' });
-        }}
+        onPhoto={() => void takePhoto()}
       />
       <Rail />
       <BuildBar />

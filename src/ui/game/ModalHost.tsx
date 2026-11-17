@@ -966,6 +966,7 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
     ['` (backtick)', 'Cheats'],
     ['W A S D / arrows', 'Pan the office'],
     ['+ / − / 0', 'Zoom in / out / fit'],
+    ['P', 'Office photo'],
     ['Shift + P', 'Save now'],
     ['Esc', 'Close panel / exit build mode'],
     ['?', 'This sheet'],

@@ -104,7 +104,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto }: { saveStatu
               <div className="glass absolute right-0 top-11 z-50 w-48 rounded-xl p-1 animate-pop" role="menu" onMouseLeave={() => setMenu(false)}>
                 {[
                   { icon: 'save' as const, label: 'Save now', run: onSave },
-                  ...(onPhoto ? [{ icon: 'camera' as const, label: 'Office photo', run: onPhoto }] : []),
+                  ...(onPhoto ? [{ icon: 'camera' as const, label: 'Office photo (P)', run: onPhoto }] : []),
                   { icon: 'settings' as const, label: 'Settings', run: () => openPanel('settings') },
                   { icon: 'sparkle' as const, label: 'Cheats ( ` )', run: () => openPanel('cheats') },
                   { icon: 'book' as const, label: 'How to play', run: () => pushModal({ kind: 'guide' }) },
