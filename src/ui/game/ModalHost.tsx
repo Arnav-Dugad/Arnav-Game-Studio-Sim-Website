@@ -598,8 +598,9 @@ function PostMortemCard({ releaseId }: { releaseId: string }) {
     </div>
   );
   return (
-    <Section title="Post-mortem" className="mt-4" right={<Pill tone={pm.tone === 'good' ? 'good' : pm.tone === 'bad' ? 'bad' : 'neutral'}>{pm.verdict}</Pill>}>
+    <Section title="Post-mortem" className="mt-4">
       <div className="grid gap-3 rounded-xl border border-line bg-bg2/40 p-3 sm:grid-cols-2">
+        <p className={cx('font-display text-sm font-semibold sm:col-span-2', pm.tone === 'good' ? 'text-good' : pm.tone === 'bad' ? 'text-bad' : 'text-ink')}>{pm.verdict}</p>
         {col('What went right', pm.right, true)}
         {col('What went wrong', pm.wrong, false)}
       </div>
