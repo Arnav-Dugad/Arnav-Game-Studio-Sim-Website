@@ -359,7 +359,13 @@ function NewGame({ onDone }: { onDone: () => void }) {
     return fid ? s.franchises[fid] : undefined;
   });
   const [genre, setGenre] = useState<GenreId>(baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre);
-  const [topic, setTopic] = useState<string>(baseRel?.concept.topic ?? presetFr?.topic ?? topics.find((t) => t.ok)?.t.id ?? 'fantasy');
+  // A first-timer's default topic quietly suits the default genre, so the tutorial game starts on a good footing.
+  const starterTopic = () => {
+    const ok = topics.filter((t) => t.ok).map((t) => t.t.id);
+    if (s.releaseOrder.length > 0 || !ok.length) return ok[0];
+    return ok.reduce((best, id) => (comboFitValue(firstGenre, id) > comboFitValue(firstGenre, best) ? id : best), ok[0]!);
+  };
+  const [topic, setTopic] = useState<string>(() => baseRel?.concept.topic ?? presetFr?.topic ?? starterTopic() ?? 'fantasy');
   const [name, setName] = useState(() =>
     remasterRel
       ? `${remasterRel.name} Remastered`
