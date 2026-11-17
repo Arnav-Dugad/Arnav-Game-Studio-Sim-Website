@@ -351,6 +351,15 @@ export function isAway(st: Staff): boolean {
 }
 
 export const VACATION_COOLDOWN_DAYS = 120;
+export const SABBATICAL = { days: 60, tenureYears: 8, cooldownYears: 5 };
+
+/** Why this person can't go on a sabbatical now (or null). */
+export function sabbaticalBlocked(s: GameState, st: Staff): string | null {
+  if (st.role === 'founder') return 'Founders don’t get sabbaticals';
+  if (s.day - st.hiredDay < SABBATICAL.tenureYears * 365) return `After ${SABBATICAL.tenureYears} years at the studio`;
+  if (st.lastSabbaticalDay !== undefined && s.day - st.lastSabbaticalDay < SABBATICAL.cooldownYears * 365) return 'Had one recently';
+  return vacationBlocked(s, st);
+}
 
 /** Why this person can't take a vacation right now (or null if they can). */
 export function vacationBlocked(s: GameState, st: Staff): string | null {
@@ -416,6 +425,15 @@ export function updateStaffDaily(c: Ctx): void {
     // Vacation: away from the office, recharging fast
     if ((st.vacationDays ?? 0) > 0) {
       st.vacationDays = st.vacationDays! - 1;
+      if (st.vacationDays === 0 && st.sabbatical) {
+        // back from a sabbatical: refreshed and a little wiser
+        st.sabbatical = undefined;
+        const [primary] = ROLE_SKILLS[st.role];
+        st.skills[primary] = clamp(st.skills[primary] + 4, 0, 100);
+        st.potential = clamp(st.potential + 3, 0, 100);
+        st.loyalty = clamp(st.loyalty + 10, 0, 100);
+        pushNews(s, { category: 'staff', headline: `${st.name} is back from a sabbatical`, body: 'Rested, inspired and full of ideas.', tone: 'good' });
+      }
       st.activity = 'vacation';
       st.energy = clamp(st.energy + 10, 0, 100);
       st.burnout = clamp(st.burnout - 4, 0, 100);

@@ -31,7 +31,7 @@ import { creditLimit, doIPO, ipoEligible, ipValue, repayLoan, secondaryOffering,
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost } from './systems/research';
-import { candidateToStaff, invalidateMentees, marketSalary, mentorBlocked, refreshCandidates, removeStaff, vacationBlocked } from './systems/staff';
+import { SABBATICAL, candidateToStaff, invalidateMentees, marketSalary, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
@@ -121,6 +121,7 @@ export type Action =
   | { type: 'setValues'; values: CultureId[] }
   | { type: 'teamRetreat' }
   | { type: 'liveEvent'; releaseId: string }
+  | { type: 'sabbatical'; staffId: string }
   | { type: 'undoPlace' }
   | { type: 'fanCon'; franchiseId: string }
   | { type: 'bugBash'; projectId: string; hits: number }
@@ -1293,6 +1294,17 @@ function apply(c: Ctx, a: Action): string | null {
       st.vacationDays = a.days;
       st.lastVacationDay = s.day;
       st.loyalty = clamp(st.loyalty + (a.days === 14 ? 5 : 3), 0, 100);
+      return null;
+    }
+    case 'sabbatical': {
+      const st = s.staff[a.staffId];
+      if (!st) return 'Unknown staff member';
+      const why = sabbaticalBlocked(s, st);
+      if (why) return why;
+      st.vacationDays = SABBATICAL.days;
+      st.lastVacationDay = s.day;
+      st.lastSabbaticalDay = s.day;
+      st.sabbatical = true;
       return null;
     }
     case 'retireConsole': {

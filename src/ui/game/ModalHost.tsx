@@ -15,7 +15,7 @@ import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
 import { canExpand, canPatch, canRemaster, canRunSale, EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, expansionsOf, patchCost, portCost, SALE_DISCOUNTS, saleForecast } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
-import { marketSalary, menteesOf, mentorBlocked, productivity, moraleTarget, retirementDay, ROLE_NAMES, vacationBlocked } from '@/sim/systems/staff';
+import { SABBATICAL, marketSalary, menteesOf, mentorBlocked, productivity, moraleTarget, retirementDay, ROLE_NAMES, sabbaticalBlocked, vacationBlocked } from '@/sim/systems/staff';
 import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
 import { runScore } from '@/sim/systems/achievements';
 import { qualityToScore } from '@/sim/systems/dev';
@@ -890,6 +890,11 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
                   ))}
                 </div>
                 <p className="mt-1 text-[11px] text-ink3">Paid leave: energy refills, burnout drops fast, loyalty rises. Their project slows while they’re away.</p>
+                {s.day - st.hiredDay >= SABBATICAL.tenureYears * 365 && st.role !== 'founder' && (
+                  <Button size="sm" className="mt-2" icon="leaf" disabled={!!sabbaticalBlocked(s, st)} title={sabbaticalBlocked(s, st) ?? 'Two months away; they come back with +4 skill, +3 potential and +10 loyalty'} onClick={() => run({ type: 'sabbatical', staffId }, `${st.name} is off on a sabbatical`)}>
+                    Sabbatical (2 months)
+                  </Button>
+                )}
               </>
             )}
           </Section>

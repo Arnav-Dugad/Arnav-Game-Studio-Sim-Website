@@ -1296,3 +1296,20 @@ describe('undo placement', () => {
     expect(dispatch(s, { type: 'undoPlace' }).ok).toBe(false);
   });
 });
+
+describe('sabbaticals', () => {
+  it('veterans only; two months away; back with skill, potential and loyalty', () => {
+    const s = game(1990, 61);
+    dispatch(s, { type: 'cheat', cheat: { op: 'spawnStaff', role: 'artist', skill: 50, salary: 30_000 } });
+    const st = Object.values(s.staff).find((x) => x.role === 'artist')!;
+    expect(dispatch(s, { type: 'sabbatical', staffId: st.id }).ok).toBe(false); // not long enough
+    st.hiredDay = s.day - 9 * 365;
+    const skill = st.skills.art;
+    expect(dispatch(s, { type: 'sabbatical', staffId: st.id }).ok).toBe(true);
+    s.cheats = { noEvents: true, noBankruptcy: true };
+    advance(s, 62);
+    expect(st.sabbatical).toBeUndefined();
+    expect(st.skills.art).toBeGreaterThanOrEqual(skill + 3.9);
+    expect(dispatch(s, { type: 'sabbatical', staffId: st.id }).ok).toBe(false); // cooldown
+  });
+});

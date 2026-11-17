@@ -82,6 +82,9 @@ export interface Staff {
   dreamsMet?: number;
   /** A raise granted for an ambition: cutting below it before `until` breaks the promise. */
   promise?: { salary: number; until: number };
+  /** On a sabbatical (returns refreshed) and when the last one started. */
+  sabbatical?: boolean;
+  lastSabbaticalDay?: number;
   /** Their mentor (a senior colleague in the same role). */
   mentorId?: Id;
   /** Contribution points at the last monthly check, and Employee of the Month wins. */

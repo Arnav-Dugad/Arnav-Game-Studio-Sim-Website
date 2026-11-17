@@ -416,6 +416,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (_s, rng) => ({ type: 'launchSubscription', name: 'Fuzz Pass', price: rng.range(-1, 60) }),
   () => ({ type: 'hostShowcase' }),
   () => ({ type: 'teamRetreat' }),
+  (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'sabbatical', staffId: rng.pick(st) } : null; },
   () => ({ type: 'undoPlace' }),
   (s, rng) => { const f = Object.keys(s.franchises); return { type: 'fanCon', franchiseId: f.length && rng.chance(0.8) ? rng.pick(f) : 'nope' }; },
   (s, rng) => { const st = Object.keys(s.staff); return st.length > 1 ? { type: 'setMentor', staffId: rng.pick(st), mentorId: rng.chance(0.2) ? null : rng.pick(st) } : null; },
