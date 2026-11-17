@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18r';
+export const WHATS_NEW_VERSION = '2026-11-18s';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'Studio yearbook', body: 'Every New Year’s Day your team lines up for a class photo (Company → Yearbook) — the founder in front, the old guard behind, with the year’s games and awards in the caption. Their faces show how the year went. Watch the garage crew grow into an empire.' },
   { icon: 'palette', title: 'Fan mail & fan art', body: 'Players now write in about the games they love — thank-yous, funny stories, sequel requests — and kids send crayon drawings of your games (News → Fan mail). Every letter cheers up the people who made that game. Build a Fan Art Wall and pin your favourite drawings up in the office.' },
   { icon: 'crowd', title: 'Crowdfunding campaigns', body: 'From 2012, pitch a self-published game to your fans (Develop → the project → Crowdfund): 30 days, all or nothing, with a live pledge bar. Pick a modest, ambitious or moonshot goal; stretch goals add content. Backers become fans — and they remember whether you delivered on time.' },
   { icon: 'heart', title: 'Life outside work', body: 'Your people have lives now: very close colleagues may fall for each other (and marry — the whole studio is invited), staff get married and go on honeymoon, have babies, and sometimes have to move away (a remote policy lets them stay). Set parental leave in Staff → Policies: two, six or sixteen weeks — each a real trade-off.' },

@@ -15,6 +15,7 @@ import { Icon } from '../icons';
 import { LABEL_SHARE, LABEL_TIERS, dealAdvance, labelBlocked, signableIndies, talentStars, type DealTier } from '@/sim/systems/publishing';
 import { SHOWCASE_MIN_REP, SHOWCASE_MIN_YEAR, showcaseBlocked, showcaseCost, showcaseHype, showcaseName } from '@/sim/systems/showcase';
 import { HistoryTab } from './HistoryTab';
+import { YearbookTab } from './YearbookTab';
 import { SubscriptionTab } from './SubscriptionTab';
 import { EsportsTab } from './EsportsTab';
 import { CultureTab } from './CultureTab';
@@ -39,6 +40,7 @@ export default function CompanyPanel() {
           { value: 'pass', label: 'Pass' },
           { value: 'esports', label: 'Esports' },
           { value: 'history', label: 'History' },
+          { value: 'yearbook', label: 'Yearbook' },
         ]}
       />
       {tab === 'culture' && <CultureTab />}
@@ -49,6 +51,7 @@ export default function CompanyPanel() {
       {tab === 'pass' && <SubscriptionTab />}
       {tab === 'esports' && <EsportsTab />}
       {tab === 'history' && <HistoryTab />}
+      {tab === 'yearbook' && <YearbookTab />}
     </div>
   );
 }

@@ -99,7 +99,7 @@ interface Agent {
   /** Last seen level, to celebrate promotions. */
   level?: string;
   /** Why they were away last time we looked (to welcome them back). */
-  awayWas?: 'sick' | 'vacation';
+  awayWas?: 'sick' | 'vacation' | 'parental' | 'honeymoon';
 }
 
 const pickOne = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
@@ -814,12 +814,12 @@ export class OfficeRenderer {
       const desk = st.deskId ? s.office.items.find((i) => i.id === st.deskId) : undefined;
       const agentFloor = desk ? desk.floor : 0;
       const away = st.activity === 'sick' || st.activity === 'vacation';
-      if (away) a.awayWas = st.activity === 'sick' ? 'sick' : 'vacation';
+      if (away) a.awayWas = st.activity === 'sick' ? 'sick' : (st.leave ?? 'vacation');
       else if (a.awayWas && agentFloor === floor && this.agentsReady && !ui.reducedMotion) {
         const sabbatical = st.lastSabbaticalDay !== undefined && s.day - st.lastSabbaticalDay < 70;
         const ev = st.life?.event;
-        const lifeBack = ev && ev.kind === 'baby' && s.day - ev.day < 130 ? pickOne(['Back from parental leave! 👶', 'Who knew babies were this loud?', 'I have 400 baby photos. Want to see?']) : ev && ev.kind === 'wedding' && s.day - ev.day < 20 ? pickOne(['Back from the honeymoon! 💍', 'Married life is great!', 'Thanks for the wedding gift!']) : null;
-        this.say(a, lifeBack ?? (sabbatical ? pickOne(['Back from my sabbatical! 🌍', 'I have SO many ideas.', 'Two months off — I’m a new person!']) : a.awayWas === 'vacation' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?'])), 2.6);
+        const lifeBack = ev && ev.kind === 'baby' && a.awayWas === 'parental' ? pickOne(['Back from parental leave! 👶', 'Who knew babies were this loud?', 'I have 400 baby photos. Want to see?']) : ev && ev.kind === 'wedding' && a.awayWas === 'honeymoon' ? pickOne(['Back from the honeymoon! 💍', 'Married life is great!', 'Thanks for the wedding gift!']) : null;
+        this.say(a, lifeBack ?? (sabbatical ? pickOne(['Back from my sabbatical! 🌍', 'I have SO many ideas.', 'Two months off — I’m a new person!']) : a.awayWas !== 'sick' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?'])), 2.6);
         if (lifeBack) {
           const near = [...this.agents.values()].filter((b) => b !== a && b.c.visible && b.floor === floor && !b.talk && Math.hypot(b.x - a.x, b.y - a.y) < 160).slice(0, 2);
           for (const b of near) this.say(b, ev!.kind === 'baby' ? pickOne(['Congratulations! 🍼', 'How’s the little one?', 'Are you getting any sleep?']) : pickOne(['Congrats, newlyweds! 🎉', 'How was the honeymoon?', 'Welcome back! 💐']), 2.4);

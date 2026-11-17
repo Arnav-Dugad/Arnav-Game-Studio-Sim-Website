@@ -341,7 +341,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   // Sales potential
   const effScore = score * 0.7 + userScore * 0.3;
   // a 1.0 launch after Early Access is old news to part of the audience
-  const pot = salesPotential(s, p.concept, effScore, ea ? p.hype * 0.8 : p.hype);
+  const pot = salesPotential(s, p.concept, effScore, ea && ea.units > 0 ? p.hype * 0.85 : p.hype);
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   const pricePl = plats[0]!.pl;
@@ -356,6 +356,11 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     const pcs = plats.filter((pp) => pp.pl.kind === 'computer');
     const pcPot = pcs.reduce((t, pp) => t + pp.potential, 0);
     for (const pp of pcs) pp.potential = Math.max(pp.potential * 0.5, pp.potential - ea.units * (pp.potential / Math.max(1, pcPot)));
+  }
+  if (cf && cf.backers > 0) {
+    // most backers pledged for a copy: they already own it
+    const all = plats.reduce((t, pp) => t + pp.potential, 0);
+    for (const pp of plats) pp.potential = Math.max(pp.potential * 0.6, pp.potential - cf.backers * 0.8 * (pp.potential / Math.max(1, all)));
   }
   const id = newId(s, 'r');
   const rel: Release = {

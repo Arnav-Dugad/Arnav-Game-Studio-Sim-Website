@@ -95,6 +95,8 @@ function GameCard({ p }: { p: GameProject }) {
   const [showTeam, setShowTeam] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [showCf, setShowCf] = useState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const eaRating = useMemo(() => (p.phase >= 1 && p.phase <= 2 && !p.earlyAccess ? earlyAccessRating(s, p) : 0), [s.day, p.id, p.phase, p.earlyAccess]);
   const total = p.phaseDays[0] + p.phaseDays[1] + p.phaseDays[2];
   const done = p.phase >= 3 ? total : p.phaseDays.slice(0, p.phase).reduce((a, b) => a + b, 0) + p.phaseDay;
   const pct = Math.min(1, done / total);
@@ -231,7 +233,7 @@ function GameCard({ p }: { p: GameProject }) {
           </Button>
         )}
         {!p.earlyAccess && p.phase >= 1 && p.phase <= 2 && !p.concept.deal && fromDay(s.day).year >= EA_YEAR && (
-          <Button size="sm" icon="coin" disabled={!!earlyAccessBlocked(s, p)} onClick={() => run({ type: 'earlyAccess', projectId: p.id })} title={earlyAccessBlocked(s, p) ?? `Players would rate today’s build about ${earlyAccessRating(s, p)} (under 50 barely sells; 75+ spreads by word of mouth). Sell it on PC now at ${Math.round((1 - EA_PRICE) * 100)}% off while you keep building. Players file bugs and shape the design (up to +3% quality), and a good build spreads the word. Early Access buyers won't buy again at launch, and after ${Math.round((EA_STALE_WEEKS / 52) * 12)} months players lose patience. Storefront launch ${fmtMoney(earlyAccessCost(s, p))}.`}>
+          <Button size="sm" icon="coin" disabled={!!earlyAccessBlocked(s, p)} onClick={() => run({ type: 'earlyAccess', projectId: p.id })} title={earlyAccessBlocked(s, p) ?? `Players would rate today’s build about ${eaRating} (under 50 barely sells; 75+ spreads by word of mouth). Sell it on PC now at ${Math.round((1 - EA_PRICE) * 100)}% off while you keep building. Players file bugs and shape the design (up to +3% quality), and a good build spreads the word. Early Access buyers won't buy again at launch, and after ${Math.round((EA_STALE_WEEKS / 52) * 12)} months players lose patience. Storefront launch ${fmtMoney(earlyAccessCost(s, p))}.`}>
             Early Access
           </Button>
         )}

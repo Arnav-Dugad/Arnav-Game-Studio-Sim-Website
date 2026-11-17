@@ -63,4 +63,16 @@ describe('crowdfunding', () => {
     expect(s.company.reputation).toBeLessThan(rep);
     expect(dispatch(s, { type: 'crowdfund', projectId: p.id, tier: 'modest' }).ok).toBe(false);
   });
+
+  it('no feature cuts mid-campaign, and cancelling a funded game refunds the backers', () => {
+    const { s, p } = setup();
+    dispatch(s, { type: 'crowdfund', projectId: p.id, tier: 'modest' });
+    expect(dispatch(s, { type: 'cutFeatures', projectId: p.id }).ok).toBe(false);
+    p.crowdfund!.target = p.crowdfund!.goal * 1.3;
+    advance(s, CAMPAIGN_DAYS + 2);
+    expect(p.crowdfund!.success).toBe(true);
+    const cash = s.company.cash;
+    dispatch(s, { type: 'cancelProject', projectId: p.id });
+    expect(s.company.cash).toBeLessThan(cash - p.crowdfund!.raised * 0.85);
+  });
 });

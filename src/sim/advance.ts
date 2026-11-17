@@ -1,6 +1,7 @@
 /**
  * The fixed-step simulation loop: 1 tick = 1 day. Subsystems run at their own cadence.
  */
+import { takeYearbookPhoto } from './systems/yearbook';
 import { fanMailMonthly } from './systems/fanMail';
 import { crowdfundDaily } from './systems/crowdfunding';
 import { lifeEventsMonthly } from './systems/lifeEvents';
@@ -78,6 +79,7 @@ export function tick(c: Ctx): void {
     if (d.month === 1) {
       yearlyTaxes(c);
       yearlyAwards(c, d.year - 1); // the ceremony covers every release of last year, December included
+      takeYearbookPhoto(s, d.year - 1);
       if (d.year % 10 === 0) decadeReview(c, d.year - 10);
       updateFuturePlatforms(c);
       // studio anniversaries every five years
@@ -126,8 +128,8 @@ export function tick(c: Ctx): void {
   if (s.progress.stats.crunchRecent) s.progress.stats.crunchRecent *= 0.985; // ~two-month memory
   ambitionsDaily(s);
   trainingDaily(s);
+  crowdfundDaily(c); // before projects: a campaign settles before its game can ship that day
   updateProjectsDaily(c);
-  crowdfundDaily(c);
   updateResearchDaily(c);
   cheatsDaily(s);
 

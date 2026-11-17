@@ -25,7 +25,7 @@ const EA_WEEKLY = 0.01;
 const EA_CAP = 0.45;
 
 export function earlyAccessCost(s: GameState, p: GameProject): number {
-  return money({ small: 3_000, medium: 8_000, large: 20_000, aaa: 50_000 }[p.concept.size], s.day);
+  return money({ small: 800, medium: 3_000, large: 10_000, aaa: 25_000 }[p.concept.size], s.day);
 }
 
 export function eaPcPlatforms(s: GameState, p: GameProject): string[] {
@@ -99,6 +99,8 @@ export function earlyAccessWeekly(c: Ctx): void {
         if (eng && eng.royalty > 0) spend(s, 'royalties', net * eng.royalty);
         c.out.push({ type: 'income', amount: net, source: 'sales' });
         ea.units += units;
+        s.progress.stats.totalUnits += units;
+        s.progress.stats.totalRevenue += net;
         ea.gross += gross;
         ea.net += net;
         if (ea.rating >= 65) s.company.fans += Math.round(units * 0.05);

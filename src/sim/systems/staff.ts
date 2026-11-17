@@ -648,7 +648,10 @@ function retirements(c: Ctx): void {
 
 export function removeStaff(s: GameState, id: string): void {
   invalidateMentees(s);
-  for (const x of Object.values(s.staff)) if (x.mentorId === id) x.mentorId = undefined;
+  for (const x of Object.values(s.staff)) {
+    if (x.mentorId === id) x.mentorId = undefined;
+    if (x.life?.partnerId === id) x.life = { ...x.life, partnerId: undefined };
+  }
   const st = s.staff[id];
   if (!st) return;
   for (const p of Object.values(s.projects)) p.team = p.team.filter((t) => t !== id);

@@ -138,6 +138,16 @@ export interface PlacedItem {
 
 export type FloorStyle = 'auto' | 'wood' | 'carpet' | 'concrete' | 'tiles' | 'checker';
 
+export interface YearbookPhoto {
+  year: number;
+  people: number;
+  morale: number;
+  tier: number;
+  games: string[];
+  awards: number;
+  faces: { look: number; name: string; role: string; mood: number; legend?: boolean }[];
+}
+
 export interface FanMail {
   id: string;
   day: number;
@@ -769,6 +779,8 @@ export interface Company {
   values?: CultureId[];
   valuesDay?: number;
   lastRetreatDay?: number;
+  /** Last crowdfunding campaign launched (backer fatigue). */
+  lastCampaignDay?: number;
   /** Venture funding before the IPO: rounds raised, investors' share of the company, and when the last round closed. */
   fundingRounds?: number;
   investorStake?: number;
@@ -830,6 +842,8 @@ export interface GameState {
   eotm?: { id: string; day: number };
   /** Letters and drawings from players (systems/fanMail.ts), newest last. */
   fanMail?: FanMail[];
+  /** A team photo every New Year's Day (systems/yearbook.ts). */
+  yearbook?: YearbookPhoto[];
   schemaVersion: number;
   seed: number;
   rng: RngState;

@@ -51,7 +51,11 @@ export function scheduledDaysLeft(p: GameProject): number {
 export function expectedPledges(s: GameState, p: GameProject): number {
   const fr = p.concept.franchiseId ? s.franchises[p.concept.franchiseId] : undefined;
   const pitch = clamp((qualityToScore(gameQuality(s, p, true).total) - 45) / 30, 0.3, 1.4);
-  const backers = (300 + s.company.fans * 0.012 + (fr?.fans ?? 0) * 0.03) * (0.5 + 0.5 * Math.min(2, p.hype)) * (0.6 + s.company.reputation / 100) * pitch;
+  const size = { small: 0.6, medium: 1, large: 1.5, aaa: 2.2 }[p.concept.size];
+  // backers tire of being asked: a campaign within two years of the last one draws less
+  const last = s.company.lastCampaignDay;
+  const fatigue = last !== undefined && s.day - last < 730 ? 0.6 + 0.4 * ((s.day - last) / 730) : 1;
+  const backers = size * fatigue * (900 + s.company.fans * 0.012 + (fr?.fans ?? 0) * 0.03) * (0.5 + 0.5 * Math.min(2, p.hype)) * (0.6 + s.company.reputation / 100) * pitch;
   return Math.round(backers * pledgeSize(s));
 }
 
@@ -62,13 +66,14 @@ export function campaignGoal(s: GameState, p: GameProject, tier: CampaignTier): 
 }
 
 export function campaignCost(s: GameState): number {
-  return money(1_500, s.day); // the pitch video
+  return money(600, s.day); // the pitch video
 }
 
 export function crowdfundBlocked(s: GameState, p: GameProject): string | null {
   if (!hasFlag(s, 'crowdfunding')) return 'Crowdfunding takes off in 2012';
   if (p.crowdfund) return p.crowdfund.end === undefined ? 'The campaign is running' : 'Already crowdfunded';
   if (p.concept.deal) return 'It’s already funded by a publisher';
+  if (Object.values(s.projects).some((x) => x.kind === 'game' && x.id !== p.id && x.crowdfund && x.crowdfund.end === undefined)) return 'One campaign at a time';
   if (p.concept.remasterOf || p.concept.expansionOf) return 'Backers want brand-new games';
   if (p.phase > 1) return 'Pitch it before polish';
   if (scheduledDaysLeft(p) < CAMPAIGN_DAYS + 15) return 'Too close to launch for a 30-day campaign';
@@ -86,6 +91,7 @@ export function startCrowdfund(c: Ctx, p: GameProject, tier: CampaignTier): stri
   const goal = campaignGoal(s, p, tier);
   // how the pitch lands is luck: a lognormal around the expectation
   const luck = Math.exp(rng.normal(0, 0.35));
+  s.company.lastCampaignDay = s.day;
   p.crowdfund = { day: s.day, tier, goal, raised: 0, backers: 0, target: Math.round(expectedPledges(s, p) * TIERS[tier].pull * luck), stretch: 0 };
   pushNews(s, { category: 'studio', headline: `${p.concept.name} launches a crowdfunding campaign`, body: `${s.company.name} asks fans for ${fmtMoney(goal)} in ${CAMPAIGN_DAYS} days — all or nothing.`, tone: 'neutral' });
   return null;
@@ -127,7 +133,7 @@ function settle(c: Ctx, p: GameProject): void {
     p.hype = Math.min(3, p.hype + TIERS[cf.tier].hype);
     s.company.fans += Math.round(cf.backers * 0.8);
     cf.promised = s.day + scheduledDaysLeft(p) + PROMISE_GRACE;
-    addRep(s, cf.tier === 'moonshot' ? 2 : 1, 'Crowdfunding success');
+    addRep(s, (cf.tier === 'moonshot' ? 2 : 1) * (1 - s.company.reputation / 115), 'Crowdfunding success');
     s.progress.stats.crowdfunded = (s.progress.stats.crowdfunded ?? 0) + Math.round(cf.raised);
     const n = pushNews(s, { category: 'studio', headline: `${p.concept.name} raises ${fmtMoney(cf.raised)} from ${cf.backers.toLocaleString('en-US')} backers`, body: `${Math.round((cf.raised / cf.goal) * 100)}% funded. Backers are promised the game by ${formatDate(cf.promised)}.`, tone: 'good' });
     if (cf.tier === 'moonshot' || cf.raised >= cf.goal * 3) c.out.push({ type: 'news', newsId: n.id, major: true });

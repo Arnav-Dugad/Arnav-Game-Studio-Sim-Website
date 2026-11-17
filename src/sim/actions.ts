@@ -495,6 +495,7 @@ function apply(c: Ctx, a: Action): string | null {
       const p = s.projects[a.projectId];
       if (!p || p.kind !== 'game' || p.cut) return 'Can’t cut further';
       if (p.phase >= 3) return 'Too late to cut';
+      if (p.crowdfund && p.crowdfund.end === undefined) return 'Not while the crowdfunding campaign is running';
       const ph = p.phase as 0 | 1 | 2;
       for (let i = ph; i < 3; i++) p.phaseDays[i as 0 | 1 | 2] = Math.max(4, Math.round(p.phaseDays[i as 0 | 1 | 2] * 0.75));
       p.cut = true;
@@ -523,11 +524,13 @@ function apply(c: Ctx, a: Action): string | null {
       if (p.kind === 'game' && p.announcedDay !== undefined) addRep(s, -(2), 'Cancelled an announced game');
       if (p.kind === 'game' && p.crowdfund?.success) {
         addRep(s, -8, 'Cancelled a crowdfunded game');
+        spend(s, 'other_expense', p.crowdfund.raised * 0.9); // the platform forces refunds
         s.company.fans = Math.round(s.company.fans * 0.95);
         pushNews(s, { category: 'studio', headline: `${p.concept.name} cancelled after raising ${fmtMoney(p.crowdfund.raised)}`, body: `${p.crowdfund.backers.toLocaleString('en-US')} backers are furious. “Where did our money go?”`, tone: 'bad' });
       } else if (p.kind === 'game' && p.crowdfund && p.crowdfund.end === undefined) addRep(s, -1, 'Pulled a crowdfunding campaign');
       if (p.kind === 'game' && p.earlyAccess) {
         addRep(s, -6, 'Abandoned an Early Access game');
+        spend(s, 'other_expense', p.earlyAccess.net * 0.5); // refunds
         s.company.fans = Math.round(s.company.fans * 0.96);
         pushNews(s, { category: 'studio', headline: `${p.concept.name} abandoned in Early Access`, body: `${fmtUnits(p.earlyAccess.units)} players paid for a game that will never be finished. Refund requests are pouring in.`, tone: 'bad' });
       }

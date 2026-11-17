@@ -78,7 +78,7 @@ export function lifeEventsMonthly(c: Ctx): void {
     const away = (st.vacationDays ?? 0) > 0 || st.sickDays > 0;
     // weddings
     if (!life.married && !away) {
-      const couple = partner && partner.life?.partnerId === st.id && st.id < partner.id; // handle each couple once
+      const couple = partner && partner.life?.partnerId === st.id && st.id < partner.id && !(partner.vacationDays ?? 0) && partner.sickDays <= 0; // each couple once, both here
       if (couple && s.day - (life.event?.day ?? 0) > 300 && rng.chance(0.08)) {
         for (const x of [st, partner]) {
           x.life = { ...x.life, married: s.day, event: { kind: 'wedding', day: s.day } };
@@ -103,7 +103,9 @@ export function lifeEventsMonthly(c: Ctx): void {
         continue;
       }
     }
-    // babies
+    // babies (a colleague couple rolls once, for both of them)
+    const spouse = partner && partner.life?.partnerId === st.id && life.married ? partner : undefined;
+    if (spouse && (st.id > spouse.id || (spouse.vacationDays ?? 0) > 0 || spouse.sickDays > 0)) continue;
     if (!away && (life.kids ?? 0) < 3 && rng.chance((life.married ? P_BABY_COUPLE : P_BABY_SINGLE) / 12) && s.day - (life.event?.day ?? -1e9) > 200) {
       const pol = PARENTAL[parentalPolicy(s)];
       life.kids = (life.kids ?? 0) + 1;
@@ -119,6 +121,12 @@ export function lifeEventsMonthly(c: Ctx): void {
       }
       leave(st, pol.days, 'parental');
       setMood(st, pol.mood, pol.days + 60, pol.mood >= 0 ? 'New parent (supported)' : 'New parent (barely any leave)', s.day);
+      if (spouse) {
+        spouse.life = { ...spouse.life, kids: (spouse.life?.kids ?? 0) + 1, event: { kind: 'baby', day: s.day } };
+        spouse.loyalty = clamp(spouse.loyalty + pol.loyalty, 0, 100);
+        leave(spouse, pol.days, 'parental');
+        setMood(spouse, pol.mood, pol.days + 60, pol.mood >= 0 ? 'New parent (supported)' : 'New parent (barely any leave)', s.day);
+      }
       note(s, digest, small, `${st.name} welcomes a baby`, `${pol.label} of parental leave${pol.mood < 0 ? ' — and they’re not happy about how short it is' : ''}.`, pol.mood < 0 ? 'neutral' : 'good', `${first(st.name)} had a baby`);
       continue;
     }
@@ -153,7 +161,7 @@ export function lifeLine(s: GameState, st: Staff): string | null {
   else if (partner) parts.push(`Dating ${partner.name}`);
   else if (l.married) parts.push('Married');
   if (l.kids) parts.push(`${l.kids} kid${l.kids > 1 ? 's' : ''}`);
-  if (l.remote) parts.push('works remotely');
+  if (l.remote && s.company.policies.remote) parts.push('works remotely');
   return parts.length ? parts.join(' · ') : null;
 }
 
