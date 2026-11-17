@@ -598,6 +598,44 @@ const M = {
       <path d="M66 36L80 32" stroke={p.accent} strokeWidth={3} strokeLinecap="round" />
     </>
   ),
+  katana: (p) => (
+    <>
+      <circle cx={50} cy={46} r={30} fill={p.accent} opacity={0.85} />
+      <path d="M20 84L76 20L80 24L26 88Z" fill={p.ink} />
+      <rect x={18} y={78} width={14} height={5} rx={1.5} fill={p.detail} transform="rotate(-48 25 80)" />
+      <path d="M14 92L22 84" stroke={p.detail} strokeWidth={5} strokeLinecap="round" />
+      <path d="M76 20L84 12" stroke={p.ink} strokeWidth={2} strokeLinecap="round" />
+    </>
+  ),
+  cog: (p) => (
+    <>
+      {Array.from({ length: 8 }, (_, i) => (
+        <rect key={i} x={45} y={14} width={10} height={14} rx={2} fill={p.ink} transform={`rotate(${i * 45} 50 50)`} />
+      ))}
+      <circle cx={50} cy={50} r={26} fill={p.ink} />
+      <circle cx={50} cy={50} r={11} fill={p.accent} />
+      <circle cx={78} cy={78} r={10} fill={p.detail} opacity={0.7} />
+      <circle cx={78} cy={78} r={4} fill={p.accent} />
+    </>
+  ),
+  pyramid: (p) => (
+    <>
+      <circle cx={74} cy={24} r={9} fill={p.accent} />
+      <path d="M10 84L46 26L82 84Z" fill={p.ink} />
+      <path d="M46 26L82 84H58Z" fill={p.detail} opacity={0.35} />
+      <path d="M60 84L78 56L94 84Z" fill={p.ink} opacity={0.8} />
+      <path d="M6 86H96" stroke={p.accent} strokeWidth={3} opacity={0.6} />
+    </>
+  ),
+  hook: (p) => (
+    <>
+      <path d="M8 74Q28 66 50 74T92 74V92H8Z" fill={p.detail} opacity={0.6} />
+      <path d="M52 8V54Q52 70 40 70Q28 70 28 58" stroke={p.ink} strokeWidth={5} fill="none" strokeLinecap="round" />
+      <path d="M28 58L22 64" stroke={p.ink} strokeWidth={5} strokeLinecap="round" />
+      <path d="M58 82Q70 74 82 82Q70 90 58 82Z" fill={p.accent} />
+      <path d="M58 82L52 77V87Z" fill={p.accent} />
+    </>
+  ),
   cottage: (p) => (
     <>
       <path d="M8 82Q50 72 92 82V92H8Z" fill={p.detail} opacity={0.7} />
@@ -661,6 +699,10 @@ const TOPIC_MOTIF: Record<string, keyof typeof M> = {
   trains: 'train',
   witches: 'witch_hat',
   kaiju: 'kaiju',
+  samurai: 'katana',
+  steampunk: 'cog',
+  ancient_egypt: 'pyramid',
+  fishing: 'hook',
   cozy_village: 'cottage',
 };
 

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-19f';
+export const WHATS_NEW_VERSION = '2026-11-19g';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'library', title: 'Four new topics', body: 'Samurai (1984, surging around 2020), Steampunk (1990), Ancient Egypt (1982) and Fishing (1985, a family favourite) — each with its own cover art and title ideas.' },
   { icon: 'heart', title: 'Giving back', body: 'Staff → Policies: pledge 1% or 5% of each month’s profit to charity — people find the work more meaningful (+1 or +3 morale) and goodwill builds. And once an engine you built is eight years old, you can open-source it (Research → Engines) for reputation and very proud programmers.' },
   { icon: 'sparkle', title: 'Lunar New Year & Diwali', body: 'The office now celebrates more of the world’s festivals: red lanterns for Lunar New Year and flickering clay lamps for Diwali — on the right dates every year, worked out from the moon — with festive chatter to match.' },
   { icon: 'sparkle', title: 'Four new signature features', body: 'Full voice acting (1996) for RPGs and adventures, dynamic music (2001), motion controls (2006) for sports and family games, and a speedrun mode (2010) the platformer crowd will love.' },
