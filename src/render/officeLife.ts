@@ -99,6 +99,9 @@ export function workExchange(a: Staff, b: Staff): Exchange {
 
 /** Thought glyphs while working at a desk, by role. */
 export function workThought(st: Staff, buggy: boolean): string {
+  if (hasTrait(st, 'hothead') && buggy && Math.random() < 0.5) return pick(['😤', '💢']);
+  if (hasTrait(st, 'visionary') && Math.random() < 0.35) return pick(['💡', '✨', '🌟']);
+  if (hasTrait(st, 'perfectionist') && Math.random() < 0.3) return pick(['🔍', '📐', '🧐']);
   switch (st.role) {
     case 'designer':
       return pick(['💡', '✏️', '🎲']);
