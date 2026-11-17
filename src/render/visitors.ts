@@ -10,7 +10,7 @@ import { animate, createRig, newAnim, setHat, type Anim, type Prop, type Rig } f
 import type { ScenePalette } from './palette';
 import { T, drawPerson, lookFor, type Look } from './sprites';
 
-export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver';
+export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver' | 'headhunter';
 
 export interface VisitorPerson {
   id: string;
@@ -51,8 +51,8 @@ interface Visitor {
   carry: Prop;
 }
 
-const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888 };
-const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box' };
+const TOPS: Record<VisitorKind, number> = { courier: 0x8a5a3b, pizza: 0xd8323c, journalist: 0x5b6b7a, investor: 0x2f3542, candidate: 0x7a9cc6, leaver: 0x888888, headhunter: 0x1f2328 };
+const CARRY: Record<VisitorKind, Prop> = { courier: 'box', pizza: 'pizza', journalist: 'notepad', investor: 'briefcase', candidate: 'none', leaver: 'box', headhunter: 'briefcase' };
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
 const first = (n: string) => n.split(' ')[0] ?? n;
 
@@ -60,6 +60,8 @@ export class VisitorSystem {
   private list: Visitor[] = [];
   private nextT = 25 + Math.random() * 25;
   private floor = -1;
+  /** Poach offers a headhunter has already visited for. */
+  private poachSeen = new Set<number>();
   private P: ScenePalette | null = null;
 
   constructor(private layer: Container) {}
@@ -88,11 +90,12 @@ export class VisitorSystem {
     const c = new Container();
     const fig = new Graphics();
     const look = { ...lookFor(Math.floor(Math.random() * 1e6), 'visitor'), top: TOPS[kind] };
-    if (kind === 'investor') look.glasses = Math.random() < 0.5;
+    if (kind === 'investor' || kind === 'headhunter') look.glasses = Math.random() < 0.5;
     look.headphones = false;
     drawPerson(fig, look, 'stand', this.P!);
-    const legL = new Graphics().roundRect(-5, -8, 4, 8, 2).fill(kind === 'investor' ? 0x22262e : 0x3a3f4a);
-    const legR = new Graphics().roundRect(1, -8, 4, 8, 2).fill(kind === 'investor' ? 0x22262e : 0x3a3f4a);
+    const suit = kind === 'investor' || kind === 'headhunter';
+    const legL = new Graphics().roundRect(-5, -8, 4, 8, 2).fill(suit ? 0x22262e : 0x3a3f4a);
+    const legR = new Graphics().roundRect(1, -8, 4, 8, 2).fill(suit ? 0x22262e : 0x3a3f4a);
     const rig = createRig(fig, look);
     if (kind === 'courier' || kind === 'pizza') setHat(rig, 'cap', kind === 'pizza' ? 0xf2f2f2 : 0x5a3b26);
     c.addChild(legL, legR, rig.root);
@@ -110,6 +113,14 @@ export class VisitorSystem {
     const people = host.people();
     if (!people.length) return;
     const projects = Object.values(s.projects);
+    // a rival's headhunter calls on whoever they're trying to poach
+    const poach = s.pendingEvents.find((e) => e.defId === 'poach_offer' && !this.poachSeen.has(e.uid));
+    const target = poach ? people.find((p) => p.id === String(poach.ctx.staff)) : undefined;
+    if (poach && target && !this.list.some((v) => v.kind === 'headhunter')) {
+      this.poachSeen.add(poach.uid);
+      this.spawn(s, floor, 'headhunter', target, [pick(['Ever thought about moving on?', 'Got a minute? Off the record.', 'They’d double your salary…']), pick(['I’m happy here… I think.', 'Let me think about it.', 'Not in front of my boss!'])]);
+      return;
+    }
     const opts: { w: number; go: () => void }[] = [];
     const crunchers = people.filter((p) => p.crunching);
     if (crunchers.length) opts.push({ w: 3, go: () => this.spawn(s, floor, 'pizza', pick(crunchers), [pick(['Pizza for the night shift!', 'Large pepperoni ×12?', 'Delivery! 🍕']), pick(['Pizza!! 🍕', 'You’re a lifesaver.', 'Finally, food!'])]) });
@@ -188,6 +199,7 @@ export class VisitorSystem {
       for (const v of [...this.list]) this.remove(v);
       this.floor = floor;
     }
+    if (s.pendingEvents.some((e) => e.defId === 'poach_offer' && !this.poachSeen.has(e.uid))) this.nextT = Math.min(this.nextT, 2);
     this.nextT -= dt;
     if (this.nextT <= 0 && !reducedMotion) {
       this.nextT = 35 + Math.random() * 45;
