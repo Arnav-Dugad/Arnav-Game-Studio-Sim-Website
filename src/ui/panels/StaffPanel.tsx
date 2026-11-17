@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { fromDay } from '@/sim/calendar';
+import { PLEDGE_YEAR, pledgeBlocked, pledged } from '@/sim/systems/crunchPledge';
+import { formatDate, fromDay } from '@/sim/calendar';
 import { INTERN_YEAR, internCount } from '@/sim/systems/interns';
 import { WELLNESS_COST } from '@/sim/systems/finance';
 import { RETREAT_MORALE, retreatBlocked, retreatCost } from '@/sim/systems/studioLife';
@@ -290,6 +291,27 @@ function Policies() {
           </span>
           <input type="checkbox" disabled={fromDay(s.day).year < INTERN_YEAR} checked={!!p.interns} onChange={(e) => act({ type: 'setPolicy', interns: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
+      </Section>
+      <Section title="No-crunch pledge">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span className="min-w-0">
+            <b>{pledged(s) ? `Pledged since ${formatDate(s.company.crunchPledge!.since!)}` : 'Promise never to crunch'}</b>
+            <span className="block text-xs text-ink3">
+              {pledged(s)
+                ? 'Everyone works happier for it (+3 morale). Crunching on any game now breaks the pledge in public: reputation −5, morale −8 for four months, and no new pledge for three years.'
+                : `A public promise (from ${PLEDGE_YEAR}): +3 morale for as long as you keep it${s.company.crunchPledge?.ever ? '' : ', and goodwill the first time'}. Breaking it later is a scandal.`}
+            </span>
+          </span>
+          {pledged(s) ? (
+            <Button size="sm" variant="ghost" onClick={() => act({ type: 'crunchPledge', on: false })} title="Reputation −1">
+              Withdraw
+            </Button>
+          ) : (
+            <Button size="sm" variant="primary" disabled={!!pledgeBlocked(s)} title={pledgeBlocked(s) ?? undefined} onClick={() => act({ type: 'crunchPledge', on: true })}>
+              Pledge
+            </Button>
+          )}
+        </div>
       </Section>
       <Section title="Parental leave">
         <Segmented

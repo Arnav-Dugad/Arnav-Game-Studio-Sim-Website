@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { pledged } from '@/sim/systems/crunchPledge';
 import { knownFor } from '@/sim/systems/renown';
 import { priceTierAllowed } from '@/sim/systems/pricing';
 import type { PriceTier } from '@/sim/types';
@@ -215,8 +216,8 @@ function GameCard({ p }: { p: GameProject }) {
         <Button size="sm" icon="people" onClick={() => setShowTeam((x) => !x)} aria-expanded={showTeam}>
           Team ({p.team.length}/{BALANCE.SIZE[p.concept.size].teamCap})
         </Button>
-        <Button size="sm" variant={p.crunch ? 'danger' : 'secondary'} icon="fire" onClick={() => run({ type: 'setCrunch', projectId: p.id, on: !p.crunch })} title="+35% output, +60% bugs, burns people out">
-          {p.crunch ? 'Stop crunch' : 'Crunch'}
+        <Button size="sm" variant={p.crunch || pledged(s) ? 'danger' : 'secondary'} icon="fire" onClick={() => run({ type: 'setCrunch', projectId: p.id, on: !p.crunch })} title={pledged(s) && !p.crunch ? 'Breaks your no-crunch pledge, publicly: reputation −5 and a bitter team (morale −8 for four months)' : '+35% output, +60% bugs, burns people out'}>
+          {p.crunch ? 'Stop crunch' : pledged(s) ? 'Crunch (breaks pledge!)' : 'Crunch'}
         </Button>
         <Button size="sm" icon="hourglass" onClick={() => run({ type: 'delay', projectId: p.id, weeks: 2 })} title="Two more weeks of polish: more points, fewer bugs, more cost">
           Polish +2w

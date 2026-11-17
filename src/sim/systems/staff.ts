@@ -1,6 +1,7 @@
 /**
  * Staff: generation, salary, productivity, morale, energy, burnout, loyalty, growth, quitting.
  */
+import { PLEDGE_MORALE, pledged } from './crunchPledge';
 import type { GenreId } from '../../data/types';
 import { GENRE_BY_ID } from '../../data/genres';
 import { relationMorale } from './relations';
@@ -365,6 +366,7 @@ export function moraleTarget(s: GameState, st: Staff): ReturnType<BD['done']> {
   if (s.company.policies.remote) bd.add('Remote-friendly', 4);
   if (s.company.policies.fourDayWeek) bd.add('Four-day week', 9);
   if (s.company.policies.wellness) bd.add('Wellness program', 2);
+  if (pledged(s)) bd.add('No-crunch pledge', PLEDGE_MORALE);
   if (s.company.policies.parentalLeave === 'generous') bd.add('Family-friendly leave', 1);
   if (onFavouriteGenre(s, st)) bd.add('Making a game they love', 3);
   if (s.company.policies.charity && s.company.charitySince !== undefined && s.day - s.company.charitySince >= 90) bd.add('Giving back', s.company.policies.charity >= 5 ? 3 : 1);

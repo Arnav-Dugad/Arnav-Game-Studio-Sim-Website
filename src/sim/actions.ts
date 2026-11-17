@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { breakPledge, takePledge, withdrawPledge } from './systems/crunchPledge';
 import type { PriceTier, Release } from './types';
 import { priceTierAllowed } from './systems/pricing';
 import { checkIn } from './systems/checkIns';
@@ -172,6 +173,7 @@ export type Action =
   | { type: 'openSourceEngine'; engineId: string }
   | { type: 'giveTalk'; staffId: string; releaseId: string }
   | { type: 'checkIn'; staffId: string }
+  | { type: 'crunchPledge'; on: boolean }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
   | { type: 'readFanMail' }
   | { type: 'crowdfund'; projectId: string; tier: CampaignTier }
@@ -514,6 +516,7 @@ function apply(c: Ctx, a: Action): string | null {
     case 'setCrunch': {
       const p = s.projects[a.projectId];
       if (!p || p.kind !== 'game') return 'No such game';
+      if (a.on && !p.crunch) breakPledge(s); // crunching while pledged breaks the promise, publicly
       p.crunch = a.on;
       return null;
     }
@@ -1042,6 +1045,8 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'mediaDeal':
       return signMediaDeal(s, a.franchiseId, a.kind, a.control);
+    case 'crunchPledge':
+      return a.on ? takePledge(s) : withdrawPledge(s);
     case 'checkIn':
       return checkIn(s, a.staffId);
     case 'giveTalk':
