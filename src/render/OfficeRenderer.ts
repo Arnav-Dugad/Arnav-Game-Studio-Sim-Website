@@ -142,6 +142,8 @@ export class OfficeRenderer {
   private el: HTMLElement | null = null;
   private hoverTile: [number, number] | null = null;
   private hoverStaff: string | null = null;
+  private petHover = false;
+  private itemLabel?: Text;
   private drag: { x: number; y: number; camX: number; camY: number; moved: boolean; button: number; mouse: boolean; t: number } | null = null;
   private painted: string | null = null;
   private pointers = new Map<number, { x: number; y: number }>();
@@ -321,7 +323,7 @@ export class OfficeRenderer {
     }
     this.hoverTile = this.screenToTile(e.offsetX, e.offsetY);
     this.hoverStaff = this.pickStaff(e.offsetX, e.offsetY);
-    this.pets.hover(this.hoverStaff ? null : (e.offsetX - this.cam.x) / this.zoom, (e.offsetY - this.cam.y) / this.zoom, this.P.night);
+    this.petHover = this.pets.hover(this.hoverStaff ? null : (e.offsetX - this.cam.x) / this.zoom, (e.offsetY - this.cam.y) / this.zoom, this.P.night);
     this.app.canvas.style.cursor = this.cb.getUI().build ? 'crosshair' : this.hoverStaff ? 'pointer' : this.drag?.moved ? 'grabbing' : 'grab';
     if (this.drag) {
       const dx = e.offsetX - this.drag.x;
@@ -548,6 +550,7 @@ export class OfficeRenderer {
       if (st && (st.activity === 'work' || st.activity === 'research')) users.push({ deskId: a.deskId, role: st.role, research: st.activity === 'research', phase: a.anim.phase });
     }
     this.monitors.update(s, floor, era, users, dt, ui.reducedMotion);
+    this.updateItemHover(s, floor);
     this.parrots.update(s, floor, dt, ui.reducedMotion);
     const crunchers: { x: number; y: number }[] = [];
     for (const a of this.agents.values()) {
@@ -1497,6 +1500,50 @@ export class OfficeRenderer {
     a.bubbleT = -0.5; // shown on arrival
     (a as Agent & { funGlyph?: string }).funGlyph = glyph;
     return true;
+  }
+
+  /** Hovering a piece of furniture (outside build mode): its name and what it does. */
+  private updateItemHover(s: GameState, floor: number): void {
+    const t = this.hoverTile;
+    const ui = this.cb.getUI();
+    let it: PlacedItem | undefined;
+    if (t && !ui.build && !this.hoverStaff && !this.petHover) {
+      const at = (x: number, y: number) =>
+        s.office.items.find((i) => {
+          if (i.floor !== floor) return false;
+          const fp = footprint(i);
+          return x >= i.x && x < i.x + fp.w && y >= i.y && y < i.y + fp.h;
+        });
+      // tall things are drawn above their tile, so also check the tile below the cursor
+      it = at(t[0], t[1]) ?? at(t[0], t[1] + 1);
+    }
+    if (!it) {
+      if (this.itemLabel) this.itemLabel.visible = false;
+      return;
+    }
+    if (!this.itemLabel) {
+      this.itemLabel = new Text({ text: '', style: { fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: '600', align: 'center', fill: 0x2a2622, stroke: { color: 0xffffff, width: 3 } } });
+      this.itemLabel.anchor.set(0.5, 1);
+      this.itemLabel.zIndex = 1e7;
+      this.itemLayer.addChild(this.itemLabel);
+    }
+    const def = ITEM_BY_ID[it.item];
+    const fp = footprint(it);
+    const bits: string[] = [];
+    if (def.energy) bits.push(`breaks +${def.energy} energy`);
+    if (def.aura) bits.push(`morale aura ${def.aura}`);
+    if (def.effect === 'wellness') bits.push('slows burnout nearby');
+    else if (def.effect === 'trophies') bits.push('shows your awards');
+    else if (def.effect === 'fanart') bits.push('pin fan drawings here');
+    else if (def.effect) bits.push(def.effect === 'meeting' ? 'team synergy' : `${def.effect} boost`);
+    if ((def.noise ?? 0) >= 2) bits.push('loud');
+    this.itemLabel.style.fill = this.P.night ? 0xf1ede6 : 0x2a2622;
+    this.itemLabel.style.stroke = { color: this.P.night ? 0x15130f : 0xffffff, width: 3 };
+    this.itemLabel.text = bits.length ? `${def.name}
+${bits.join(' · ')}` : def.name;
+    this.itemLabel.position.set((it.x + fp.w / 2) * T, it.y * T - itemLift(it.item) + 4);
+    this.itemLabel.scale.set(Math.min(1, 1.4 / this.zoom)); // readable, not huge, when zoomed in
+    this.itemLabel.visible = true;
   }
 
   /** A speech bubble with words (sized to the text). */
