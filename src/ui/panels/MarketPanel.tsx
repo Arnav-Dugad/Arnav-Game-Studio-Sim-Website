@@ -14,6 +14,7 @@ import { CompanyBadge } from '../art/CompanyBadge';
 import { InitialsBadge } from '../art/Avatar';
 import { Icon } from '../icons';
 import { useGame } from '../store';
+import { nemesis } from '@/sim/systems/rivalry';
 import { dayAxis } from '../game/format';
 
 export default function MarketPanel() {
@@ -158,6 +159,7 @@ function Rivals() {
   const rivals = Object.values(s.rivals)
     .filter((r) => r.alive)
     .sort((a, b) => b.reputation - a.reputation);
+  const nem = nemesis(s);
   return (
     <ul className="space-y-1.5">
       {rivals.map((r) => {
@@ -173,6 +175,12 @@ function Rivals() {
                 <span className="truncate">{r.name}</span>
                 {r.ownedByPlayer && <Pill tone="gold">Yours</Pill>}
                 {r.procedural && <Pill>Indie</Pill>}
+                {nem?.id === r.id && <Pill tone="bad">Nemesis</Pill>}
+                {s.rivalry?.[r.id] && (
+                  <span className="num text-[11px] font-normal text-ink3">
+                    {s.rivalry[r.id]!.wins}–{s.rivalry[r.id]!.losses}
+                  </span>
+                )}
               </div>
               <div className="truncate text-xs text-ink3">
                 {r.genres.map((g) => GENRE_BY_ID[g]?.name).filter(Boolean).join(', ')} · ~{Math.round(r.staff)} staff

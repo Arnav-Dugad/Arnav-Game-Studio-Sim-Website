@@ -5,6 +5,7 @@
 import { exclusiveBuzz } from './hardware';
 import { catalogSalesMul } from './subscription';
 import { leagueOnRelease, leagueSalesMul } from './esports';
+import { showdownOnRelease } from './rivalry';
 import { BALANCE } from '../../data/balance';
 import { GENRES, GENRE_BY_ID } from '../../data/genres';
 import { COMPANY_BY_ID } from '../../data/companies';
@@ -300,6 +301,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   s.releaseOrder.push(id);
   exclusiveBuzz(s, rel);
   leagueOnRelease(s, rel);
+  showdownOnRelease(s, rel);
   // Engine maturity
   const eng = s.engines[p.concept.engineId];
   if (eng) {

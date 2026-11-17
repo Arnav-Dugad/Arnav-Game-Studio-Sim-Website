@@ -565,6 +565,32 @@ describe('publisher advances', () => {
   });
 });
 
+describe('rivalries', () => {
+  it('a release near a rival game of the same genre is a showdown with a record', async () => {
+    const { showdownOnRelease, nemesis } = await import('../../src/sim/systems/rivalry');
+    const s = game(1995, 2);
+    const foe = Object.values(s.rivals).find((r) => r.alive && !r.procedural)!;
+    const mk = (score: number, day: number) => ({ id: `r${day}`, name: `Mine ${day}`, concept: { genre: 'rpg', topic: 'fantasy' }, day, score } as never);
+    const rival = (score: number, day: number) => s.rivalGames.push({ name: `Theirs ${day}`, company: foe.id, genre: 'rpg', topic: 'fantasy', platforms: [], day, score, units: 1 });
+    rival(80, s.day - 10);
+    const rep = s.company.reputation;
+    showdownOnRelease(s, { ...(mk(88, s.day) as object), day: s.day } as never);
+    expect(s.rivalry![foe.id]!.wins).toBe(1);
+    expect(s.company.reputation).toBeGreaterThan(rep);
+    rival(90, s.day - 5);
+    showdownOnRelease(s, mk(70, s.day));
+    expect(s.rivalry![foe.id]!.losses).toBe(1);
+    // too far apart, different genre, or a weak game: no showdown
+    showdownOnRelease(s, { ...(mk(90, s.day + 200) as object), day: s.day + 200 } as never);
+    showdownOnRelease(s, { id: 'x', name: 'X', concept: { genre: 'racing', topic: 'cars' }, day: s.day, score: 90 } as never);
+    showdownOnRelease(s, mk(50, s.day));
+    expect(s.rivalry![foe.id]!.wins + s.rivalry![foe.id]!.losses + s.rivalry![foe.id]!.draws).toBe(2);
+    expect(nemesis(s)).toBeNull();
+    showdownOnRelease(s, mk(89, s.day));
+    expect(nemesis(s)?.id).toBe(foe.id);
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);

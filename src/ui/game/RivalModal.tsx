@@ -8,6 +8,7 @@ import { Modal, Pill, Section, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { InitialsBadge } from '../art/Avatar';
 import { useGame } from '../store';
+import { nemesis } from '@/sim/systems/rivalry';
 
 /** A rival company's profile: leader, focus, real franchises and recent releases. */
 export function RivalModal({ rivalId, onClose }: { rivalId: string; onClose: () => void }) {
@@ -23,6 +24,8 @@ export function RivalModal({ rivalId, onClose }: { rivalId: string; onClose: () 
     return owner === rivalId && f.releases.some((x) => parseYM(x.date) <= s.day);
   });
   const games = s.rivalGames.filter((g) => g.company === rivalId).slice(-12).reverse();
+  const rec = s.rivalry?.[rivalId];
+  const nem = nemesis(s);
   return (
     <Modal open onClose={onClose} title={r.name} wide>
       <div className="flex items-start gap-4">
@@ -37,10 +40,23 @@ export function RivalModal({ rivalId, onClose }: { rivalId: string; onClose: () 
               <Pill key={g}>{GENRE_BY_ID[g]?.name ?? g}</Pill>
             ))}
             {r.ownedByPlayer && <Pill tone="gold">Owned by you</Pill>}
+            {nem?.id === rivalId && <Pill tone="bad">Your nemesis</Pill>}
           </div>
           {def?.notes && <p className="mt-2 text-xs text-ink3">{def.notes}</p>}
         </div>
       </div>
+      {rec && (
+        <div className="mt-4 rounded-xl border border-line p-3 text-sm">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold">Head-to-head</span>
+            <span className="num font-display text-lg font-semibold">
+              <span className="text-good">{rec.wins}W</span> · <span className="text-bad">{rec.losses}L</span>
+              {rec.draws ? <span className="text-ink3"> · {rec.draws}D</span> : null}
+            </span>
+          </div>
+          <div className="mt-0.5 text-xs text-ink3">Latest: {rec.last}. Showdowns happen when your game launches within six weeks of theirs in the same genre.</div>
+        </div>
+      )}
       {leader && (
         <div className="mt-4 flex items-center gap-3 rounded-xl bg-bg2/60 p-3">
           <InitialsBadge name={leader.name} size={40} />

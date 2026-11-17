@@ -680,6 +680,8 @@ export interface GameState {
   subscription?: SubscriptionState;
   /** Esports leagues you run. */
   leagues?: EsportsLeague[];
+  /** Head-to-head record against each rival (company id → record). */
+  rivalry?: Record<Id, RivalryRecord>;
   /** Persistent cheat switches (see sim/cheats.ts). */
   cheats?: CheatSettings;
   /** Set once any cheat is used; the Hall of Fame marks the run. */
@@ -745,5 +747,13 @@ export interface EsportsLeague {
   status: 'live' | 'closed';
   /** Monthly viewers (last 10 years). */
   history: number[];
+}
+
+export interface RivalryRecord {
+  wins: number;
+  losses: number;
+  draws: number;
+  /** One-line summary of the latest showdown. */
+  last: string;
 }
 
