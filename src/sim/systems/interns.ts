@@ -24,7 +24,8 @@ export function internCount(s: GameState): number {
 export function internsArrive(c: Ctx): void {
   const { s, rng } = c;
   if (!s.company.policies.interns || fromDay(s.day).year < INTERN_YEAR) return;
-  const room = Math.min(freeDesks(s), tierDef(s.office.tier).staffCap - Object.keys(s.staff).length);
+  // leave one desk free for a real hire
+  const room = Math.min(freeDesks(s), tierDef(s.office.tier).staffCap - Object.keys(s.staff).length) - 1;
   const n = Math.min(internCount(s), room);
   if (n <= 0) {
     pushNews(s, { category: 'staff', headline: 'No room for summer interns this year', body: 'Every desk is taken. Place more desks to host interns next June.', tone: 'neutral' });

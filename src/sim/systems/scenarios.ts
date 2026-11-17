@@ -247,7 +247,7 @@ export function goalProgress(s: GameState, g: GoalDef): { p: number; text: strin
       return { p: n / g.n, text: `Win Game of the Year${g.n > 1 ? ` ${g.n} times` : ''}${g.sizes ? ' with a small or medium game' : ''}`, now: `${n}/${g.n}` };
     }
     case 'staff': {
-      const n = Object.keys(s.staff).length;
+      const n = Object.values(s.staff).filter((x) => !x.intern).length;
       return { p: n / g.n, text: `Employ ${g.n} people`, now: `${n}/${g.n}` };
     }
     case 'crowdfunded': {
@@ -255,8 +255,8 @@ export function goalProgress(s: GameState, g: GoalDef): { p: number; text: strin
       return { p: n / g.amount, text: `Raise ${fmtMoney(g.amount)} from backers (crowdfunding)`, now: fmtMoney(n) };
     }
     case 'eaHit': {
-      const best = Math.max(0, ...rels(s).filter((r) => r.earlyAccess).map((r) => r.score));
-      return { p: best / g.score, text: `Ship a game out of Early Access scoring ${g.score}+`, now: best ? `best ${best}` : 'none yet' };
+      const best = Math.max(0, ...rels(s).filter((r) => (r.earlyAccess?.weeks ?? 0) >= 12).map((r) => r.score));
+      return { p: best / g.score, text: `Ship a game out of Early Access (12+ weeks) scoring ${g.score}+`, now: best ? `best ${best}` : 'none yet' };
     }
     case 'seriesFans': {
       const best = Math.max(0, ...Object.values(s.franchises).map((f) => f.fans));

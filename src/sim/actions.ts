@@ -620,6 +620,12 @@ function apply(c: Ctx, a: Action): string | null {
       const st = s.staff[a.staffId];
       if (!st) return 'No such staff';
       if (st.role === 'founder') return 'You can’t fire yourself';
+      if (st.intern) {
+        // ending an internship early: no severance, not a layoff
+        removeStaff(s, st.id);
+        assignDesks(s);
+        return null;
+      }
       spend(s, 'salaries', st.salary / 12); // severance: one month
       maybeSpinOff(s, c.rng, st, 0.2);
       removeStaff(s, st.id);
@@ -633,8 +639,14 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'fireMany': {
       if (!Array.isArray(a.staffIds)) return 'Pick people first';
-      const gone = [...new Set(a.staffIds)].map((id) => s.staff[id]).filter((st): st is NonNullable<typeof st> => !!st && st.role !== 'founder');
-      if (!gone.length) return 'Nobody to let go';
+      const all = [...new Set(a.staffIds)].map((id) => s.staff[id]).filter((st): st is NonNullable<typeof st> => !!st && st.role !== 'founder');
+      if (!all.length) return 'Nobody to let go';
+      for (const st of all.filter((x) => x.intern)) removeStaff(s, st.id); // interns just go home early
+      const gone = all.filter((x) => !x.intern);
+      if (!gone.length) {
+        assignDesks(s);
+        return null;
+      }
       for (const st of gone) {
         spend(s, 'salaries', st.salary / 12); // severance: one month each
         maybeSpinOff(s, c.rng, st, 0.2);
@@ -1082,6 +1094,9 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.interns !== undefined) s.company.policies.interns = !!a.interns;
       if (a.charity !== undefined) {
         if (![0, 1, 5].includes(a.charity)) return 'Pick 0%, 1% or 5%';
+        const was = s.company.policies.charity ?? 0;
+        if (a.charity < was || !a.charity) s.company.charitySince = undefined; // breaking a pledge starts the clock over
+        if (a.charity > 0 && s.company.charitySince === undefined) s.company.charitySince = s.day;
         s.company.policies.charity = a.charity;
         s.company.charityOwed = Math.max(s.company.charityOwed ?? 0, a.charity) as 0 | 1 | 5; // a pledge held this month is honoured
       }
@@ -1337,6 +1352,12 @@ function apply(c: Ctx, a: Action): string | null {
       if (kit) s.devkits.push(a.platform);
       spend(s, 'devkits', kit);
       spend(s, 'other_expense', portCost(s, rel));
+      // an 'exclusive' that's ported within a year wasn't really one
+      if (rel.exclusiveBonus && s.day - rel.day < 365 && s.partners) {
+        const m = rel.exclusiveBonus.maker;
+        s.partners[m] = Math.max(0, (s.partners[m] ?? 50) - rel.exclusiveBonus.amount * 1.5);
+        rel.exclusiveBonus = undefined;
+      }
       applyPort(s, rel, a.platform);
       pushNews(s, { category: 'studio', headline: `${rel.name} is out now on ${pl.name}`, tone: 'good' });
       return null;

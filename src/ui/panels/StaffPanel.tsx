@@ -270,12 +270,12 @@ function Policies() {
           onChange={(v) => act({ type: 'setPolicy', charity: Number(v) as 0 | 1 | 5 })}
           options={[
             { value: '0', label: 'No pledge' },
-            { value: '1', label: '1% of profit (+1 morale)' },
-            { value: '5', label: '5% of profit (+3 morale)' },
+            { value: '1', label: '1% of profit' },
+            { value: '5', label: '5% of profit' },
           ]}
         />
         <p className="mt-1 text-xs text-ink3">
-          Each month, the pledged share of last month’s profit goes to good causes: staff feel the work means more, and goodwill slowly builds (a little reputation). Nothing is given in a loss-making month.
+          Each month, the pledged share of last month’s profit goes to good causes. After three months of an unbroken pledge staff feel the work means more (+1 morale at 1%, +3 at 5%), and goodwill builds with what you actually give. Nothing is given in a loss-making month; lowering the pledge restarts the three months.
           {(s.progress.stats.donated ?? 0) > 0 && ` Given so far: ${fmtMoney(s.progress.stats.donated ?? 0)}.`}
         </p>
       </Section>

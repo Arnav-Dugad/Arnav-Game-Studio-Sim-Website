@@ -420,6 +420,8 @@ export interface Release {
   crowdfund?: { raised: number; backers: number; late: number };
   /** Platform holders who featured it on their storefront at launch. */
   featuredBy?: string[];
+  /** Favour granted for launching as an exclusive (taken back if ported within a year). */
+  exclusiveBonus?: { maker: string; amount: number };
   /** Inducted into the Golden Pixel Hall of Classics (the year). */
   classic?: number;
   /** Re-released on a modern storefront (once), and when. */
@@ -821,6 +823,8 @@ export interface Company {
   lastTalkDay?: number;
   /** Highest charity pledge held during the current month (what gets paid). */
   charityOwed?: 0 | 1 | 5;
+  /** When the current (unbroken) charity pledge began. */
+  charitySince?: number;
   talkBuzzUntil?: number;
   /** Venture funding before the IPO: rounds raised, investors' share of the company, and when the last round closed. */
   fundingRounds?: number;

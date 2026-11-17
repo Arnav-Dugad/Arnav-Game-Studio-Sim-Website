@@ -14,7 +14,7 @@ export const EOTM_MORALE = { v: 4, days: 30 };
 /** Monthly: crown whoever contributed the most points since last month (needs 4+ staff). */
 export function employeeOfTheMonth(c: Ctx): void {
   const { s } = c;
-  const staff = Object.values(s.staff).filter((x) => x.role !== 'founder');
+  const staff = Object.values(s.staff).filter((x) => x.role !== 'founder' && !x.intern);
   let best: { id: string; pts: number } | null = null;
   for (const st of staff) {
     const pts = st.contributed - (st.contribMark ?? st.contributed);

@@ -29,3 +29,22 @@ describe('giving back', () => {
     expect(dispatch(s, { type: 'openSourceEngine', engineId: 'e0' }).ok).toBe(false);
   });
 });
+
+describe('review fixes', () => {
+  it('pledge morale needs three unbroken months; sending an intern home is not a layoff', async () => {
+    const { moraleTarget } = await import('../../src/sim/systems/staff');
+    const s = createGame({ seed: 5, companyName: 'Test', founderName: 'T', startYear: 2000, autopause: false });
+    const f = s.staff['founder']!;
+    dispatch(s, { type: 'setPolicy', charity: 5 });
+    expect(moraleTarget(s, f).parts.some((p) => p.label === 'Giving back')).toBe(false);
+    s.day += 95;
+    expect(moraleTarget(s, f).parts.some((p) => p.label === 'Giving back')).toBe(true);
+    dispatch(s, { type: 'setPolicy', charity: 1 });
+    expect(moraleTarget(s, f).parts.some((p) => p.label === 'Giving back')).toBe(false);
+    s.staff['i1'] = { ...structuredClone(f), id: 'i1', name: 'Ira Intern', role: 'artist', intern: { until: s.day + 30 }, deskId: undefined };
+    const cash = s.company.cash;
+    expect(dispatch(s, { type: 'fire', staffId: 'i1' }).ok).toBe(true);
+    expect(s.company.cash).toBe(cash);
+    expect(s.company.lastLayoffDay).toBeUndefined();
+  });
+});

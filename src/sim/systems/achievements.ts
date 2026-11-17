@@ -15,7 +15,7 @@ export interface AchievementDef {
 }
 
 const rels = (s: GameState) => s.releaseOrder.map((id) => s.releases[id]!);
-const staffN = (s: GameState) => Object.keys(s.staff).length;
+const staffN = (s: GameState) => Object.values(s.staff).filter((x) => !x.intern).length;
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'first_release', name: 'Hello, World', desc: 'Release your first game.', icon: 'rocket', check: (s) => s.releaseOrder.length >= 1 },

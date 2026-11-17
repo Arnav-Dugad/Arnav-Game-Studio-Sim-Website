@@ -47,7 +47,7 @@ export function partnersOnRelease(s: GameState, rel: Release): void {
   }
   if (!makers.size) return;
   const exclusive = makers.size === 1 && rel.concept.platforms.length === 1;
-  const sizeBonus = { small: 0, medium: 0.5, large: 1, aaa: 2 }[rel.concept.size];
+  const weight = { small: 0.3, medium: 0.6, large: 1, aaa: 1.5 }[rel.concept.size];
   const featured: string[] = [];
   for (const m of makers) {
     const before = favour(s, m);
@@ -56,7 +56,8 @@ export function partnersOnRelease(s: GameState, rel: Release): void {
       for (const ps of rel.platforms) if (holderOf(s, ps.platform) === m) ps.potential *= FEATURE_MUL;
       featured.push(holderName(m));
     }
-    const d = (rel.score - 65) / 5 + (exclusive ? 4 : 0) + sizeBonus;
+    const d = ((rel.score - 65) / 5 + (exclusive ? 4 : 0)) * weight;
+    if (exclusive) rel.exclusiveBonus = { maker: m, amount: 4 * weight };
     (s.partners ??= {})[m] = Math.round(clamp(before + d, 0, 100) * 10) / 10;
     if (before < FEATURE_AT && s.partners[m]! >= FEATURE_AT) pushNews(s, { category: 'platform', headline: `${holderName(m)} names ${s.company.name} a key partner`, body: 'Your next launches on their platforms will be featured on their storefront, and devkits come cheaper.', tone: 'good' });
   }

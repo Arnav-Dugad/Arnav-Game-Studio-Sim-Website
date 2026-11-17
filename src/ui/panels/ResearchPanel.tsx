@@ -179,6 +179,7 @@ function Engines() {
                     Open-source
                   </Button>
                 )}
+                {!e.licensedFrom && !e.openSourced && s.day - e.builtDay >= OPEN_SOURCE_AGE_YEARS * 365 && e.builtDay > 0 && openSourceBlocked(s, e.id) && <span className="max-w-[9rem] text-[11px] text-ink3">{openSourceBlocked(s, e.id)}</span>}
                 {!e.licensedFrom && !e.openSourced && e.licensees === 0 && s.research.done.includes('biz_engine_licensing') && e.tech >= 4 && (
                   <Button size="sm" onClick={() => useGame.getState().actOrToast({ type: 'licenseOut', engineId: e.id })}>
                     License out
