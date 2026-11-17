@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { TrailerCutModal } from './TrailerCut';
 import { hobbyOf } from '@/data/hobbies';
 import { StudioCardModal } from './StudioCard';
 import { TALK_AWAY_DAYS, TALK_YEAR, talkBlocked, talkCost, talkTitle, talkableGames } from '@/sim/systems/talks';
@@ -59,6 +60,7 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       (modal.kind === 'rival' && !s.rivals[modal.rivalId]) ||
       (modal.kind === 'gala' && ![...(s.awardHistory ?? [])].reverse().find((y) => y.year === modal.year)?.winners.some((w) => w.mine)) ||
       (modal.kind === 'bugBash' && s.projects[modal.projectId]?.kind !== 'game') ||
+      (modal.kind === 'trailerCut' && s.projects[modal.projectId]?.kind !== 'game') ||
       (modal.kind === 'event' && !s.pendingEvents.some((e) => e.uid === modal.uid)));
   useEffect(() => {
     if (stale) pop();
@@ -79,6 +81,8 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       return <GameOverModal onClose={pop} slotId={slotId} />;
     case 'insolvent':
       return <InsolventModal onClose={pop} />;
+    case 'trailerCut':
+      return <TrailerCutModal projectId={modal.projectId} onClose={pop} />;
     case 'bugBash':
       return <BugBashModal key={modal.projectId} projectId={modal.projectId} onClose={pop} />;
     case 'majorNews':

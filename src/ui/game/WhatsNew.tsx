@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-20b';
+export const WHATS_NEW_VERSION = '2026-11-20c';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'play', title: 'Cut the trailer', body: 'A new mini-game for announced games (Develop → the project → Cut trailer): pick four shots in 25 seconds — open with a hook, take a breath, build to a climax, end on the title card. A great cut adds up to +0.4 hype, and a perfect one goes viral.' },
   { icon: 'calendar', title: 'Coming up', body: 'The Overview now has a calendar of the next four months: your launches and deadlines, crowdfunding and Early Access dates, rival releases, new consoles, trade shows, sale seasons, the Gala, interns and more.' },
   { icon: 'sparkle', title: 'Cliffhanger endings', body: 'A new signature feature (1988+): end your game on a shock. Players grumble a little now, but the sequel starts with built-in hype — and paying the cliffhanger off delights them.' },
   { icon: 'trophy', title: 'Players’ Choice award & smarter tips', body: 'The Golden Pixel Gala now has a Players’ Choice award, voted by players (user scores) rather than critics. And the Overview now points out opportunities: Early Access, crowdfunding when cash is tight, licensing a popular series, an unused conference slot, interns and the Fan Art Wall.' },

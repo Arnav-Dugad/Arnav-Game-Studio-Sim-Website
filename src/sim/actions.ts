@@ -154,6 +154,7 @@ export type Action =
   | { type: 'raiseFunding' }
   | { type: 'earlyAccess'; projectId: string }
   | { type: 'pinFanArt'; id: string; on: boolean }
+  | { type: 'trailerCut'; projectId: string; points: number }
   | { type: 'openSourceEngine'; engineId: string }
   | { type: 'giveTalk'; staffId: string; releaseId: string }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
@@ -931,6 +932,18 @@ function apply(c: Ctx, a: Action): string | null {
       if (why) return why;
       st.mentorId = m.id;
       invalidateMentees(s);
+      return null;
+    }
+    case 'trailerCut': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      if (p.announcedDay === undefined) return 'Announce the game first';
+      if (p.trailerCut !== undefined) return 'Already cut a trailer for this one';
+      if (!finite(a.points) || a.points < 0) return 'Invalid result';
+      const pts = Math.min(8, Math.floor(a.points));
+      p.trailerCut = pts;
+      p.hype = Math.min(BALANCE.HYPE_MAX, p.hype + pts * 0.05);
+      if (pts >= 7) pushNews(s, { category: 'studio', headline: `The ${p.concept.name} trailer goes viral`, body: 'Millions of views overnight. People can’t stop talking about it.', tone: 'good' });
       return null;
     }
     case 'bugBash': {

@@ -26,6 +26,7 @@ export type Modal =
   | { kind: 'insolvent' }
   | { kind: 'majorNews'; newsId: number }
   | { kind: 'bugBash'; projectId: string }
+  | { kind: 'trailerCut'; projectId: string }
   | { kind: 'newGame' }
   | { kind: 'staff'; staffId: string }
   | { kind: 'release'; releaseId: string }

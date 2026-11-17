@@ -307,6 +307,8 @@ export interface GameProject {
   focusTest?: { phase: number; predicted: number; wantMore?: string };
   /** A bug bash has been run (once per game). */
   bugBashed?: boolean;
+  /** The trailer's score (0..8) once cut (once per game). */
+  trailerCut?: number;
   /** On sale in Early Access since `day`: the players' current rating and what it has sold so far. */
   earlyAccess?: { day: number; rating: number; units: number; gross: number; net: number; stale?: boolean };
   /** A crowdfunding campaign (systems/crowdfunding.ts): the goal, what's pledged so far, stretch goals reached; once settled, whether it funded and the delivery date backers were promised. `target` is the hidden expected total. */

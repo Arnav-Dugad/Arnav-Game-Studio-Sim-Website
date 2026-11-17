@@ -215,6 +215,13 @@ function GameCard({ p }: { p: GameProject }) {
             Focus test
           </Button>
         )}
+        {p.announcedDay !== undefined && p.trailerCut === undefined && (
+          <Button size="sm" icon="play" onClick={() => {
+              if (!useGame.getState().modals.some((m) => m.kind === 'trailerCut')) useGame.getState().openModalNow({ kind: 'trailerCut', projectId: p.id });
+            }} title="A 25-second mini-game: cut a trailer from four shots for up to +0.4 hype (once per game)">
+            Cut trailer
+          </Button>
+        )}
         {p.phase >= 2 && !p.bugBashed && (
           <Button size="sm" icon="bug" onClick={() => {
               if (!useGame.getState().modals.some((m) => m.kind === 'bugBash')) useGame.getState().openModalNow({ kind: 'bugBash', projectId: p.id });

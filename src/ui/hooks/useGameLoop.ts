@@ -21,7 +21,7 @@ export function useGameLoop(): void {
         return;
       }
       // Blocking modals pause time
-      if (modals.some((m) => m.kind === 'event' || m.kind === 'gate' || m.kind === 'gameOver' || m.kind === 'insolvent' || m.kind === 'majorNews' || m.kind === 'guide' || m.kind === 'shortcuts' || m.kind === 'bugBash')) {
+      if (modals.some((m) => m.kind === 'event' || m.kind === 'gate' || m.kind === 'gameOver' || m.kind === 'insolvent' || m.kind === 'majorNews' || m.kind === 'guide' || m.kind === 'shortcuts' || m.kind === 'bugBash' || m.kind === 'trailerCut')) {
         acc = 0;
         return;
       }
