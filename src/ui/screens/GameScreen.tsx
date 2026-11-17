@@ -85,6 +85,17 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
     else useGame.getState().toast({ text: status.state === 'offline' ? 'Saved on this device (offline)' : 'Game saved', tone: 'good', icon: 'save' });
   }, [slotId]);
 
+  // Cinematic mode (V): hide the interface and let the camera wander the office
+  const [cinema, setCinema] = useState(false);
+  const toggleCinema = useCallback((on?: boolean) => {
+    setCinema((was) => {
+      const next = on ?? !was;
+      rendererRef.current?.setCinematic(next);
+      if (next) useGame.getState().openPanel(null);
+      return next;
+    });
+  }, []);
+
   // Keyboard shortcuts
   // Office photo (Menu → Office photo, or P)
   const takePhoto = useCallback(async () => {
@@ -122,6 +133,8 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       } else if (k === '1') g.setSpeed(1);
       else if (k === '2') g.setSpeed(2);
       else if (k === '3' || k === '4') g.setSpeed(4);
+      else if (k === 'v') toggleCinema();
+      else if (k === 'escape' && rendererRef.current?.cinematic) toggleCinema(false);
       else if (k === 'escape') {
         if (g.build) g.setBuild(null);
         else g.openPanel(null);
@@ -132,7 +145,7 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [saveNow, takePhoto]);
+  }, [saveNow, takePhoto, toggleCinema]);
 
   // Coin bursts in the office when income lands
   const pops = useGame((g) => g.pops);
@@ -218,26 +231,38 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
           if (g.build) g.setBuild({ ...g.build, rot: g.build.rot ? 0 : 1 });
         }}
       />
-      <HUD
-        saveStatus={saveStatus}
-        onSave={() => void saveNow()}
-        onExit={async () => {
-          useGame.getState().setSpeed(0);
-          await saveNow();
-          navigate('slots');
-          useGame.getState().unload();
-        }}
-        onZoom={(f) => (f === 0 ? rendererRef.current?.fit() : rendererRef.current?.zoomBy(f))}
-        onPhoto={() => void takePhoto()}
-      />
-      <Rail />
-      <BuildBar />
-      <ProjectDock />
-      <YearInReview />
-      <PanelHost />
+      {!cinema && (
+        <HUD
+          saveStatus={saveStatus}
+          onSave={() => void saveNow()}
+          onExit={async () => {
+            useGame.getState().setSpeed(0);
+            await saveNow();
+            navigate('slots');
+            useGame.getState().unload();
+          }}
+          onZoom={(f) => (f === 0 ? rendererRef.current?.fit() : rendererRef.current?.zoomBy(f))}
+          onPhoto={() => void takePhoto()}
+          onCinema={() => toggleCinema(true)}
+        />
+      )}
+      {!cinema && (
+        <>
+          <Rail />
+          <BuildBar />
+          <ProjectDock />
+          <YearInReview />
+          <PanelHost />
+        </>
+      )}
+      {cinema && (
+        <button type="button" onClick={() => toggleCinema(false)} className="glass absolute bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-semibold text-ink2 opacity-70 transition hover:opacity-100">
+          Cinematic mode · press V or Esc to return
+        </button>
+      )}
       <NumberPops />
       <Toasts />
-      <Tutorial />
+      {!cinema && <Tutorial />}
       <ErrorBoundary inline onReset={() => useGame.getState().popModal()}>
         <ModalHost slotId={slotId} />
       </ErrorBoundary>

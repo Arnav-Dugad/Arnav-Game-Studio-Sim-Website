@@ -968,6 +968,7 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
     ['W A S D / arrows', 'Pan the office'],
     ['+ / − / 0', 'Zoom in / out / fit'],
     ['P', 'Office photo'],
+    ['V', 'Cinematic mode (the camera wanders the office)'],
     ['Shift + P', 'Save now'],
     ['Esc', 'Close panel / exit build mode'],
     ['?', 'This sheet'],

@@ -215,6 +215,43 @@ export class OfficeRenderer {
     this.cam.y = (sh - H * z) / 2 + 1.4 * T * z;
   }
 
+  /** Cinematic mode: the camera drifts between interesting moments on its own. */
+  private tour: { target: { x: number; y: number } | null; follow: string | null; t: number } | null = null;
+
+  setCinematic(on: boolean): void {
+    this.tour = on ? { target: null, follow: null, t: 0 } : null;
+    if (!on) this.fit();
+  }
+
+  get cinematic(): boolean {
+    return !!this.tour;
+  }
+
+  private updateTour(dt: number): void {
+    const tour = this.tour;
+    if (!tour || !this.el) return;
+    tour.t -= dt;
+    if (tour.t <= 0) {
+      tour.t = 6 + Math.random() * 4;
+      const visible = [...this.agents.values()].filter((a) => a.c.visible);
+      const talking = visible.filter((a) => a.mode === 'talk' || a.speechT > 0);
+      const fun = visible.filter((a) => a.mode === 'fun' || a.mode === 'station' || a.mode === 'walk');
+      const pool = talking.length && Math.random() < 0.6 ? talking : fun.length && Math.random() < 0.5 ? fun : visible;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      tour.follow = pick?.id ?? null;
+      this.targetZoom = 1.6 + Math.random() * 0.8;
+    }
+    const a = tour.follow ? this.agents.get(tour.follow) : undefined;
+    if (!a || !a.c.visible) return;
+    // ease towards keeping them centred (a little above, to frame bubbles)
+    this.zoom += (this.targetZoom - this.zoom) * Math.min(1, dt * 0.8);
+    const tx = this.el.clientWidth / 2 - a.x * this.zoom;
+    const ty = this.el.clientHeight / 2 - (a.y - 24) * this.zoom;
+    const k = Math.min(1, dt * 1.2);
+    this.cam.x += (tx - this.cam.x) * k;
+    this.cam.y += (ty - this.cam.y) * k;
+  }
+
   zoomBy(f: number, sx?: number, sy?: number): void {
     if (!this.el) return;
     const cx = sx ?? this.el.clientWidth / 2;
@@ -441,6 +478,7 @@ export class OfficeRenderer {
     if (this.keys.has('d') || this.keys.has('arrowright')) this.cam.x -= pan;
     if (this.keys.has('w') || this.keys.has('arrowup')) this.cam.y += pan;
     if (this.keys.has('s') || this.keys.has('arrowdown')) this.cam.y -= pan;
+    this.updateTour(dt);
     this.world.scale.set(this.zoom);
     this.world.position.set(this.cam.x, this.cam.y);
 
