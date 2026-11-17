@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { EA_PRICE, EA_STALE_WEEKS, EA_YEAR, earlyAccessBlocked, earlyAccessCost } from '@/sim/systems/earlyAccess';
+import { CAMPAIGN_DAYS, STRETCH, STRETCH_DAYS, STRETCH_NAMES, TIERS, campaignCost, campaignGoal, crowdfundBlocked, expectedPledges } from '@/sim/systems/crowdfunding';
+import { EA_PRICE, EA_STALE_WEEKS, EA_YEAR, earlyAccessBlocked, earlyAccessCost, earlyAccessRating } from '@/sim/systems/earlyAccess';
 import { LOC_COST, LOC_WORK, LOC_YEAR, REGIONS, REGION_BY_ID, regionMix, regionShares, type RegionId } from '@/data/regions';
 import { BALANCE } from '@/data/balance';
 import { GENRE_BY_ID } from '@/data/genres';
@@ -8,7 +9,7 @@ import { CHANNELS } from '@/data/marketing';
 import { COMPANY_BY_ID } from '@/data/companies';
 import { AUDIENCES, type Audience, type GenreId, type Monetization } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
-import { aOrAn, fmtMoney, fmtUnits, money } from '@/sim/util';
+import { aOrAn, fmtMoney, fmtUnits, hasFlag, money } from '@/sim/util';
 import { availablePlatforms } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
@@ -93,6 +94,7 @@ function GameCard({ p }: { p: GameProject }) {
   const [showMkt, setShowMkt] = useState(false);
   const [showTeam, setShowTeam] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [showCf, setShowCf] = useState(false);
   const total = p.phaseDays[0] + p.phaseDays[1] + p.phaseDays[2];
   const done = p.phase >= 3 ? total : p.phaseDays.slice(0, p.phase).reduce((a, b) => a + b, 0) + p.phaseDay;
   const pct = Math.min(1, done / total);
@@ -223,8 +225,13 @@ function GameCard({ p }: { p: GameProject }) {
             Open beta
           </Button>
         )}
+        {!p.crowdfund && p.phase <= 1 && !p.concept.deal && hasFlag(s, 'crowdfunding') && (
+          <Button size="sm" icon="crowd" onClick={() => setShowCf((x) => !x)} aria-expanded={showCf} title={crowdfundBlocked(s, p) ?? 'Ask fans to fund the game: 30 days, all or nothing'}>
+            Crowdfund
+          </Button>
+        )}
         {!p.earlyAccess && p.phase >= 1 && p.phase <= 2 && !p.concept.deal && fromDay(s.day).year >= EA_YEAR && (
-          <Button size="sm" icon="coin" disabled={!!earlyAccessBlocked(s, p)} onClick={() => run({ type: 'earlyAccess', projectId: p.id })} title={earlyAccessBlocked(s, p) ?? `Sell it on PC now at ${Math.round((1 - EA_PRICE) * 100)}% off while you keep building. Players file bugs and shape the design (up to +3% quality), and a good build spreads the word. Early Access buyers won't buy again at launch, and after ${Math.round((EA_STALE_WEEKS / 52) * 12)} months players lose patience. Storefront launch ${fmtMoney(earlyAccessCost(s, p))}.`}>
+          <Button size="sm" icon="coin" disabled={!!earlyAccessBlocked(s, p)} onClick={() => run({ type: 'earlyAccess', projectId: p.id })} title={earlyAccessBlocked(s, p) ?? `Players would rate today’s build about ${earlyAccessRating(s, p)} (under 50 barely sells; 75+ spreads by word of mouth). Sell it on PC now at ${Math.round((1 - EA_PRICE) * 100)}% off while you keep building. Players file bugs and shape the design (up to +3% quality), and a good build spreads the word. Early Access buyers won't buy again at launch, and after ${Math.round((EA_STALE_WEEKS / 52) * 12)} months players lose patience. Storefront launch ${fmtMoney(earlyAccessCost(s, p))}.`}>
             Early Access
           </Button>
         )}
@@ -244,6 +251,55 @@ function GameCard({ p }: { p: GameProject }) {
         )}
       </div>
       {showTeam && <TeamEditor p={p} />}
+      {showCf && !p.crowdfund && (
+        <div className="mt-2 rounded-xl bg-bg2/60 p-2.5 text-xs">
+          <div className="font-semibold">Crowdfunding campaign</div>
+          <p className="mt-0.5 text-ink3">
+            30 days, all or nothing. Your fans, reputation, hype and how good the pitch looks decide the pledges — analysts expect around <b className="text-ink">{fmtMoney(expectedPledges(s, p))}</b>, give or take a third. A bigger goal draws more attention and hype if it lands. Stretch goals at 150%, 200% and 300% add content (+1.5% quality each, {STRETCH_DAYS} more days of polish). Backers are promised a delivery date — keep it. Pitch video {fmtMoney(campaignCost(s))}.
+          </p>
+          {crowdfundBlocked(s, p) ? (
+            <p className="mt-1.5 text-bad">{crowdfundBlocked(s, p)}</p>
+          ) : (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {(['modest', 'ambitious', 'moonshot'] as const).map((t) => (
+                <Button key={t} size="sm" variant={t === 'ambitious' ? 'primary' : 'secondary'} onClick={() => {
+                  run({ type: 'crowdfund', projectId: p.id, tier: t });
+                  setShowCf(false);
+                }}>
+                  {TIERS[t].label}: {fmtMoney(campaignGoal(s, p, t))}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {p.crowdfund && p.crowdfund.end === undefined && (
+        <div className="mt-2 rounded-xl bg-bg2/60 p-2.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">Crowdfunding · {Math.max(0, CAMPAIGN_DAYS - (s.day - p.crowdfund.day))} days left</span>
+            <span className="num">
+              <b className={p.crowdfund.raised >= p.crowdfund.goal ? 'text-good' : 'text-ink'}>{fmtMoney(p.crowdfund.raised)}</b> of {fmtMoney(p.crowdfund.goal)} · {p.crowdfund.backers.toLocaleString('en-US')} backers
+            </span>
+          </div>
+          <div className="relative mt-1.5 h-2 overflow-hidden rounded-full bg-bg2">
+            <div className={cx('h-full rounded-full', p.crowdfund.raised >= p.crowdfund.goal ? 'bg-good' : 'bg-accent')} style={{ width: `${Math.min(100, (p.crowdfund.raised / (p.crowdfund.goal * STRETCH[STRETCH.length - 1]!)) * 100)}%` }} />
+            {[1, ...STRETCH].map((m) => (
+              <span key={m} className="absolute top-0 h-full w-px bg-ink3/60" style={{ left: `${(m / STRETCH[STRETCH.length - 1]!) * 100}%` }} title={m === 1 ? 'Goal' : `Stretch: ${STRETCH_NAMES[STRETCH.indexOf(m)]}`} />
+            ))}
+          </div>
+          <div className="mt-1 text-ink3">
+            {Math.round((p.crowdfund.raised / p.crowdfund.goal) * 100)}% funded
+            {p.crowdfund.stretch > 0 && <> · stretch goals: {STRETCH_NAMES.slice(0, p.crowdfund.stretch).join(', ')}</>}
+          </div>
+        </div>
+      )}
+      {p.crowdfund?.success && p.crowdfund.promised !== undefined && (
+        <p className={cx('mt-2 text-xs', s.day > p.crowdfund.promised ? 'text-bad' : 'text-ink3')}>
+          Crowdfunded {fmtMoney(p.crowdfund.raised)} from {p.crowdfund.backers.toLocaleString('en-US')} backers · promised by {formatDate(p.crowdfund.promised)}
+          {s.day > p.crowdfund.promised ? ' — late! Backers are getting angry.' : ''}
+          {p.crowdfund.stretch > 0 && <> · stretch goals: {STRETCH_NAMES.slice(0, p.crowdfund.stretch).join(', ')}</>}
+        </p>
+      )}
       {showMkt && p.announcedDay !== undefined && (
         <div className="mt-2 grid gap-1.5 rounded-xl bg-bg2/60 p-2">
           {channels.map((c) => {

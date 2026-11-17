@@ -1,6 +1,7 @@
 /**
  * The fixed-step simulation loop: 1 tick = 1 day. Subsystems run at their own cadence.
  */
+import { crowdfundDaily } from './systems/crowdfunding';
 import { lifeEventsMonthly } from './systems/lifeEvents';
 import { earlyAccessWeekly } from './systems/earlyAccess';
 import { objectivesDaily, objectivesQuarterly } from './systems/objectives';
@@ -124,6 +125,7 @@ export function tick(c: Ctx): void {
   ambitionsDaily(s);
   trainingDaily(s);
   updateProjectsDaily(c);
+  crowdfundDaily(c);
   updateResearchDaily(c);
   cheatsDaily(s);
 

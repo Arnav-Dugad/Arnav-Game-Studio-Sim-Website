@@ -367,6 +367,7 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
     else bd.mul('Culture: Innovation (new IP)', CULTURE_FX.innovationNewIp);
   }
   if (p.earlyAccess) bd.mul(`Early Access feedback (${Math.floor((s.day - p.earlyAccess.day) / 7)} weeks)`, earlyAccessQuality(p, s.day));
+  if (p.crowdfund?.success && p.crowdfund.stretch > 0) bd.mul(`Stretch goals (${p.crowdfund.stretch})`, 1 + 0.015 * p.crowdfund.stretch);
   if (p.cut) bd.mul('Cut features', BALANCE.CUT_FEATURES_PENALTY);
   // bugs
   const density = total > 0 ? (p.bugs * scale) / total : 0;

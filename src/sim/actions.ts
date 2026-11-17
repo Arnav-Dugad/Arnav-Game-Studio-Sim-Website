@@ -2,6 +2,8 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import type { CampaignTier } from './systems/crowdfunding';
+import { startCrowdfund } from './systems/crowdfunding';
 import { startEarlyAccess } from './systems/earlyAccess';
 import { PHASE_AREAS } from '../data/types';
 import { COMPANY_BY_ID } from '../data/companies';
@@ -145,6 +147,7 @@ export type Action =
   | { type: 'copyFloor'; from: number; to: number }
   | { type: 'raiseFunding' }
   | { type: 'earlyAccess'; projectId: string }
+  | { type: 'crowdfund'; projectId: string; tier: CampaignTier }
   | { type: 'negotiateDeal'; dealId: string; ask: 'advance' | 'royalty' }
   | { type: 'sabbatical'; staffId: string }
   | { type: 'undoPlace' }
@@ -515,6 +518,11 @@ function apply(c: Ctx, a: Action): string | null {
       }
       delete s.projects[a.projectId];
       if (p.kind === 'game' && p.announcedDay !== undefined) addRep(s, -(2), 'Cancelled an announced game');
+      if (p.kind === 'game' && p.crowdfund?.success) {
+        addRep(s, -8, 'Cancelled a crowdfunded game');
+        s.company.fans = Math.round(s.company.fans * 0.95);
+        pushNews(s, { category: 'studio', headline: `${p.concept.name} cancelled after raising ${fmtMoney(p.crowdfund.raised)}`, body: `${p.crowdfund.backers.toLocaleString('en-US')} backers are furious. “Where did our money go?”`, tone: 'bad' });
+      } else if (p.kind === 'game' && p.crowdfund && p.crowdfund.end === undefined) addRep(s, -1, 'Pulled a crowdfunding campaign');
       if (p.kind === 'game' && p.earlyAccess) {
         addRep(s, -6, 'Abandoned an Early Access game');
         s.company.fans = Math.round(s.company.fans * 0.96);
@@ -933,6 +941,11 @@ function apply(c: Ctx, a: Action): string | null {
         pushNews(s, { category: 'studio', headline: `${COMPANY_BY_ID[d.publisherId]?.name ?? 'The publisher'} walks away from the table`, tone: 'bad' });
       }
       return null;
+    }
+    case 'crowdfund': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      return startCrowdfund(c, p, a.tier);
     }
     case 'earlyAccess': {
       const p = s.projects[a.projectId];

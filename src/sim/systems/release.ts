@@ -327,6 +327,10 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   if (modded) ub.add('Mod support', 2);
   const ea = p.earlyAccess;
   const eaWeeks = ea ? Math.floor((s.day - ea.day) / 7) : 0;
+  const cf = p.crowdfund?.success ? p.crowdfund : undefined;
+  const cfLate = cf?.promised !== undefined ? Math.max(0, s.day - cf.promised) : 0;
+  if (cf && cfLate > 0) ub.add(`Backers waited ${Math.ceil(cfLate / 30)} month${Math.ceil(cfLate / 30) > 1 ? 's' : ''} past the promised date`, -Math.min(6, 1.5 * Math.ceil(cfLate / 30)));
+  else if (cf) ub.add('Delivered to backers on time', 2);
   if (ea && eaWeeks >= 78) ub.add('Took years to leave Early Access', -4);
   else if (ea && eaWeeks >= 8 && ea.rating >= 55) ub.add('Shaped by Early Access players', 2);
   ub.add('Players vary', rng.normal(0, 3));
@@ -383,6 +387,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     why: { sales: salesWhy, user: ub.done() },
     ...(p.beta ? { betaTested: true } : {}),
     ...(ea ? { earlyAccess: { weeks: eaWeeks, units: ea.units, net: Math.round(ea.net) } } : {}),
+    ...(cf ? { crowdfund: { raised: cf.raised, backers: cf.backers, late: cfLate } } : {}),
     ...(modded ? { modded: true } : {}),
   };
   if (ea) {

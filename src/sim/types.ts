@@ -259,6 +259,8 @@ export interface GameProject {
   bugBashed?: boolean;
   /** On sale in Early Access since `day`: the players' current rating and what it has sold so far. */
   earlyAccess?: { day: number; rating: number; units: number; gross: number; net: number; stale?: boolean };
+  /** A crowdfunding campaign (systems/crowdfunding.ts): the goal, what's pledged so far, stretch goals reached; once settled, whether it funded and the delivery date backers were promised. `target` is the hidden expected total. */
+  crowdfund?: { day: number; tier: 'modest' | 'ambitious' | 'moonshot'; goal: number; raised: number; backers: number; target: number; stretch: number; end?: number; success?: boolean; promised?: number };
 }
 
 export interface ContractProject {
@@ -362,6 +364,8 @@ export interface Release {
   betaTested?: boolean;
   /** Spent time in Early Access before its 1.0 launch (already counted in units/gross/net). */
   earlyAccess?: { weeks: number; units: number; net: number };
+  /** Crowdfunded: what backers pledged, and how many days late it shipped against the promise (0 = on time). */
+  crowdfund?: { raised: number; backers: number; late: number };
   /** Re-released on a modern storefront (once), and when. */
   rereleased?: boolean;
   rereleaseDay?: number;
@@ -728,6 +732,7 @@ export interface LifetimeStats {
   weddings?: number;
   officeWeddings?: number;
   babies?: number;
+  crowdfunded?: number;
   /** Games that topped the weekly chart. */
   numberOnes?: number;
   /** Best bug-bash result, and mentees who graduated. */

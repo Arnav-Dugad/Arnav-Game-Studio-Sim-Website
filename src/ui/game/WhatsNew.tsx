@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-18p';
+export const WHATS_NEW_VERSION = '2026-11-18q';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'crowd', title: 'Crowdfunding campaigns', body: 'From 2012, pitch a self-published game to your fans (Develop → the project → Crowdfund): 30 days, all or nothing, with a live pledge bar. Pick a modest, ambitious or moonshot goal; stretch goals add content. Backers become fans — and they remember whether you delivered on time.' },
   { icon: 'heart', title: 'Life outside work', body: 'Your people have lives now: very close colleagues may fall for each other (and marry — the whole studio is invited), staff get married and go on honeymoon, have babies, and sometimes have to move away (a remote policy lets them stay). Set parental leave in Staff → Policies: two, six or sixteen weeks — each a real trade-off.' },
   { icon: 'coin', title: 'Early Access', body: 'From 2012, put a self-published PC game on sale while it’s still in production (Develop → the project). Players pay 25% less, file bug reports and shape the design — up to +3% quality — and a great build spreads the word. But Early Access buyers won’t buy again at 1.0, the launch is partly old news, and after 18 months players lose patience. Abandoning one is a scandal.' },
   { icon: 'target', title: 'Quarterly objectives', body: 'Goals → This quarter: three bite-sized goals that fit your studio right now — ship a game, lift morale, hire, grow cash, finish research. Each one met pays cash, reputation and a morale lift. Plus: a robot vacuum (2002+).' },

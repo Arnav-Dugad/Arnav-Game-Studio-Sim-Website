@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { campaignGoal, crowdfundBlocked, startCrowdfund } from './crowdfunding';
 import { BALANCE } from '../../data/balance';
 import { pairKey, worstFeud } from './relations';
 import { COMPANY_BY_ID } from '../../data/companies';
@@ -9,7 +10,7 @@ import { clamp } from '../breakdown';
 import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, GameProject, GameState, Staff } from '../types';
-import { addRep, aOrAn, earn, fmtMoney, hasFlag, inflation, money, newId, pushNews, spend } from '../util';
+import { addRep, aOrAn, earn, fmtMoney, hasFlag, money, newId, pushNews, spend } from '../util';
 import { ownerValue } from './finance';
 import { candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, removeStaff } from './staff';
 import { assignDesks, freeDesks } from './office';
@@ -692,33 +693,24 @@ export const EVENT_DEFS: EventDef[] = [
     id: 'crowdfunding',
     art: 'crowd',
     cooldown: 500,
-    weight: (s) => (hasFlag(s, 'crowdfunding') && activeGames(s).length > 0 && s.company.cash < money(200_000, s.day) ? 0.6 : 0),
+    weight: (s) => (hasFlag(s, 'crowdfunding') && activeGames(s).some((p) => !crowdfundBlocked(s, p)) && s.company.cash < money(200_000, s.day) ? 0.6 : 0),
     make: ({ s }) => {
-      const p = activeGames(s)[0];
+      const p = activeGames(s).find((x) => !crowdfundBlocked(s, x));
       if (!p) return null;
       return {
         title: 'Crowdfund it?',
-        body: `Your fans could fund ${p.concept.name} directly. Success depends on reputation and fans.`,
+        body: `Your fans could fund ${p.concept.name} directly. Success depends on reputation, fans, hype and how good the pitch looks. (Any time: Develop → the project → Crowdfund.)`,
         options: [
-          { id: 'run', label: 'Launch a campaign', preview: 'Raise money + hype, or fail publicly' },
+          { id: 'run', label: 'Launch a modest campaign', preview: `30 days, all or nothing: aim for ${fmtMoney(campaignGoal(s, p, 'modest'))}` },
           { id: 'no', label: 'No thanks', preview: 'No change' },
         ],
         ctx: { project: p.id },
       };
     },
-    resolve: ({ s, rng }, e, opt) => {
+    resolve: (c, e, opt) => {
       if (opt !== 'run') return;
-      const p = s.projects[String(e.ctx.project)];
-      const chance = clamp(0.25 + s.company.reputation / 120 + Math.log10(1 + s.company.fans) / 20, 0.2, 0.9);
-      if (rng.chance(chance)) {
-        const raised = Math.round((s.company.fans * 0.6 + 2000) * rng.range(8, 25) * inflation(s.day) * 0.3);
-        earn(s, 'other_income', raised);
-        if (p && p.kind === 'game') p.hype = Math.min(3, p.hype + 0.4);
-        pushNews(s, { category: 'studio', headline: `Crowdfunding success: ${fmtMoney(raised)} raised`, tone: 'good' });
-      } else {
-        addRep(s, -(2), 'Crowdfunding fell short');
-        pushNews(s, { category: 'studio', headline: 'Crowdfunding campaign falls short', tone: 'bad' });
-      }
+      const p = c.s.projects[String(e.ctx.project)];
+      if (p && p.kind === 'game') startCrowdfund(c, p, 'modest');
     },
   },
   {
