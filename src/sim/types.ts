@@ -461,6 +461,8 @@ export interface Release {
   passion?: string;
   /** Fans asked to translate it (the event happened, whatever you chose). */
   fanTranslated?: boolean;
+  /** The team got a launch bonus for it. */
+  bonusPaid?: boolean;
   /** Licensed content (systems/licences.ts): renewed until this day; once delisted it never sells again. */
   licenceUntil?: number;
   delisted?: boolean;

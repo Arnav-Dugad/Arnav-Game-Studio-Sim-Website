@@ -1,4 +1,5 @@
 import { COMPANY_BY_ID } from '@/data/companies';
+import { BONUS_WINDOW_DAYS, bonusBlocked, bonusCost, bonusTeam } from '@/sim/systems/launchBonus';
 import { genreWord } from '@/sim/systems/pitches';
 import { useEffect, useRef, useState } from 'react';
 import { CAMPAIGN_BOOST, CAMPAIGN_MIN_SCORE, campaignBlocked, campaignCost, campaignFor } from '@/sim/systems/awardsCampaign';
@@ -525,6 +526,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
           </ul>
         </Section>
       )}
+      <LaunchBonus releaseId={releaseId} />
       <AwardsSeason releaseId={releaseId} />
       <PostLaunch releaseId={releaseId} />
       <ReleaseBuzz releaseId={releaseId} />
@@ -573,6 +575,24 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
         )}
       </div>
     </Modal>
+  );
+}
+
+function LaunchBonus({ releaseId }: { releaseId: string }) {
+  const s = useGame((g) => g.s)!;
+  const r = s.releases[releaseId];
+  if (!r || r.bonusPaid || s.day - r.day > BONUS_WINDOW_DAYS || !bonusTeam(s, r).length) return null;
+  const why = bonusBlocked(s, r);
+  const n = bonusTeam(s, r).length;
+  return (
+    <Section title="Thank the team">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" icon="coin" disabled={!!why} title={why ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'launchBonus', releaseId }, `Launch bonuses paid to the ${r.name} team`)}>
+          Pay launch bonuses · {fmtMoney(bonusCost(s, r))}
+        </Button>
+        <span className="text-[11px] text-ink3">{why ?? `A cheque for each of the ${n} people who made it: better mood for three months and more loyalty. Bigger for a bigger hit. Once, within two months of launch.`}</span>
+      </div>
+    </Section>
   );
 }
 
