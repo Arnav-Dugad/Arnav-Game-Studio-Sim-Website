@@ -1,4 +1,5 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
+import { teamPulse, type PulseItem } from './pulse';
 import { campaignBlocked, campaignFor } from '@/sim/systems/awardsCampaign';
 import { sabbaticalBlocked } from '@/sim/systems/staff';
 import { formatDate, fromDay } from '@/sim/calendar';
@@ -36,6 +37,8 @@ export function daysLeft(p: GameProject): number {
 export function projectName(p: Project): string {
   return p.kind === 'game' ? p.concept.name : p.kind === 'contract' ? p.title : `Engine: ${p.name}`;
 }
+
+let pulseCache: { key: string; drag?: PulseItem } = { key: '' };
 
 export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => void, pushGate: (id: string) => void, furnishDesks: () => void = () => undefined, urgentOnly = false): Alert[] {
   const out: Alert[] = [];
@@ -99,6 +102,14 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   if (bigSeries && !(s.mediaDeals ?? []).length && MEDIA_KINDS.some((k) => !mediaBlocked(s, bigSeries, k))) out.push({ id: 'media', tone: 'info', icon: 'sparkle', text: `${bigSeries.name} is popular enough to license — comics, toys, maybe more.`, action: { label: 'IP', run: () => open('company', 'ip') } });
   if (fromDay(s.day).month >= 6 && (s.company.lastTalkDay === undefined || s.day - s.company.lastTalkDay >= 300) && staff.some((x) => (x.level === 'senior' || x.level === 'lead' || x.role === 'founder') && !talkBlocked(s, x))) out.push({ id: 'talk', tone: 'info', icon: 'megaphone', text: 'This year’s Developers Summit slot is unused — a senior could give a talk (open their card).', action: { label: 'Staff', run: () => open('staff') } });
   if (!s.company.policies.interns && yr >= INTERN_YEAR && staff.length >= 8 && freeDesks(s) >= 2) out.push({ id: 'interns', tone: 'info', icon: 'people', text: 'You have room for summer interns: cheap, eager and high-potential.', action: { label: 'Policies', run: () => open('staff', 'policies') } });
+  // the one thing dragging most of the studio down (pulse cached per month)
+  if (staff.length >= 8 && !urgentOnly) {
+    const key = `${Math.floor(s.day / 30)}|${staff.length}|${s.office.rev ?? 0}`;
+    if (pulseCache.key !== key) pulseCache = { key, drag: teamPulse(s).drags[0] };
+    const d = pulseCache.drag;
+    if (d && d.avg <= -8 && d.people >= staff.length * 0.4)
+      out.push({ id: 'pulse', tone: 'warn', icon: 'heart', text: `${d.label} is costing ${d.people} people ${Math.round(-d.avg)} morale each.${d.hint ? ` ${d.hint}.` : ''}`, action: { label: 'Team pulse', run: () => open('staff', 'team') } });
+  }
   // awards season: a contender without a campaign behind it
   {
     const contender = !campaignFor(s) ? s.releaseOrder.map((id) => s.releases[id]!).filter((r) => r && r.score >= 83 && !campaignBlocked(s, r)).sort((a, b) => b.score - a.score)[0] : undefined;
