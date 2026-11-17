@@ -1,11 +1,16 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
 import { sabbaticalBlocked } from '@/sim/systems/staff';
-import { formatDate } from '@/sim/calendar';
+import { formatDate, fromDay } from '@/sim/calendar';
 import { fmtMoney } from '@/sim/util';
 import { monthlyBurn, trailingRevenue } from '@/sim/systems/finance';
 import { devProgress, qualityToScore } from '@/sim/systems/dev';
 import { platformInfo } from '@/sim/systems/market';
-import { tierDef } from '@/sim/systems/office';
+import { freeDesks, tierDef } from '@/sim/systems/office';
+import { earlyAccessBlocked } from '@/sim/systems/earlyAccess';
+import { crowdfundBlocked } from '@/sim/systems/crowdfunding';
+import { MEDIA_KINDS, mediaBlocked } from '@/sim/systems/media';
+import { talkBlocked } from '@/sim/systems/talks';
+import { INTERN_YEAR } from '@/sim/systems/interns';
 import { isAway } from '@/sim/systems/staff';
 import type { GameProject, GameState, Project } from '@/sim/types';
 import type { IconName } from '../icons';
@@ -79,6 +84,18 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
     if (est !== null && devProgress(p) > 0.4 && est < 50) out.push({ id: `weak-${p.id}`, tone: 'warn', icon: 'chart', text: `${p.concept.name} is tracking toward a weak score (~${Math.round(est)}). More polish, a better team or a focus change could help.`, action: { label: 'Develop', run: () => open('develop') } });
   }
   for (const p of projects) if (p.kind === 'contract' && s.day > p.deadlineDay - 14) out.push({ id: `contract-${p.id}`, tone: 'warn', icon: 'contract', text: `Contract "${p.title}" is due ${p.deadlineDay < s.day ? 'already' : 'within two weeks'}.`, action: { label: 'Develop', run: () => open('develop') } });
+  // Opportunities (only when they're real and actionable)
+  const yr = fromDay(s.day).year;
+  for (const p of projects) {
+    if (p.kind !== 'game') continue;
+    if (p.phase === 1 && !p.earlyAccess && p.concept.size !== 'small' && !earlyAccessBlocked(s, p)) out.push({ id: `ea-${p.id}`, tone: 'info', icon: 'coin', text: `${p.concept.name} could go on sale in Early Access now — players would fund and shape it.`, action: { label: 'Develop', run: () => open('develop') } });
+    if (p.phase === 0 && !p.crowdfund && net < 0 && !crowdfundBlocked(s, p)) out.push({ id: `cf-${p.id}`, tone: 'info', icon: 'crowd', text: `Money’s tight: your fans could crowdfund ${p.concept.name}.`, action: { label: 'Develop', run: () => open('develop') } });
+  }
+  const bigSeries = Object.values(s.franchises).sort((a, b) => b.fans - a.fans)[0];
+  if (bigSeries && !(s.mediaDeals ?? []).length && MEDIA_KINDS.some((k) => !mediaBlocked(s, bigSeries, k))) out.push({ id: 'media', tone: 'info', icon: 'sparkle', text: `${bigSeries.name} is popular enough to license — comics, toys, maybe more.`, action: { label: 'IP', run: () => open('company', 'ip') } });
+  if (fromDay(s.day).month >= 6 && (s.company.lastTalkDay === undefined || s.day - s.company.lastTalkDay >= 300) && staff.some((x) => (x.level === 'senior' || x.level === 'lead' || x.role === 'founder') && !talkBlocked(s, x))) out.push({ id: 'talk', tone: 'info', icon: 'megaphone', text: 'This year’s Developers Summit slot is unused — a senior could give a talk (open their card).', action: { label: 'Staff', run: () => open('staff') } });
+  if (!s.company.policies.interns && yr >= INTERN_YEAR && staff.length >= 8 && freeDesks(s) >= 2) out.push({ id: 'interns', tone: 'info', icon: 'people', text: 'You have room for summer interns: cheap, eager and high-potential.', action: { label: 'Policies', run: () => open('staff', 'policies') } });
+  if ((s.fanMail ?? []).some((m) => m.kind === 'art') && !s.office.items.some((i) => i.item === 'fan_wall')) out.push({ id: 'fanwall', tone: 'info', icon: 'palette', text: 'Fans are sending drawings — build a Fan Art Wall to pin them up.', action: { label: 'Fan mail', run: () => open('news', 'mail') } });
   const order = { bad: 0, warn: 1, info: 2 };
   return out.sort((a, b) => order[a.tone] - order[b.tone]);
 }
