@@ -18,6 +18,8 @@ export interface Rig {
   prop: Graphics;
   propKind: Prop;
   mouthKey: string;
+  hat: Graphics;
+  hatKey: string;
 }
 
 export interface Anim {
@@ -70,8 +72,31 @@ export function createRig(fig: Graphics, look: Look): Rig {
   const prop = new Graphics();
   armR.addChild(prop);
   prop.position.set(0, 9);
-  root.addChild(fig, eyesOpen, eyesClosed, mouth, armL, armR);
-  return { root, armL, armR, eyesOpen, eyesClosed, mouth, prop, propKind: 'none', mouthKey: '' };
+  const hat = new Graphics();
+  root.addChild(fig, eyesOpen, eyesClosed, mouth, hat, armL, armR);
+  return { root, armL, armR, eyesOpen, eyesClosed, mouth, prop, propKind: 'none', mouthKey: '', hat, hatKey: 'none' };
+}
+
+/** Seasonal and party headwear. */
+export function setHat(r: Rig, kind: 'none' | 'santa' | 'witch' | 'party', color = 0xe07a5f): void {
+  const key = `${kind}|${color}`;
+  if (r.hatKey === key) return;
+  r.hatKey = key;
+  const g = r.hat;
+  g.clear();
+  if (kind === 'santa') {
+    g.poly([-7.5, -5, 7.5, -5, 10, -11, 9.5, -16]).fill(0xd8323c);
+    g.roundRect(-8.6, -7.2, 17.2, 4.2, 2).fill(0xf6f1ea);
+    g.circle(9.6, -16, 2.5).fill(0xf6f1ea);
+  } else if (kind === 'witch') {
+    g.ellipse(0, -5.2, 11.5, 2.6).fill(0x2e2240);
+    g.poly([-5.6, -5.6, 5.6, -5.6, 3, -14, 6.5, -19]).fill(0x3a2a52);
+    g.rect(-5.2, -8.2, 10.4, 2).fill(0x9b6bd3);
+  } else if (kind === 'party') {
+    g.poly([-4.8, -5.8, 4.8, -5.8, 0, -18.5]).fill(color);
+    g.poly([-3.2, -9.8, 3.2, -9.8, 2.2, -12.4, -2.2, -12.4]).fill({ color: 0xffffff, alpha: 0.6 });
+    g.circle(0, -18.5, 1.9).fill(0xf2c450);
+  }
 }
 
 /** Redraw arms in a new outfit colour (identity editor). */
@@ -161,6 +186,7 @@ export function animate(r: Rig, a: Anim, i: AnimInput): number {
   r.eyesOpen.position.set(headX, headY + 0.8);
   r.eyesClosed.position.set(headX, headY + 0.8);
   r.mouth.position.set(headX, headY + 4.4);
+  r.hat.position.set(headX, headY);
   r.armL.position.set(-8.6, bodyY - 8.5);
   r.armR.position.set(8.6, bodyY - 8.5);
 

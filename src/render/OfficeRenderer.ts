@@ -11,7 +11,8 @@ import type { GameState, PlacedItem, Staff } from '@/sim/types';
 import { DARK, LIGHT, hexToNum, mix, shade, type ScenePalette } from './palette';
 import { T, drawItem, drawPerson, itemLift, lookFor, type Look } from './sprites';
 import { PetSystem } from './pets';
-import { animate, createRig, newAnim, reskinRig, type Anim, type Rig } from './animation';
+import { SeasonDecor, birthdayOf, dayOfYear, seasonOf, type Season } from './seasons';
+import { animate, createRig, newAnim, reskinRig, setHat, type Anim, type Rig } from './animation';
 import { LEISURE, RESEARCH_SPOTS, chatExchange, workExchange, workThought } from './officeLife';
 
 export interface RendererUI {
@@ -133,6 +134,10 @@ export class OfficeRenderer {
   private insetTarget = 0;
   private particles: { g: Graphics; vx: number; vy: number; life: number }[] = [];
   private pets = new PetSystem(this.itemLayer);
+  private seasonDecor = new SeasonDecor(this.itemLayer);
+  private season: Season | null = null;
+  private lastDay = -1;
+  private bdayGreeted = new Set<string>();
   private themeObserver: MutationObserver | null = null;
 
   constructor(private cb: RendererCallbacks) {}
@@ -454,6 +459,8 @@ export class OfficeRenderer {
       this.drawHeat(s, floor, ui.heat);
     }
     this.updateGhost(s, ui, floor, era);
+    this.season = seasonOf(s);
+    this.seasonDecor.update(s, floor, dt, this.season, this.P, ui.reducedMotion);
     this.syncAgents(s, floor, ui, dt);
     this.pets.update(s, floor, dt * (ui.speed === 0 ? 0.6 : 1), this.petHost(s, floor), ui.reducedMotion);
     this.updateParticles(dt);
@@ -684,6 +691,8 @@ export class OfficeRenderer {
     const ent = entrance(s);
     const speedMul = ui.reducedMotion ? 0.5 : ui.speed === 0 ? 0.6 : 1;
     const era = fromDay(s.day).year;
+    const doy = dayOfYear(s);
+    const hatSeason = this.season?.hat ?? 'none';
     for (const st of Object.values(s.staff)) {
       seen.add(st.id);
       let a = this.agents.get(st.id);
@@ -853,6 +862,8 @@ export class OfficeRenderer {
       a.c.position.set(a.x, a.y);
       a.c.zIndex = a.y + 1;
       a.rig.root.tint = st.activity === 'burnout' ? 0x9a9a9a : 0xffffff;
+      const bday = birthdayOf(st.id) === doy;
+      setHat(a.rig, bday ? 'party' : hatSeason, bday ? 0xf2c450 : a.look.top);
       a.ring.visible = ui.selectedStaff === st.id || this.hoverStaff === st.id;
       // crunch sweat
       if (atDesk && st.activity === 'work' && s.projects[st.assignment.kind === 'project' ? st.assignment.id : '']?.kind === 'game') {
@@ -912,7 +923,7 @@ export class OfficeRenderer {
           a.label.anchor.set(0.5, 1);
           a.c.addChild(a.label);
         }
-        a.label.text = `${st.name}\n${this.doing(s, a, st)}`;
+        a.label.text = `${st.name}${birthdayOf(st.id) === doy ? ' 🎂' : ''}\n${this.doing(s, a, st)}`;
         a.label.visible = true;
         a.label.position.set(0, a.speechT > 0 ? -72 : -50);
       } else if (a.label) a.label.visible = false;
@@ -925,6 +936,7 @@ export class OfficeRenderer {
     }
     for (const a of this.agents.values()) if (a.talk && !this.agents.get(a.talk.partner)?.c.visible) this.endTalk(s, floor, a);
     this.agentsReady = true;
+    this.dailyMoments(s, floor, doy, ui.reducedMotion);
     this.lunchT -= dt * speedMul;
     if (this.lunchT <= 0 && !ui.reducedMotion) {
       this.lunchT = 45 + Math.random() * 60;
@@ -933,6 +945,35 @@ export class OfficeRenderer {
   }
 
   // ── Office life: conversations and leisure (cosmetic) ──────────────────────
+
+  /** Once a day: birthday wishes; on New Year's Day, a party. */
+  private dailyMoments(s: GameState, floor: number, doy: number, reducedMotion: boolean): void {
+    if (s.day === this.lastDay) return;
+    const firstFrame = this.lastDay < 0;
+    this.lastDay = s.day;
+    const here = [...this.agents.values()].filter((a) => a.c.visible && a.floor === floor);
+    if (!here.length) return;
+    if (!firstFrame && this.season?.newYear && this.season.dom === 1) {
+      this.celebrate(!reducedMotion);
+      for (const a of here.slice(0, 6)) this.say(a, pickOne(['Happy New Year! 🎆', `Here’s to ${fromDay(s.day).year}!`, 'New year, new games!', 'Cheers! 🥂']), 3);
+      return;
+    }
+    for (const a of here) {
+      const st = s.staff[a.id];
+      if (!st || birthdayOf(st.id) !== doy) continue;
+      const key = `${st.id}|${s.day}`;
+      if (this.bdayGreeted.has(key)) continue;
+      this.bdayGreeted.add(key);
+      this.showBubble(a, '🎂');
+      a.bubbleT = 3;
+      a.anim.joy = 1.4;
+      const friends = here.filter((b) => b !== a && !b.talk).sort((x, y) => Math.hypot(x.x - a.x, x.y - a.y) - Math.hypot(y.x - a.x, y.y - a.y)).slice(0, 3);
+      for (const b of friends) {
+        this.say(b, pickOne([`Happy birthday, ${firstName(st.name)}! 🎂`, 'Happy birthday! 🎉', `Cake for ${firstName(st.name)}!`]), 2.6);
+        b.anim.wave = 1.4;
+      }
+    }
+  }
 
   /** What the pets can see of the office. */
   private petHost(s: GameState, floor: number) {

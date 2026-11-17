@@ -59,6 +59,13 @@ export function chatExchange(s: GameState, a: Staff, b: Staff): Exchange {
               ? [['Phones are game machines now.', 'Everyone plays.'], ['Streamers love our stuff.', 'Free marketing!']]
               : [['VR is wild.', 'Made me dizzy.'], ['Cloud saves saved me.', 'Ha!']];
   topics.push({ w: 1.5, make: () => pick(era) });
+  // The season
+  const month = fromDay(s.day).month;
+  if (month === 12) topics.push({ w: 3, make: () => pick<Exchange>([['Holiday plans?', 'Family. Lots of it.'], ['Love the lights!', 'So festive!'], ['Secret Santa?', 'I got you socks.'], ['Ship before the holidays?', 'Fingers crossed.']]) });
+  if (month === 10) topics.push({ w: 3, make: () => pick<Exchange>([['Costume ideas?', 'Going as a bug report.'], ['Pumpkin spice?', 'Always.'], ['Scary game night?', 'I’m in! 👻']]) });
+  if (month >= 6 && month <= 8) topics.push({ w: 2, make: () => pick<Exchange>([['So hot today.', 'Bless the AC.'], ['Beach this weekend?', 'Yes please!'], ['Summer sale soon!', 'My wallet weeps.']]) });
+  if (month <= 2) topics.push({ w: 2, make: () => pick<Exchange>([['It’s snowing!', 'Snow day?!'], ['New year’s resolution?', 'Fewer bugs.'], ['So cold out.', 'Cocoa time.']]) });
+  if (month >= 3 && month <= 5) topics.push({ w: 1.5, make: () => pick<Exchange>([['Spring at last!', 'Finally!'], ['Allergies…', 'Achoo!']]) });
   // Studio life
   if (s.office.tier >= 3) topics.push({ w: 1, make: () => ['This office is so nice.', pick(REPLIES_POS)] });
   topics.push({ w: 2, make: () => pick<Exchange>([['Coffee?', 'Always.'], ['Lunch at the usual?', 'Yes please.'], ['Weekend plans?', 'Sleeping in.'], ['Seen my stapler?', 'Nope!'], ['Nice shirt!', 'Thanks!'], [`Morning, ${first(b.name)}!`, 'Morning!']]) });
