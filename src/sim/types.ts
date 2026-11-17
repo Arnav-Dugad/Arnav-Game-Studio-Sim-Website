@@ -147,6 +147,8 @@ export interface PublisherDeal {
   deadlineDay: number;
   reach: number; // publisher's distribution reach multiplier
   marketingBudget: number;
+  /** Game size the advance was offered for (smaller games get a proportionally smaller advance). */
+  size?: Size;
 }
 
 export interface Campaign {

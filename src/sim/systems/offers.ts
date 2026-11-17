@@ -72,6 +72,7 @@ export function refreshOffers(c: Ctx): void {
       deadlineDay: s.day + Math.round(rng.range(200, 420)),
       reach: Math.round(clamp(1.15 + pub.reputation / 80 + pub.staff / 1500, 1.15, 2.4) * 100) / 100,
       marketingBudget: Math.round(money(rng.range(10_000, 40_000) * (1 + pub.reputation / 50), s.day)),
+      size,
       expiresDay: s.day + 60,
     } satisfies DealOffer);
     if (s.offers.deals.length >= 3) break;

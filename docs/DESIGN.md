@@ -782,4 +782,5 @@ This section records decisions made during the build that differ from, or add to
   - **UI:** the esports and cheats pickers derive their selection from the current options, so a closed rival, a game that just got a league, or a departed employee can no longer leave a stale selection.
   - **Music:** FM modulator nodes are released after use.
   - **Events:** the duplicate `game_jam` event id is fixed, and a test now requires event ids to be unique.
+- **Publisher advances scale with game size.** Deal offers are sized from your reputation (an AAA-sized advance at 75+), but nothing tied the advance to the game you actually made, so a famous studio could bank an AAA advance on a tiny game. Deals now record the size they were offered for. A smaller game receives `advance × benchmark(chosen) ÷ benchmark(offered)`, and that scaled amount is also what's repaid if you cancel. The balance report caught it: a random-play bot survived on $1B of advances against $64M of its own sales. After the fix, random bots go bankrupt again as designed, and the planning bots are unaffected. Probe: `scripts/dev/income-mix.ts <bot> <seed>`.
 

@@ -12,7 +12,7 @@ import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore } from '@/sim/systems/dev';
 import { expansionPlatforms, expansionSizeOk, salesPotential } from '@/sim/systems/release';
-import { devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
+import { dealAdvanceFor, devkitCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size } from '@/sim/types';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { Cover } from '../art/Cover';
@@ -625,7 +625,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               <option value="">{selfPub ? 'Self-publish' : 'Self-publish (computers only)'}</option>
               {s.offers.deals.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {COMPANY_BY_ID[d.publisherId]?.name ?? d.publisherId}: {fmtMoney(d.advance)} advance · {Math.round(d.royalty * 100)}% royalty · min {d.minScore}
+                  {COMPANY_BY_ID[d.publisherId]?.name ?? d.publisherId}: {fmtMoney(dealAdvanceFor(d, size, s.day))} advance · {Math.round(d.royalty * 100)}% royalty · min {d.minScore}
                 </option>
               ))}
             </select>
@@ -635,7 +635,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
             <CompanyBadge name={COMPANY_BY_ID[deal.publisherId]?.name ?? deal.publisherId} color={COMPANY_BY_ID[deal.publisherId]?.color ?? '#888'} size={28} />
             <div>
-              You get <b>{fmtMoney(deal.advance)}</b> now and <b>{Math.round(deal.royalty * 100)}%</b> of net revenue. Their distribution gives <b>{Math.round(deal.reach * 100)}%</b> reach. They expect a score of {deal.minScore}+ by {formatDate(deal.deadlineDay, false)}.
+              You get <b>{fmtMoney(dealAdvanceFor(deal, size, s.day))}</b> now{deal.size && dealAdvanceFor(deal, size, s.day) < deal.advance ? ` (the full ${fmtMoney(deal.advance)} is for a ${SIZE_LABEL[deal.size]} game)` : ''} and <b>{Math.round(deal.royalty * 100)}%</b> of net revenue. Their distribution gives <b>{Math.round(deal.reach * 100)}%</b> reach. They expect a score of {deal.minScore}+ by {formatDate(deal.deadlineDay, false)}.
             </div>
           </div>
         )}

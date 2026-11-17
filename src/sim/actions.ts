@@ -14,7 +14,7 @@ import { clamp } from './breakdown';
 import { fromDay } from './calendar';
 import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
-import { engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
+import { benchmarkPoints, engineBuildPoints, engineTechFor, phaseLength } from './systems/dev';
 import { resolveEvent } from './systems/events';
 import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
@@ -160,6 +160,13 @@ function assignTeam(s: GameState, projectId: string, team: string[]): void {
   }
 }
 
+/** A publisher pays the advance for the game size it offered for; a smaller game gets a proportionally smaller one. */
+export function dealAdvanceFor(deal: { advance: number; size?: Size }, size: Size, day: number): number {
+  if (!deal.size) return deal.advance;
+  const ratio = Math.min(1, benchmarkPoints(size, day) / benchmarkPoints(deal.size, day));
+  return Math.round((deal.advance * ratio) / 1000) * 1000;
+}
+
 export function sizeAllowed(s: GameState, size: Size): string | null {
   if (size === 'large' && s.office.tier < 2) return 'Large games need at least a Small Office';
   if (size === 'aaa' && (s.office.tier < 4 || fromDay(s.day).year < 1995)) return 'AAA needs a Studio Building and 1995+';
@@ -280,7 +287,7 @@ function apply(c: Ctx, a: Action): string | null {
           franchiseId: g.franchiseId,
           remasterOf: orig?.id,
           expansionOf: base?.id,
-          deal: deal ? { publisherId: deal.publisherId, advance: deal.advance, royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
+          deal: deal ? { publisherId: deal.publisherId, advance: dealAdvanceFor(deal, g.size, s.day), royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
         },
         phase: 0,
         phaseDay: 0,
@@ -305,7 +312,7 @@ function apply(c: Ctx, a: Action): string | null {
       s.projects[id] = proj;
       assignTeam(s, id, g.team);
       if (deal) {
-        earn(s, 'advances', deal.advance);
+        earn(s, 'advances', proj.concept.deal!.advance);
         s.offers.deals = s.offers.deals.filter((d) => d.id !== deal.id);
       }
       return null;

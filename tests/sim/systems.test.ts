@@ -551,6 +551,20 @@ describe('expansion fairness (review fixes)', () => {
   });
 });
 
+describe('publisher advances', () => {
+  it('scale down when the game is smaller than the deal was offered for', () => {
+    const s = game(1995, 7);
+    s.company.reputation = 80;
+    s.offers.deals = [];
+    s.offers.deals.push({ id: 'dlx', publisherId: Object.keys(s.rivals)[0]!, advance: 1_000_000, royalty: 0.4, minScore: 60, deadlineDay: s.day + 400, reach: 1.5, marketingBudget: 10_000, size: 'aaa', expiresDay: s.day + 60 });
+    const cash = s.company.cash;
+    const p = startSmall(s, { dealId: 'dlx', platforms: [availablePlatforms(s).find((x) => x.kind === 'computer')!.id] });
+    expect(p.concept.deal!.advance).toBeLessThan(200_000);
+    expect(p.concept.deal!.advance).toBeGreaterThan(0);
+    expect(s.company.cash - cash).toBeLessThanOrEqual(p.concept.deal!.advance);
+  });
+});
+
 describe('storefront sales', () => {
   it('need digital storefronts, sell discounted copies, fade with repeats and have a cooldown', () => {
     const boxed = game(1990, 4);
