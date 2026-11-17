@@ -67,6 +67,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'union', name: 'Solidarity', desc: 'Recognise your workers’ union.', icon: 'people', check: (s) => !!s.company.union },
   { id: 'gym', name: 'Healthy Studio', desc: 'Build a studio gym.', icon: 'heart', check: (s) => s.office.items.some((i) => i.item === 'gym') },
   { id: 'welcome_home', name: 'Welcome Home', desc: 'Acquire a studio founded by one of your former stars.', icon: 'handshake', check: (s) => Object.values(s.rivals).some((r) => r.ownedByPlayer && !!r.founder) },
+  { id: 'number_one', name: 'Number One', desc: 'Top the weekly sales chart.', icon: 'trophy', check: (s) => (s.progress.stats.numberOnes ?? 0) > 0 },
   { id: 'office_2', name: 'Moving Out', desc: 'Move out of the garage.', icon: 'box', check: (s) => s.office.tier >= 2 },
   { id: 'office_4', name: 'Your Own Building', desc: 'Move into a Studio Building.', icon: 'building', check: (s) => s.office.tier >= 4 },
   { id: 'office_6', name: 'Skyline', desc: 'Build the Global HQ.', icon: 'tower', check: (s) => s.office.tier >= 6 },

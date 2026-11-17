@@ -465,6 +465,32 @@ function learnFromRelease(s: GameState, p: GameProject, q: Breakdown): void {
 }
 
 /** Weekly sales tick (called on Mondays). */
+/** After the week's sales: did one of your games top the chart? (rival weekly sales are estimated the same way as the Market chart) */
+function chartTopper(s: GameState): void {
+  let rivalBest = 0;
+  for (const g of s.rivalGames) {
+    const weeks = Math.floor((s.day - g.day) / 7);
+    if (weeks < 0 || weeks > 26) continue;
+    rivalBest = Math.max(rivalBest, g.units * 0.12 * Math.pow(0.85, weeks));
+  }
+  let best: Release | null = null;
+  let bestWeekly = 0;
+  for (const id of s.releaseOrder.slice(-30)) {
+    const r = s.releases[id];
+    if (!r?.active || !r.weekly.length) continue;
+    const w = r.weekly[r.weekly.length - 1]!;
+    if (w > bestWeekly) {
+      bestWeekly = w;
+      best = r;
+    }
+  }
+  if (best && bestWeekly > rivalBest && bestWeekly > 1000 && !best.numberOne) {
+    best.numberOne = true;
+    s.progress.stats.numberOnes = (s.progress.stats.numberOnes ?? 0) + 1;
+    pushNews(s, { category: 'studio', headline: `${best.name} is #1 this week`, body: `${Math.round(bestWeekly).toLocaleString('en-US')} copies in seven days — more than anything else on the shelves.`, tone: 'good' });
+  }
+}
+
 export function updateSalesWeekly(c: Ctx): void {
   const { s } = c;
   const L = c.s;
@@ -554,6 +580,7 @@ export function updateSalesWeekly(c: Ctx): void {
     }
   }
   void weekIncome;
+  chartTopper(s);
 }
 
 function countServers(s: GameState): number {

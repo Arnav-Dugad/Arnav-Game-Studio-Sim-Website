@@ -339,6 +339,8 @@ export interface Release {
   modded?: boolean;
   /** The game ran an open beta before release. */
   betaTested?: boolean;
+  /** Topped the weekly sales chart. */
+  numberOne?: boolean;
   /** Rival knock-offs it has inspired so far. */
   copycats?: number;
   /** Who made it (names and roles as they were at launch). */
@@ -693,6 +695,8 @@ export interface LifetimeStats {
   dreamsMet?: number;
   /** Crunch over roughly the last few months (decays daily). */
   crunchRecent?: number;
+  /** Games that topped the weekly chart. */
+  numberOnes?: number;
   /** Best bug-bash result, and mentees who graduated. */
   bestBash?: number;
   graduates?: number;
