@@ -386,6 +386,23 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const [platforms, setPlatforms] = useState<string[]>(() => (expPlats ? expPlats.slice(0, 6) : plats[0] ? [plats[0].id] : []));
   const engines = Object.values(s.engines).sort((a, b) => b.tech - a.tech);
   const [engineId, setEngineId] = useState(engines[0]?.id ?? 'e0');
+  const lastGame = [...s.releaseOrder].reverse().map((id) => s.releases[id]!).find((r) => r && !r.concept.expansionOf && !r.concept.remasterOf);
+  const copyLast = () => {
+    if (!lastGame) return;
+    const c = lastGame.concept;
+    if (genres.some((g) => g.ok && g.g.id === c.genre)) setGenre(c.genre);
+    if (topics.some((x) => x.ok && x.t.id === c.topic)) setTopic(c.topic);
+    setAudience(c.audience);
+    if (!sizeAllowed(s, c.size)) {
+      setSize(c.size);
+      setTeam((x) => x.slice(0, BALANCE.SIZE[c.size].teamCap));
+    }
+    if (!monetizationAllowed(s, c.monetization, c.genre)) setMonet(c.monetization);
+    const still = c.platforms.filter((pid) => plats.some((p) => p.id === pid));
+    if (still.length) setPlatforms(still.slice(0, 6));
+    if (s.engines[c.engineId]) setEngineId(c.engineId);
+    sound.play('click');
+  };
   const idle = Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
   const [team, setTeam] = useState<string[]>(idle.slice(0, BALANCE.SIZE.small.teamCap).map((x) => x.id));
   const [franchiseId, setFranchiseId] = useState<string>(presetFr?.id ?? '');
@@ -458,6 +475,16 @@ function NewGame({ onDone }: { onDone: () => void }) {
             }}
           >
             Make a new game instead
+          </Button>
+        </div>
+      )}
+      {!baseRel && lastGame && (
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-bg2/60 px-3 py-2 text-xs">
+          <span className="min-w-0 truncate text-ink2">
+            Last game: <b className="text-ink">{lastGame.name}</b> · {GENRE_BY_ID[lastGame.concept.genre].name} · {TOPIC_BY_ID[lastGame.concept.topic]?.name ?? lastGame.concept.topic} · {SIZE_LABEL[lastGame.concept.size]}
+          </span>
+          <Button size="sm" icon="refresh" onClick={copyLast} title="Copy the genre, topic, audience, size, business model, platforms and engine (where still available)">
+            Same setup
           </Button>
         </div>
       )}
