@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { devkitMul } from './systems/partners';
 import type { MediaKind } from './types';
 import { signMediaDeal } from './systems/media';
 import { giveTalk } from './systems/talks';
@@ -212,7 +213,7 @@ export function marketResearchCost(s: GameState): number {
 export function devkitCost(s: GameState, platform: string): number {
   const pl = platformInfo(s, platform);
   if (!pl) return 0;
-  return Math.round(pl.devKit * Math.pow(inflation(s.day) / inflation(pl.launchDay), 0.7));
+  return Math.round(pl.devKit * Math.pow(inflation(s.day) / inflation(pl.launchDay), 0.7) * devkitMul(s, platform));
 }
 
 export function defaultFocus(genre: GenreId): [Focus3, Focus3, Focus3] {

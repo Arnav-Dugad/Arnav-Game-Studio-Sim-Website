@@ -416,6 +416,8 @@ export interface Release {
   earlyAccess?: { weeks: number; units: number; net: number };
   /** Crowdfunded: what backers pledged, and how many days late it shipped against the promise (0 = on time). */
   crowdfund?: { raised: number; backers: number; late: number };
+  /** Platform holders who featured it on their storefront at launch. */
+  featuredBy?: string[];
   /** Inducted into the Golden Pixel Hall of Classics (the year). */
   classic?: number;
   /** Re-released on a modern storefront (once), and when. */
@@ -882,6 +884,8 @@ export interface GameState {
   yearbook?: YearbookPhoto[];
   /** Licensed comics, toys, shows, films and rides (systems/media.ts). */
   mediaDeals?: MediaDeal[];
+  /** Platform holders' favour (systems/partners.ts), 0..100, neutral 50. */
+  partners?: Record<string, number>;
   schemaVersion: number;
   seed: number;
   rng: RngState;

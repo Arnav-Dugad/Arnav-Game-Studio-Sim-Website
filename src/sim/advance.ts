@@ -1,6 +1,7 @@
 /**
  * The fixed-step simulation loop: 1 tick = 1 day. Subsystems run at their own cadence.
  */
+import { partnersMonthly } from './systems/partners';
 import { internsArrive, internsLeave } from './systems/interns';
 import { hallOfClassics } from './systems/classics';
 import { mediaMonthly } from './systems/media';
@@ -112,6 +113,7 @@ export function tick(c: Ctx): void {
     lifeEventsMonthly(c);
     fanMailMonthly(c);
     mediaMonthly(c);
+    partnersMonthly(s);
     if (d.month === 6) internsArrive(c);
     if (d.month === 9) internsLeave(c, () => fireEvent(c, 'intern_offer'));
     refreshCandidates(c);

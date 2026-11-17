@@ -106,6 +106,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'timeless', name: 'Timeless', desc: 'Have a game inducted into the Golden Pixel Hall of Classics.', icon: 'medal', check: (s) => (s.progress.stats.classics ?? 0) >= 1 },
   { id: 'living_legend', name: 'Living Legend', desc: 'Have three games in the Hall of Classics.', icon: 'crown', check: (s) => (s.progress.stats.classics ?? 0) >= 3 },
   { id: 'intern_to_lead', name: 'From Intern to Lead', desc: 'A former summer intern becomes a lead.', icon: 'rocket', check: (s) => Object.values(s.staff).some((x) => x.wasIntern && x.level === 'lead') },
+  { id: 'key_partner', name: 'Key Partner', desc: 'Earn a platform holder’s top favour (85+).', icon: 'handshake', check: (s) => Object.values(s.partners ?? {}).some((v) => v >= 85) },
   { id: 'garage_hit', name: 'Garage Miracle', desc: 'Score 85+ while still in the garage.', icon: 'wrench', check: (s) => s.office.tier === 1 && s.progress.stats.bestScore >= 85 },
 ];
 

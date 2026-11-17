@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { partnersOnRelease } from './partners';
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
 import { REGION_BY_ID, gameRegions, regionMix } from '../../data/regions';
@@ -401,6 +402,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     rel.net += Math.round(ea.net);
   }
   rel.credits = p.team.map((sid) => s.staff[sid]).filter((x): x is NonNullable<typeof x> => !!x).map((x) => ({ id: x.id, name: x.name, role: x.role, level: x.level }));
+  partnersOnRelease(s, rel);
   s.releases[id] = rel;
   s.releaseOrder.push(id);
   exclusiveBuzz(s, rel);

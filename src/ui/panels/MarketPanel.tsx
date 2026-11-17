@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { FEATURE_AT, FEATURE_MUL, holderName } from '@/sim/systems/partners';
 import { BRANCH, REGIONS, regionShares, type RegionId } from '@/data/regions';
 import { branchBlocked } from '@/sim/actions';
 import { GENRES, GENRE_BY_ID } from '@/data/genres';
@@ -41,7 +42,12 @@ export default function MarketPanel() {
           { value: 'charts', label: 'All-time charts' },
         ]}
       />
-      {tab === 'platforms' && <Platforms />}
+      {tab === 'platforms' && (
+        <>
+          <Partners />
+          <Platforms />
+        </>
+      )}
       {tab === 'trends' && <Trends />}
       {tab === 'world' && <World />}
       {tab === 'rivals' && <Rivals />}
@@ -428,5 +434,37 @@ function Charts() {
         ))}
       </ol>
     </div>
+  );
+}
+
+/** How each platform holder feels about you. */
+function Partners() {
+  const s = useGame((g) => g.s)!;
+  const list = Object.entries(s.partners ?? {})
+    .filter(([m]) => COMPANY_BY_ID[m])
+    .sort((a, b) => b[1] - a[1]);
+  return (
+    <Section title="Platform partners">
+      {list.length === 0 ? (
+        <p className="text-xs text-ink3">Platform holders keep score: great games on their hardware — exclusives most of all — win their favour. Favoured studios get launches featured on the storefront and cheaper devkits.</p>
+      ) : (
+        <>
+          <ul className="space-y-1 text-xs">
+            {list.map(([m, v]) => (
+              <li key={m} className="flex items-center gap-2">
+                <span className="w-32 shrink-0 truncate font-semibold">{holderName(m)}</span>
+                <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-bg2" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v)} aria-label={`${holderName(m)} favour`}>
+                  <span className={cx('absolute left-0 top-0 h-full rounded-full', v >= FEATURE_AT ? 'bg-good' : v <= 25 ? 'bg-bad' : 'bg-accent')} style={{ width: `${v}%` }} />
+                </span>
+                <span className={cx('w-36 shrink-0 text-right', v >= FEATURE_AT ? 'text-good' : v <= 25 ? 'text-bad' : 'text-ink3')}>
+                  {v >= 85 ? 'Key partner · kits −50%' : v >= FEATURE_AT ? 'Featured · kits −30%' : v >= 70 ? 'Friendly · kits −30%' : v <= 25 ? 'Cold · kits +25%' : 'Neutral'}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[11px] text-ink3">Good games (and exclusives) on their platforms raise favour; flops lower it. At {FEATURE_AT}+ your launches there are featured (+{Math.round((FEATURE_MUL - 1) * 100)}% sales on that platform). Favour drifts back to neutral over time.</p>
+        </>
+      )}
+    </Section>
   );
 }
