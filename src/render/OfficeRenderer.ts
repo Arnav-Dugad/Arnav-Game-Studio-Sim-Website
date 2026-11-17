@@ -93,6 +93,8 @@ interface Agent {
   medal?: Graphics;
   /** Last seen level, to celebrate promotions. */
   level?: string;
+  /** Why they were away last time we looked (to welcome them back). */
+  awayWas?: 'sick' | 'vacation';
 }
 
 const pickOne = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
@@ -775,6 +777,12 @@ export class OfficeRenderer {
       const desk = st.deskId ? s.office.items.find((i) => i.id === st.deskId) : undefined;
       const agentFloor = desk ? desk.floor : 0;
       const away = st.activity === 'sick' || st.activity === 'vacation';
+      if (away) a.awayWas = st.activity === 'sick' ? 'sick' : 'vacation';
+      else if (a.awayWas && agentFloor === floor && this.agentsReady && !ui.reducedMotion) {
+        this.say(a, a.awayWas === 'vacation' ? pickOne(['Back from holiday! 🏖️', 'Did I miss anything?', 'Rested and ready!']) : pickOne(['Feeling better now 🤧', 'I’m back!', 'Did someone water my plant?']), 2.6);
+        a.anim.wave = 1.4;
+        a.awayWas = undefined;
+      } else a.awayWas = undefined;
       a.c.visible = agentFloor === floor && !away;
       a.floor = agentFloor;
       if (!a.c.visible) {
