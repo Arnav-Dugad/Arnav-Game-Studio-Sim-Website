@@ -234,8 +234,10 @@ export function updateMarketMonthly(c: Ctx): void {
   // football World Cup summers (1982, 1986, …): everyone wants a sports game
   const d = fromDay(s.day);
   if (d.year >= 1982 && (d.year - 1982) % 4 === 0 && d.month === 5) {
-    s.market.genreTrend.sports = clamp((s.market.genreTrend.sports ?? 0) + 0.15, -0.5, 0.6);
-    s.market.topicTrend.sports_topic = clamp((s.market.topicTrend.sports_topic ?? 0) + 0.12, -0.5, 0.6);
+    const g0 = s.market.genreTrend.sports ?? 0;
+    const t0 = s.market.topicTrend.sports_topic ?? 0;
+    s.market.genreTrend.sports = Math.max(g0, clamp(g0 + 0.15, -0.5, 0.6));
+    s.market.topicTrend.sports_topic = Math.max(t0, clamp(t0 + 0.12, -0.5, 0.7));
     pushNews(s, { category: 'industry', headline: `World Cup fever, ${d.year}`, body: 'The football World Cup kicks off next month, and players everywhere are hungry for sports games.', tone: 'neutral' });
   }
   for (const t of TOPICS) {

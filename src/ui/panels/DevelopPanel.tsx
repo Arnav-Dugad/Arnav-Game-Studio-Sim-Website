@@ -115,9 +115,8 @@ function GameCard({ p }: { p: GameProject }) {
   const hypeStep = Math.round(p.hype * 20);
   const waiting = useMemo(() => {
     if (p.hype < 0.05 || est === null) return 0;
-    const units = salesPotential(s, p.concept, est, p.hype).platforms.reduce((t, x) => t + x.potential, 0);
-    const lift = (p.hype * 0.45) / (1 + p.hype * 0.45);
-    return Math.round(units * lift);
+    const sum = (h: number) => salesPotential(s, p.concept, est, h).platforms.reduce((t, x) => t + x.potential, 0);
+    return Math.max(0, Math.round(sum(p.hype) - sum(0)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [week, p.id, est, hypeStep]);
   const yr = fromDay(s.day).year;
