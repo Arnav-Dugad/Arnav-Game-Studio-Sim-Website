@@ -1,4 +1,5 @@
 /** "Coming up": the next few months of dated events across the game's systems, for the Overview. */
+import { pitchText } from '@/sim/systems/pitches';
 import { licenceDue } from '@/sim/systems/licences';
 import { TRADE_SHOWS } from '@/data/marketing';
 import { COMPANY_BY_ID } from '@/data/companies';
@@ -44,6 +45,9 @@ export function comingUp(s: GameState, days = 120, max = 10): CalendarEntry[] {
     const due = r ? licenceDue(r) : null;
     if (r && due !== null && r.active) add({ day: due, icon: 'calendar', text: `${r.name}’s licences expire`, tone: 'bad' });
   }
+  const pitch = s.company.pitch;
+  const pitcher = pitch ? s.staff[pitch.staffId] : undefined;
+  if (pitch && pitcher) add({ day: pitch.until, icon: 'lightbulb', text: `${pitcher.name.split(' ')[0]}’s pitch expires (${pitchText(pitch)})`, tone: 'bad' });
   for (const d of s.mediaDeals ?? []) if (d.outcome === undefined) add({ day: d.releaseDay, icon: 'sparkle', text: `The ${d.name} ${MEDIA[d.kind].noun} comes out` });
   // the industry
   for (const r of upcomingReleases(s, s.day + 1, end).slice(0, 4)) add({ day: r.day, icon: 'company', text: `${s.rivals[r.company]?.name ?? COMPANY_BY_ID[r.company]?.name ?? r.company}: ${r.title}` });
