@@ -465,6 +465,8 @@ export interface Release {
   passion?: string;
   /** Fans asked to translate it (the event happened, whatever you chose). */
   fanTranslated?: boolean;
+  /** Players asked for accessibility options (the event happened). */
+  accessibilityAsked?: boolean;
   /** A hidden secret, and whether players have found it yet. */
   easterEgg?: { by: string; name: string; what: string; found: boolean };
   /** The team got a launch bonus for it (and when). */

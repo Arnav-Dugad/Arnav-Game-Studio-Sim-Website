@@ -73,6 +73,9 @@ const untranslatedNovel = (s: GameState) =>
 /** A buggy console game in polish that hasn't been through certification yet. */
 const certRisk = (s: GameState) =>
   activeGames(s).find((p) => p.phase >= 2 && !p.certified && p.bugs > 0.08 * (p.design + p.tech) && p.concept.platforms.some((id) => { const pl = platformInfo(s, id); return !!pl && pl.maker !== 'player' && (pl.kind === 'console' || pl.kind === 'handheld'); }));
+/** A recent, loved game whose players haven't asked for accessibility options yet (and that didn't ship with them). */
+const accessibilityCandidate = (s: GameState) =>
+  Object.values(s.releases).find((r) => !r.delisted && !r.accessibilityAsked && r.score >= 70 && s.day - r.day < 365 * 2 && !(r.concept.features ?? []).includes('accessibility'));
 const lateNote = (p: GameProject) => (p.concept.deal ? ' — may miss the publisher’s deadline' : p.crowdfund?.promised !== undefined ? ' — backers were promised a date' : '');
 const mod = (s: GameState, v: number, days: number, label: string) => s.company.moraleMods.push({ v, until: s.day + days, label });
 
@@ -839,6 +842,72 @@ export const EVENT_DEFS: EventDef[] = [
       else p.extraDays += 7;
       const dev = s.staff[String(e.ctx.dev)];
       if (dev) dev.morale = clamp(dev.morale + 5, 0, 100);
+    },
+  },
+  {
+    id: 'accessibility_request',
+    art: 'letters',
+    cooldown: 700,
+    weight: (s) => (yr(s) >= 2008 && accessibilityCandidate(s) ? 0.2 : 0),
+    make: ({ s }) => {
+      const r = accessibilityCandidate(s);
+      if (!r) return null;
+      const cost = money(6_000, s.day);
+      return {
+        title: `Players ask for accessibility options in ${r.name}`,
+        body: `A group of disabled players love ${r.name} but can’t finish it: no remappable controls, no subtitles, no colour-blind mode. They’ve written a thoughtful letter asking for a patch.`,
+        options: [
+          { id: 'patch', label: `Patch them in (${fmtMoney(cost)})`, preview: 'User score +2, reputation +1, a few more players', disabled: s.company.cash < cost },
+          { id: 'next', label: 'Promise it for the next game', preview: 'No cost; a little goodwill (reputation +0.3)' },
+        ],
+        ctx: { rel: r.id, cost },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      if (!r) return;
+      r.accessibilityAsked = true;
+      const cost = Number(e.ctx.cost);
+      if (opt === 'patch' && s.company.cash >= cost) {
+        spend(s, 'other_expense', cost);
+        r.userScore = clamp(r.userScore + 2, 1, 100);
+        if (!r.delisted) for (const ps of r.platforms) ps.potential *= 1.02;
+        addRep(s, 1, `Accessibility patch for ${r.name}`);
+        pushNews(s, { category: 'studio', headline: `${r.name} gets an accessibility patch`, body: 'Remappable controls, subtitles and a colour-blind mode — and a lot of grateful players.', tone: 'good' });
+      } else addRep(s, 0.3, 'Promised accessibility options');
+    },
+  },
+  {
+    id: 'charity_stream',
+    art: 'trophy',
+    cooldown: 600,
+    weight: (s) => (yr(s) >= 2012 && recentHit(s, 365 * 2, 75) ? 0.18 : 0),
+    make: ({ s }) => {
+      const r = recentHit(s, 365 * 2, 75);
+      if (!r) return null;
+      const raised = money(40_000, s.day);
+      return {
+        title: `Streamers raise money playing ${r.name}`,
+        body: `A 48-hour charity marathon of ${r.name} has raised ${fmtMoney(raised)} for a children’s hospital, with thousands watching. The organisers have tagged you.`,
+        options: [
+          { id: 'match', label: `Match the donations (${fmtMoney(raised)})`, preview: 'Reputation +2, fans +5%, and the team is proud', disabled: s.company.cash < raised },
+          { id: 'cheer', label: 'Send the team’s thanks on stream', preview: 'Fans +1%' },
+        ],
+        ctx: { rel: r.id, raised },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const r = s.releases[String(e.ctx.rel)];
+      const raised = Number(e.ctx.raised);
+      const fr = r?.concept.franchiseId ? s.franchises[r.concept.franchiseId] : undefined;
+      if (opt === 'match' && s.company.cash >= raised) {
+        spend(s, 'other_expense', raised);
+        s.progress.stats.donated = (s.progress.stats.donated ?? 0) + raised;
+        addRep(s, 2 * (1 - s.company.reputation / 130), 'Matched a charity stream');
+        s.company.fans = Math.round(s.company.fans * 1.05);
+        if (fr) fr.fans *= 1.05;
+        mod(s, 3, 60, 'Proud of the charity stream');
+      } else s.company.fans = Math.round(s.company.fans * 1.01);
     },
   },
   {
