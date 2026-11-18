@@ -81,7 +81,7 @@ export function SubscriptionTab() {
               {SUB_MIN_GAMES}+ released games (you have {s.releaseOrder.length})
             </li>
             <li className={s.company.reputation >= SUB_MIN_REP ? 'text-good' : ''}>
-              Reputation {SUB_MIN_REP}+ (you have {Math.round(s.company.reputation)})
+              Reputation {SUB_MIN_REP}+ (you have {Math.floor(s.company.reputation)})
             </li>
           </ul>
         </div>

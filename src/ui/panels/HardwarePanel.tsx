@@ -203,7 +203,7 @@ function Designer() {
         <p className="rounded-xl bg-bg2/60 p-3 text-xs text-ink3">
           <Icon name="lock" size={14} className="mr-1 inline" />
           {blocked}
-          {s.company.reputation < MIN_REPUTATION && ` (you have ${Math.round(s.company.reputation)}).`}
+          {s.company.reputation < MIN_REPUTATION && ` (you have ${Math.floor(s.company.reputation)}).`}
         </p>
       ) : (
         <div className="space-y-3 rounded-2xl border border-line p-3">

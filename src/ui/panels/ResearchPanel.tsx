@@ -228,9 +228,10 @@ function Tree() {
                       size="sm"
                       variant={s.research.active ? 'secondary' : 'primary'}
                       onClick={() => {
-                        const res = act({ type: s.research.active ? 'queueResearch' : 'research', id: r.id });
+                        const queuing = !!s.research.active; // (the game state changes in place: decide before acting)
+                        const res = act({ type: queuing ? 'queueResearch' : 'research', id: r.id });
                         if (!res.ok) toast({ text: res.error, tone: 'bad' });
-                        else if (s.research.active) toast({ text: `${r.name} queued — ${fmtMoney(cost)} paid now (refunded if you take it off the queue)`, tone: 'neutral', icon: 'research' });
+                        else if (queuing) toast({ text: `${r.name} queued — ${fmtMoney(cost)} paid now (refunded if you take it off the queue)`, tone: 'neutral', icon: 'research' });
                       }}
                     >
                       {s.research.active ? `Queue · ${fmtMoney(cost)}` : 'Research'}

@@ -337,6 +337,14 @@ export function featureWork(features: string[] | undefined): number {
  * Quality model. With `project`, effort/bugs are extrapolated to the end of development at the current
  * pace — used for in-progress estimates so the preview isn't misleadingly low early on.
  */
+/** The design share a game in development is heading for at launch (what the quality estimate scores). */
+export function launchDesignShare(s: GameState, p: GameProject): number {
+  const scale = 1 + (1 / devProgress(p) - 1) * EST_REMAINING;
+  const total = (p.design + p.tech) * scale;
+  if (total <= 0) return GENRE_BY_ID[p.concept.genre].designRatio;
+  return (EST_MIX * projectedDesign(s, p, total) + (1 - EST_MIX) * p.design * scale) / total;
+}
+
 export function gameQuality(s: GameState, p: GameProject, project = false): Breakdown {
   const c = p.concept;
   const g = GENRE_BY_ID[c.genre];

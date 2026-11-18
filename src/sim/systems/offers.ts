@@ -28,11 +28,16 @@ const GENRE_WORDS = ['a racing', 'a puzzle', 'an arcade', 'a sports', 'a strateg
 export const MAX_SUBSIDIARIES = 12;
 export const ownedStudios = (s: GameState) => Object.values(s.rivals).filter((r) => r.ownedByPlayer && r.alive).length;
 
+/** Offers go away the day they expire (not at the next monthly refresh), so nothing expired can be taken. */
+export function pruneOffers(s: GameState): void {
+  if (s.offers.contracts.some((o) => o.expiresDay <= s.day)) s.offers.contracts = s.offers.contracts.filter((o) => o.expiresDay > s.day);
+  if (s.offers.deals.some((o) => o.expiresDay <= s.day)) s.offers.deals = s.offers.deals.filter((o) => o.expiresDay > s.day);
+  if (s.offers.acquisitions.some((o) => o.expiresDay <= s.day)) s.offers.acquisitions = s.offers.acquisitions.filter((o) => o.expiresDay > s.day);
+}
+
 export function refreshOffers(c: Ctx): void {
   const { s, rng } = c;
-  s.offers.contracts = s.offers.contracts.filter((o) => o.expiresDay > s.day);
-  s.offers.deals = s.offers.deals.filter((o) => o.expiresDay > s.day);
-  s.offers.acquisitions = s.offers.acquisitions.filter((o) => o.expiresDay > s.day);
+  pruneOffers(s);
   const alive = Object.values(s.rivals).filter((r) => r.alive && !r.ownedByPlayer);
   const yr = fromDay(s.day).year;
   // Contracts: early game lifeline, scales with reputation

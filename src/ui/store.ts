@@ -10,7 +10,8 @@ import { dispatch, type Action, type ActionResult } from '@/sim/actions';
 import type { SimEvent } from '@/sim/ctx';
 import type { GameState } from '@/sim/types';
 import type { ItemId } from '@/data/facilities';
-import { ACHIEVEMENTS } from '@/sim/systems/achievements';
+import { ACHIEVEMENTS, checkAchievements } from '@/sim/systems/achievements';
+import { Rng } from '@/sim/rng';
 import { RESEARCH_BY_ID } from '@/data/research';
 import { fmtMoney } from '@/sim/util';
 import { sound } from './sound';
@@ -162,7 +163,10 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!s) return { ok: false, error: 'No game loaded' };
     const r = dispatch(s, a);
     if (r.ok) {
-      handleEvents(r.events);
+      // what you just did can complete a milestone or achievement (moving office, a first hire…): no waiting a month
+      const after: SimEvent[] = [];
+      checkAchievements({ s, rng: new Rng(s.rng), out: after });
+      handleEvents([...r.events, ...after]);
       // a smaller office may have fewer floors than the one you were looking at
       const floors = tierDef(s.office.tier).floors;
       set({ v: get().v + 1, ...(get().floor >= floors ? { floor: floors - 1 } : {}) });

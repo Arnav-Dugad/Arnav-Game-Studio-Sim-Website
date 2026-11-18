@@ -1,6 +1,7 @@
 import { PHASE_AREAS } from '@/data/types';
 import { GENRE_BY_ID } from '@/data/genres';
-import { DESIGN_AREAS } from '@/sim/systems/dev';
+import { DESIGN_AREAS, launchDesignShare } from '@/sim/systems/dev';
+import { useGame } from '../store';
 import type { GameProject } from '@/sim/types';
 import { aOrAn } from '@/sim/util';
 import type { Focus3 } from '@/sim/types';
@@ -40,10 +41,14 @@ export function FocusSliders({ phase, value, onChange, ideal, disabled }: { phas
 
 /** How the game's points split between design and tech, against what its genre wants — and what to do about it. */
 export function BalanceBar({ p, className }: { p: GameProject; className?: string }) {
+  const s = useGame((g) => g.s);
   const total = p.design + p.tech;
-  if (total < 10) return null;
+  if (total < 10 || !s) return null;
   const g = GENRE_BY_ID[p.concept.genre];
-  const share = p.design / total;
+  // while it's still being made: where the mix is heading at launch (the phases to come add their own kind of work),
+  // the same figure the score estimate uses — advice on the mix so far pointed the wrong way
+  const heading = p.phase < 3;
+  const share = heading ? launchDesignShare(s, p) : p.design / total;
   const ideal = g.designRatio;
   const off = share - ideal;
   const areas = PHASE_AREAS[Math.min(2, p.phase)]!;
@@ -57,7 +62,7 @@ export function BalanceBar({ p, className }: { p: GameProject; className?: strin
     <div className={className}>
       <div className="flex items-center justify-between text-[11px]">
         <span className="text-ink3">
-          So far: design {Math.round(share * 100)}% · tech {100 - Math.round(share * 100)}%
+          {heading ? 'At launch (projected)' : 'Final mix'}: design {Math.round(share * 100)}% · tech {100 - Math.round(share * 100)}%
         </span>
         <span className="text-ink3">ideal ≈ {Math.round(ideal * 100)}% design</span>
       </div>

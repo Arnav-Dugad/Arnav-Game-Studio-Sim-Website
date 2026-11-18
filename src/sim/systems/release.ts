@@ -284,6 +284,15 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   // a studio known for this genre: its players trust the name
   const renown = concept.expansionOf || concept.remasterOf || opts.renown === false ? 1 : renownSalesMul(s, concept.genre);
   if (renown > 1) sb.mul(`Known for ${GENRE_BY_ID[concept.genre].name} games`, renown);
+  // your own recent games on the same machines compete for the same players' money (a studio can't sell everyone
+  // a new game of theirs every couple of months)
+  const shared = new Set(concept.platforms);
+  const siblings = s.releaseOrder.filter((id) => {
+    const r = s.releases[id];
+    return !!r && s.day - r.day < 180 && s.day >= r.day && !r.concept.expansionOf && r.concept.platforms.some((p) => shared.has(p));
+  }).length;
+  const ownCompetition = 1 / (1 + 0.15 * siblings);
+  if (siblings) sb.mul(`Your other recent games (${siblings})`, ownCompetition);
   let totalUsers = 0;
   const launchTitles: { name: string; mul: number }[] = [];
   const g = GENRE_BY_ID[concept.genre];
@@ -301,7 +310,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
         Math.sqrt(topicPopularity(s, concept.topic));
       const launch = launchTitleMul(s, pl);
       if (launch > 1.005) launchTitles.push({ name: pl.name, mul: launch });
-      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales * priceMul * renown;
+      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales * priceMul * renown * ownCompetition;
       return { platform: pid, potential: Math.max(0, potential), units: 0, pl };
     });
   for (const lt of launchTitles) sb.mul(`Launch title on ${lt.name} (early adopters buy everything)`, lt.mul);

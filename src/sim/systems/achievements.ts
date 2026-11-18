@@ -3,7 +3,7 @@ import { knownFor } from './renown';
 import { gameRegions } from '../../data/regions';
 import type { Ctx } from '../ctx';
 import type { GameState } from '../types';
-import { money, pushNews } from '../util';
+import { pushNews } from '../util';
 import { ownerValue } from './finance';
 
 export interface AchievementDef {
@@ -138,7 +138,7 @@ export const MILESTONES: { id: string; text: string; check: (s: GameState) => bo
   { id: 'm_research', text: 'Complete a research project', check: (s) => s.progress.stats.researchDone >= 1 },
   { id: 'm_three_games', text: 'Release 3 games', check: (s) => s.releaseOrder.length >= 3 },
   { id: 'm_score70', text: 'Score 70 or higher', check: (s) => s.progress.stats.bestScore >= 70 },
-  { id: 'm_100k', text: 'Have $100k in the bank', check: (s) => s.company.cash >= money(100_000, s.day) / 2 },
+  { id: 'm_100k', text: 'Have $100k in the bank', check: (s) => s.company.cash >= 100_000 }, // exactly what it says
   { id: 'm_office', text: 'Move into a Small Office', check: (s) => s.office.tier >= 2 },
   { id: 'm_engine', text: 'Build your own engine', check: (s) => Object.values(s.engines).some((e) => !e.licensedFrom && e.builtDay > 0) },
   { id: 'm_medium', text: 'Release a Medium game', check: (s) => rels(s).some((r) => r.concept.size !== 'small') },

@@ -103,7 +103,7 @@ export default function OfficePanel() {
             ))}
         </div>
         {prev && Object.keys(s.staff).length > prev.staffCap && <p className="mt-1 text-[11px] text-ink3">Downsizing to the {prev.name} needs {Object.keys(s.staff).length - prev.staffCap} fewer people (it holds {prev.staffCap}).</p>}
-        {next && s.company.reputation < next.minReputation && <p className="mt-1 text-[11px] text-ink3">The {next.name} needs reputation {next.minReputation} (you have {Math.round(s.company.reputation)}).</p>}
+        {next && s.company.reputation < next.minReputation && <p className="mt-1 text-[11px] text-ink3">The {next.name} needs reputation {next.minReputation} (you have {Math.floor(s.company.reputation)}).</p>}
       </Section>
 
       <Section title="Layout health">

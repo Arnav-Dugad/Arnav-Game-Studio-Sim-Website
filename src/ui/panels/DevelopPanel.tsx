@@ -774,6 +774,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
             onClick={() => {
               if (genres.some((x) => x.ok && x.g.id === pitch.genre)) setGenre(pitch.genre);
               if (topics.some((x) => x.ok && x.t.id === pitch.topic)) setTopic(pitch.topic);
+              setAudience(bestAudienceFor(pitch.genre, pitch.topic)); // the crowd it suits best (as the screen recommends)
+              if (!nameTyped) setName(freshName(pitch.topic, s.day)); // a title that fits the idea
               if (idle.some((x) => x.id === pitch.staffId)) setTeam((tm) => (tm.includes(pitch.staffId) ? tm : [pitch.staffId, ...tm]));
               setFranchiseId('');
               sound.play('click');

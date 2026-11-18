@@ -37,7 +37,7 @@ import { esportsMonthly } from './systems/esports';
 import { publishingMonthly } from './systems/publishing';
 import { financeMonthly, ownerValue, quarterlyEarnings, solvencyCheck, stockWeekly, yearlyTaxes } from './systems/finance';
 import { processHistory, updateFuturePlatforms, updateMarketMonthly } from './systems/market';
-import { refreshOffers } from './systems/offers';
+import { pruneOffers, refreshOffers } from './systems/offers';
 import { updateLiveMonthly, updateSalesWeekly, yearlyAwards } from './systems/release';
 import { autoQueueResearch, updateResearchDaily } from './systems/research';
 import { rivalScheduledReleases, rivalsHistory, rivalsMonthly } from './systems/rivals';
@@ -163,6 +163,7 @@ export function tick(c: Ctx): void {
   crowdfundDaily(c); // before projects: a campaign settles before its game can ship that day
   const shipped = s.releaseOrder.length;
   updateProjectsDaily(c);
+  pruneOffers(s);
   if (s.releaseOrder.length !== shipped) checkAchievements(c); // a launch can unlock them the day it happens
   updateResearchDaily(c);
   cheatsDaily(s);
