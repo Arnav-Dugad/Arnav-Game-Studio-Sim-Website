@@ -35,7 +35,7 @@ import { Icon } from '../icons';
 import { useGame } from '../store';
 import { isAway } from '@/sim/systems/staff';
 import { BalanceBar, FocusSliders } from '../game/FocusEditor';
-import { DESIGN_AREAS, areaSkill } from '@/sim/systems/dev';
+import { DESIGN_AREAS, SPEC_AREA_BONUS, areaSkill } from '@/sim/systems/dev';
 import { PHASE_AREAS } from '@/data/types';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
@@ -1057,7 +1057,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 const f = focus[ph];
                 const fs = f[0] + f[1] + f[2] || 1;
                 PHASE_AREAS[ph]!.forEach((ar, i) => {
-                  const pts = (f[i]! / fs) * areaSkill(st, ar);
+                  const pts = BALANCE.PHASE_SHARE[ph] * (f[i]! / fs) * areaSkill(st, ar) * (1 + ((st.spec ? SPEC_AREA_BONUS[st.spec]?.[ar] : undefined) ?? 0));
                   all += pts;
                   if (DESIGN_AREAS.has(ar)) d += pts;
                 });

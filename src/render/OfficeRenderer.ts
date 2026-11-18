@@ -162,6 +162,8 @@ export class OfficeRenderer {
   private inset = 0;
   private insetTarget = 0;
   private lastInsetTarget = 0;
+  /** The view was shrunk to fit beside a panel (and should grow back when it closes). */
+  private autoFitForPanel = false;
   private particles: { g: Graphics; vx: number; vy: number; life: number }[] = [];
   private pets = new PetSystem(this.itemLayer);
   private seasonDecor = new SeasonDecor(this.itemLayer);
@@ -516,6 +518,12 @@ export class OfficeRenderer {
       if (officeW > this.el.clientWidth - this.insetTarget - 24) {
         this.inset = this.insetTarget;
         this.fit();
+        this.autoFitForPanel = true;
+      } else if (this.autoFitForPanel && this.insetTarget < this.inset) {
+        // the panel that shrank the view has closed: fit the full width again
+        this.inset = this.insetTarget;
+        this.fit();
+        this.autoFitForPanel = false;
       }
     }
     if (Math.abs(this.insetTarget - this.inset) > 0.5) {

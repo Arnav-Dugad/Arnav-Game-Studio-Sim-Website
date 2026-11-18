@@ -62,7 +62,7 @@ export function StudioCardModal({ onClose }: { onClose: () => void }) {
     ['Hits (85+)', String(st.hits ?? 0)],
     ['Awards', String(awards)],
     ['People', String(staffN)],
-    [s.finance.stock ? 'Market cap (peak)' : 'Peak valuation', fmtMoney(st.peakValuation ?? 0)],
+    [s.finance.stock ? 'Your stake (peak)' : 'Peak valuation', fmtMoney(st.peakValuation ?? 0)],
   ];
   const download = async () => {
     if (!ref.current) return;

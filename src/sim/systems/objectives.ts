@@ -94,7 +94,7 @@ export function objectivesQuarterly(c: Ctx): void {
   }
   const m = avgMorale(s);
   if (staffN >= 3 && m < 80) pool.push({ w: m < 55 ? 3 : 1.5, make: () => ({ kind: 'morale', base: m, target: clamp(Math.round(m / 5) * 5 + 10, 50, 90), until }) });
-  if (staffN < Math.min(400, tierDef(s.office.tier).staffCap)) pool.push({ w: 1.5, make: () => { const n = clamp(Math.round(staffN * 0.15), 1, 12); return { kind: 'hire', base: s.progress.stats.staffHired, target: s.progress.stats.staffHired + n, until }; } });
+  if (staffN < Math.min(400, tierDef(s.office.tier).staffCap)) pool.push({ w: 1.5, make: () => { const n = Math.min(clamp(Math.round(staffN * 0.15), 1, 12), tierDef(s.office.tier).staffCap - staffN); return { kind: 'hire', base: s.progress.stats.staffHired, target: s.progress.stats.staffHired + n, until }; } });
   const net = objectiveValue(s, 'cash');
   if (net > 0) pool.push({ w: 1.5, make: () => ({ kind: 'cash', base: net, target: Math.round(net * 1.25 + money(20_000, s.day)), until }) });
   const treeWork = (!!s.research.active && !!RESEARCH_BY_ID[s.research.active]) || RESEARCH.some((r) => researchAvailable(s, r).ok);

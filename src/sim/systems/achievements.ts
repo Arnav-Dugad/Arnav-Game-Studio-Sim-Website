@@ -78,7 +78,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'custom_engine', name: 'Engine Builder', desc: 'Build a custom engine.', icon: 'gear', check: (s) => Object.values(s.engines).some((e) => !e.licensedFrom && e.builtDay > 0) },
   { id: 'engine_license_out', name: 'Middleware Mogul', desc: 'License your engine to another studio.', icon: 'plug', check: (s) => Object.values(s.engines).some((e) => e.licensees > 0) },
   { id: 'go_public', name: 'Ring the Bell', desc: 'Take your company public.', icon: 'bell', check: (s) => !!s.finance.stock },
-  { id: 'valuation_1b', name: 'Unicorn', desc: 'Reach a $1B valuation.', icon: 'unicorn', check: (s) => ownerValue(s) >= 1_000_000_000 },
+  { id: 'valuation_1b', name: 'Unicorn', desc: 'Own a studio stake worth $1B.', icon: 'unicorn', check: (s) => ownerValue(s) >= 1_000_000_000 },
   { id: 'acquire', name: 'Shopping Spree', desc: 'Acquire another studio.', icon: 'cart', check: (s) => s.progress.stats.acquisitions >= 1 },
   { id: 'acquire_real', name: 'Industry Titan', desc: 'Acquire a real-world company.', icon: 'castle', check: (s) => Object.values(s.rivals).some((r) => r.ownedByPlayer && !r.procedural) },
   { id: 'goty', name: 'Game of the Year', desc: 'Win Game of the Year.', icon: 'trophy', check: (s) => rels(s).some((r) => r.awards.includes('Game of the Year')) },

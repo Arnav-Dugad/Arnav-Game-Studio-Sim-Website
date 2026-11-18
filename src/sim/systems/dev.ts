@@ -39,7 +39,7 @@ export const AREA_SKILL: Record<Area, Skill[]> = {
 /** Areas that produce design points (the rest are tech). */
 export const DESIGN_AREAS: ReadonlySet<Area> = new Set<Area>(['gameplay', 'story', 'level', 'dialogue', 'world']);
 
-const SPEC_AREA_BONUS: Partial<Record<NonNullable<Staff['spec']>, Partial<Record<Area, number>>>> = {
+export const SPEC_AREA_BONUS: Partial<Record<NonNullable<Staff['spec']>, Partial<Record<Area, number>>>> = {
   engine_programmer: { engine: 0.25, ai: 0.2 },
   lead_designer: { gameplay: 0.15, level: 0.15 },
   art_director: { graphics: 0.2, world: 0.2 },
