@@ -190,6 +190,6 @@ export function runScore(s: GameState): number {
   // a career counts: years at the helm (a quick sale shouldn't rival four decades)
   const years = Math.max(0, (s.day - toDay(s.settings.startYear, 1, 1)) / 365);
   return Math.round(
-    (Math.min(60, years) * 120 + Math.log10(1 + val) * 800 + Math.log10(1 + st.totalRevenue) * 400 + st.bestScore * 20 + st.hits * 150 + Object.keys(s.progress.achievements).length * 120 + Object.values(s.franchises).filter((f) => f.entries.length >= 3).length * 300) * diff,
+    (Math.min(60, years) * 60 + Math.log10(1 + val) * 800 + Math.log10(1 + st.totalRevenue) * 400 + st.bestScore * 20 + st.hits * 150 + Object.keys(s.progress.achievements).length * 120 + Object.values(s.franchises).filter((f) => f.entries.length >= 3).length * 300) * diff,
   );
 }

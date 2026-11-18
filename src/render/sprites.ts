@@ -764,7 +764,7 @@ export function lookFor(seed: number, role: string, companyColor?: number): Look
   const hex = (c: string) => parseInt(c.replace('#', ''), 16);
   return {
     skin: hex(p.skin),
-    hair: hex(p.hairColor),
+    hair: hex(p.hair === 'hijab' || p.hair === 'beanie' || p.hair === 'cap' ? p.hat : p.hairColor), // headwear shows in its own colour, as in the portrait
     hairStyle: SPRITE_HAIR[p.hair] ?? 0,
     top: role === 'founder' && companyColor !== undefined ? companyColor : (ROLE_COLORS[role] ?? 0x888888),
     glasses: p.glasses,

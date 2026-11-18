@@ -115,6 +115,7 @@ export function worstFeud(s: GameState): { a: Staff; b: Staff; v: number } | nul
   let best: { a: Staff; b: Staff; v: number } | null = null;
   for (const [k, v] of Object.entries(s.relations ?? {})) {
     if (v > FEUD || (best && v >= best.v)) continue;
+    if ((s.truces?.[k] ?? -1) > s.day) continue; // a truce holds: this one's been dealt with
     const [x, y] = k.split('|') as [string, string];
     const a = s.staff[x];
     const b = s.staff[y];

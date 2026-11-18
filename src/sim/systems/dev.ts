@@ -327,14 +327,16 @@ export function featureWork(features: string[] | undefined): number {
 export function gameQuality(s: GameState, p: GameProject, project = false): Breakdown {
   const c = p.concept;
   const g = GENRE_BY_ID[c.genre];
-  const scale = project ? 1 / devProgress(p) : 1;
+  // the rest of the work at today's pace, discounted for how projects slow down late on (tired teams, polish)
+  const scale = project ? 1 + (1 / devProgress(p) - 1) * EST_REMAINING : 1;
   const total = (p.design + p.tech) * scale;
   const orig = c.remasterOf ? s.releases[c.remasterOf] : undefined;
   const bench = benchmarkPoints(c.size, s.day) * workShare(c);
   const r = total / bench;
   const bd = new BD('Development effort', r / (r + 0.35));
   // design/tech ratio
-  const ratio = total > 0 ? (p.design * scale) / total : g.designRatio;
+  // the mix so far, moved most of the way toward what the phases still to come will add
+  const ratio = total > 0 ? (project ? EST_MIX * projectedDesign(s, p, total) + (1 - EST_MIX) * p.design * scale : p.design * scale) / total : g.designRatio;
   bd.mul(`Design/tech balance (${Math.round(ratio * 100)}% design, ideal ${Math.round(g.designRatio * 100)}%)`, 1 - Math.min(0.35, Math.abs(ratio - g.designRatio) * 1.2));
   if (rndQuality(s) > 1) bd.mul('Engine R&D', rndQuality(s));
   // focus alignment
@@ -393,14 +395,19 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   if (p.crowdfund?.success && p.crowdfund.stretch > 0) bd.mul(`Stretch goals (${p.crowdfund.stretch})`, 1 + 0.015 * p.crowdfund.stretch);
   if (p.cut) bd.mul('Cut features', BALANCE.CUT_FEATURES_PENALTY);
   // bugs
-  const density = total > 0 ? (p.bugs * scale) / total : 0;
-  bd.mul(project ? `Bugs (~${Math.round(p.bugs * scale)} expected)` : `Bugs (${Math.round(p.bugs)} remaining)`, 1 - Math.min(0.45, density * 1.6));
+  const bugs = project ? projectedBugs(s, p, scale) : p.bugs;
+  const density = total > 0 ? bugs / total : 0;
+  bd.mul(project ? `Bugs (~${Math.round(bugs)} expected at launch)` : `Bugs (${Math.round(p.bugs)} remaining)`, 1 - Math.min(0.45, density * 1.6));
   bd.clamp(0, 1.2);
   const raw = 100 * bd.value * BALANCE.SCORE_GAIN; // uncapped: the ceiling has to bend the very best games too
   const top = criticsCeiling(raw, c.size);
   if (top < raw - 0.05) bd.mul(ceilingLabel(c.size), top / raw);
   return bd.done();
 }
+
+/** Calibrated against bot playthroughs: the share of remaining work estimates count, and how far toward the projected mix. */
+const EST_REMAINING = 0.7;
+const EST_MIX = 0.87;
 
 /** Scores above this are hard won: each extra point of quality buys less. */
 export const SCORE_KNEE = 80;
@@ -415,6 +422,71 @@ export function criticsCeiling(raw: number, size: Size): number {
   if (raw <= SCORE_KNEE) return raw;
   const room = SCORE_CEILING[size] - SCORE_KNEE;
   return SCORE_KNEE + room * (1 - Math.exp(-(raw - SCORE_KNEE) / room));
+}
+
+/**
+ * Design points expected at launch: what's been made so far, plus the rest of the work split the way this team will
+ * split it in the phases still to come (each phase has its own areas and focus). `total` is the projected total.
+ */
+export function projectedDesign(s: GameState, p: GameProject, total: number): number {
+  const done = p.design + p.tech;
+  const rest = Math.max(0, total - done);
+  if (rest <= 0) return p.design;
+  const team = teamOf(s, p.team);
+  const L = layout(s);
+  const engine = s.engines[p.concept.engineId];
+  let dDays = 0;
+  let days = 0;
+  for (const ph of [0, 1, 2] as const) {
+    const left = ph < p.phase ? 0 : ph === p.phase ? Math.max(0, p.phaseDays[ph] - p.phaseDay) : p.phaseDays[ph];
+    const extra = ph === 2 ? (p.extraDays ?? 0) : 0;
+    const n = left + extra;
+    if (n <= 0) continue;
+    const f = p.focus[ph]!;
+    const fs = f[0] + f[1] + f[2] || 1;
+    let d = 0;
+    let all = 0;
+    for (const st of team)
+      PHASE_AREAS[ph]!.forEach((ar, i) => {
+        // the same weights development uses for each person's points
+        let pts = (f[i]! / fs) * areaSkill(st, ar) * (st.productivityWhy?.total ?? 1) * (1 + ((st.spec ? SPEC_AREA_BONUS[st.spec]?.[ar] : undefined) ?? 0));
+        if (ar === 'sound' && L.audio > 0) pts *= 1 + L.audio;
+        if (ar === 'graphics' && L.mocap > 0 && engine?.features.includes('gfx_3d_1')) pts *= 1 + L.mocap;
+        if (hasTrait(st, 'perfectionist')) pts *= 1.12;
+        all += pts;
+        if (DESIGN_AREAS.has(ar)) d += pts;
+      });
+    if (all <= 0) continue;
+    dDays += n * (d / all);
+    days += n;
+  }
+  // nothing left to schedule (polish over): fall back to the current mix
+  return days > 0 ? p.design + rest * (dDays / days) : p.design * (total / Math.max(1e-9, done));
+}
+
+/**
+ * Bugs expected at launch: today's bug rate carried to the end of development, minus what the team will fix in the
+ * polish still to come (the same fixing rate development uses). Keeps mid-development estimates honest.
+ */
+export function projectedBugs(s: GameState, p: GameProject, scale: number): number {
+  const grown = p.bugs * scale;
+  const polishLeft = (p.phase < 2 ? p.phaseDays[2] : p.phase === 2 ? Math.max(0, p.phaseDays[2] - p.phaseDay) : 0) + (p.extraDays ?? 0);
+  if (polishLeft <= 0) return grown;
+  const L = layout(s);
+  let fix = 0;
+  for (const st of teamOf(s, p.team)) {
+    let f = (st.skills.qa / 100) * (st.productivityWhy?.total ?? 1) * 0.9;
+    if (st.role === 'qa') f *= 1.5;
+    if (st.spec === 'qa_lead') f *= 1.4;
+    if (hasTrait(st, 'meticulous')) f *= 1.3;
+    fix += f;
+  }
+  fix *= 1 + L.qa;
+  if (s.research.done.includes('ai_ml_tools')) fix *= 1.1;
+  if (p.earlyAccess) fix *= 1.15;
+  const fixable = fix * BALANCE.QA_FIX_RATE * 10 * polishLeft * (5 / 7); // workdays
+  // some bugs always slip through (and new ones appear while polishing)
+  return Math.max(grown * 0.1, grown - fixable);
 }
 
 /** Quality bonus from Early Access feedback: grows over the first six months on sale. */

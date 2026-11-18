@@ -231,7 +231,7 @@ export function rivalsMonthly(c: Ctx): void {
     const score = clamp(Math.round(rng.normal(62, 9)), 30, 84);
     const units = Math.round(rel.units * rng.range(0.05, 0.25));
     const plats = rel.concept.platforms.filter((p) => live.some((l) => l.id === p));
-    const name = rng.chance(0.5) ? `${genTitle(rng, rel.concept.topic)}` : `${rel.name.split(/[:\s]/)[0]} ${rng.pick(['Rush', 'Legends', 'Mania', 'Heroes', 'World', 'Tycoon', 'Blitz'])}`;
+    const name = rng.chance(0.5) ? `${genTitle(rng, rel.concept.topic)}` : `${rel.name.split(/[:\s]/)[0]} ${rng.pick(['Rush', 'Legends', 'Mania', 'Heroes', 'World', 'Saga', 'Blitz'])}`;
     addRivalGame(s, { name, company: r.id, genre: rel.concept.genre, topic: rel.concept.topic, platforms: plats.length ? plats : [live[0]!.id], day: s.day, score, units, copycatOf: rel.id, contested: true });
     rel.copycats = (rel.copycats ?? 0) + 1;
     addRep(s, 0.5, 'Imitated by rivals');

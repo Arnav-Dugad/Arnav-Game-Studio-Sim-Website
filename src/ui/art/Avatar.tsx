@@ -198,9 +198,9 @@ interface Traits {
 }
 
 /** The parts of a portrait the office sprite copies, so a person looks the same in both places. */
-export function portraitBasics(seed: number): { skin: string; hairColor: string; hair: HairStyle; glasses: boolean; headphones: boolean } {
+export function portraitBasics(seed: number): { skin: string; hairColor: string; hat: string; hair: HairStyle; glasses: boolean; headphones: boolean } {
   const t = traitsFor(seed);
-  return { skin: t.skin, hairColor: t.hairColor, hair: t.hair, glasses: t.glasses !== 'none', headphones: t.headphones };
+  return { skin: t.skin, hairColor: t.hairColor, hat: t.hat, hair: t.hair, glasses: t.glasses !== 'none', headphones: t.headphones };
 }
 
 function traitsFor(seed: number): Traits {
