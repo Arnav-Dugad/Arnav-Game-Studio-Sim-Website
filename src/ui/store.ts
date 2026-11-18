@@ -165,7 +165,7 @@ export const useGame = create<GameStore>((set, get) => ({
     if (r.ok) {
       // what you just did can complete a milestone or achievement (moving office, a first hire…): no waiting a month
       const after: SimEvent[] = [];
-      checkAchievements({ s, rng: new Rng(s.rng), out: after });
+      checkAchievements({ s, rng: new Rng([...s.rng] as typeof s.rng), out: after }); // (a copy: never moves the save's dice)
       handleEvents([...r.events, ...after]);
       // a smaller office may have fewer floors than the one you were looking at
       const floors = tierDef(s.office.tier).floors;

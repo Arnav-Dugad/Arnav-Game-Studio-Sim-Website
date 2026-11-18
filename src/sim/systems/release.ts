@@ -286,13 +286,11 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   if (renown > 1) sb.mul(`Known for ${GENRE_BY_ID[concept.genre].name} games`, renown);
   // your own recent games on the same machines compete for the same players' money (a studio can't sell everyone
   // a new game of theirs every couple of months)
-  const shared = new Set(concept.platforms);
-  const siblings = s.releaseOrder.filter((id) => {
-    const r = s.releases[id];
-    return !!r && s.day - r.day < 180 && s.day >= r.day && !r.concept.expansionOf && r.concept.platforms.some((p) => shared.has(p));
-  }).length;
-  const ownCompetition = 1 / (1 + 0.15 * siblings);
-  if (siblings) sb.mul(`Your other recent games (${siblings})`, ownCompetition);
+  // — counted per machine, and a small game competes less than a big one
+  const recentOwn = s.releaseOrder.map((id) => s.releases[id]).filter((r): r is Release => !!r && s.day - r.day < 180 && s.day >= r.day && !r.concept.expansionOf);
+  const SIB_WEIGHT: Record<Size, number> = { small: 0.5, medium: 0.8, large: 1, aaa: 1.2 };
+  const ownCompetitionOn = (pid: string) => 1 / (1 + 0.15 * recentOwn.reduce((t, r) => t + (r.concept.platforms.includes(pid) ? SIB_WEIGHT[r.concept.size] : 0), 0));
+  const siblings = recentOwn.filter((r) => r.concept.platforms.some((p) => concept.platforms.includes(p))).length;
   let totalUsers = 0;
   const launchTitles: { name: string; mul: number }[] = [];
   const g = GENRE_BY_ID[concept.genre];
@@ -310,9 +308,16 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
         Math.sqrt(topicPopularity(s, concept.topic));
       const launch = launchTitleMul(s, pl);
       if (launch > 1.005) launchTitles.push({ name: pl.name, mul: launch });
-      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales * priceMul * renown * ownCompetition;
-      return { platform: pid, potential: Math.max(0, potential), units: 0, pl };
+      const own = ownCompetitionOn(pid);
+      const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales * priceMul * renown * own;
+      return { platform: pid, potential: Math.max(0, potential), units: 0, pl, own };
     });
+  // the breakdown shows the overall effect, weighted by where the game sells
+  if (siblings) {
+    const withOwn = platforms.reduce((t, ps) => t + ps.potential, 0);
+    const without = platforms.reduce((t, ps) => t + ps.potential / ps.own, 0);
+    if (without > 0 && withOwn / without < 0.999) sb.mul(`Your other recent games (${siblings})`, withOwn / without);
+  }
   for (const lt of launchTitles) sb.mul(`Launch title on ${lt.name} (early adopters buy everything)`, lt.mul);
   // Localisation: translated versions reach players abroad who'd otherwise pass.
   const home = s.company.homeRegion ?? 'na';

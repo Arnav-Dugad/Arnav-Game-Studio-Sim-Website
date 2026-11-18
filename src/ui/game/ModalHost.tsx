@@ -950,7 +950,8 @@ function GateModal({ projectId, onClose }: { projectId: string; onClose: () => v
           Est. score <b className="num block text-base">{est ?? '—'}</b>
         </div>
       </div>
-      <BalanceBar p={p} className="mt-3" />
+      {/* follows the sliders as you drag them (the plan isn't saved until Continue) */}
+      <BalanceBar p={{ ...p, focus: p.focus.map((f, i) => (i === phase ? focus : f)) as typeof p.focus }} className="mt-3" />
       <div className="mt-4">
         <FocusSliders phase={phase} value={focus} onChange={setFocus} ideal={learned ? idealFocus(p.concept.genre)[phase] : undefined} />
         <p className="mt-1.5 text-[11px] text-ink3">Focus shapes the points your team earns from now on — the estimate moves as the work comes in.</p>
