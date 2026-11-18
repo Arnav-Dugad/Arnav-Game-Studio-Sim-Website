@@ -16,7 +16,13 @@ export function statusOf(st: Staff): StaffStatus {
   return 'idle';
 }
 
-export const STATUS_LABEL: Record<StaffStatus, string> = { idle: 'Idle', project: 'On a project', research: 'Researching', training: 'Training', away: 'Away' };
+export const STATUS_LABEL: Record<StaffStatus, string> = {
+  idle: 'Idle',
+  project: 'On a project',
+  research: 'Researching',
+  training: 'Training',
+  away: 'Away',
+};
 
 /** Someone who needs attention: burning out, miserable or exhausted. */
 export function atRisk(st: Staff): boolean {
@@ -45,17 +51,21 @@ export function genreFit(st: Staff, genre: GenreId): number {
 
 /** Best available team for a genre: fit, nudged by morale and energy (tired people produce less). */
 export function autoPickTeam(pool: Staff[], genre: GenreId, cap: number): string[] {
-  const score = (st: Staff) => genreFit(st, genre) * (0.7 + 0.3 * (st.morale / 100)) * (0.8 + 0.2 * (st.energy / 100));
+  const score = (st: Staff) =>
+    genreFit(st, genre) * (0.7 + 0.3 * (st.morale / 100)) * (0.8 + 0.2 * (st.energy / 100));
   return pool
     .filter((st) => !isAway(st))
-    .sort((a, b) => score(b) - score(a))
+    .map((st) => ({ id: st.id, v: score(st) })) // score each person once, not on every comparison
+    .sort((a, b) => b.v - a.v)
     .slice(0, cap)
-    .map((st) => st.id);
+    .map((x) => x.id);
 }
 
 /** Who can join a project right now (idle or researching, not away). */
 export function freeStaff(s: GameState): Staff[] {
-  return Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
+  return Object.values(s.staff).filter(
+    (x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x),
+  );
 }
 
 export const roleName = (r: Role) => ROLE_NAMES[r];
@@ -63,7 +73,8 @@ export const roleName = (r: Role) => ROLE_NAMES[r];
 /** Case-insensitive search over name, role, level and traits. */
 export function matchesQuery(st: Staff, q: string): boolean {
   if (!q) return true;
-  const hay = `${st.name} ${ROLE_NAMES[st.role]} ${st.level} ${st.traits.join(' ')} ${st.spec ?? ''}`.toLowerCase();
+  const hay =
+    `${st.name} ${ROLE_NAMES[st.role]} ${st.level} ${st.traits.join(' ')} ${st.spec ?? ''}`.toLowerCase();
   return q
     .toLowerCase()
     .split(/\s+/)
