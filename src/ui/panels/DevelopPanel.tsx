@@ -810,7 +810,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
         </div>
       )}
       <Section title="1 · Concept">
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        {/* the title keeps most of the row; a long series name in "Sequel to" is cut short instead */}
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,13rem)] [&>*]:min-w-0">
           <Field label="Title">
             <div className="flex gap-2">
               <input className={inputCls} value={name} maxLength={60} onChange={(e) => {
@@ -827,7 +828,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           {franchises.length > 0 && (
             <Field label={baseRel ? 'Franchise' : 'Sequel to'}>
               <select
-                className={inputCls}
+                className={cx(inputCls, 'truncate')}
                 disabled={locked}
                 value={franchiseId}
                 onChange={(e) => {

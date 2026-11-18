@@ -2,7 +2,8 @@
  * Team picker that scales to big studios: search, role filters, sort by fit for the genre, one-click
  * "best team", and a capacity counter. Used by the new-game wizard and the project team editor.
  */
-import { favouriteGenre } from '@/sim/systems/staff';
+import { favouriteGenre, isAway } from '@/sim/systems/staff';
+import { plural } from '@/sim/util';
 import { useMemo, useState } from 'react';
 import type { GenreId } from '@/data/types';
 import type { Role, Staff } from '@/sim/types';
@@ -70,7 +71,11 @@ export function StaffPicker({
   // the best team is only worked out when asked for (it scores everyone, which is slow in a big studio)
   const best = genre ? () => autoPickTeam(pool, genre, cap) : score ? () => [...pool].sort((a, b) => (fit.get(b.id) ?? 0) - (fit.get(a.id) ?? 0)).slice(0, cap).map((x) => x.id) : null;
   // people taken off research by this team (and whether that leaves nobody researching)
-  const researching = !!useGame((g) => g.s?.research.active); // people 'on research' with nothing running are really free
+  const researching = !!useGame((g) => g.s?.research.active);
+  // nobody to pick because the free people are away (sick, on holiday), not busy
+  const allStaff = useGame((g) => g.s?.staff);
+  const awayFree = pool.length ? [] : Object.values(allStaff ?? {}).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && isAway(x));
+  const backIn = awayFree.length ? Math.max(1, Math.min(...awayFree.map((x) => Math.max(x.sickDays, x.vacationDays ?? 0)))) : 0; // people 'on research' with nothing running are really free
   const pulled = researching ? pool.filter((st) => selected.includes(st.id) && st.assignment.kind === 'research') : [];
   const researchersLeft = pool.filter((st) => st.assignment.kind === 'research' && !selected.includes(st.id)).length;
   const avgFit = selected.length ? selected.reduce((t, id) => t + (fit.get(id) ?? 0), 0) / selected.length : 0;
@@ -135,7 +140,7 @@ export function StaffPicker({
         </div>
       )}
       {list.length === 0 ? (
-        <p className="py-2 text-ink3">{pool.length ? 'Nobody matches.' : 'Everyone is busy. Free someone up in the Staff panel, or hire.'}</p>
+        <p className="py-2 text-ink3">{pool.length ? 'Nobody matches.' : awayFree.length ? `Everyone free is off sick or on holiday — back in ${plural(backIn, 'day')}. Let a few days pass, or hire.` : 'Everyone is busy. Free someone up in the Staff panel, or hire.'}</p>
       ) : (
         <ul className="max-h-72 space-y-1 overflow-y-auto pr-1 scroll-thin">
           {list.slice(0, shown).map((st) => {

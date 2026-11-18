@@ -187,7 +187,7 @@ export function ambitionsWeekly(c: Ctx): void {
   const cap = Math.max(2, Math.round(staff.length * 0.15));
   if (active >= cap) return;
   for (const st of staff) {
-    if (st.ambition || s.day - st.hiredDay < 60 || (st.ambitionCooldown ?? 0) > s.day) continue;
+    if (st.ambition || st.intern || s.day - st.hiredDay < 60 || (st.ambitionCooldown ?? 0) > s.day) continue;
     if (!rng.chance(1 / 45)) continue;
     const a = newAmbition(c, st);
     if (!a) continue;

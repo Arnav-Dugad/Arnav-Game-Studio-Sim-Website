@@ -2,6 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { RETREAT_COOLDOWN } from './studioLife';
 import { possessive, realRepText } from '../util';
 import { ITEM_BY_ID } from '../../data/facilities';
 import { MOD_BUY, MOD_FEATURE, MOD_HIRE, breakoutCandidate, modBuyScore, modRevival, modTopic, pcAlive, rollMod } from './mods';
@@ -575,7 +576,7 @@ export const EVENT_DEFS: EventDef[] = [
         body: `${rival.name} has offered ${st.name} a big raise to join them. ${st.name} is tempted (loyalty ${Math.round(st.loyalty)}%).`,
         options: [
           { id: 'counter', label: `Counter-offer (+${fmtMoney(raise)}/yr)`, preview: 'Salary up, loyalty +25, morale +8' },
-          { id: 'promise', label: 'Promise a lead role', preview: 'Loyalty +12 — but if they’re not a lead within a year (train them up), it backfires' },
+          { id: 'promise', label: 'Promise a lead role', preview: 'Loyalty +12 — but if they’re not a lead within a year (train them up), it backfires', ...(st.level === 'lead' ? { disabled: true, preview: `${st.name} is already a lead` } : {}) },
           { id: 'let_go', label: 'Wish them well', preview: `${st.name} leaves for ${rival.name}` },
         ],
         ctx: { staff: st.id, rival: rival.id, raise },
@@ -587,6 +588,8 @@ export const EVENT_DEFS: EventDef[] = [
       st.poachCooldown = 240;
       if (opt === 'counter') {
         st.salary += Number(e.ctx.raise);
+        st.peakSalary = Math.max(st.peakSalary ?? 0, st.salary);
+        st.promise = { salary: st.salary, until: s.day + 365 }; // taking it back within the year is noticed
         st.loyalty = clamp(st.loyalty + 25, 0, 100);
         st.morale = clamp(st.morale + 8, 0, 100);
       } else if (opt === 'promise') {
@@ -1533,7 +1536,7 @@ export const EVENT_DEFS: EventDef[] = [
     id: 'team_retreat',
     art: 'mountain',
     cooldown: 540,
-    weight: (s) => (staffList(s).length >= 4 ? 0.5 : 0),
+    weight: (s) => (staffList(s).length >= 4 && !(s.company.lastRetreatDay !== undefined && s.day - s.company.lastRetreatDay < RETREAT_COOLDOWN) ? 0.5 : 0),
     make: ({ s }) => {
       const cost = money(400, s.day) * staffList(s).length;
       return {
@@ -1551,6 +1554,7 @@ export const EVENT_DEFS: EventDef[] = [
         spend(s, 'other_expense', Number(e.ctx.cost));
         mod(s, 10, 90, 'Team retreat');
         for (const st of Object.values(s.staff)) st.energy = 100;
+        s.company.lastRetreatDay = s.day; // this year's retreat (the button waits a year too)
       } else mod(s, -3, 30, 'Retreat declined');
     },
   },
@@ -1564,7 +1568,7 @@ export const EVENT_DEFS: EventDef[] = [
       body: 'The crunch team is still here at midnight. Someone suggests pizza.',
       options: [
         { id: 'pizza', label: `Order pizza for everyone (${fmtMoney(money(150, s.day))})`, preview: 'Morale +4 for 2 weeks', cost: money(150, s.day) },
-        { id: 'home', label: 'Send everyone home', preview: 'Energy +20, lose a day of crunch output' },
+        { id: 'home', label: 'Send everyone home', preview: 'Crunch team energy +20 (tonight’s extra hours are lost)' },
         { id: 'nothing', label: 'Keep going', preview: 'Nothing changes' },
       ],
       ctx: {},
@@ -1573,7 +1577,10 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt === 'pizza') {
         spend(s, 'other_expense', money(150, s.day));
         mod(s, 4, 14, 'Crunch pizza');
-      } else if (opt === 'home') for (const st of Object.values(s.staff)) st.energy = clamp(st.energy + 20, 0, 100);
+      } else if (opt === 'home') {
+        const crunching = new Set(activeGames(s).filter((p) => p.crunch).flatMap((p) => p.team));
+        for (const st of Object.values(s.staff)) if (crunching.has(st.id)) st.energy = clamp(st.energy + 20, 0, 100);
+      }
     },
   },
   {
@@ -1712,12 +1719,12 @@ export const EVENT_DEFS: EventDef[] = [
     make: ({ s, rng }) => {
       const cand = generateCandidate(s, rng, { quality: -20 });
       cand.potential = clamp(cand.potential + 25, 0, 100);
-      const salary = Math.round(marketSalary(s, cand.skills) * 0.45);
+      const salary = Math.round(marketSalary(s, cand.skills) * 0.5); // the lowest anyone at the studio can be paid
       return {
         title: 'Eager intern',
-        body: `${cand.name}, ${aOrAn(cand.role)} student, begs for an internship. Raw, but full of potential (${cand.potential}).`,
+        body: `${cand.name}, ${aOrAn(ROLE_NAMES[cand.role].toLowerCase())} student, begs for an internship. Raw, but full of potential (${cand.potential}).`,
         options: [
-          { id: 'hire', label: `Hire as intern (${fmtMoney(salary)}/yr)`, preview: 'A junior with high potential joins' },
+          { id: 'hire', label: `Take them on (${fmtMoney(salary)}/yr)`, preview: 'A junior with high potential joins the team for good' },
           { id: 'no', label: 'Not right now', preview: 'No change' },
         ],
         ctx: { cand: JSON.stringify(cand), salary },
