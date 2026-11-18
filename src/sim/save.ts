@@ -63,7 +63,11 @@ export function deserialize(json: string): GameState {
 
 /** Deterministic FNV hash of the full state (for determinism tests and save checksums). */
 export function stateHash(s: GameState): string {
-  const str = JSON.stringify(s);
+  return hashJson(JSON.stringify(s));
+}
+
+/** The same hash, from JSON already serialized (saves serialize once, not twice). */
+export function hashJson(str: string): string {
   let h1 = 0x811c9dc5;
   let h2 = 0x01000193;
   for (let i = 0; i < str.length; i++) {

@@ -4,7 +4,7 @@
  * (Firestore documents max out at 1 MiB). Every save carries schemaVersion + checksum.
  */
 import { openDB, type IDBPDatabase } from 'idb';
-import { deserialize, serialize, stateHash, SCHEMA_VERSION } from '@/sim/save';
+import { deserialize, hashJson, serialize, stateHash, SCHEMA_VERSION } from '@/sim/save';
 import type { GameState } from '@/sim/types';
 import { formatDate } from '@/sim/calendar';
 import { firebaseConfigured, getFirebase } from './firebase';
@@ -66,7 +66,7 @@ async function gunzipBase64(data: string): Promise<string> {
   return await new Response(stream).text();
 }
 
-export function metaFor(s: GameState, name?: string): SlotMeta {
+export function metaFor(s: GameState, name?: string, checksum?: string): SlotMeta {
   return {
     name: (name ?? s.company.name).slice(0, 60),
     companyName: s.company.name.slice(0, 60),
@@ -80,7 +80,7 @@ export function metaFor(s: GameState, name?: string): SlotMeta {
     status: s.status,
     schemaVersion: SCHEMA_VERSION,
     updatedAt: Date.now(),
-    checksum: stateHash(s),
+    checksum: checksum ?? stateHash(s),
     bytes: 0,
   };
 }
@@ -101,8 +101,9 @@ export async function saveLocal(uid: string, slotId: SlotId, s: GameState): Prom
   const tomb = tombstones();
   if (tomb.includes(`${uid}/${slotId}`)) setTombstones(tomb.filter((t) => t !== `${uid}/${slotId}`));
   const json = serialize(s);
+  const checksum = hashJson(json);
   const data = await gzipBase64(json);
-  const meta = { ...metaFor(s), bytes: data.length };
+  const meta = { ...metaFor(s, undefined, checksum), bytes: data.length };
   const rec: LocalRecord = { key: `${uid}/${slotId}`, meta, data, synced: false };
   const db = await idb();
   await db.put('saves', rec);
@@ -394,6 +395,26 @@ type Listener = (s: SaveStatus) => void;
 /**
  * Local save every in-game month; cloud sync at most every 60 s, plus on tab hide / close.
  */
+/** Resolve when the browser is idle (or after a short wait where idle callbacks aren't supported). */
+const waiting = new Set<() => void>();
+function idle(): Promise<void> {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return Promise.resolve();
+  return new Promise((res) => {
+    const done = () => {
+      if (!waiting.delete(done)) return;
+      res();
+    };
+    waiting.add(done);
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    if (w.requestIdleCallback) w.requestIdleCallback(done, { timeout: 1500 });
+    else setTimeout(done, 50);
+  });
+}
+/** A save that can't wait (tab closing): stop any autosave from waiting for idle time. */
+function hurry(): void {
+  for (const f of [...waiting]) f();
+}
+
 export class AutoSaver {
   status: SaveStatus = { state: 'idle' };
   private listeners = new Set<Listener>();
@@ -434,8 +455,11 @@ export class AutoSaver {
   /** Save locally now; sync to the cloud if the throttle window has passed (or force). */
   save(s: GameState, force = false): Promise<unknown> {
     this.latest = s;
+    if (force) hurry();
     this.pending = this.pending.then(async () => {
       try {
+        // routine autosaves wait for a quiet moment so they never land mid-frame
+        if (!force) await idle();
         this.emit({ state: 'saving' });
         await saveLocal(this.uid, this.slotId, s);
         this.emit({ lastLocal: Date.now() });
