@@ -52,7 +52,7 @@ import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice, subTarget } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier, plannedLaunchDay } from './systems/hardware';
-import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount, bundleCost, MAX_BUNDLE, launchPrice } from './systems/release';
+import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount, bundleCost, MAX_BUNDLE, conceptLaunchPrice } from './systems/release';
 import { creditLimit, doIPO, ipValue, ipoEligible, offeringBlocked, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { CROWD_OK, assignDesks, canPlace, crampedCount, freeDesks, itemRequirement, layout, spreadOut, tierDef, touchOffice } from './systems/office';
@@ -1210,9 +1210,8 @@ function apply(c: Ctx, a: Action): string | null {
     case 'orderCollectors': {
       const p = s.projects[a.projectId];
       if (!p || p.kind !== 'game') return 'No such game';
-      const pl = p.concept.platforms.map((id) => platformInfo(s, id)).find((x) => !!x);
-      if (!pl) return 'No platform to sell it on';
-      return orderCollectors(s, a.projectId, a.run, launchPrice(s, pl, p.concept));
+      if (!p.concept.platforms.some((id) => platformInfo(s, id))) return 'No platform to sell it on';
+      return orderCollectors(s, a.projectId, a.run, conceptLaunchPrice(s, p.concept));
     }
     case 'launchBonus':
       return payLaunchBonus(s, a.releaseId);

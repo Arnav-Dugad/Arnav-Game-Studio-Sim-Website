@@ -116,6 +116,7 @@ export function postMortem(r: Release): PostMortem {
   for (const part of r.why.sales?.parts ?? []) {
     if (part.label.startsWith('Known for')) push(true, { text: `Players who love your ${genre} games turned up`, weight: Math.log(part.value) + 0.05 });
     else if (part.label.startsWith('Budget price')) push(true, { text: 'The budget price brought in extra buyers', weight: 0.08 });
+    else if (part.label.startsWith('Your other recent games') && part.value < 0.85) push(false, { text: 'Your own recent games on the same machines split its buyers', lesson: 'Space out releases on the same platforms, or spread them across different machines', weight: -Math.log(part.value) });
   }
 
   // business

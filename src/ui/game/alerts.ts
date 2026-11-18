@@ -5,7 +5,7 @@ import { RESEARCH } from '@/data/research';
 import { RND, RND_MAX, rndCost, rndLevel, rndUnlocked } from '@/sim/systems/rnd';
 import { demoBlocked } from '@/sim/systems/demos';
 import { CE_RUN, ceBlocked, ceCost, ceDemand } from '@/sim/systems/collectors';
-import { launchPrice, countServers } from '@/sim/systems/release';
+import { countServers, conceptLaunchPrice } from '@/sim/systems/release';
 import { bonusBlocked, bonusCost, bonusTeam } from '@/sim/systems/launchBonus';
 import { pulseKey, teamPulse, type PulseItem } from './pulse';
 import { campaignBlocked, campaignFor } from '@/sim/systems/awardsCampaign';
@@ -150,9 +150,8 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
     // fans who'd queue for a deluxe box: suggest a collector's edition (comfortably affordable, even at modest reviews)
     const boxable = projects.find((p): p is GameProject => {
       if (p.kind !== 'game' || p.phase < 1) return false;
-      const pl = p.concept.platforms.map((id) => platformInfo(s, id)).find((x) => !!x);
-      if (!pl) return false;
-      const std = launchPrice(s, pl, p.concept);
+      if (!p.concept.platforms.some((id) => platformInfo(s, id))) return false;
+      const std = conceptLaunchPrice(s, p.concept);
       return !ceBlocked(s, p, 'small', std) && s.company.cash >= ceCost('small', std) * 4 && ceDemand(s, p, 70) >= CE_RUN.small * 1.2;
     });
     if (boxable) out.push({ id: 'collectors', tone: 'info', icon: 'box', text: `Fans are excited about ${boxable.concept.name} — a Collector’s Edition would sell.`, action: { label: 'Develop', run: () => open('develop', 'projects') } });

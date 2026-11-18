@@ -24,7 +24,7 @@ import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { comboFit, qualityToScore, sizeDailyCost, workShare } from '@/sim/systems/dev';
 import { clamp } from '@/sim/breakdown';
-import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential, selfReach, countServers } from '@/sim/systems/release';
+import { expansionPlatforms, expansionSizeOk, launchTitleMul, netPerUnit, salesPotential, selfReach, countServers, conceptLaunchPrice } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, Franchise, GameProject, GameState, Release, Size, Staff } from '@/sim/types';
@@ -708,8 +708,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
     // what reaches you: net per copy on each platform, a publisher's royalty share, plus their advance
     const d = conceptPreview.deal;
     let toYou = 0;
-    const p0 = pot.platforms[0]?.pl;
-    const price = p0 ? launchPrice(s, p0, conceptPreview) : 0; // every version launches at the same price
+    const price = conceptLaunchPrice(s, conceptPreview); // every version launches at the same price
     for (const pp of pot.platforms) toYou += pp.potential * mr * netPerUnit(s, pp.pl, price, !d) * (d ? d.royalty : 1);
     toYou *= 1 - (s.engines[conceptPreview.engineId]?.royalty ?? 0); // a licensed engine takes its cut
     if (d) toYou += dealAdvanceFor(d, size, s.day);
@@ -1008,8 +1007,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               value={priceTier}
               onChange={setPriceTier}
               options={(['budget', 'standard', 'premium'] as PriceTier[]).map((tier) => {
-                const pl = platformInfo(s, platforms[0]!);
-                const price = pl ? launchPrice(s, pl, { ...conceptPreview, priceTier: tier }) : 0;
+                const price = conceptLaunchPrice(s, { ...conceptPreview, priceTier: tier });
                 const label = { budget: 'Budget', standard: 'Standard', premium: 'Premium' }[tier];
                 return { value: tier, label: price ? label + ' · $' + price.toFixed(price < 10 ? 2 : 0) : label };
               })}
@@ -1146,6 +1144,15 @@ function NewGame({ onDone }: { onDone: () => void }) {
             );
           })}
         </div>
+        {/* a machine going off sale before this game is out: few will buy it there */}
+        {(() => {
+          const ending = platforms.map((pid) => plats.find((p) => p.id === pid)).filter((p) => !!p && p.endDay !== null && p.endDay < s.day + cost.days);
+          return ending.length > 0 ? (
+            <p className="mt-2 text-[11px] text-warn">
+              {ending.map((p) => `${p!.name} goes off sale ${formatDate(p!.endDay!, false)}`).join('; ')} — before this game ships (~{formatDate(s.day + cost.days, false)}). Only its remaining owners will buy it there.
+            </p>
+          ) : null;
+        })()}
       </Section>
 
       <Section title="6 · Engine & publishing">
@@ -1162,7 +1169,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           </Field>
           <Field label="Publishing" hint={selfPub ? 'Self-publish to keep all revenue (your reach grows with reputation), or take a deal for an advance and a publisher’s reach.' : 'Research Self-Publishing to ship consoles yourself.'}>
             <select className={inputCls} value={liveDealId} onChange={(e) => setDealId(e.target.value)}>
-              <option value="">{selfPub ? 'Self-publish' : plats.some((p) => p.kind === 'mobile') ? 'Self-publish (computers & phones)' : 'Self-publish (computers only)'} · {Math.round(selfReach(s) * 100)}% reach</option>
+              <option value="">{selfPub || yr < 1983 || s.releaseOrder.length === 0 ? 'Self-publish' : plats.some((p) => p.kind === 'mobile') ? 'Self-publish (computers & phones)' : 'Self-publish (computers only)'} · {Math.round(selfReach(s) * 100)}% reach</option>
               {s.offers.deals.map((d) => (
                 <option key={d.id} value={d.id} title={`${fmtMoney(dealAdvanceFor(d, size, s.day))} advance · ${Math.round(d.royalty * 100)}% royalty · needs ${d.minScore}+`}>
                   {COMPANY_BY_ID[d.publisherId]?.name ?? d.publisherId} · {fmtMoney(dealAdvanceFor(d, size, s.day))} · {Math.round(d.royalty * 100)}%
@@ -1365,8 +1372,7 @@ function Contracts() {
 
 /** Order a Collector's Edition: three print runs, with what fans would likely buy. */
 function CollectorsBox({ s, p, run, close }: { s: GameState; p: GameProject; run: (a: Action) => void; close: () => void }) {
-  const pl = p.concept.platforms.map((id) => platformInfo(s, id)).find((x) => !!x);
-  const std = pl ? launchPrice(s, pl, p.concept) : 0;
+  const std = conceptLaunchPrice(s, p.concept);
   const lo = Math.round(ceDemand(s, p, 70) * 0.85);
   const hi = Math.round(ceDemand(s, p, 85) * 1.15);
   const blocked = ceBlocked(s, p, undefined, std);

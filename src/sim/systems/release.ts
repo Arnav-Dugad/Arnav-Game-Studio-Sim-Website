@@ -235,11 +235,35 @@ export function launchTitleMul(s: GameState, pl: PlatformInfo, day = s.day): num
  * its first year count the base it will have six months in (discounted), not today's handful of owners.
  */
 function sellingUsersM(s: GameState, pid: string, pl: PlatformInfo): number {
+  // a machine that's gone off sale still has owners for a while (fading), not none
+  if (pl.endDay !== null && s.day >= pl.endDay) return activeUsersM(pl, s.day) * demandMul(s, pl);
   const now = s.market.users[pid] ?? 0;
   const age = s.day - pl.launchDay;
   if (age < 0 || age > 365 || pl.own) return now;
   const ahead = activeUsersM(pl, Math.max(s.day, pl.launchDay + 180)) * demandMul(s, pl);
   return Math.max(now, ahead * 0.7);
+}
+
+/**
+ * The one price a game launches at across all its platforms: each machine's price weighted by how many people own it
+ * (the same whatever order the platforms were picked in — the first pick used to set the price for all of them).
+ */
+export function conceptLaunchPrice(s: GameState, c: GameProject['concept']): number {
+  let t = 0;
+  let w = 0;
+  for (const id of c.platforms) {
+    const pl = platformInfo(s, id);
+    if (!pl) continue;
+    const u = Math.max(0.01, s.market.users[id] ?? 0);
+    t += launchPrice(s, pl, c) * u;
+    w += u;
+  }
+  return w > 0 ? t / w : 0;
+}
+
+/** The machine most of a game's players are on (sets its digital/retail life cycle). */
+export function mainPlatform(s: GameState, c: GameProject['concept']): PlatformInfo | undefined {
+  return c.platforms.map((id) => platformInfo(s, id)).filter((x): x is PlatformInfo => !!x).sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0))[0];
 }
 
 /** What a game will actually cost at launch: base price, expansion discount, culture and price tier. */
@@ -329,9 +353,11 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   if (Math.abs(homeMul - 1) > 0.0005) sb.mul(`Home market: ${REGION_BY_ID[home].name}`, homeMul);
   if (loc.mul / homeMul > 1.0005) sb.mul(`Localised for ${reached.filter((r) => r !== home).map((r) => REGION_BY_ID[r].short).join(', ')}`, loc.mul / homeMul);
   if (fr && fr.fans > 0) {
-    const fanBuy = fr.fans * clamp((effScore - 40) / 50, 0.05, 1) * fatigueMul;
+    // fans who buy the next one: never more than a share of the people who own the machines it's on (fan counts add up
+    // across a long series), and they're as busy with your other recent games as anyone
+    const fanBuy = Math.min(fr.fans * clamp((effScore - 40) / 50, 0.05, 1) * fatigueMul, totalUsers * 0.3);
     const before = platforms.reduce((tt, ps) => tt + ps.potential, 0);
-    for (const ps of platforms) ps.potential += fanBuy * (((s.market.users[ps.platform] ?? 0) * 1e6) / Math.max(1, totalUsers));
+    for (const ps of platforms) ps.potential += fanBuy * (((s.market.users[ps.platform] ?? 0) * 1e6) / Math.max(1, totalUsers)) * ps.own;
     const after = platforms.reduce((tt, ps) => tt + ps.potential, 0);
     // shown as the lift it gives (the breakdown is all multipliers), with the head count in the label
     if (before > 0 && after > before) sb.mul(`Series fans (~${fmtUnits(fanBuy)} buy it)`, after / before);
@@ -435,8 +461,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
   if (rndSales(s) > 1) for (const pp of plats) pp.potential *= rndSales(s); // market research R&D
-  const pricePl = plats[0]!.pl;
-  const price = launchPrice(s, pricePl, p.concept);
+  const pricePl = mainPlatform(s, p.concept) ?? plats[0]!.pl;
+  const price = conceptLaunchPrice(s, p.concept);
   const baseDecay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
   // Mod communities keep PC games selling for years.
   const pcOnly = p.concept.platforms.every((pid) => platformInfo(s, pid)?.kind === 'computer');
