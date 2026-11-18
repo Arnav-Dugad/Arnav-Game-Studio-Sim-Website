@@ -15,7 +15,8 @@ export function aOrAn(word: string): string {
 
 /** “Atari’s”, but “Midway Games’” — a possessive that reads right for names ending in s. */
 export function possessive(name: string): string {
-  return /s\.?$/i.test(name.trim()) ? `${name}’` : `${name}’s`;
+  const n = name.trim();
+  return /s\.?$/i.test(n) ? `${n}’` : `${n}’s`;
 }
 
 /** Convert a 1980-dollar amount to nominal dollars on `day`. */
@@ -89,7 +90,7 @@ export function fmtMoney(n: number): string {
   if (a >= 999_950_000) return `${sign}$${(a / 1e9).toFixed(a >= 9_995_000_000 ? 1 : 2)}B`;
   if (a >= 999_500) return `${sign}$${(a / 1e6).toFixed(a >= 9_995_000 ? 1 : 2)}M`;
   if (a >= 9_950) return `${sign}$${Math.round(a / 1e3)}k`;
-  if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(1)}k`;
+  if (a >= 999.5) return `${sign}$${(a / 1e3).toFixed(1)}k`;
   return `${sign}$${Math.round(a)}`;
 }
 

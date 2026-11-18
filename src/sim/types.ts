@@ -482,6 +482,8 @@ export interface Release {
   passion?: string;
   /** Fans asked to translate it (the event happened, whatever you chose). */
   fanTranslated?: boolean;
+  /** The seed its box art was drawn with in development (so the cover doesn't change at launch). */
+  coverSeed?: number;
   /** Its Collector's Edition: boxes printed and sold at launch, the box price, and what the run cost. */
   collectors?: { run: number; sold: number; price: number; cost: number };
   /** It had a public demo before launch (the score players saw). */

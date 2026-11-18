@@ -213,6 +213,8 @@ export function handleEvents(events: SimEvent[]): void {
   let pause = false;
   /** Game over or broke: the player decides when time moves again. */
   let hardStop = false;
+  /** This batch opened a popup — answering it (and any others) resumes time. Pauses without a popup stay paused. */
+  let popped = false;
   let income = 0;
   let gala = false;
   let cheer = false;
@@ -231,17 +233,17 @@ export function handleEvents(events: SimEvent[]): void {
       case 'reviews':
         g.pushModal({ kind: 'reviews', releaseId: e.releaseId });
         sound.play('review');
-        if (s.settings.autopause.releases) pause = true;
+        if (s.settings.autopause.releases) pause = popped = true;
         break;
       case 'event':
         g.pushModal({ kind: 'event', uid: e.uid });
         sound.play('notify');
-        if (s.settings.autopause.events) pause = true;
+        if (s.settings.autopause.events) pause = popped = true;
         break;
       case 'gate':
         g.pushModal({ kind: 'gate', projectId: e.projectId });
         sound.play('notify');
-        pause = true;
+        pause = popped = true;
         break;
       case 'achievement': {
         const a = ACHIEVEMENTS.find((x) => x.id === e.id);
@@ -283,7 +285,7 @@ export function handleEvents(events: SimEvent[]): void {
       case 'news':
         if (e.major) {
           g.pushModal({ kind: 'majorNews', newsId: e.newsId });
-          pause = true;
+          pause = popped = true;
         }
         break;
       case 'month':
@@ -313,7 +315,7 @@ export function handleEvents(events: SimEvent[]): void {
     if (year !== undefined && !g.modals.some((m) => m.kind === 'gala')) {
       g.pushModal({ kind: 'gala', year });
       sound.play('fanfare');
-      pause = true;
+      pause = popped = true;
     }
   }
   if (income > 0) {
@@ -324,11 +326,18 @@ export function handleEvents(events: SimEvent[]): void {
   }
   // the last project just finished and nothing else is underway: stop the clock rather than burn salaries
   // in silence (a panel may be hiding the idle reminder)
-  const idleNow = events.some((e) => e.type === 'projectDone') && !Object.keys(s.projects).length && s.status === 'running' && g.speed > 0;
+  const idleNow =
+    events.some((e) => e.type === 'projectDone') &&
+    !Object.keys(s.projects).length &&
+    !s.research.active &&
+    !(s.hardware ?? []).some((h) => h.status === 'dev') &&
+    !Object.values(s.staff).some((x) => x.assignment.kind === 'training') &&
+    s.status === 'running' &&
+    g.speed > 0;
   if (idleNow) {
     g.toast({ text: 'Nothing in development — time paused. Start a game or take a contract.', tone: 'neutral', icon: 'hourglass' });
     pause = true;
     hardStop = true;
   }
-  if (pause) useGame.setState((st) => ({ speed: 0, autoPaused: hardStop ? false : st.autoPaused || st.speed > 0 }));
+  if (pause) useGame.setState((st) => ({ speed: 0, autoPaused: hardStop ? false : st.autoPaused || (popped && st.speed > 0) }));
 }

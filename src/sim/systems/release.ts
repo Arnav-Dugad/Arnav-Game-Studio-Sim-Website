@@ -451,6 +451,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     ...(modded ? { modded: true } : {}),
     ...(p.passion ? { passion: p.passion } : {}),
     ...(p.demo ? { demo: { ...p.demo } } : {}),
+    coverSeed: p.startDay,
   };
   if (ea) {
     rel.units += ea.units;

@@ -149,7 +149,7 @@ export function SlotsScreen() {
       <main className="mx-auto max-w-5xl px-4 pb-16">
         <h1 className="font-display text-3xl font-bold">Your studios</h1>
         <p className="mt-1 text-sm text-ink2">{user.guest ? 'Guest saves live in this browser. Create an account to sync them to the cloud.' : 'Saves sync to the cloud and are kept on this device for offline play.'}</p>
-        <WhatsNew newcomer={!!slots && slots.every((x) => !x.local && !x.cloud)} />
+        {slots !== null && <WhatsNew newcomer={!error && slots.every((x) => !x.local && !x.cloud)} />}
         {notice && (
           <div role="status" className="mt-4 rounded-xl bg-good/10 p-3 text-sm text-good">
             {notice}

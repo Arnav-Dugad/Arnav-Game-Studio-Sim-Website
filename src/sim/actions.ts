@@ -1089,7 +1089,7 @@ function apply(c: Ctx, a: Action): string | null {
         p.concept = rest;
         return null;
       }
-      const ok = (x: unknown) => typeof x === 'string' && /^[a-z]{1,16}$/.test(x);
+      const ok = (x: unknown) => typeof x === 'string' && /^[a-z_]{1,20}$/.test(x);
       if (!a.cover || !ok(a.cover.pal) || !ok(a.cover.layout) || !ok(a.cover.motif)) return 'That cover can’t be printed';
       p.concept = { ...p.concept, cover: { pal: a.cover.pal, layout: a.cover.layout, motif: a.cover.motif, seed: p.startDay } };
       return null;

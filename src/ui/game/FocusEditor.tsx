@@ -2,6 +2,7 @@ import { PHASE_AREAS } from '@/data/types';
 import { GENRE_BY_ID } from '@/data/genres';
 import { DESIGN_AREAS } from '@/sim/systems/dev';
 import type { GameProject } from '@/sim/types';
+import { aOrAn } from '@/sim/util';
 import type { Focus3 } from '@/sim/types';
 import { AREA_LABEL, PHASE_NAMES } from './lib';
 
@@ -50,7 +51,7 @@ export function BalanceBar({ p, className }: { p: GameProject; className?: strin
   const ok = Math.abs(off) <= 0.08;
   const hint = ok
     ? `On target for ${g.name.toLowerCase()} games`
-    : `${off > 0 ? 'Too much design' : 'Too much tech'} for ${aOrAnWord(g.name.toLowerCase())} — ${p.phase < 3 && want.length ? `favour ${want.join(' and ')}, or ` : ''}add more ${off > 0 ? 'programmers' : 'designers, writers or artists'}`;
+    : `${off > 0 ? 'Too much design' : 'Too much tech'} for ${aOrAnWord(g.id === 'rpg' || g.id === 'mmo' ? g.name : g.name.toLowerCase())} — ${p.phase < 3 && want.length ? `favour ${want.join(' and ')}, or ` : ''}add more ${off > 0 ? 'programmers' : 'designers, writers or artists'}`;
   return (
     <div className={className}>
       <div className="flex items-center justify-between text-[11px]">
@@ -68,4 +69,4 @@ export function BalanceBar({ p, className }: { p: GameProject; className?: strin
   );
 }
 
-const aOrAnWord = (w: string) => `${/^[aeiou]/.test(w) ? 'an' : 'a'} ${w} game`;
+const aOrAnWord = (w: string) => `${aOrAn(w)} game`;

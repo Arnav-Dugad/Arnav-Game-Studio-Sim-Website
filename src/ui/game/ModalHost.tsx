@@ -197,7 +197,7 @@ function ReviewsModal({ releaseId, onClose }: { releaseId: string; onClose: () =
   return (
     <Modal open onClose={onClose} title={`Reviews: ${r.name}`} wide>
       <div className="flex flex-col gap-4 sm:flex-row">
-        <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.day} design={r.concept.cover} size={140} score={allShown ? r.score : undefined} />
+        <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.coverSeed ?? r.day} design={r.concept.cover} size={140} score={allShown ? r.score : undefined} />
         <div className="min-w-0 flex-1">
           <div className="text-xs uppercase tracking-wide text-ink3">The reviews are in</div>
           <h2 className="font-display text-2xl font-semibold">{r.name}</h2>
@@ -425,7 +425,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
   return (
     <Modal open onClose={onClose} title={r.name} wide>
       <div className="flex gap-4">
-        <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.day} design={r.concept.cover} size={110} score={r.score} />
+        <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.coverSeed ?? r.day} design={r.concept.cover} size={110} score={r.score} />
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-2xl font-semibold">{r.name}</h2>
           <div className="text-sm text-ink2">

@@ -23,7 +23,7 @@ export function CoverDesigner({ projectId, onClose }: { projectId: string; onClo
     if (r.ok) {
       sound.play('click');
       onClose();
-    }
+    } else useGame.getState().toast({ text: r.error, tone: 'bad' });
   };
   return (
     <Modal open onClose={onClose} title="Design the box art" wide>

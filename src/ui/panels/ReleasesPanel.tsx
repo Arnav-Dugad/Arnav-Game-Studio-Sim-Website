@@ -139,7 +139,7 @@ export default function ReleasesPanel() {
                     title={r.name}
                     genre={r.concept.genre}
                     topic={r.concept.topic}
-                    seed={r.day}
+                    seed={r.coverSeed ?? r.day}
                     design={r.concept.cover}
                     size={120}
                     score={r.score}
@@ -176,7 +176,7 @@ export default function ReleasesPanel() {
                     title={r.name}
                     genre={r.concept.genre}
                     topic={r.concept.topic}
-                    seed={r.day}
+                    seed={r.coverSeed ?? r.day}
                     design={r.concept.cover}
                     size={56}
                     score={r.score}
