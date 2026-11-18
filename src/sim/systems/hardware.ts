@@ -110,10 +110,6 @@ export function canDesignConsole(s: GameState): string | null {
   return null;
 }
 
-/**
- * Manufacturing cost per unit (nominal) for a console on a given day: falls ~10% a year (cheaper chips, die shrinks,
- * slimmer revisions), so a console sold at a loss on launch day turns a profit on each unit within a couple of years.
- */
 /** When a console started today would launch: on the first of the month after its development time (launches happen then). */
 export function plannedLaunchDay(day: number, months: number): number {
   const raw = day + Math.round(months * 30.44);
@@ -121,6 +117,10 @@ export function plannedLaunchDay(day: number, months: number): number {
   return d.day === 1 ? raw : toDay(d.month === 12 ? d.year + 1 : d.year, d.month === 12 ? 1 : d.month + 1, 1);
 }
 
+/**
+ * Manufacturing cost per unit (nominal) for a console on a given day: falls ~10% a year (cheaper chips, die shrinks,
+ * slimmer revisions), so a console sold at a loss on launch day turns a profit on each unit within a couple of years.
+ */
 export function unitCost(c: PlayerConsole, day: number): number {
   const age = Math.max(0, (day - c.launchDay) / YEAR);
   return money(c.unitCost1980, day) * Math.pow(0.9, age);

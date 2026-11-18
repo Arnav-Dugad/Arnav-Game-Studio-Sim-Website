@@ -1752,7 +1752,8 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.price < subRefPrice(s) * 0.25 || a.price > subRefPrice(s) * 4) return 'That price is unrealistic';
       const newPrice = Math.round(a.price * 100) / 100;
       const old = s.subscription.price;
-      // a price rise: plenty of subscribers cancel at once (at least enough that the hike brings in no more than before)
+      // a price rise: subscribers cancel at once, as many as demand says, but at least enough that revenue stays flat;
+      // the rest drift away quickly over the next months (systems/subscription.ts), so hike-and-restore loses money
       if (newPrice > old) {
         const keep = Math.max(subTarget(s, newPrice).subsM / Math.max(1e-9, subTarget(s, old).subsM), old / newPrice);
         s.subscription.subscribers = Math.round(s.subscription.subscribers * Math.min(1, keep));

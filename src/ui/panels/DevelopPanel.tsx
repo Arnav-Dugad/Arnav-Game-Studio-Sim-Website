@@ -793,13 +793,14 @@ function NewGame({ onDone }: { onDone: () => void }) {
               setGenre(idea.genre);
               setTopic(idea.topic);
               if (!locked) setAudience(bestAudienceFor(idea.genre, idea.topic)); // the idea comes with its best crowd
-              // …and a machine that suits it, if the one picked is a poor fit (a hand-picked set of several is left alone)
+              // …and a machine that suits it (one you already have a dev kit for), if the one picked is a poor fit
+              // (a hand-picked set of several is left alone)
               const fitOn = (pid?: string) => {
                 const pl = plats.find((p) => p.id === pid);
                 return pl ? platformGenreFit(pl, idea.genre) : 0;
               };
               if (!expPlats && platforms.length <= 1 && fitOn(platforms[0]) < 0.95) {
-                const best = [...plats].sort((x, y) => platformGenreFit(y, idea.genre) * Math.sqrt((s.market.users[y.id] ?? 0) + 0.1) - platformGenreFit(x, idea.genre) * Math.sqrt((s.market.users[x.id] ?? 0) + 0.1))[0];
+                const best = plats.filter((p) => s.devkits.includes(p.id) || p.devKit === 0).sort((x, y) => platformGenreFit(y, idea.genre) * Math.sqrt((s.market.users[y.id] ?? 0) + 0.1) - platformGenreFit(x, idea.genre) * Math.sqrt((s.market.users[x.id] ?? 0) + 0.1))[0];
                 if (best && platformGenreFit(best, idea.genre) > fitOn(platforms[0])) setPlatforms([best.id]);
               }
               setName(freshName(idea.topic, Math.random() * 1e6));
