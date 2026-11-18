@@ -131,7 +131,20 @@ function GameCard({ p }: { p: GameProject }) {
   return (
     <article className="rounded-2xl border border-line bg-panel2/60 p-3">
       <div className="flex gap-3">
-        <Cover title={p.concept.name} genre={p.concept.genre} topic={p.concept.topic} seed={p.startDay} size={72} />
+        <button
+          type="button"
+          className="group relative shrink-0 self-start rounded-[6%] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          title="Design the box art"
+          aria-label={`Design the box art for ${p.concept.name}`}
+          onClick={() => {
+            if (!useGame.getState().modals.some((m) => m.kind === 'coverArt')) useGame.getState().openModalNow({ kind: 'coverArt', projectId: p.id });
+          }}
+        >
+          <Cover title={p.concept.name} genre={p.concept.genre} topic={p.concept.topic} seed={p.startDay} design={p.concept.cover} size={72} />
+          <span className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-bg/80 text-ink opacity-80 transition group-hover:opacity-100">
+            <Icon name="brush" size={11} />
+          </span>
+        </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">

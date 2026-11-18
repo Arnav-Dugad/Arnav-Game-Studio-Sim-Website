@@ -257,6 +257,13 @@ export interface LayoutCache {
 
 export type Focus3 = [number, number, number];
 
+export interface CoverDesign {
+  pal: string;
+  layout: string;
+  motif: string;
+  seed: number;
+}
+
 export interface Concept {
   name: string;
   genre: GenreId;
@@ -268,6 +275,8 @@ export interface Concept {
   engineId: Id;
   /** Launch price tier for full-price games (systems/pricing.ts); standard if unset. */
   priceTier?: PriceTier;
+  /** Box art the player designed (palette, layout, motif by name; seed fixes the small details). */
+  cover?: CoverDesign;
   franchiseId?: Id;
   /** Publisher deal id if published by a third party. */
   deal?: PublisherDeal;

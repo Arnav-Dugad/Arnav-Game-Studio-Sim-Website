@@ -182,6 +182,7 @@ export type Action =
   | { type: 'awardsCampaign'; releaseId: string }
   | { type: 'launchBonus'; releaseId: string }
   | { type: 'releaseDemo'; projectId: string }
+  | { type: 'setCover'; projectId: string; cover: { pal: string; layout: string; motif: string } | null }
   | { type: 'orderCollectors'; projectId: string; run: CeRun }
   | { type: 'dismissEvent'; uid: number }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
@@ -1079,6 +1080,20 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'releaseDemo':
       return releaseDemo(s, a.projectId);
+    case 'setCover': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      if (a.cover === null) {
+        const { cover: _old, ...rest } = p.concept;
+        void _old;
+        p.concept = rest;
+        return null;
+      }
+      const ok = (x: unknown) => typeof x === 'string' && /^[a-z]{1,16}$/.test(x);
+      if (!a.cover || !ok(a.cover.pal) || !ok(a.cover.layout) || !ok(a.cover.motif)) return 'That cover can’t be printed';
+      p.concept = { ...p.concept, cover: { pal: a.cover.pal, layout: a.cover.layout, motif: a.cover.motif, seed: p.startDay } };
+      return null;
+    }
     case 'orderCollectors': {
       const p = s.projects[a.projectId];
       if (!p || p.kind !== 'game') return 'No such game';

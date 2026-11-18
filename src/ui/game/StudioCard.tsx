@@ -150,7 +150,7 @@ export function StudioCardModal({ onClose }: { onClose: () => void }) {
             return (
               <g key={r.id} transform={`translate(${x} ${320 + Math.abs(i - (n - 1) / 2) * 18}) rotate(${rot}) translate(-115 -153)`}>
                 <rect x={7} y={12} width={230} height={307} rx={12} fill="#000" opacity={0.3} />
-                <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.day} size={230} score={r.score} />
+                <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.day} design={r.concept.cover} size={230} score={r.score} />
               </g>
             );
           })}

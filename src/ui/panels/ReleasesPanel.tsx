@@ -140,6 +140,7 @@ export default function ReleasesPanel() {
                     genre={r.concept.genre}
                     topic={r.concept.topic}
                     seed={r.day}
+                    design={r.concept.cover}
                     size={120}
                     score={r.score}
                     className="h-auto w-full rounded-[6%] shadow-md"
@@ -176,6 +177,7 @@ export default function ReleasesPanel() {
                     genre={r.concept.genre}
                     topic={r.concept.topic}
                     seed={r.day}
+                    design={r.concept.cover}
                     size={56}
                     score={r.score}
                   />

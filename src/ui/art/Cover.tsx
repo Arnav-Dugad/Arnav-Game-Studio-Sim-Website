@@ -932,6 +932,39 @@ function scoreColor(score: number): { bg: string; ink: string } {
   return { bg: '#D1495B', ink: '#FFFFFF' };
 }
 
+// ── Designer support ─────────────────────────────────────────────
+
+/** The procedural choice for a cover (and the random stream its details continue from). */
+function coverPick(genre: string, topic: string, seed: number): { pal: PalName; layout: Template; motif: keyof typeof M; rand: () => number } {
+  const rand = mulberry32(hashString(`${genre}|${topic}|${seed}`));
+  const tone = TOPIC_TONE[topic];
+  const pool = tone ? TOPIC_MOOD[tone] ?? ALL_PALS : ALL_PALS;
+  const pal = pool[Math.floor(rand() * pool.length)] ?? 'ember';
+  return { pal, layout: GENRE_TEMPLATE[genre] ?? 'sunburst', motif: TOPIC_MOTIF[topic] ?? 'sparkle', rand };
+}
+
+export const COVER_LAYOUTS: Template[] = ['slash', 'emblem', 'grid', 'speed', 'bubbly', 'globe', 'sunburst'];
+export const COVER_PALETTES: { id: string; a: string; b: string; accent: string }[] = ALL_PALS.map((id) => ({ id, a: PALETTES[id].a, b: PALETTES[id].b, accent: PALETTES[id].accent }));
+export const COVER_MOTIFS = Object.keys(M) as string[];
+
+/** What a game's cover looks like before anyone designs it. */
+export function defaultCover(genre: string, topic: string, seed: number): { pal: string; layout: string; motif: string } {
+  const p = coverPick(genre, topic, seed);
+  return { pal: p.pal, layout: p.layout, motif: p.motif };
+}
+
+/** One motif on its own, for the designer's picker. */
+export function MotifSwatch({ motif, pal, size = 40 }: { motif: string; pal: string; size?: number }) {
+  const p: Pal = PALETTES[(pal in PALETTES ? pal : 'slate') as PalName];
+  const draw = M[(motif in M ? motif : 'sparkle') as keyof typeof M];
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+      <rect width={100} height={100} rx={16} fill={p.b} />
+      <g transform="translate(10 10) scale(0.8)">{draw(p)}</g>
+    </svg>
+  );
+}
+
 // ── Component ────────────────────────────────────────────────────
 
 export function Cover({
@@ -942,11 +975,14 @@ export function Cover({
   size = 160,
   className,
   score,
+  design,
 }: {
   title: string;
   genre: string;
   topic: string;
   seed: number;
+  /** The player's own design (falls back piece by piece to the procedural choice). */
+  design?: { pal?: string; layout?: string; motif?: string; seed?: number };
   /** Rendered width in px (height is 4/3 of this). */
   size?: number;
   className?: string;
@@ -955,13 +991,12 @@ export function Cover({
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const ids = { clip: `cv-c-${uid}`, bg: `cv-b-${uid}`, vig: `cv-v-${uid}`, shade: `cv-s-${uid}`, sheen: `cv-h-${uid}`, grain: `cv-g-${uid}` };
 
-  const rand = mulberry32(hashString(`${genre}|${topic}|${seed}`));
-  const tone = TOPIC_TONE[topic];
-  const pool = tone ? TOPIC_MOOD[tone] ?? ALL_PALS : ALL_PALS;
-  const palName = pool[Math.floor(rand() * pool.length)] ?? 'ember';
+  const pick = coverPick(genre, topic, design?.seed ?? seed);
+  const rand = pick.rand;
+  const palName: PalName = design?.pal && design.pal in PALETTES ? (design.pal as PalName) : pick.pal;
   const p: Pal = PALETTES[palName];
-  const tpl = GENRE_TEMPLATE[genre] ?? 'sunburst';
-  const motif: Motif = M[TOPIC_MOTIF[topic] ?? 'sparkle'];
+  const tpl: Template = design?.layout && (COVER_LAYOUTS as string[]).includes(design.layout) ? (design.layout as Template) : pick.layout;
+  const motif: Motif = M[design?.motif && design.motif in M ? (design.motif as keyof typeof M) : pick.motif];
   const tilt = (rand() - 0.5) * 10;
   const motifScale = tpl === 'emblem' || tpl === 'grid' ? 1.6 : 1.78;
   const motifY = tpl === 'globe' ? 150 : 168;

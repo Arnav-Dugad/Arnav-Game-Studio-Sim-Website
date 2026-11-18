@@ -1,4 +1,5 @@
 import { COMPANY_BY_ID } from '@/data/companies';
+import { CoverDesigner } from './CoverDesigner';
 import { BONUS_WINDOW_DAYS, bonusBlocked, bonusCost, bonusTeam } from '@/sim/systems/launchBonus';
 import { genreWord } from '@/sim/systems/pitches';
 import { useEffect, useRef, useState } from 'react';
@@ -71,6 +72,7 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       (modal.kind === 'gala' && ![...(s.awardHistory ?? [])].reverse().find((y) => y.year === modal.year)?.winners.some((w) => w.mine)) ||
       (modal.kind === 'bugBash' && s.projects[modal.projectId]?.kind !== 'game') ||
       (modal.kind === 'trailerCut' && s.projects[modal.projectId]?.kind !== 'game') ||
+      (modal.kind === 'coverArt' && s.projects[modal.projectId]?.kind !== 'game') ||
       (modal.kind === 'event' && !s.pendingEvents.some((e) => e.uid === modal.uid)));
   useEffect(() => {
     if (stale) pop();
@@ -93,6 +95,8 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       return <InsolventModal onClose={pop} />;
     case 'trailerCut':
       return <TrailerCutModal projectId={modal.projectId} onClose={pop} />;
+    case 'coverArt':
+      return <CoverDesigner key={modal.projectId} projectId={modal.projectId} onClose={pop} />;
     case 'bugBash':
       return <BugBashModal key={modal.projectId} projectId={modal.projectId} onClose={pop} />;
     case 'majorNews':
@@ -193,7 +197,7 @@ function ReviewsModal({ releaseId, onClose }: { releaseId: string; onClose: () =
   return (
     <Modal open onClose={onClose} title={`Reviews: ${r.name}`} wide>
       <div className="flex flex-col gap-4 sm:flex-row">
-        <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.day} size={140} score={allShown ? r.score : undefined} />
+        <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.day} design={r.concept.cover} size={140} score={allShown ? r.score : undefined} />
         <div className="min-w-0 flex-1">
           <div className="text-xs uppercase tracking-wide text-ink3">The reviews are in</div>
           <h2 className="font-display text-2xl font-semibold">{r.name}</h2>
@@ -421,7 +425,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
   return (
     <Modal open onClose={onClose} title={r.name} wide>
       <div className="flex gap-4">
-        <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.day} size={110} score={r.score} />
+        <Cover title={r.name} genre={r.concept.genre} topic={r.concept.topic} seed={r.day} design={r.concept.cover} size={110} score={r.score} />
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-2xl font-semibold">{r.name}</h2>
           <div className="text-sm text-ink2">
