@@ -576,6 +576,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           ? `${presetFr.name} ${presetFr.entries.length + 1 + (presetFr.origin ? 1 : 0)}`
           : freshName(topic, s.day),
   );
+  const [nameTyped, setNameTyped] = useState(false);
   const [audience, setAudience] = useState<Audience>(baseRel?.concept.audience ?? 'everyone');
   const locked = !!baseRel;
   const [size, setSize] = useState<Size>('small');
@@ -746,7 +747,10 @@ function NewGame({ onDone }: { onDone: () => void }) {
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <Field label="Title">
             <div className="flex gap-2">
-              <input className={inputCls} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+              <input className={inputCls} value={name} maxLength={60} onChange={(e) => {
+                setName(e.target.value);
+                setNameTyped(true);
+              }} />
               <Button icon="refresh" aria-label="Suggest a name" onClick={() => setName(freshName(topic, Math.random() * 1e6))} />
             </div>
             {takenNames.has(name.trim().toLowerCase()) && <p className="mt-1 text-[11px] text-warn">You already have a game called “{name.trim()}” — players (and your own lists) will mix them up.</p>}
@@ -835,7 +839,11 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 disabled={!ok || (locked && t.id !== topic)}
                 title={ok ? (k ? `${fitLabel(f).label} with ${GENRE_BY_ID[genre].name}` : 'Fit unknown') : why}
                 aria-pressed={topic === t.id}
-                onClick={() => setTopic(t.id)}
+                onClick={() => {
+                  setTopic(t.id);
+                  // a suggested title follows the topic (until the player names the game themselves)
+                  if (!nameTyped && !franchiseId && !baseRel) setName(freshName(t.id, s.day));
+                }}
                 className={cx(
                   'rounded-full border px-2.5 py-1 text-xs font-medium transition disabled:opacity-35',
                   topic === t.id ? 'border-accent bg-accent text-accent-ink' : 'border-line hover:bg-bg2',
