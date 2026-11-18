@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../components/ui';
 import { Icon } from '../icons';
 import { useGame } from '../store';
@@ -16,7 +16,7 @@ interface Step {
 const STEPS: Step[] = [
   { title: 'Welcome to your garage', body: 'You’ve just founded a game studio. Let’s make your first game — it only takes a minute.', next: 'Let’s go' },
   { title: 'Open the Develop panel', body: 'Click Develop on the left (or press N), then choose “New game”.', done: (g) => g.panel === 'develop', target: 'rail-develop' },
-  { title: 'Design your game', body: 'Pick a name, genre, topic and platform. Good genre/topic combos score better — but you’ll only learn the fit by shipping. Then press “Start development”.', done: (g) => !!g.s && Object.values(g.s.projects).some((p) => p.kind === 'game'), target: 'start-dev' },
+  { title: 'Design your game', body: 'Pick a name, genre, topic and platform. Good genre/topic combos score better — you learn how well they fit by shipping games (or by paying for market research). Then press “Start development”.', done: (g) => !!g.s && Object.values(g.s.projects).some((p) => p.kind === 'game'), target: 'start-dev' },
   { title: 'Let time run', body: 'Press play (Space) or pick a speed at the top. Watch your team work. At each phase gate you’ll decide where to focus effort.', done: (g) => g.speed > 0 },
   { title: 'Phase gates & reviews', body: 'When a phase ends, the game pauses so you can adjust focus. When it ships, critics review it — hover any number to see why.', done: (g) => !!g.s && g.s.releaseOrder.length > 0 },
   { title: 'Grow the studio', body: 'Hire people from the Staff panel (H) when you can afford them, and assign someone to Research (R) to unlock new tech.', done: (g) => !!g.s && (g.s.progress.stats.staffHired > 0 || !!g.s.research.active), target: 'rail-staff' },
@@ -34,9 +34,21 @@ export function Tutorial() {
   const cur = STEPS[step];
   const [expanded, setExpanded] = useState(false);
 
+  // a step that's already done when it appears stays up a moment, so it isn't skipped unseen
+  const shown = useRef<{ step: number; at: number } | null>(null);
   useEffect(() => {
+    if (shown.current?.step !== step) shown.current = { step, at: Date.now() };
     if (!cur?.done) return;
-    if (cur.done(useGame.getState())) act({ type: 'tutorial', step: step + 1 });
+    if (!cur.done(useGame.getState())) return;
+    const wait = Math.max(0, 3500 - (Date.now() - shown.current.at));
+    if (!wait) {
+      act({ type: 'tutorial', step: step + 1 });
+      return;
+    }
+    const id = setTimeout(() => {
+      if (useGame.getState().s?.progress.tutorialStep === step) act({ type: 'tutorial', step: step + 1 });
+    }, wait);
+    return () => clearTimeout(id);
   }, [cur, step, act, panel, speed, s?.day]);
 
   // A studio that has already shipped a few games has clearly found its feet: retire the tutorial.

@@ -8,7 +8,8 @@ import { PERSON_BY_ID } from '@/data/people';
 import { fmtMoney, money } from '@/sim/util';
 import { tierDef, freeDesks } from '@/sim/systems/office';
 import { ROLE_NAMES, marketSalary } from '@/sim/systems/staff';
-import type { Candidate } from '@/sim/types';
+import type { Candidate, GameProject } from '@/sim/types';
+import { BALANCE } from '@/data/balance';
 import { Button, Empty, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
 import { useGame } from '../store';
 import { Face, SkillBars, Traits } from './staffBits';
@@ -64,11 +65,25 @@ function Hire() {
     );
   const sel = picked.filter((id) => s.candidates.some((c) => c.id === id));
   const toggle = (id: string) => setPicked((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
+  /** New hires get to work: with a single game in development that has room, they join its team. */
+  const joinCurrent = (names: string[]): string | null => {
+    const st = useGame.getState().s!;
+    const games = Object.values(st.projects).filter((p): p is GameProject => p.kind === 'game');
+    if (games.length !== 1) return null;
+    const g = games[0]!;
+    const fresh = Object.values(st.staff).filter((x) => names.includes(x.name) && x.hiredDay === st.day && x.assignment.kind === 'idle').map((x) => x.id);
+    const roomLeft = BALANCE.SIZE[g.concept.size].teamCap - g.team.length;
+    const joining = fresh.slice(0, Math.max(0, roomLeft));
+    if (!joining.length) return null;
+    return act({ type: 'setTeam', projectId: g.id, team: [...g.team, ...joining] }).ok ? g.concept.name : null;
+  };
   const hireOne = (c: Candidate) => {
     if (freeDesks(s) <= 0) act({ type: 'furnishDesks', extra: 1 });
     const r = act({ type: 'hire', candidateId: c.id });
-    if (r.ok) toast({ text: `${c.name} joined the team!`, tone: 'good', icon: 'staff' });
-    else toast({ text: r.error, tone: 'bad' });
+    if (r.ok) {
+      const on = joinCurrent([c.name]);
+      toast({ text: on ? `${c.name} joined — and is already working on ${on}` : `${c.name} joined the team!`, tone: 'good', icon: 'staff' });
+    } else toast({ text: r.error, tone: 'bad' });
   };
   const hireSelected = () => {
     const chosen = sel
@@ -89,9 +104,10 @@ function Hire() {
       else if (!err) err = `${c.name}: ${r.error}`;
     }
     setPicked([]);
+    const on = ok ? joinCurrent(chosen.map((c) => c.name)) : null;
     toast(
       ok === chosen.length
-        ? { text: `${ok} new hire${ok === 1 ? '' : 's'} joined!`, tone: 'good', icon: 'staff' }
+        ? { text: `${ok} new hire${ok === 1 ? '' : 's'} joined${on ? ` — working on ${on}` : '!'}`, tone: 'good', icon: 'staff' }
         : { text: `${ok} hired, ${chosen.length - ok} not${err ? ` (${err})` : ''}`, tone: ok ? 'neutral' : 'bad' },
     );
   };
