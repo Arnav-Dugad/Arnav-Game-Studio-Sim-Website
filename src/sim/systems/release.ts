@@ -236,7 +236,7 @@ export function launchTitleMul(s: GameState, pl: PlatformInfo, day = s.day): num
  */
 function sellingUsersM(s: GameState, pid: string, pl: PlatformInfo): number {
   // a machine that's gone off sale still has owners for a while (fading), not none
-  if (pl.endDay !== null && s.day >= pl.endDay) return activeUsersM(pl, s.day) * demandMul(s, pl);
+  if (pl.endDay !== null && s.day >= pl.endDay) return activeUsersM(pl, pl.endDay - 1) * Math.exp(-(s.day - pl.endDay) / (365 * 0.7)) * demandMul(s, pl); // fading from its last day on sale
   const now = s.market.users[pid] ?? 0;
   const age = s.day - pl.launchDay;
   if (age < 0 || age > 365 || pl.own) return now;
@@ -334,7 +334,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
       if (launch > 1.005) launchTitles.push({ name: pl.name, mul: launch });
       const own = ownCompetitionOn(pid);
       const potential = interest * attach * reach * (1 + hype * 0.45) * monet.units * fatigueMul * (crossplay ? BALANCE.CROSSPLAY_SALES : 1) * launch * featSales * priceMul * renown * own;
-      return { platform: pid, potential: Math.max(0, potential), units: 0, pl, own };
+      return { platform: pid, potential: Math.max(0, potential), units: 0, pl, own, users };
     });
   // the breakdown shows the overall effect, weighted by where the game sells
   if (siblings) {
@@ -357,7 +357,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
     // across a long series), and they're as busy with your other recent games as anyone
     const fanBuy = Math.min(fr.fans * clamp((effScore - 40) / 50, 0.05, 1) * fatigueMul, totalUsers * 0.3);
     const before = platforms.reduce((tt, ps) => tt + ps.potential, 0);
-    for (const ps of platforms) ps.potential += fanBuy * (((s.market.users[ps.platform] ?? 0) * 1e6) / Math.max(1, totalUsers)) * ps.own;
+    for (const ps of platforms) ps.potential += fanBuy * (ps.users / Math.max(1, totalUsers)) * ps.own; // split by the same buyers the cap counts
     const after = platforms.reduce((tt, ps) => tt + ps.potential, 0);
     // shown as the lift it gives (the breakdown is all multipliers), with the head count in the label
     if (before > 0 && after > before) sb.mul(`Series fans (~${fmtUnits(fanBuy)} buy it)`, after / before);
