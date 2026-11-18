@@ -12,7 +12,7 @@ import type { Ambition, GameState, Staff } from '../types';
 
 export type { Ambition, AmbitionKind } from '../types';
 import { clamp } from '../breakdown';
-import { pushNews } from '../util';
+import { aOrAn, pushNews } from '../util';
 import { ROLE_SKILLS, hasTrait, marketSalary } from './staff';
 
 
@@ -24,7 +24,7 @@ const RESEARCH_DAYS = 30;
 export function ambitionText(st: Staff, a: Ambition): string {
   switch (a.kind) {
     case 'genre':
-      return `Ship a ${GENRE_BY_ID[a.genre!]?.name ?? 'new'} game`;
+      return `Ship ${aOrAn(GENRE_BY_ID[a.genre!]?.name ?? 'new')} game`;
     case 'hit':
       return 'Ship a game that scores 80+';
     case 'first':

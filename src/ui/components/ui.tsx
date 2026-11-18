@@ -77,7 +77,7 @@ export function Pill({ children, tone = 'neutral', className }: { children: Reac
     good: 'bg-good/15 text-good',
     bad: 'bg-bad/15 text-bad',
     neutral: 'bg-bg2 text-ink2',
-    gold: 'bg-gold/20 text-gold',
+    gold: 'bg-gold/20 text-gold-ink',
     accent: 'bg-accent/15 text-accent',
     tech: 'bg-tech/15 text-tech',
   }[tone];

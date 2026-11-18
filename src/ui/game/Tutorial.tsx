@@ -96,7 +96,7 @@ export function Tutorial() {
       )}
       <div className={`glass absolute bottom-20 left-1/2 z-40 w-[min(420px,calc(100vw-1rem))] -translate-x-1/2 rounded-2xl p-4 animate-fade-up sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0 ${panel ? 'hidden sm:block' : ''}`} role="region" aria-label="Tutorial">
         <div className="flex items-start gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gold/20 text-gold">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gold/20 text-gold-ink">
             <Icon name="lightbulb" size={18} />
           </span>
           <div className="min-w-0 flex-1">

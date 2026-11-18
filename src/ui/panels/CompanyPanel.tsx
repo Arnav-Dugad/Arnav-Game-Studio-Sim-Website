@@ -368,7 +368,7 @@ function Acquire() {
                     size="sm"
                     variant="primary"
                     disabled={s.company.cash < a.price}
-                    ask={`Buy for ${fmtMoney(a.price)} (${Math.round((a.price / Math.max(1, s.company.cash)) * 100)}% of your cash)? It can’t be undone.`}
+                    ask={`Buy for ${fmtMoney(a.price)} (${a.price < s.company.cash * 0.01 ? '<1' : Math.round((a.price / Math.max(1, s.company.cash)) * 100)}% of your cash)? It can’t be undone.`}
                     onConfirm={() => {
                       const res = act({ type: 'acquire', targetId: a.id });
                       toast(res.ok ? { text: `${r.name} is now part of ${s.company.name}!`, tone: 'gold', icon: 'cart' } : { text: res.error, tone: 'bad' });

@@ -22,7 +22,7 @@ export default function GoalsPanel() {
       {sc && s.scenario && (
         <section className="mb-4 rounded-2xl border border-gold/50 bg-gold/10 p-3">
           <div className="flex items-baseline justify-between gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-gold">Scenario · {sc.difficulty}</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-gold-ink">Scenario · {sc.difficulty}</div>
             <div className="num text-xs text-ink2">
               {s.scenario.result === 'won' ? 'Complete!' : s.scenario.result === 'failed' ? 'Failed' : `Deadline ${formatDate(s.scenario.deadlineDay, false)} · ${yearsLeft(s)} yr left`}
             </div>

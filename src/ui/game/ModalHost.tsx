@@ -342,7 +342,7 @@ function GalaModal({ year, onClose }: { year: number; onClose: () => void }) {
     <Modal open onClose={onClose} title={`Golden Pixel Gala ${year}`}>
       {!reduce && <Confetti />}
       <div className="text-center">
-        <div className="mx-auto grid size-16 place-items-center rounded-full bg-gold/15 text-gold">
+        <div className="mx-auto grid size-16 place-items-center rounded-full bg-gold/15 text-gold-ink">
           <Icon name="trophy" size={32} />
         </div>
         <div className="mt-2 text-[11px] font-semibold uppercase tracking-widest text-gold">Golden Pixel Gala</div>
@@ -1236,7 +1236,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
   return (
     <Modal open title="The end" dismissable={false}>
       <div className="text-center">
-        <div className={cx('mx-auto grid size-16 place-items-center rounded-2xl', s.status === 'bankrupt' ? 'bg-bad/15 text-bad' : 'bg-gold/20 text-gold')}>
+        <div className={cx('mx-auto grid size-16 place-items-center rounded-2xl', s.status === 'bankrupt' ? 'bg-bad/15 text-bad' : 'bg-gold/20 text-gold-ink')}>
           <Icon name={s.status === 'bankrupt' ? 'skull' : 'trophy'} size={32} />
         </div>
         <h2 className="mt-3 font-display text-2xl font-semibold">{scenarioEnd && s.scenario?.result === 'won' ? 'Scenario complete!' : scenarioEnd ? 'Out of time' : storyEnd ? 'You made it to the present day!' : ending}</h2>

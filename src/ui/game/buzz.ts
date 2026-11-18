@@ -171,7 +171,11 @@ export function releaseBuzz(s: GameState, rel: Release, max = 12): BuzzPost[] {
       if (day > s.day) continue;
       const year = fromDay(day).year;
       const medium = mediumFor(year);
-      const line = draw(linesFor(s, rel, w, r), r);
+      // the same post twice reads like a bot: draw again (a couple of tries) for something new
+      const lines = linesFor(s, rel, w, r);
+      let line = draw(lines, r);
+      for (let tries = 0; tries < 3 && out.some((o) => o.text === line.text); tries++) line = draw(lines, r);
+      if (out.some((o) => o.text === line.text)) continue;
       const reach = Math.pow(10, pop) * (0.3 + r() * 1.7) * (medium === 'letter' ? 0 : medium === 'bbs' ? 0.05 : medium === 'forum' ? 0.4 : 3);
       out.push({ id: `${rel.id}|${w}|${k}`, releaseId: rel.id, game: rel.name, day, medium, author: author(r, medium, year), text: line.text, tone: line.tone, likes: Math.round(reach) });
     }
@@ -190,7 +194,8 @@ export function studioBuzz(s: GameState, max = 40): BuzzPost[] {
 
 /** Share of positive posts about a release (0..1), or null with too little talk. */
 export function sentiment(posts: BuzzPost[]): number | null {
-  const rated = posts.filter((p) => p.tone !== 'neutral');
-  if (rated.length < 3) return null;
-  return rated.filter((p) => p.tone === 'good').length / rated.length;
+  // lukewarm posts ("it's okay, wait for a sale") count as half: a meh crowd isn't a happy one
+  if (posts.length < 3) return null;
+  const score = posts.reduce((t, p) => t + (p.tone === 'good' ? 1 : p.tone === 'neutral' ? 0.5 : 0), 0);
+  return score / posts.length;
 }

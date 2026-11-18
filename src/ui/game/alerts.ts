@@ -75,8 +75,9 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   const risk = staff.filter(atRisk).length;
   if (risk) out.push({ id: 'risk', tone: risk >= 5 ? 'bad' : 'warn', icon: 'heart', text: `${risk} ${risk === 1 ? 'person needs' : 'people need'} attention (burnout, low morale or exhausted).`, action: { label: 'See who', run: () => open('staff', 'risk') } });
   const idle = idleCount(s);
-  if (idle) out.push({ id: 'idle', tone: idle >= 5 ? 'warn' : 'info', icon: 'hourglass', text: `${idle} ${idle === 1 ? 'person is' : 'people are'} idle — paid, but not working.`, action: { label: 'Assign', run: () => open('staff', 'idle') } });
-  if (!projects.some((p) => p.kind === 'game' || p.kind === 'contract') && staff.some((x) => x.assignment.kind === 'idle' && !isAway(x)))
+  const nothing = !projects.some((p) => p.kind === 'game' || p.kind === 'contract') && staff.some((x) => x.assignment.kind === 'idle' && !isAway(x));
+  if (idle && !nothing) out.push({ id: 'idle', tone: idle >= 5 ? 'warn' : 'info', icon: 'hourglass', text: `${idle} ${idle === 1 ? 'person is' : 'people are'} idle — paid, but not working.`, action: { label: 'Assign', run: () => open('staff', 'idle') } });
+  if (nothing)
     out.push({ id: 'nothing', tone: 'info', icon: 'develop', text: 'Nothing in development — the team is waiting for its next game.', action: { label: 'New game', run: () => open('develop', 'new') } });
   if (staff.length >= 6 && !(s.company.values ?? []).length) out.push({ id: 'culture', tone: 'info', icon: 'sparkle', text: 'Your studio has no stated values yet. Pick a culture — quality, speed, players, profit, innovation or balance.', action: { label: 'Culture', run: () => open('company', 'culture') } });
   const tired = staff.filter((x) => x.burnout > 60 && !sabbaticalBlocked(s, x)).length;

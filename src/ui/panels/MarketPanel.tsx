@@ -335,7 +335,7 @@ function RivalReleases() {
     <ul className="divide-y divide-line">
       {games.map((g, i) => (
         <li key={`${g.name}-${g.day}-${i}`} className="flex items-center gap-3 py-2 text-sm">
-          <span className={cx('num grid size-9 shrink-0 place-items-center rounded-lg text-xs font-bold', g.score >= 85 ? 'bg-gold/20 text-gold' : g.score >= 70 ? 'bg-good/15 text-good' : g.score >= 50 ? 'bg-bg2 text-ink2' : 'bg-bad/15 text-bad')}>{g.score}</span>
+          <span className={cx('num grid size-9 shrink-0 place-items-center rounded-lg text-xs font-bold', g.score >= 85 ? 'bg-gold/20 text-gold-ink' : g.score >= 70 ? 'bg-good/15 text-good' : g.score >= 50 ? 'bg-bg2 text-ink2' : 'bg-bad/15 text-bad')}>{g.score}</span>
           <div className="min-w-0 flex-1">
             <div className="truncate font-semibold">
               {g.name} {g.franchise && <Pill tone="accent">Classic</Pill>}
@@ -406,7 +406,7 @@ function WeeklyChart() {
       <ol className="divide-y divide-line">
         {rows.map((r, i) => (
           <li key={`${r.name}-${i}`} className={cx('flex items-center gap-3 py-1.5 text-sm', r.mine && 'rounded-lg bg-gold/10 px-1.5')}>
-            <span className={cx('num grid size-7 shrink-0 place-items-center rounded-lg text-xs font-bold', i === 0 ? 'bg-gold/25 text-gold' : 'bg-bg2 text-ink2')}>{i + 1}</span>
+            <span className={cx('num grid size-7 shrink-0 place-items-center rounded-lg text-xs font-bold', i === 0 ? 'bg-gold/25 text-gold-ink' : 'bg-bg2 text-ink2')}>{i + 1}</span>
             <div className="min-w-0 flex-1">
               {r.mine && r.id ? (
                 <button type="button" className="truncate text-left font-semibold hover:underline" onClick={() => useGame.getState().pushModal({ kind: 'release', releaseId: r.id! })}>

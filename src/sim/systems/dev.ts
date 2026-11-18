@@ -149,7 +149,8 @@ function progressGame(c: Ctx, p: GameProject): void {
   // the outside budget is a fixed sum: delays and extra polish don't keep paying the composer
   let extra = productionExtraDaily(p.concept.size, p.concept.production, s.day);
   if (extra > 0) {
-    const cap = productionExtraDaily(p.concept.size, p.concept.production, p.startDay) * (p.phaseDays[0] + p.phaseDays[1] + p.phaseDays[2]);
+    const planned = [0, 1, 2].reduce((t, ph) => t + Math.max(4, Math.round(phaseLength(p.concept.size, ph) * workShare(p.concept))), 0); // the schedule as planned (delays don't count)
+    const cap = productionExtraDaily(p.concept.size, p.concept.production, p.startDay) * planned;
     extra = Math.max(0, Math.min(extra, cap - (p.prodSpent ?? 0)));
     p.prodSpent = (p.prodSpent ?? 0) + extra;
   }

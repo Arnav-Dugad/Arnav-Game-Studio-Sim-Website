@@ -19,6 +19,7 @@
   --color-bad: var(--bad);
   --color-warn: var(--warn);
   --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
   --color-tech: var(--tech);
   --color-art: var(--art);
   --color-audio: var(--audio);
@@ -46,6 +47,7 @@
   --bad: #c43a4f;
   --warn: #8f5b0c; /* AA on every light surface (small warning text) */
   --gold: #c99a22;
+  --gold-ink: #7a5806; /* gold as text on light surfaces (AA) */
   --tech: #2f72b3;
   --art: #8a5cc6;
   --audio: #1f9c90;
@@ -68,6 +70,7 @@
   --bad: #f06478;
   --warn: #f2b84b;
   --gold: #f2c450;
+  --gold-ink: #f2c450;
   --tech: #5aa0e0;
   --art: #b28ae6;
   --audio: #3ccfc0;

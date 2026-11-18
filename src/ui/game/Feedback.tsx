@@ -25,7 +25,7 @@ export function Toasts() {
               'grid size-7 shrink-0 place-items-center rounded-lg',
               t.tone === 'good' && 'bg-good/15 text-good',
               t.tone === 'bad' && 'bg-bad/15 text-bad',
-              t.tone === 'gold' && 'bg-gold/20 text-gold',
+              t.tone === 'gold' && 'bg-gold/20 text-gold-ink',
               t.tone === 'neutral' && 'bg-bg2 text-ink2',
             )}
           >

@@ -113,7 +113,7 @@ export default function OfficePanel() {
       </Section>
 
       <Section title="Style">
-        <div className="mb-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Floor">
+        <div className="mb-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Floor style">
           {(['auto', 'wood', 'carpet', 'concrete', 'tiles', 'checker'] as const).map((f) => (
             <button
               key={f}

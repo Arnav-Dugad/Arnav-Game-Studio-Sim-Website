@@ -101,7 +101,7 @@ export default function OverviewPanel() {
             {upcoming.map((e, i) => (
               <li key={i} className="flex items-center gap-2 text-xs">
                 <span className="num w-20 shrink-0 text-ink3">{formatDate(e.day, true)}</span>
-                <span className={cx('grid size-6 shrink-0 place-items-center rounded-lg', e.tone === 'good' ? 'bg-good/15 text-good' : e.tone === 'bad' ? 'bg-bad/15 text-bad' : e.tone === 'gold' ? 'bg-gold/20 text-gold' : 'bg-bg2 text-ink2')}>
+                <span className={cx('grid size-6 shrink-0 place-items-center rounded-lg', e.tone === 'good' ? 'bg-good/15 text-good' : e.tone === 'bad' ? 'bg-bad/15 text-bad' : e.tone === 'gold' ? 'bg-gold/20 text-gold-ink' : 'bg-bg2 text-ink2')}>
                   <Icon name={e.icon} size={13} />
                 </span>
                 <span className="min-w-0 flex-1 truncate">{e.text}</span>

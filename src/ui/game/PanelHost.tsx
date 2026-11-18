@@ -52,7 +52,8 @@ const PANELS: Record<PanelId, () => ReactNode> = {
 export function PanelHost() {
   const panel = useGame((g) => g.panel);
   const openPanel = useGame((g) => g.openPanel);
-  if (!panel) return null;
+  const loaded = useGame((g) => !!g.s); // panels always read the game: never render one without it
+  if (!panel || !loaded) return null;
   return (
     <aside
       aria-label={TITLES[panel]}

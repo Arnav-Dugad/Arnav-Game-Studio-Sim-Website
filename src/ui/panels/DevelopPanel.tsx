@@ -664,10 +664,12 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
   const cap = BALANCE.SIZE[size].teamCap;
   const joining = liveTeam.slice(0, cap).map((id) => s.staff[id]!).filter(Boolean); // who'll actually join
-  const cost = estimateCost(s, size, joining, work, production);
+  // lean only where there's something to cut (the sim drops it otherwise): preview what you'll actually get
+  const prod: ProductionTier = production === 'lean' && sizeDailyCost(size, s.day) * 0.4 * BALANCE.SIZE[size].days * work < 500 ? 'standard' : production;
+  const cost = estimateCost(s, size, joining, work, prod);
   const conceptPreview = useMemo(
-    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs, priceTier, production }),
-    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features, locs, priceTier, production],
+    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs, priceTier, production: prod }),
+    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features, locs, priceTier, prod],
   );
   const week = Math.floor(s.day / 7);
   const forecast = useMemo(() => {
@@ -694,7 +696,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs, priceTier, production },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs, priceTier, production: prod },
     });
     if (r.ok) {
       sound.play('success');
@@ -970,7 +972,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <Segmented<ProductionTier>
             ariaLabel="Production values"
-            value={production}
+            value={prod}
             onChange={setProduction}
             options={PRODUCTION_TIERS.map((tier) => {
               const extra = productionExtraDaily(size, tier, s.day) * cost.days;
@@ -980,8 +982,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
             })}
           />
           <span className="text-ink3">
-            {productionBlurb(production, yr)}{' '}
-            {production !== 'standard' && `Quality ${PRODUCTION[production].quality > 1 ? '+' : '−'}${Math.round(Math.abs(PRODUCTION[production].quality - 1) * 100)}%${PRODUCTION[production].quality > 1 ? ' (less once a game nears the critics’ high bar)' : ''}.`}
+            {productionBlurb(prod, yr)}{' '}
+            {prod !== 'standard' && `Quality ${PRODUCTION[prod].quality > 1 ? '+' : '−'}${Math.round(Math.abs(PRODUCTION[prod].quality - 1) * 100)}%${PRODUCTION[prod].quality > 1 ? ' (less once a game nears the critics’ high bar)' : ''}.`}
           </span>
         </div>
       </Section>

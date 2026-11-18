@@ -42,7 +42,7 @@ export function CultureTab() {
                 <div className="flex items-center gap-2">
                   <Icon name={c.icon as IconName} size={16} className={on ? 'text-accent' : 'text-ink3'} />
                   <span className="font-semibold">{c.name}</span>
-                  {held && <span className="ml-auto rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold">Current</span>}
+                  {held && <span className="ml-auto rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold-ink">Current</span>}
                 </div>
                 <div className="mt-0.5 text-xs italic text-ink3">“{c.motto}”</div>
                 <div className="mt-1.5 text-xs text-good">✓ {c.pros}</div>
