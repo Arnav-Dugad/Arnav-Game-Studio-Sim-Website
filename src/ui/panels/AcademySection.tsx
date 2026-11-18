@@ -9,6 +9,7 @@ import {
   academyBudget,
   academyFoundCost,
   academyName,
+  firstGraduation,
   classSize,
   gradBoost,
   type AcademyFunding,
@@ -69,11 +70,11 @@ export function AcademySection() {
       </Section>
     );
 
-  const firstJune = s.day - a.since < 240;
+  const firstJune = a.grads === 0; // until the first class has graduated
   return (
     <Section title={academyName(s)}>
       <p className="text-xs text-ink3">
-        Teaching {trackLabel(a.track).toLowerCase()} since {fromDay(a.since).year}. {firstJune ? 'The first class is still in its first year.' : `Next June: about ${classSize(s)} graduates, roughly ${Math.round(gradBoost(s))} skill points ahead of a typical newcomer.`}{' '}
+        Teaching {trackLabel(a.track).toLowerCase()} since {fromDay(a.since).year}. {firstJune ? `The first class graduates in June ${firstGraduation(a.since)}.` : `Next June: about ${classSize(s)} graduates, roughly ${Math.round(gradBoost(s))} skill points ahead of a typical newcomer (classes reflect the whole year’s budget).`}{' '}
         {a.grads > 0 && `${a.grads} graduated so far, ${a.hired} hired by you.`}
       </p>
       <div className="mt-2 grid gap-2">

@@ -18,10 +18,11 @@ import { COMPANY_BY_ID } from '@/data/companies';
 import { AUDIENCES, type Audience, type GenreId, type Monetization } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
 import { aOrAn, fmtMoney, fmtUnits, hasFlag, money } from '@/sim/util';
-import { availablePlatforms, genrePopularity, platformInfo } from '@/sim/systems/market';
+import { availablePlatforms, genrePopularity, platformAudienceFit, platformGenreFit, platformInfo } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
-import { qualityToScore, workShare } from '@/sim/systems/dev';
+import { comboFit, qualityToScore, workShare } from '@/sim/systems/dev';
+import { clamp } from '@/sim/breakdown';
 import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
@@ -35,12 +36,10 @@ import { Icon } from '../icons';
 import { useGame } from '../store';
 import { isAway } from '@/sim/systems/staff';
 import { BalanceBar, FocusSliders } from '../game/FocusEditor';
-import { DESIGN_AREAS, SPEC_AREA_BONUS, areaSkill } from '@/sim/systems/dev';
-import { PHASE_AREAS } from '@/data/types';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
 import { rndSales } from '@/sim/systems/rnd';
-import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, idealFocus, knowsCombo, suggestConcept, suggestName, teamEffortEstimate } from '../game/lib';
+import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, designShare, idealFocus, knowsCombo, suggestConcept, suggestName, teamEffortEstimate, tunedFocus } from '../game/lib';
 import { sound } from '../sound';
 
 export default function DevelopPanel() {
@@ -589,6 +588,9 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const [nameTyped, setNameTyped] = useState(false);
   const [audience, setAudience] = useState<Audience>(baseRel?.concept.audience ?? lastEntry(presetFr)?.concept.audience ?? 'everyone');
   const locked = !!baseRel;
+  /** The quality model's audience multiplier for this genre × topic. */
+  const audFit = (a: Audience) => clamp(0.85 + (comboFit(genre, topic, a).aud - 1) * 0.6, 0.7, 1.08);
+  const bestAudience = AUDIENCES.reduce((b, a) => (audFit(a) > audFit(b) + 1e-9 ? a : b), 'everyone' as Audience);
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
   const [priceTier, setPriceTier] = useState<PriceTier>('standard');
@@ -899,12 +901,17 @@ function NewGame({ onDone }: { onDone: () => void }) {
       </Section>
 
       <Section title="4 · Audience & size">
+        {audFit(audience) < 0.97 || audFit(bestAudience) > audFit(audience) + 0.02 ? (
+          <p className="mb-2 text-xs text-ink3">
+            {GENRE_BY_ID[genre].name} × {TOPIC_BY_ID[topic]?.name ?? topic} works best for <b className="text-ink2">{bestAudience === 'everyone' ? 'everyone' : `${bestAudience}s`}</b> ★ — your pick scores {Math.round((1 - audFit(audience) / audFit(bestAudience)) * 100)}% lower on audience fit.
+          </p>
+        ) : null}
         <div className="flex flex-wrap gap-3">
           <Segmented<Audience>
             ariaLabel="Audience"
             value={audience}
             onChange={setAudience}
-            options={AUDIENCES.map((a) => ({ value: a, label: a[0]!.toUpperCase() + a.slice(1) }))}
+            options={AUDIENCES.map((a) => ({ value: a, label: `${a[0]!.toUpperCase() + a.slice(1)}${a === bestAudience && audFit(a) > audFit('everyone') + 0.005 ? ' ★' : ''}` }))}
           />
           <Segmented<Size>
             ariaLabel="Size"
@@ -1026,7 +1033,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
         <div className="grid gap-1.5 sm:grid-cols-2">
           {plats.map((p) => {
             const on = platforms.includes(p.id);
-            const fitG = GENRE_BY_ID[genre].kinds[p.kind] ?? 1;
+            // the same fit the quality model uses: its players' taste for this genre and this audience
+            const fitG = Math.sqrt(platformGenreFit(p, genre) * platformAudienceFit(p, audience));
             return (
               <button
                 key={p.id}
@@ -1043,8 +1051,16 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 </div>
                 <div className="text-right">
                   {launchTitleMul(s, p, s.day + cost.days) > 1.05 && <Pill tone="gold">Launch window</Pill>}
-                  {fitG >= 1.15 && <Pill tone="good">Genre fit</Pill>}
-                  {fitG < 0.9 && <Pill tone="bad">Weak fit</Pill>}
+                  {fitG >= 1.1 && (
+                    <span title={`Its players love ${GENRE_BY_ID[genre].name.toLowerCase()} games for ${audience === 'everyone' ? 'everyone' : `${audience}s`}`}>
+                      <Pill tone="good">Great fit</Pill>
+                    </span>
+                  )}
+                  {fitG < 0.92 && (
+                    <span title={`Its players aren’t into ${GENRE_BY_ID[genre].name.toLowerCase()} games for ${audience === 'everyone' ? 'everyone' : `${audience}s`} — the game scores lower here`}>
+                      <Pill tone="bad">Weak fit</Pill>
+                    </span>
+                  )}
                   <div className="mt-0.5 text-[10px] text-ink3">{s.devkits.includes(p.id) ? 'Dev kit owned' : `Kit ${fmtMoney(devkitCost(s, p.id))}`}</div>
                 </div>
               </button>
@@ -1098,20 +1114,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
           ))}
           {(() => {
             // what this team, with this focus, would produce: design share vs the genre's ideal
-            let d = 0;
-            let all = 0;
-            for (const st of joining)
-              for (const ph of [0, 1, 2] as const) {
-                const f = focus[ph];
-                const fs = f[0] + f[1] + f[2] || 1;
-                PHASE_AREAS[ph]!.forEach((ar, i) => {
-                  const pts = BALANCE.PHASE_SHARE[ph] * (f[i]! / fs) * areaSkill(st, ar) * (1 + ((st.spec ? SPEC_AREA_BONUS[st.spec]?.[ar] : undefined) ?? 0));
-                  all += pts;
-                  if (DESIGN_AREAS.has(ar)) d += pts;
-                });
-              }
-            if (!all) return null;
-            const share = d / all;
+            const share = designShare(joining, focus);
+            if (share === null) return null;
             const want = GENRE_BY_ID[genre].designRatio;
             const ok = Math.abs(share - want) <= 0.08;
             return (
@@ -1120,7 +1124,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                   This team and focus: about <b className="num">{Math.round(share * 100)}% design</b> · {GENRE_BY_ID[genre].name} games want ≈ {Math.round(want * 100)}%{ok ? ' — on target' : share > want ? ' — favour Engine, AI and Graphics' : ' — favour Gameplay, Story, Levels and World'}
                 </span>
                 {ideal && (
-                  <Button size="sm" variant="ghost" onClick={() => setFocus(ideal)}>
+                  <Button size="sm" variant="ghost" onClick={() => setFocus(tunedFocus(genre, joining))} title="Your notes on this genre, adjusted so this team lands its design/tech balance">
                     Use my notes
                   </Button>
                 )}

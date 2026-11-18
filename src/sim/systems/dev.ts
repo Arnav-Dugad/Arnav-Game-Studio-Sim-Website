@@ -396,7 +396,7 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   const density = total > 0 ? (p.bugs * scale) / total : 0;
   bd.mul(project ? `Bugs (~${Math.round(p.bugs * scale)} expected)` : `Bugs (${Math.round(p.bugs)} remaining)`, 1 - Math.min(0.45, density * 1.6));
   bd.clamp(0, 1.2);
-  const raw = qualityToScore(bd.value);
+  const raw = 100 * bd.value * BALANCE.SCORE_GAIN; // uncapped: the ceiling has to bend the very best games too
   const top = criticsCeiling(raw, c.size);
   if (top < raw - 0.05) bd.mul(ceilingLabel(c.size), top / raw);
   return bd.done();

@@ -9,6 +9,7 @@ import { hasTrait } from '@/sim/systems/staff';
 import { diwali, isRainy, lunarNewYear } from './seasons';
 import { hobbyOf } from '@/data/hobbies';
 import type { GameState, Staff } from '@/sim/types';
+import { shortTitle } from './shortTitle';
 
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
 const first = (name: string) => name.split(' ')[0] ?? name;
@@ -45,7 +46,7 @@ export function chatExchange(s: GameState, a: Staff, b: Staff): Exchange {
     if (recent.score >= 80) topics.push({ w: 4, make: () => [pick([`${recent.score} for ${recent.name}!`, 'Did you see the reviews?!', 'We nailed it!']), pick(REPLIES_POS)] });
     else if (recent.score < 55) topics.push({ w: 3, make: () => [pick([`Ouch, a ${recent.score}…`, 'Those reviews stung.', 'Next one will be better.']), pick(REPLIES_NEG)] });
   }
-  if (rivalHit) topics.push({ w: 2, make: () => [`Played ${rivalHit.name.slice(0, 18)}?`, pick(['Not yet!', 'It’s so good.', 'Ours will be better.', 'All weekend!'])] });
+  if (rivalHit) topics.push({ w: 2, make: () => [`Played ${shortTitle(rivalHit.name, 18)}?`, pick(['Not yet!', 'It’s so good.', 'Ours will be better.', 'All weekend!'])] });
   if ((s.awardHistory ?? []).some((y) => y.year === yr - 1 && y.winners.some((w) => w.mine))) topics.push({ w: 3, make: () => ['We won at the Gala!', pick(REPLIES_POS)] });
   // The era
   const era: Exchange[] =

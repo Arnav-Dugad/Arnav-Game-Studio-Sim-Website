@@ -9,6 +9,7 @@ import type { GameState } from '@/sim/types';
 import { animate, createRig, newAnim, setHat, type Anim, type Prop, type Rig } from './animation';
 import type { ScenePalette } from './palette';
 import { T, drawPerson, lookFor, type Look } from './sprites';
+import { shortTitle } from './shortTitle';
 
 export type VisitorKind = 'courier' | 'pizza' | 'journalist' | 'investor' | 'candidate' | 'leaver' | 'headhunter' | 'guide' | 'kid' | 'fan' | 'filmcrew';
 
@@ -58,6 +59,8 @@ const first = (n: string) => n.split(' ')[0] ?? n;
 
 export class VisitorSystem {
   private list: Visitor[] = [];
+  /** Office width in pixels (speech bubbles stay inside it). */
+  private officeW = 0;
   private nextT = 25 + Math.random() * 25;
   private floor = -1;
   /** Poach offers a headhunter has already visited for. */
@@ -136,13 +139,13 @@ export class VisitorSystem {
     const hyped = projects.find((p) => p.kind === 'game' && p.phase >= 2 && p.hype > 35);
     if (hyped && hyped.kind === 'game') {
       const team = people.filter((p) => p.project === hyped.id);
-      if (team.length) opts.push({ w: 2, go: () => this.spawn(s, floor, 'journalist', pick(team), [pick([`Can I get a quote on ${hyped.concept.name.slice(0, 16)}?`, 'Exclusive preview?', 'Any release date?']), pick(['It’s going to be huge!', 'No comment! 😄', 'You’ll love it.', 'Soon™'])]) });
+      if (team.length) opts.push({ w: 2, go: () => this.spawn(s, floor, 'journalist', pick(team), [pick([`Can I get a quote on ${shortTitle(hyped.concept.name, 16)}?`, 'Exclusive preview?', 'Any release date?']), pick(['It’s going to be huge!', 'No comment! 😄', 'You’ll love it.', 'Soon™'])]) });
     }
     // the first collector's edition boxes arrive for the team to admire
     const boxed = projects.find((p) => p.kind === 'game' && p.collectors && p.phase >= 2);
     if (boxed && boxed.kind === 'game') {
       const team = people.filter((p) => p.project === boxed.id);
-      if (team.length) opts.push({ w: 1.5, go: () => this.spawn(s, floor, 'courier', pick(team), [pick(['Collector’s edition samples!', 'Careful — there’s a statue in here.', `The ${boxed.concept.name.slice(0, 16)} boxes are in!`]), pick(['Look at the statue! 😍', 'It’s real now. It’s really real.', 'Can I keep one?', 'The map is gorgeous!'])]) });
+      if (team.length) opts.push({ w: 1.5, go: () => this.spawn(s, floor, 'courier', pick(team), [pick(['Collector’s edition samples!', 'Careful — there’s a statue in here.', `The ${shortTitle(boxed.concept.name, 16)} boxes are in!`]), pick(['Look at the statue! 😍', 'It’s real now. It’s really real.', 'Can I keep one?', 'The map is gorgeous!'])]) });
     }
     // a documentary crew filming the team behind the game
     const filmed = projects.find((p) => p.kind === 'game' && p.documentary);
@@ -211,7 +214,7 @@ export class VisitorSystem {
       v.anim.joy = 3 + Math.random() * 2;
       v.anim.party = i % 3;
       this.list.push(v);
-      if (i === 1 || i === 4) this.say(v, i === 1 ? `${game.slice(0, 18)}! 🎉` : pick(['Day one!', 'Been waiting all year!', 'Take my money!']), 3);
+      if (i === 1 || i === 4) this.say(v, i === 1 ? `${shortTitle(game, 18)}! 🎉` : pick(['Day one!', 'Been waiting all year!', 'Take my money!']), 3);
     }
     // someone in the studio mascot costume comes out to greet the queue
     const m = s.company.mascot;
@@ -292,6 +295,7 @@ export class VisitorSystem {
 
   update(s: GameState, floor: number, dt: number, host: VisitorHost, reducedMotion: boolean, P: ScenePalette): void {
     this.P = P;
+    this.officeW = tierDef(s.office.tier).w * T;
     if (floor !== this.floor) {
       for (const v of [...this.list]) this.remove(v);
       this.floor = floor;
@@ -316,7 +320,12 @@ export class VisitorSystem {
     for (const v of [...this.list]) {
       v.t += dt;
       v.speechT -= dt;
-      if (v.speech) v.speech.visible = v.speechT > 0;
+      if (v.speech) {
+        v.speech.visible = v.speechT > 0;
+        // keep the bubble inside the office walls (fans crowd the doorway near the edges)
+        const half = v.speech.width / 2;
+        if (this.officeW > half * 2) v.speech.x = Math.min(this.officeW - 4 - half - v.x, Math.max(4 + half - v.x, 0));
+      }
       const target = v.path[0];
       let walking = false;
       if (target) {

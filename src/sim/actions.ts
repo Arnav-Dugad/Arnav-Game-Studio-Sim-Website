@@ -1751,8 +1751,9 @@ function apply(c: Ctx, a: Action): string | null {
       spend(s, 'recruiting', cost);
       // the new people go first; the pool keeps its size by letting the oldest ordinary applicants go
       const fresh = Array.from({ length: ROLE_SEARCH_SIZE }, () => generateCandidate(s, c.rng, { role: a.role as Role, quality: candidateQuality(s) }));
-      const keep = s.candidates.filter((x) => x.personId || x.returning || x.academy || x.fromRival);
-      const rest = s.candidates.filter((x) => !keep.includes(x)).slice(0, Math.max(0, 14 - keep.length - fresh.length));
+      const live = s.candidates.filter((x) => x.expiresDay > s.day);
+      const keep = live.filter((x) => x.personId || x.returning || x.academy || x.fromRival);
+      const rest = live.filter((x) => !keep.includes(x)).slice(0, Math.max(0, 14 - keep.length - fresh.length));
       s.candidates = [...fresh, ...keep, ...rest];
       return null;
     }
@@ -1760,7 +1761,8 @@ function apply(c: Ctx, a: Action): string | null {
       const cost = money(1_200, s.day);
       if (s.company.cash < cost) return 'Not enough cash';
       spend(s, 'recruiting', cost);
-      s.candidates = [];
+      // a fresh pool, but nobody special is sent away (graduates, former colleagues, rival staff, legends)
+      s.candidates = s.candidates.filter((x) => x.expiresDay > s.day && (x.personId || x.returning || x.academy || x.fromRival));
       refreshCandidates(c);
       return null;
     }

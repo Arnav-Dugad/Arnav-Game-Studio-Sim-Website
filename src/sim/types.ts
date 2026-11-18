@@ -981,7 +981,7 @@ export interface Company {
   /** A magazine printed one of your games as a type-in listing (1980s); years later, someone who typed it in may apply. */
   typeIn?: { day: number; game: string; magazine: string; grown?: boolean };
   /** Your games school (systems/academy.ts): opened, its craft, budget level, graduates so far and how many you hired. */
-  academy?: { since: number; track: Role | 'mixed'; funding: 1 | 2 | 3; grads: number; hired: number };
+  academy?: { since: number; track: Role | 'mixed'; funding: 1 | 2 | 3; grads: number; hired: number; fundSum?: number; months?: number };
   /** A greenlit staff pitch waiting to be made (systems/pitches.ts). */
   pitch?: { staffId: string; genre: GenreId; topic: string; until: number };
   /** The year's awards campaign (systems/awardsCampaign.ts). */

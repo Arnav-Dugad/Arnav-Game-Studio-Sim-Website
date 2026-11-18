@@ -5,6 +5,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { GameState } from '@/sim/types';
 import { T } from './sprites';
+import { shortTitle } from './shortTitle';
 
 interface Bird {
   c: Container;
@@ -23,7 +24,7 @@ const CLASSICS = ['Ship it! Squawk!', 'Who broke the build?', 'Crunch time! Rawk
 function phrases(s: GameState): string[] {
   const out = [...CLASSICS, `${s.company.name.split(' ')[0]}! Rawk!`];
   const game = Object.values(s.projects).find((p) => p.kind === 'game');
-  if (game && game.kind === 'game') out.push(`${game.concept.name.slice(0, 16)}!`, `When’s ${game.concept.name.split(' ')[0]} out?`);
+  if (game && game.kind === 'game') out.push(`${shortTitle(game.concept.name, 16)}!`, `When’s ${game.concept.name.split(' ')[0]} out?`);
   const last = s.releaseOrder.length ? s.releases[s.releaseOrder[s.releaseOrder.length - 1]!] : undefined;
   if (last && s.day - last.day < 120) out.push(last.score >= 80 ? `${Math.round(last.score)}! ${Math.round(last.score)}!` : 'Reviews! Squawk…');
   return out;

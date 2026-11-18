@@ -1,6 +1,7 @@
 /** UI-side helpers that derive presentation data from the sim (pure functions). */
 import { AREAS } from '@/data/types';
-import { areaSkill, benchmarkPoints, teamSynergy } from '@/sim/systems/dev';
+import { DESIGN_AREAS, SPEC_AREA_BONUS, areaSkill, benchmarkPoints, teamSynergy } from '@/sim/systems/dev';
+import { clamp } from '@/sim/breakdown';
 import { productivity } from '@/sim/systems/staff';
 import { TITLE_NOUN } from '@/data/names';
 import { genrePopularity, topicPopularity } from '@/sim/systems/market';
@@ -75,6 +76,71 @@ export function idealFocus(genre: GenreId): [Focus3, Focus3, Focus3] {
     const b = Math.round((v[1]! / t) * 100);
     return [a, b, 100 - a - b] as Focus3;
   }) as [Focus3, Focus3, Focus3];
+}
+
+/** Share of the work that will be design, for this team with this focus (null without a team). Mirrors how development splits points. */
+export function designShare(team: Staff[], focus: readonly [Focus3, Focus3, Focus3]): number | null {
+  let d = 0;
+  let all = 0;
+  for (const st of team)
+    for (const ph of [0, 1, 2] as const) {
+      const f = focus[ph];
+      const fs = f[0] + f[1] + f[2] || 1;
+      PHASE_AREAS[ph]!.forEach((ar, i) => {
+        const pts = BALANCE.PHASE_SHARE[ph] * (f[i]! / fs) * areaSkill(st, ar) * (1 + ((st.spec ? SPEC_AREA_BONUS[st.spec]?.[ar] : undefined) ?? 0));
+        all += pts;
+        if (DESIGN_AREAS.has(ar)) d += pts;
+      });
+    }
+  return all ? d / all : null;
+}
+
+const cos3 = (a: readonly number[], b: readonly number[]) => {
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < 3; i++) {
+    dot += a[i]! * b[i]!;
+    na += a[i]! * a[i]!;
+    nb += b[i]! * b[i]!;
+  }
+  return na && nb ? dot / Math.sqrt(na * nb) : 0;
+};
+
+/**
+ * Your notes on a genre, tuned to the team: the focus that best satisfies both rules critics care about —
+ * matching the genre's priorities, and landing its design/tech balance with the people you actually have.
+ * (Same multipliers as the quality model: "Focus matches genre" and "Design/tech balance".)
+ */
+export function tunedFocus(genre: GenreId, team: Staff[]): [Focus3, Focus3, Focus3] {
+  const g = GENRE_BY_ID[genre];
+  const base = idealFocus(genre);
+  if (!team.length) return base;
+  const shape = (t: number) =>
+    PHASE_AREAS.map((areas, ph) => {
+      const w = areas.map((a, i) => Math.max(1, base[ph]![i]!) * Math.exp(DESIGN_AREAS.has(a) ? t : -t));
+      const sum = w[0]! + w[1]! + w[2]!;
+      const a = Math.round((w[0]! / sum) * 100);
+      const b = Math.round((w[1]! / sum) * 100);
+      return [a, b, 100 - a - b] as Focus3;
+    }) as [Focus3, Focus3, Focus3];
+  const value = (f: [Focus3, Focus3, Focus3]) => {
+    let al = 0;
+    for (let ph = 0; ph < 3; ph++) al += cos3(f[ph]!, PHASE_AREAS[ph]!.map((a) => g.ideal[a])) / 3;
+    const share = designShare(team, f) ?? g.designRatio;
+    return (0.62 + 0.43 * clamp((al - 0.55) / 0.45, 0, 1)) * (1 - Math.min(0.35, Math.abs(share - g.designRatio) * 1.2));
+  };
+  let best = base;
+  let bestV = value(base);
+  for (let t = -2; t <= 2.0001; t += 0.05) {
+    const f = shape(t);
+    const v = value(f);
+    if (v > bestV + 1e-9) {
+      best = f;
+      bestV = v;
+    }
+  }
+  return best;
 }
 
 /** How a genre's popularity moved over the last ~6 months (e.g. +0.12 = 12% more popular). 0 without history. */

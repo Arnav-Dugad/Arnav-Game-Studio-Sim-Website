@@ -2781,10 +2781,11 @@ export const EVENT_DEFS: EventDef[] = [
 
 const DEF_BY_ID = Object.fromEntries(EVENT_DEFS.map((d) => [d.id, d]));
 
-/** Days between random popups at the least, and the daily chance of one after that (about one every 5–6 weeks). */
+/** Days between random popups at the least, and the weekly chance of one after that (about one every 10–11 weeks). */
 export const EVENT_GAP = 28;
-export const EVENT_CHANCE = 0.1;
+export const EVENT_CHANCE = 0.15;
 
+/** Weekly roll for a random event. */
 /** Raise a specific event now (scheduled events such as the shareholder meeting). */
 export function fireEvent(c: Ctx, defId: string): boolean {
   const { s } = c;

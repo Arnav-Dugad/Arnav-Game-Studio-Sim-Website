@@ -5,7 +5,7 @@
  * school, the bigger and stronger its classes, and each graduation adds to the studio's name.
  */
 import { clamp } from '../breakdown';
-import { fromDay } from '../calendar';
+import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState, Role } from '../types';
 import { SKILLS } from '../../data/types';
@@ -49,18 +49,31 @@ export function academyYears(s: GameState): number {
   return a ? Math.max(0, Math.floor((s.day - a.since) / 365)) : 0;
 }
 
+/** The school year's average budget level (a class is taught all year, not just in May). */
+export function yearFunding(s: GameState): number {
+  const a = s.company.academy;
+  if (!a) return 0;
+  return a.months ? (a.fundSum ?? 0) / a.months : a.funding;
+}
+
+/** The first June a class can graduate: a full school year (240 days) after opening. */
+export function firstGraduation(since: number): number {
+  const y = fromDay(since).year;
+  return toDay(y, 6, 1) - since >= 240 ? y : y + 1;
+}
+
 /** Graduates in June's class. */
 export function classSize(s: GameState): number {
   const a = s.company.academy;
   if (!a) return 0;
-  return clamp(1 + a.funding * 2 + Math.floor(academyYears(s) / 4), 3, 9);
+  return clamp(Math.round(1 + yearFunding(s) * 2 + Math.floor(academyYears(s) / 4)), 3, 9);
 }
 
 /** How much better than a typical junior the graduates are (skill points on their craft). */
 export function gradBoost(s: GameState): number {
   const a = s.company.academy;
   if (!a) return 0;
-  return 6 + a.funding * 5 + Math.min(10, academyYears(s) * 1.5);
+  return 6 + yearFunding(s) * 5 + Math.min(10, academyYears(s) * 1.5);
 }
 
 export function foundAcademy(c: Ctx, track: AcademyTrack, funding: AcademyFunding): void {
@@ -71,7 +84,7 @@ export function foundAcademy(c: Ctx, track: AcademyTrack, funding: AcademyFundin
   pushNews(s, {
     category: 'studio',
     headline: `${s.company.name} opens the ${academyName(s)}`,
-    body: `A school for the next generation of ${track === 'mixed' ? 'game makers' : `${ROLE_NAMES[track].toLowerCase()}s`}. The first class graduates next June${fromDay(s.day).month >= 6 ? ' (well, the June after)' : ''}.`,
+    body: `A school for the next generation of ${track === 'mixed' ? 'game makers' : `${ROLE_NAMES[track].toLowerCase()}s`}. The first class graduates in June ${firstGraduation(s.day)}.`,
     tone: 'good',
   });
 }
@@ -91,10 +104,13 @@ export function academyMonthly(c: Ctx): void {
   const a = s.company.academy;
   if (!a) return;
   spend(s, 'training', academyBudget(s, a.funding));
+  a.fundSum = (a.fundSum ?? 0) + a.funding;
+  a.months = (a.months ?? 0) + 1;
   // a class needs a full school year: no graduation in the June right after opening
   if (fromDay(s.day).month !== 6 || s.day - a.since < 240) return;
   const n = classSize(s);
   const boost = gradBoost(s);
+  const fund = yearFunding(s);
   const yr = fromDay(s.day).year;
   for (let i = 0; i < n; i++) {
     const role: Role = a.track === 'mixed' || rng.chance(0.2) ? rng.pick(HIREABLE_ROLES) : a.track;
@@ -105,7 +121,7 @@ export function academyMonthly(c: Ctx): void {
     cand.skills[secondary] = clamp(Math.round(cand.skills[secondary] + boost * 0.5), 5, 65);
     for (const k of SKILLS) if (k !== primary && k !== secondary) cand.skills[k] = clamp(cand.skills[k] + Math.round(boost * 0.15), 1, 55);
     cand.level = levelFor(cand.skills[primary]);
-    cand.potential = clamp(Math.round(cand.skills[primary] + 18 + a.funding * 3 + rng.range(0, 12)), cand.skills[primary], 100);
+    cand.potential = clamp(Math.round(cand.skills[primary] + 18 + fund * 3 + rng.range(0, 12)), cand.skills[primary], 100);
     cand.askSalary = Math.round((marketSalary(s, cand.skills) * GRAD_DISCOUNT) / 100) * 100;
     cand.salary = cand.askSalary;
     cand.expiresDay = s.day + GRAD_DAYS;
@@ -113,8 +129,10 @@ export function academyMonthly(c: Ctx): void {
     s.candidates.unshift(cand);
   }
   a.grads += n;
+  a.fundSum = 0; // a new school year
+  a.months = 0;
   s.progress.stats.academyGrads = (s.progress.stats.academyGrads ?? 0) + n;
-  addRep(s, (0.3 + a.funding * 0.15) * (1 - s.company.reputation / 120), 'Academy graduation');
+  addRep(s, (0.3 + fund * 0.15) * (1 - s.company.reputation / 120), 'Academy graduation');
   pushNews(s, {
     category: 'staff',
     headline: `The ${academyName(s)} class of ${yr} graduates`,
