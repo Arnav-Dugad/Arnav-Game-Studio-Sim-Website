@@ -11,6 +11,7 @@ import { runCampaign } from './systems/awardsCampaign';
 import { breakPledge, takePledge, withdrawPledge } from './systems/crunchPledge';
 import type { CeRun, PriceTier, Release, Role } from './types';
 import { priceTierAllowed } from './systems/pricing';
+import { validProduction } from './systems/production';
 import { checkIn } from './systems/checkIns';
 import { docOnCancel } from './systems/documentary';
 import type { MascotDesign } from './types';
@@ -85,6 +86,8 @@ export interface StartGamePayload {
   localized?: RegionId[];
   /** Launch price tier (full-price, self-published new games only). */
   priceTier?: PriceTier;
+  /** Production values: lean, standard, polished or lavish. */
+  production?: string;
   team: string[];
   focus?: [Focus3, Focus3, Focus3];
 }
@@ -205,7 +208,7 @@ export type Action =
   | { type: 'setSubsidiary'; id: string; budget: 'low' | 'normal' | 'high'; focusGenre?: GenreId }
   | { type: 'sellFranchise'; franchiseId: string }
   | { type: 'resolveEvent'; uid: number; option: string }
-  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; charity?: 0 | 1 | 5; parentalLeave?: 'minimal' | 'standard' | 'generous'; interns?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean; autoMediate?: boolean }
+  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; charity?: 0 | 1 | 5; parentalLeave?: 'minimal' | 'standard' | 'generous'; interns?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean; autoMediate?: boolean; autoPay?: boolean }
   | { type: 'setRecruiting'; level: number }
   | { type: 'buyDevkit'; platform: string }
   | { type: 'continueEndless' }
@@ -467,6 +470,7 @@ function apply(c: Ctx, a: Action): string | null {
           ...(feats.length ? { features: feats } : {}),
           ...((g.priceTier === 'budget' || g.priceTier === 'premium') && priceTierAllowed({ monetization: g.monetization, expansionOf: base?.id, deal: g.dealId ? ({} as never) : undefined }) ? { priceTier: g.priceTier } : {}),
           ...(locs.length ? { localized: locs } : {}),
+          ...(validProduction(g.production) && g.production !== 'standard' ? { production: g.production } : {}),
           ...((s.company.branches ?? []).length ? { branchLocalized: [...(s.company.branches ?? [])] } : {}),
           deal: deal ? { publisherId: deal.publisherId, advance: dealAdvanceFor(deal, g.size, s.day), royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
         },
@@ -1299,6 +1303,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.autoResearch !== undefined) s.company.policies.autoResearch = !!a.autoResearch;
       if (a.autoVacation !== undefined) s.company.policies.autoVacation = !!a.autoVacation;
       if (a.autoMediate !== undefined) s.company.policies.autoMediate = !!a.autoMediate;
+      if (a.autoPay !== undefined) s.company.policies.autoPay = !!a.autoPay;
       if (a.autoQueue !== undefined) s.company.policies.autoQueue = !!a.autoQueue;
       for (const st of Object.values(s.staff)) st.moraleWhy = undefined;
       return null;

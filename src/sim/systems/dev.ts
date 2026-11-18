@@ -10,6 +10,7 @@ import { hasValue } from './culture';
 import { LOC_WORK } from '../../data/regions';
 import { FEATURE_BY_ID } from '../../data/gameFeatures';
 import { BALANCE } from '../../data/balance';
+import { PRODUCTION, productionExtraDaily } from './production';
 import { GENRE_BY_ID } from '../../data/genres';
 import { TOPIC_BY_ID } from '../../data/topics';
 import { RESEARCH_BY_ID } from '../../data/research';
@@ -144,7 +145,8 @@ function progressGame(c: Ctx, p: GameProject): void {
   const workday = isWorkday(s, crunch);
   // Calendar time always advances (deadlines are real), output only on workdays.
   // Production costs (assets, outsourcing, QA vendors) accrue daily.
-  const dc = sizeDailyCost(p.concept.size, s.day);
+  const prodTier = PRODUCTION[p.concept.production ?? 'standard'];
+  const dc = sizeDailyCost(p.concept.size, s.day) * prodTier.base + productionExtraDaily(p.concept.size, p.concept.production, s.day);
   if (dc > 0) {
     spend(s, 'other_expense', dc);
     p.spent += dc;
@@ -394,6 +396,7 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   if (p.earlyAccess) bd.mul(`Early Access feedback (${Math.floor((s.day - p.earlyAccess.day) / 7)} weeks)`, earlyAccessQuality(p, s.day));
   if (p.crowdfund?.success && p.crowdfund.stretch > 0) bd.mul(`Stretch goals (${p.crowdfund.stretch})`, 1 + 0.015 * p.crowdfund.stretch);
   if (p.cut) bd.mul('Cut features', BALANCE.CUT_FEATURES_PENALTY);
+  if (c.production && c.production !== 'standard') bd.mul(`Production values (${PRODUCTION[c.production].name.toLowerCase()})`, PRODUCTION[c.production].quality);
   // bugs
   const bugs = project ? projectedBugs(s, p, scale) : p.bugs;
   const density = total > 0 ? bugs / total : 0;

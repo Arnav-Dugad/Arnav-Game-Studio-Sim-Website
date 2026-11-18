@@ -78,6 +78,11 @@ export function postMortem(r: Release): PostMortem {
       if (fit(best) > part.value + 0.02) push(false, { text: 'It was pitched at the wrong audience', lesson: `${GENRE_BY_ID[r.concept.genre]?.name ?? 'This genre'} with this topic suits ${best === 'everyone' ? 'everyone' : `${best}s`} better — the planner stars the best audience`, weight: W(part.value / fit(best)) });
       continue;
     }
+    if (part.label.startsWith('Production values')) {
+      if (part.value > 1) push(true, { text: 'The production budget showed on screen', weight: W(part.value) });
+      else push(false, { text: 'The lean budget showed', lesson: 'Spend on production values for the games that matter most', weight: W(part.value) });
+      continue;
+    }
     if (part.label.startsWith('Critics’ high bar')) {
       // a small game that maxed out: the next step is a bigger one
       if (part.value < 0.95 && (r.concept.size === 'small' || r.concept.size === 'medium')) push(false, { text: `A ${r.concept.size} game can only impress critics so much`, lesson: r.concept.size === 'small' ? 'For 90+, make a medium or large game' : 'The very top scores go to large games', weight: W(part.value) });

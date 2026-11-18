@@ -486,6 +486,19 @@ function canSpare(s: GameState, st: Staff, sentFrom: Map<string, number>): boole
 
 export function staffAutomationWeekly(s: GameState): void {
   const pol = s.company.policies;
+  if (pol.autoPay) {
+    // keep everyone at the going rate: a raise (and the goodwill that comes with it) as soon as the market moves on
+    for (const st of Object.values(s.staff)) {
+      if (st.role === 'founder' || st.intern) continue;
+      const market = Math.round(marketSalary(s, st.skills));
+      if (st.salary >= market * 0.97) continue;
+      const gain = (market - st.salary) / Math.max(1, st.salary);
+      st.morale = clamp(st.morale + Math.min(15, gain * 60), 0, 100);
+      st.loyalty = clamp(st.loyalty + Math.min(15, gain * 50), 0, 100);
+      st.salary = market;
+      st.moraleWhy = undefined;
+    }
+  }
   if (!pol.autoResearch && !pol.autoVacation) return;
   const sentFrom = new Map<string, number>();
   // nothing left to research (this year): don't park people there — send them back to be assigned

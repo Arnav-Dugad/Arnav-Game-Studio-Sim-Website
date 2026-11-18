@@ -124,13 +124,16 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   if (bigSeries && !(s.mediaDeals ?? []).length && MEDIA_KINDS.some((k) => !mediaBlocked(s, bigSeries, k))) out.push({ id: 'media', tone: 'info', icon: 'sparkle', text: `${bigSeries.name} is popular enough to license — comics, toys, maybe more.`, action: { label: 'IP', run: () => open('company', 'ip') } });
   if (fromDay(s.day).month >= 6 && (s.company.lastTalkDay === undefined || s.day - s.company.lastTalkDay >= 300) && staff.some((x) => (x.level === 'senior' || x.level === 'lead' || x.role === 'founder') && !talkBlocked(s, x))) out.push({ id: 'talk', tone: 'info', icon: 'megaphone', text: 'This year’s Developers Summit slot is unused — a senior could give a talk (open their card).', action: { label: 'Staff', run: () => open('staff') } });
   if (!s.company.policies.interns && yr >= INTERN_YEAR && staff.length >= 8 && freeDesks(s) >= 2) out.push({ id: 'interns', tone: 'info', icon: 'people', text: 'You have room for summer interns: cheap, eager and high-potential.', action: { label: 'Policies', run: () => open('staff', 'policies') } });
+  // this year's academy class is in the hiring pool (for a couple of months only)
+  const grads = s.candidates.filter((c) => c.academy && c.expiresDay > s.day);
+  if (grads.length) out.push({ id: 'academy-grads', tone: 'info', icon: 'people', text: `${grads.length} graduate${grads.length > 1 ? 's' : ''} from your academy ${grads.length > 1 ? 'are' : 'is'} in the hiring pool until ${formatDate(Math.min(...grads.map((c) => c.expiresDay)))}.`, action: { label: 'Hire', run: () => open('staff', 'hire') } });
   // the one thing dragging most of the studio down (pulse cached per month)
   if (staff.length >= 8 && !urgentOnly) {
     const key = pulseKey(s);
     if (pulseCache.key !== key) pulseCache = { key, drag: teamPulse(s).drags[0] };
     const d = pulseCache.drag;
     if (d && d.avg <= -8 && d.people >= staff.length * 0.4)
-      out.push({ id: 'pulse', tone: 'warn', icon: 'heart', text: `${d.label} is costing ${d.people} people ${Math.round(-d.avg)} morale each.${d.hint ? ` ${d.hint}.` : ''}`, action: { label: 'Team pulse', run: () => open('staff', 'team') } });
+      out.push({ id: 'pulse', tone: 'warn', icon: 'heart', text: `${d.label} is costing ${d.people} people ${Math.round(-d.avg)} morale each.${d.hint ? ` ${d.hint}.` : ''}`, action: d.label === 'Crowding' ? { label: 'Spread out', run: () => open('staff', 'hire') } : { label: 'Team pulse', run: () => open('staff', 'team') } }); // crowding's one-click fix lives by the desks count
   }
   if (!urgentOnly) {
     // a game good enough to show off: a demo would win players over

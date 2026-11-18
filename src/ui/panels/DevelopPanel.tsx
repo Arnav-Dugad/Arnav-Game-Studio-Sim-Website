@@ -5,7 +5,8 @@ import { pitchText } from '@/sim/systems/pitches';
 import { pledged } from '@/sim/systems/crunchPledge';
 import { knownFor } from '@/sim/systems/renown';
 import { priceTierAllowed } from '@/sim/systems/pricing';
-import type { PriceTier } from '@/sim/types';
+import { PRODUCTION, PRODUCTION_TIERS, productionBlurb, productionExtraDaily } from '@/sim/systems/production';
+import type { PriceTier, ProductionTier } from '@/sim/types';
 import { CODEV_YEAR, codevPartners, codevTerms } from '@/sim/systems/codev';
 import { CAMPAIGN_DAYS, STRETCH, STRETCH_DAYS, STRETCH_NAMES, TIERS, campaignCost, campaignGoal, crowdfundBlocked, expectedPledges } from '@/sim/systems/crowdfunding';
 import { EA_PRICE, EA_STALE_WEEKS, EA_YEAR, earlyAccessBlocked, earlyAccessCost, earlyAccessRating } from '@/sim/systems/earlyAccess';
@@ -21,7 +22,7 @@ import { aOrAn, fmtMoney, fmtUnits, hasFlag, money } from '@/sim/util';
 import { availablePlatforms, genrePopularity, platformAudienceFit, platformGenreFit, platformInfo } from '@/sim/systems/market';
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
-import { comboFit, qualityToScore, workShare } from '@/sim/systems/dev';
+import { comboFit, qualityToScore, sizeDailyCost, workShare } from '@/sim/systems/dev';
 import { clamp } from '@/sim/breakdown';
 import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential, selfReach } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
@@ -589,11 +590,14 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const [audience, setAudience] = useState<Audience>(baseRel?.concept.audience ?? lastEntry(presetFr)?.concept.audience ?? 'everyone');
   const locked = !!baseRel;
   /** The quality model's audience multiplier for this genre × topic. */
-  const audFit = (a: Audience) => clamp(0.85 + (comboFit(genre, topic, a).aud - 1) * 0.6, 0.7, 1.08);
-  const bestAudience = AUDIENCES.reduce((b, a) => (audFit(a) > audFit(b) + 1e-9 ? a : b), 'everyone' as Audience);
+  const audFitFor = (g: GenreId, tp: string, a: Audience) => clamp(0.85 + (comboFit(g, tp, a).aud - 1) * 0.6, 0.7, 1.08);
+  const bestAudienceFor = (g: GenreId, tp: string) => AUDIENCES.reduce((b, a) => (audFitFor(g, tp, a) > audFitFor(g, tp, b) + 1e-9 ? a : b), 'everyone' as Audience);
+  const audFit = (a: Audience) => audFitFor(genre, topic, a);
+  const bestAudience = bestAudienceFor(genre, topic);
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
   const [priceTier, setPriceTier] = useState<PriceTier>('standard');
+  const [production, setProduction] = useState<ProductionTier>('standard');
   const [features, setFeatures] = useState<string[]>([]);
   const home = s.company.homeRegion ?? 'na';
   const [localized, setLocalized] = useState<RegionId[]>([]);
@@ -625,6 +629,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
     }
     if (!monetizationAllowed(s, c.monetization, genreOk ? c.genre : genre)) setMonet(c.monetization);
     setPriceTier(c.priceTier ?? 'standard');
+    setProduction(c.production ?? 'standard');
     const still = c.platforms.filter((pid) => plats.some((p) => p.id === pid));
     if (still.length) setPlatforms(still.slice(0, 6));
     if (s.engines[c.engineId]) setEngineId(c.engineId);
@@ -659,10 +664,10 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
   const cap = BALANCE.SIZE[size].teamCap;
   const joining = liveTeam.slice(0, cap).map((id) => s.staff[id]!).filter(Boolean); // who'll actually join
-  const cost = estimateCost(s, size, joining, work);
+  const cost = estimateCost(s, size, joining, work, production);
   const conceptPreview = useMemo(
-    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs, priceTier }),
-    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features, locs, priceTier],
+    () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs, priceTier, production }),
+    [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features, locs, priceTier, production],
   );
   const week = Math.floor(s.day / 7);
   const forecast = useMemo(() => {
@@ -684,12 +689,12 @@ function NewGame({ onDone }: { onDone: () => void }) {
   }, [week, conceptPreview, platforms.length, size, s.releaseOrder.length]);
   const fit = comboFitValue(genre, topic);
   const known = knowsCombo(s, genre, topic);
-  const effortEst = teamEffortEstimate(s, size, joining, work);
+  const effortEst = teamEffortEstimate(s, size, joining, work, focus, platforms.length);
 
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs, priceTier },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs, priceTier, production },
     });
     if (r.ok) {
       sound.play('success');
@@ -755,6 +760,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               setInspiration(idea);
               setGenre(idea.genre);
               setTopic(idea.topic);
+              if (!locked) setAudience(bestAudienceFor(idea.genre, idea.topic)); // the idea comes with its best crowd
               setName(freshName(idea.topic, Math.random() * 1e6));
               setNameTyped(false);
             }}>
@@ -961,6 +967,22 @@ function NewGame({ onDone }: { onDone: () => void }) {
             </span>
           </div>
         )}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <Segmented<ProductionTier>
+            ariaLabel="Production values"
+            value={production}
+            onChange={setProduction}
+            options={PRODUCTION_TIERS.map((tier) => {
+              const extra = productionExtraDaily(size, tier, s.day) * cost.days;
+              const saved = tier === 'lean' ? sizeDailyCost(size, s.day) * 0.4 * cost.days : 0;
+              return { value: tier, label: `${PRODUCTION[tier].name}${extra ? ` · +${fmtMoney(extra)}` : saved >= 500 ? ` · −${fmtMoney(saved)}` : ''}` };
+            })}
+          />
+          <span className="text-ink3">
+            {productionBlurb(production, yr)}{' '}
+            {production !== 'standard' && `Quality ${PRODUCTION[production].quality > 1 ? '+' : '−'}${Math.round(Math.abs(PRODUCTION[production].quality - 1) * 100)}%${PRODUCTION[production].quality > 1 ? ' (less once a game nears the critics’ high bar)' : ''}.`}
+          </span>
+        </div>
       </Section>
 
       <Section title={`Signature features (${features.length}/${MAX_FEATURES})`} right={<span className="text-xs text-ink3">Optional · more scope, more payoff in the right genre</span>}>
@@ -1121,11 +1143,12 @@ function NewGame({ onDone }: { onDone: () => void }) {
             const share = designShare(joining, focus);
             if (share === null) return null;
             const want = GENRE_BY_ID[genre].designRatio;
-            const ok = Math.abs(share - want) <= 0.08;
+            const ok = Math.abs(share - want) <= 0.03;
+            const cost = Math.round(Math.min(0.35, Math.abs(share - want) * 1.2) * 100); // the quality model's balance penalty
             return (
               <div className={cx('flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs', ok ? 'bg-good/10 text-good' : 'bg-warn/10 text-warn')}>
                 <span>
-                  This team and focus: about <b className="num">{Math.round(share * 100)}% design</b> · {GENRE_BY_ID[genre].name} games want ≈ {Math.round(want * 100)}%{ok ? ' — on target' : share > want ? ' — favour Engine, AI and Graphics' : ' — favour Gameplay, Story, Levels and World'}
+                  This team and focus: about <b className="num">{Math.round(share * 100)}% design</b> · {GENRE_BY_ID[genre].name} games want ≈ {Math.round(want * 100)}%{ok ? ' — on target' : `${Math.abs(share - want) <= 0.08 ? ' — close' : ''} (costs about ${cost}%) — ${share > want ? 'favour Engine, AI and Graphics' : 'favour Gameplay, Story, Levels and World'}`}
                 </span>
                 {ideal && (
                   <Button size="sm" variant="ghost" onClick={() => setFocus(tunedFocus(genre, joining))} title="Your notes on this genre, adjusted so this team lands its design/tech balance">
@@ -1190,12 +1213,12 @@ function NewGame({ onDone }: { onDone: () => void }) {
         })()}
         {liveTeam.length > 0 && size !== 'small' && effortEst.ratio >= 0.6 && effortEst.ratio < 0.85 && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-ink3">
-            <Icon name="info" size={14} /> This team covers about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs. Bigger games only pay off with the people to fill them: a smaller size may score higher with this team.
+            <Icon name="info" size={14} /> This team covers about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs. More people (or a smaller size) would get more of it done — great fit, focus and tech can still carry it.
           </p>
         )}
         {liveTeam.length > 0 && effortEst.ratio < 0.6 && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-warn">
-            <Icon name="warning" size={14} /> This team can only put in about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs — expect a {size === 'small' ? 'modest' : 'low'} score.{' '}
+            <Icon name="warning" size={14} /> This team can only put in about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs — that will hold the score back.{' '}
             {size === 'small'
               ? s.releaseOrder.length === 0
                 ? 'That’s normal for a first game made alone; hiring a helper (Staff → Hire) makes the next one much stronger.'

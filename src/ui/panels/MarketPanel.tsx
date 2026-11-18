@@ -12,7 +12,7 @@ import { upcomingReleases } from '@/sim/systems/rivals';
 import { FRANCHISES } from '@/data/franchises';
 import { parseYM } from '@/sim/calendar';
 import { StackedArea, LineChart, SERIES_COLORS } from '../charts';
-import { Button, Pill, Section, Segmented, cx } from '../components/ui';
+import { Button, ConfirmButton, Pill, Section, Segmented, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { InitialsBadge } from '../art/Avatar';
 import { Icon } from '../icons';
@@ -204,15 +204,14 @@ function World() {
                   <>
                     <Pill tone="good">Branch office open</Pill>
                     <span className="text-ink3">{fmtMoney(money(BRANCH.rent, s.day))}/mo</span>
-                    <Button
+                    <ConfirmButton
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        if (window.confirm(`Close the ${r.name} studio? Reopening costs the full fee again.`)) useGame.getState().actOrToast({ type: 'closeBranch', region: r.id }, `Closed the ${r.name} studio`);
-                      }}
+                      ask="Reopening costs the full fee again."
+                      onConfirm={() => useGame.getState().actOrToast({ type: 'closeBranch', region: r.id }, `Closed the ${r.name} studio`)}
                     >
                       Close
-                    </Button>
+                    </ConfirmButton>
                   </>
                 ) : (
                   <>

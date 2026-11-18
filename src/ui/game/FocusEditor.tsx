@@ -48,10 +48,11 @@ export function BalanceBar({ p, className }: { p: GameProject; className?: strin
   const off = share - ideal;
   const areas = PHASE_AREAS[Math.min(2, p.phase)]!;
   const want = areas.filter((a) => (off > 0 ? !DESIGN_AREAS.has(a) : DESIGN_AREAS.has(a))).map((a) => AREA_LABEL[a]);
-  const ok = Math.abs(off) <= 0.08;
+  const ok = Math.abs(off) <= 0.03;
+  const cost = Math.round(Math.min(0.35, Math.abs(off) * 1.2) * 100); // the quality model's balance penalty
   const hint = ok
     ? `On target for ${g.name.toLowerCase()} games`
-    : `${off > 0 ? 'Too much design' : 'Too much tech'} for ${aOrAnWord(g.id === 'rpg' || g.id === 'mmo' ? g.name : g.name.toLowerCase())} — ${p.phase < 3 && want.length ? `favour ${want.join(' and ')}, or ` : ''}add more ${off > 0 ? 'programmers' : 'designers, writers or artists'}`;
+    : `${Math.abs(off) <= 0.08 ? `Close (costs about ${cost}%): ` : `Costs about ${cost}% — `}${off > 0 ? 'too much design' : 'too much tech'} for ${aOrAnWord(g.id === 'rpg' || g.id === 'mmo' ? g.name : g.name.toLowerCase())} — ${p.phase < 3 && want.length ? `favour ${want.join(' and ')}, or ` : ''}add more ${off > 0 ? 'programmers' : 'designers, writers or artists'}`;
   return (
     <div className={className}>
       <div className="flex items-center justify-between text-[11px]">

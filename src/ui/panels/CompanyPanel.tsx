@@ -10,7 +10,7 @@ import { fromDay, formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits, inflation, money } from '@/sim/util';
 import { fundingAmount, fundingBlocked, ipoEligible, nextFunding, valuation, controlAfterOffering } from '@/sim/systems/finance';
 import { LineChart } from '../charts';
-import { Button, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
+import { Button, ConfirmButton, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { useGame } from '../store';
 import { Icon } from '../icons';
@@ -363,18 +363,18 @@ function Acquire() {
                       {!r.procedural && ' · brings its franchises'}
                     </div>
                   </div>
-                  <Button
+                  <ConfirmButton
                     size="sm"
                     variant="primary"
                     disabled={s.company.cash < a.price}
-                    onClick={() => {
-                      if (!window.confirm(`Buy ${r.name} for ${fmtMoney(a.price)} (${Math.round((a.price / Math.max(1, s.company.cash)) * 100)}% of your cash)? It can’t be undone.`)) return;
+                    ask={`Buy for ${fmtMoney(a.price)} (${Math.round((a.price / Math.max(1, s.company.cash)) * 100)}% of your cash)? It can’t be undone.`}
+                    onConfirm={() => {
                       const res = act({ type: 'acquire', targetId: a.id });
                       toast(res.ok ? { text: `${r.name} is now part of ${s.company.name}!`, tone: 'gold', icon: 'cart' } : { text: res.error, tone: 'bad' });
                     }}
                   >
                     {fmtMoney(a.price)}
-                  </Button>
+                  </ConfirmButton>
                 </li>
               );
             })}

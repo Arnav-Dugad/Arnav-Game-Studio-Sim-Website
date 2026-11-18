@@ -308,6 +308,13 @@ function Policies() {
           </span>
           <input type="checkbox" checked={!!p.autoMediate} onChange={(e) => act({ type: 'setPolicy', autoMediate: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
+        <label className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span>
+            <b>Keep pay at market rate</b>
+            <span className="block text-xs text-ink3">Each week, anyone whose salary has fallen behind the market (as people grow and prices rise) gets a raise to the going rate — no more “Pay vs market” grumbling.</span>
+          </span>
+          <input type="checkbox" checked={!!p.autoPay} onChange={(e) => act({ type: 'setPolicy', autoPay: e.target.checked })} className="size-5 accent-[var(--accent)]" />
+        </label>
       </Section>
       <Section title="Work culture">
         <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">

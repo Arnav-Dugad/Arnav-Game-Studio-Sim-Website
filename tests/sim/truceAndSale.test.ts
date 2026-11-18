@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createGame } from '../../src/sim/create';
 import { expireEvents } from '../../src/sim/systems/events';
+import { dispatch } from '../../src/sim/actions';
+import { staffAutomationWeekly, marketSalary } from '../../src/sim/systems/staff';
 import { Rng, seedRng } from '../../src/sim/rng';
 import type { Ctx } from '../../src/sim/ctx';
 
@@ -30,5 +32,21 @@ describe('selling the studio', () => {
     expireEvents(c);
     expect(s.status).toBe('running');
     expect(s.pendingEvents.some((e) => e.uid === 99)).toBe(false);
+  });
+});
+
+
+describe('keep pay at market rate', () => {
+  it('raises anyone behind the market, and nobody else', () => {
+    const { s } = ctx(3);
+    expect(dispatch(s, { type: 'setPolicy', autoPay: true }).ok).toBe(true);
+    const founder = Object.values(s.staff)[0]!;
+    const st = { ...founder, id: 'sx', role: 'designer' as const, skills: { ...founder.skills }, assignment: { kind: 'idle' as const } };
+    s.staff.sx = st;
+    st.salary = Math.round(marketSalary(s, st.skills) * 0.5);
+    const founderPay = founder.salary;
+    staffAutomationWeekly(s);
+    expect(st.salary).toBe(Math.round(marketSalary(s, st.skills)));
+    expect(founder.salary).toBe(founderPay);
   });
 });

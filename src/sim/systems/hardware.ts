@@ -110,10 +110,13 @@ export function canDesignConsole(s: GameState): string | null {
   return null;
 }
 
-/** Manufacturing cost per unit (nominal) for a console on a given day: falls ~8% a year. */
+/**
+ * Manufacturing cost per unit (nominal) for a console on a given day: falls ~15% a year (cheaper chips, die shrinks,
+ * slimmer revisions), so a console sold at a loss on launch day turns a profit on each unit within a couple of years.
+ */
 export function unitCost(c: PlayerConsole, day: number): number {
   const age = Math.max(0, (day - c.launchDay) / YEAR);
-  return money(c.unitCost1980, day) * Math.pow(0.92, age);
+  return money(c.unitCost1980, day) * Math.pow(0.85, age);
 }
 
 /** Reference retail price (nominal) the market expects for this console today. */
@@ -190,7 +193,7 @@ export function packInMul(s: GameState, hw: PlayerConsole): number {
 
 /** Third-party software spend per active user per month (nominal). */
 function spendPerUser(day: number): number {
-  return money(0.9, day);
+  return money(1.6, day);
 }
 
 export function installedOf(c: PlayerConsole): number {

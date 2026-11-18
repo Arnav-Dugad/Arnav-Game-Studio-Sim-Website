@@ -7,6 +7,9 @@ import type { Difficulty } from '../data/balance';
 import type { RngState } from './rng';
 import type { Breakdown } from './breakdown';
 
+/** How much a game spends beyond its team (systems/production.ts). */
+export type ProductionTier = 'lean' | 'standard' | 'polished' | 'lavish';
+
 export type Id = string;
 export type Size = 'small' | 'medium' | 'large' | 'aaa';
 export type Role = 'founder' | 'designer' | 'programmer' | 'artist' | 'audio' | 'writer' | 'qa' | 'marketer' | 'producer';
@@ -277,6 +280,8 @@ export interface Concept {
   engineId: Id;
   /** Launch price tier for full-price games (systems/pricing.ts); standard if unset. */
   priceTier?: PriceTier;
+  /** Production values (systems/production.ts); standard if unset. */
+  production?: ProductionTier;
   /** Box art the player designed (palette, layout, motif by name; seed fixes the small details). */
   cover?: CoverDesign;
   franchiseId?: Id;
@@ -975,6 +980,8 @@ export interface Company {
     autoQueue?: boolean;
     /** Feuds go straight to a mediator (no popup) whenever the studio can pay. */
     autoMediate?: boolean;
+    /** Anyone paid under the market rate gets a raise to it (checked weekly). */
+    autoPay?: boolean;
   };
   /** Day of the last major layoff (morale shock). */
   lastLayoffDay?: number;

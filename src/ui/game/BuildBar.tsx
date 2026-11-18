@@ -2,7 +2,7 @@ import { ITEM_BY_ID } from '@/data/facilities';
 import { copyFloorCost } from '@/sim/actions';
 import { fmtMoney, money } from '@/sim/util';
 import { tierDef } from '@/sim/systems/office';
-import { Button, Segmented } from '../components/ui';
+import { Button, ConfirmButton, Segmented } from '../components/ui';
 import { useGame, type HeatKind } from '../store';
 
 /** Contextual toolbar while in build mode: what you're placing, rotate, heat-map, floors. */
@@ -64,17 +64,15 @@ export function BuildBar() {
               </>
             )}
             {floors && !build.item && !build.moving && !sel && (
-              <Button
+              <ConfirmButton
                 size="sm"
                 icon="layers"
                 title="Duplicate this floor's layout onto the next floor (items that don't fit are skipped)"
-                onClick={() => {
-                  const to = (floor + 1) % t.floors;
-                  if (window.confirm(`Copy floor ${floor + 1}'s layout onto floor ${to + 1}? Up to ${fmtMoney(copyFloorCost(s, floor))} (items that don't fit are skipped and not charged).`)) g.actOrToast({ type: 'copyFloor', from: floor, to });
-                }}
+                ask={`Up to ${fmtMoney(copyFloorCost(s, floor))} (what doesn't fit is skipped, not charged).`}
+                onConfirm={() => g.actOrToast({ type: 'copyFloor', from: floor, to: (floor + 1) % t.floors })}
               >
                 Copy floor → F{((floor + 1) % t.floors) + 1}
-              </Button>
+              </ConfirmButton>
             )}
             {(build.item || build.moving) && (
               <Button size="sm" icon="rotate" onClick={() => g.setBuild({ ...build, rot: build.rot ? 0 : 1 })}>

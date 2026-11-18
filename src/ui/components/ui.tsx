@@ -117,6 +117,34 @@ export function BreakdownList({ bd, format = (v: number) => v.toFixed(2), title,
   );
 }
 
+/**
+ * A button for something you can't undo: the first click asks (in place, in the game's own style), the second does it.
+ * Moving the pointer away or waiting a few seconds puts it back.
+ */
+export function ConfirmButton({ ask, onConfirm, children, ...rest }: Omit<Parameters<typeof Button>[0], 'onClick'> & { ask: string; onConfirm: () => void }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 6000);
+    return () => clearTimeout(t);
+  }, [armed]);
+  return (
+    <Button
+      {...rest}
+      variant={armed ? 'danger' : rest.variant}
+      title={armed ? ask : rest.title}
+      onMouseLeave={() => setArmed(false)}
+      onClick={() => {
+        if (!armed) return setArmed(true);
+        setArmed(false);
+        onConfirm();
+      }}
+    >
+      {armed ? `${ask} Click to confirm` : children}
+    </Button>
+  );
+}
+
 /** Hover/focus tooltip. Content can be any node (e.g. a BreakdownList). */
 export function Tip({ content, children, className, side = 'top' }: { content: ReactNode; children: ReactNode; className?: string; side?: 'top' | 'bottom' | 'right' | 'left' }) {
   const [open, setOpen] = useState(false);

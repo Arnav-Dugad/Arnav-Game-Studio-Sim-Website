@@ -1,7 +1,7 @@
 /** UI-side helpers that derive presentation data from the sim (pure functions). */
-import { AREAS } from '@/data/types';
 import { DESIGN_AREAS, SPEC_AREA_BONUS, areaSkill, benchmarkPoints, teamSynergy } from '@/sim/systems/dev';
 import { clamp } from '@/sim/breakdown';
+import { rndSpeed } from '@/sim/systems/rnd';
 import { productivity } from '@/sim/systems/staff';
 import { TITLE_NOUN } from '@/data/names';
 import { genrePopularity, topicPopularity } from '@/sim/systems/market';
@@ -12,6 +12,8 @@ import { PHASE_AREAS, type Area, type GenreId } from '@/data/types';
 import { fromDay } from '@/sim/calendar';
 import type { Focus3, GameState, Size, Staff } from '@/sim/types';
 import { sizeDailyCost } from '@/sim/systems/dev';
+import { PRODUCTION, productionExtraDaily } from '@/sim/systems/production';
+import type { ProductionTier } from '@/sim/types';
 import { RESEARCH_BY_ID } from '@/data/research';
 
 export const AREA_LABEL: Record<Area, string> = {
@@ -166,10 +168,10 @@ export function expansionSubtitle(seed: number): string {
   return EXPANSION_SUBTITLES[Math.abs(Math.floor(seed)) % EXPANSION_SUBTITLES.length]!;
 }
 
-export function estimateCost(s: GameState, size: Size, team: Staff[], workShare = 1): { salaries: number; production: number; total: number; days: number } {
+export function estimateCost(s: GameState, size: Size, team: Staff[], workShare = 1, tier: ProductionTier = 'standard'): { salaries: number; production: number; total: number; days: number } {
   const days = Math.round(BALANCE.SIZE[size].days * workShare);
   const salaries = team.reduce((t, st) => t + st.salary, 0) * (days / 365);
-  const production = sizeDailyCost(size, s.day) * days;
+  const production = (sizeDailyCost(size, s.day) * PRODUCTION[tier].base + productionExtraDaily(size, tier, s.day)) * days;
   return { salaries, production, total: salaries + production, days };
 }
 
@@ -177,17 +179,25 @@ export function estimateCost(s: GameState, size: Size, team: Staff[], workShare 
  * Before a game starts: how much work this team would put in, against what a game of this size needs today
  * (the "Development effort" part of the score). ratio 1 = a typical team for the size; effort is the score factor.
  */
-export function teamEffortEstimate(s: GameState, size: Size, team: Staff[], work = 1): { ratio: number; effort: number } {
+export function teamEffortEstimate(s: GameState, size: Size, team: Staff[], work = 1, focus?: readonly [Focus3, Focus3, Focus3], platforms = 1): { ratio: number; effort: number } {
   if (!team.length) return { ratio: 0, effort: 0 };
   const days = BALANCE.SIZE[size].days * work;
   const syn = teamSynergy(s, team).total;
+  const portPenalty = 1 - Math.min(0.2, 0.06 * (platforms - 1));
   let perDay = 0;
   for (const st of team) {
+    // the way development counts it: each phase's areas weighted by its focus (specialists shine where it matters)
     let skill = 0;
-    for (const a of AREAS) skill += areaSkill(st, a);
-    perDay += (skill / AREAS.length / 100) * productivity(s, st).total;
+    for (const ph of [0, 1, 2] as const) {
+      const f = focus?.[ph] ?? [34, 33, 33];
+      const fs = f[0] + f[1] + f[2] || 1;
+      PHASE_AREAS[ph]!.forEach((a, i) => {
+        skill += BALANCE.PHASE_SHARE[ph] * (f[i]! / fs) * areaSkill(st, a) * (1 + ((st.spec ? SPEC_AREA_BONUS[st.spec]?.[a] : undefined) ?? 0));
+      });
+    }
+    perDay += (skill / 100) * productivity(s, st).total;
   }
-  const pts = perDay * BALANCE.POINTS_PER_DAY * syn * days * (5 / 7);
+  const pts = perDay * BALANCE.POINTS_PER_DAY * syn * portPenalty * rndSpeed(s) * days * (5 / 7);
   const ratio = pts / (benchmarkPoints(size, s.day) * work);
   return { ratio, effort: ratio / (ratio + 0.35) };
 }
