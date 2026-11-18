@@ -22,7 +22,7 @@ import { availablePlatforms, genrePopularity, platformInfo } from '@/sim/systems
 import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { qualityToScore, workShare } from '@/sim/systems/dev';
-import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, salesPotential } from '@/sim/systems/release';
+import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, GameProject, GameState, Release, Size, Staff } from '@/sim/types';
@@ -647,8 +647,13 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const forecast = useMemo(() => {
     if (!platforms.length) return null;
     const pot = salesPotential(s, conceptPreview, 72, 0.2);
-    return { units: pot.platforms.reduce((t, p) => t + p.potential, 0), why: pot.salesWhy };
-  }, [s, conceptPreview, platforms.length]);
+    // what reaches you: net per copy on each platform, a publisher's royalty share, plus their advance
+    const d = conceptPreview.deal;
+    let toYou = 0;
+    for (const pp of pot.platforms) toYou += pp.potential * netPerUnit(s, pp.pl, launchPrice(s, pp.pl, conceptPreview), !d) * (d ? d.royalty : 1);
+    if (d) toYou += dealAdvanceFor(d, size, s.day);
+    return { units: pot.platforms.reduce((t, p) => t + p.potential, 0), why: pot.salesWhy, toYou };
+  }, [s, conceptPreview, platforms.length, size]);
   const fit = comboFitValue(genre, topic);
   const known = knowsCombo(s, genre, topic);
   const cap = BALANCE.SIZE[size].teamCap;
@@ -1112,6 +1117,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               <div className="w-full cursor-help rounded-xl bg-bg2/70 p-2 text-left">
                 <div className="text-ink3">Sales if reviews ≈ 72</div>
                 <div className="num font-semibold">{fmtUnits(forecast.units)} units</div>
+                <div className="num text-[11px] text-ink3">≈ {fmtMoney(forecast.toYou)} to you{conceptPreview.deal ? ' (incl. advance)' : ''}</div>
               </div>
             </Tip>
           )}
