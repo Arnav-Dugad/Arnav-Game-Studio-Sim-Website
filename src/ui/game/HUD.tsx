@@ -46,7 +46,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto, onCinema }: {
   const cashTone = s.company.cash < 0 ? 'text-bad' : s.company.cash < burn * 2 ? 'text-warn' : 'text-ink';
 
   return (
-    <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-wrap items-start gap-2 p-2 sm:p-3">
+    <header className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-wrap items-start gap-2 p-2 sm:p-3">
       <div className="glass pointer-events-auto flex items-center gap-2.5 rounded-2xl py-1.5 pl-1.5 pr-3">
         <button type="button" className="rounded-xl transition hover:scale-105" title="Studio identity" aria-label="Edit studio identity" onClick={() => pushModal({ kind: 'identity' })}>
           <CompanyBadge name={s.company.name} color={s.company.color} size={34} emblem={s.company.logo?.emblem} shape={s.company.logo?.shape} />

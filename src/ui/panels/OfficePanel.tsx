@@ -19,6 +19,9 @@ const CATS: { id: ItemCategory | 'all'; label: string }[] = [
   { id: 'tech', label: 'Tech' },
 ];
 
+/** A phone-sized screen, where the panel sheet covers the office. */
+const narrow = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches;
+
 export default function OfficePanel() {
   const s = useGame((g) => g.s)!;
   useGame((g) => g.v);
@@ -69,7 +72,7 @@ export default function OfficePanel() {
           </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Button variant={build ? 'primary' : 'secondary'} icon="build" onClick={() => setBuild(build ? null : { rot: 0 })} data-tutorial="build-mode">
+          <Button variant={build ? 'primary' : 'secondary'} icon="build" onClick={() => { setBuild(build ? null : { rot: 0 }); if (!build && narrow()) useGame.setState({ panel: null }); }} data-tutorial="build-mode">
             {build ? 'Exit build mode' : 'Edit layout'}
           </Button>
           {next && (
@@ -161,7 +164,10 @@ export default function OfficePanel() {
                 key={it.id}
                 type="button"
                 disabled={!!locked}
-                onClick={() => setBuild(active ? { rot: 0 } : { item: it.id, rot: 0 })}
+                onClick={() => {
+                  setBuild(active ? { rot: 0 } : { item: it.id, rot: 0 });
+                  if (!active && narrow()) useGame.setState({ panel: null }); // on a phone: back to the office to place it
+                }}
                 aria-pressed={active}
                 className={cx('rounded-xl border p-2 text-left text-xs transition disabled:opacity-45', active ? 'border-accent bg-accent/10' : 'border-line hover:bg-bg2')}
               >

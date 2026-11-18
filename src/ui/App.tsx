@@ -64,6 +64,13 @@ function PlayRoute({ slotId, uid }: { slotId: SlotId; uid: string }) {
   const [error, setError] = useState('');
   useEffect(() => {
     if (loaded) return;
+    const g = useGame.getState();
+    if (g.s && g.uid && g.uid !== uid) {
+      // someone else's game is open (the account changed, e.g. in another tab): it saves as it closes; don't open this one
+      navigate('slots', true);
+      setTimeout(() => useGame.getState().unload(), 0);
+      return;
+    }
     let alive = true;
     loadSlot(uid, slotId)
       .then((s) => alive && useGame.getState().load(s, slotId, uid))

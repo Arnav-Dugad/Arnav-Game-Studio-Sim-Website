@@ -215,6 +215,11 @@ export async function cloudSlotStatus(uid: string, slotId: SlotId): Promise<'fre
 }
 
 async function cloudMetas(uid: string): Promise<Partial<Record<SlotId, SlotMeta & { chunkCount: number }>>> {
+  return (await cloudMetasOrNull(uid)) ?? {};
+}
+
+/** The cloud slots, or null when they couldn't be listed (offline, timeout) — never confuse that with "none". */
+async function cloudMetasOrNull(uid: string): Promise<Partial<Record<SlotId, SlotMeta & { chunkCount: number }>> | null> {
   if (!cloudEnabled(uid)) return {};
   try {
     const { db } = await cloudReady();
@@ -229,7 +234,7 @@ async function cloudMetas(uid: string): Promise<Partial<Record<SlotId, SlotMeta 
     return out;
   } catch (e) {
     console.warn('[saves] could not list cloud saves', e);
-    return {};
+    return null;
   }
 }
 
@@ -262,7 +267,11 @@ export async function loadSlot(uid: string, slotId: SlotId, prefer?: 'local' | '
   let source: 'local' | 'cloud' = prefer ?? 'local';
   let cloudMeta: (SlotMeta & { chunkCount: number }) | undefined;
   if (cloudEnabled(uid) && (!loc || prefer !== 'local')) {
-    cloudMeta = (await cloudMetas(uid))[slotId];
+    const metas = await cloudMetasOrNull(uid);
+    // asked for the cloud copy and couldn't reach it: say so (loading this device's copy instead would let the next
+    // autosave overwrite the cloud save you chose)
+    if (prefer === 'cloud' && !metas?.[slotId]) throw new Error('Couldn’t reach your cloud save right now — try again in a moment');
+    cloudMeta = metas?.[slotId];
     if (!prefer) source = !loc || (cloudMeta && cloudMeta.updatedAt > loc.meta.updatedAt && loc.synced) ? 'cloud' : 'local';
   }
   if (source === 'cloud' && cloudMeta) {
@@ -528,7 +537,18 @@ export class AutoSaver {
  * empty slots of that account (local copies; they sync to the cloud the next time they're saved).
  * Each guest's saves are adopted only once.
  */
-export async function adoptGuestSaves(uid: string): Promise<number> {
+/** One adoption at a time per account (sign-up re-renders the slots screen while the first is still running). */
+const adopting = new Map<string, Promise<number>>();
+
+export function adoptGuestSaves(uid: string): Promise<number> {
+  const running = adopting.get(uid);
+  if (running) return running;
+  const p = adoptGuestSavesNow(uid).finally(() => adopting.delete(uid));
+  adopting.set(uid, p);
+  return p;
+}
+
+async function adoptGuestSavesNow(uid: string): Promise<number> {
   let guest: string | null;
   try {
     guest = localStorage.getItem('ase:guest');
@@ -536,6 +556,8 @@ export async function adoptGuestSaves(uid: string): Promise<number> {
   } catch {
     return 0;
   }
+  // only into slots we know are free: if the cloud can't be listed, try again another time
+  if ((await cloudMetasOrNull(uid)) === null) return 0;
   const db = await idb();
   const taken = new Set((await listSlots(uid)).filter((x) => x.local || x.cloud).map((x) => x.slotId));
   let moved = 0;

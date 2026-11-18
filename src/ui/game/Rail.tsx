@@ -32,7 +32,7 @@ export function Rail() {
   return (
     <nav
       aria-label="Game sections"
-      className="glass absolute bottom-2 left-1/2 z-[35] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 gap-0.5 overflow-x-auto rounded-2xl p-1 scroll-thin sm:bottom-auto sm:left-3 sm:top-1/2 sm:max-w-none sm:-translate-x-0 sm:-translate-y-1/2 sm:flex-col sm:overflow-visible max-sm:[mask-image:linear-gradient(to_right,black_88%,transparent)]"
+      className="glass absolute bottom-2 left-1/2 z-[35] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 gap-0.5 overflow-x-auto rounded-2xl p-1 scroll-thin sm:bottom-auto sm:left-3 sm:top-1/2 sm:max-w-none sm:-translate-x-0 sm:-translate-y-1/2 sm:flex-col sm:overflow-visible max-sm:[mask-image:linear-gradient(to_right,black_88%,transparent)] [@media(max-height:560px)]:top-auto [@media(max-height:560px)]:bottom-2 [@media(max-height:560px)]:left-1/2 [@media(max-height:560px)]:-translate-x-1/2 [@media(max-height:560px)]:translate-y-0 [@media(max-height:560px)]:flex-row [@media(max-height:560px)]:overflow-x-auto [@media(max-height:560px)]:max-w-[calc(100vw-1rem)]"
     >
       {ITEMS.map((it) => (
         <button

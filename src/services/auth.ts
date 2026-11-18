@@ -59,6 +59,11 @@ export const useAuth = create<AuthStore>((set) => ({
         const { onAuthStateChanged } = await import('firebase/auth');
         onAuthStateChanged(auth, (u) => {
           if (u) {
+            try {
+              sessionStorage.removeItem('ase:guestActive'); // signed in now: signing out later shouldn't revert to guest
+            } catch {
+              /* ignore */
+            }
             set({
               ready: true,
               user: {

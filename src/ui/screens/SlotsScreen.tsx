@@ -63,7 +63,9 @@ export function SlotsScreen() {
     return () => {
       alive = false;
     };
-  }, [user.uid, user.email, user.displayName]);
+    // profile details can change during sign-up; the slots only depend on who you are
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.uid]);
 
   const open = async (slotId: SlotId, prefer?: 'local' | 'cloud') => {
     setLoading(slotId);
@@ -222,8 +224,12 @@ export function SlotsScreen() {
                       variant="danger"
                       icon="trash"
                       onClick={async () => {
-                        await deleteSlot(user.uid, sl.slotId);
-                        if (useGame.getState().slotId === sl.slotId) useGame.getState().unload();
+                        try {
+                          await deleteSlot(user.uid, sl.slotId);
+                          if (useGame.getState().slotId === sl.slotId) useGame.getState().unload();
+                        } catch (e) {
+                          setError(`Couldn’t delete that save: ${e instanceof Error ? e.message : String(e)}`);
+                        }
                         setConfirmDel(null);
                         void refresh();
                       }}
@@ -509,6 +515,8 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
         </Field>
         )}
         <div className="space-y-2 text-sm">
+          {!o.scenario && (
+          <>
           <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 px-3 py-2">
             <span>
               Endless mode <span className="block text-xs text-ink3">Keep going past 2026 with procedural future hardware.</span>
@@ -521,6 +529,8 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
             </span>
             <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={o.sandbox} onChange={(e) => set('sandbox', e.target.checked)} />
           </label>
+          </>
+          )}
           <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 px-3 py-2">
             <span>Show the tutorial</span>
             <input type="checkbox" className="size-5 accent-[var(--accent)]" checked={o.tutorial} onChange={(e) => set('tutorial', e.target.checked)} />

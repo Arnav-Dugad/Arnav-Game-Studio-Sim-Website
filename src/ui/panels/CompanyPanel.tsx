@@ -173,9 +173,9 @@ function Publishing() {
             {s.offers.deals.map((o) => {
               const c = COMPANY_BY_ID[o.publisherId];
               return (
-                <li key={o.id} className="flex items-center gap-3 rounded-xl border border-line p-2.5 text-xs">
+                <li key={o.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-line p-2.5 text-xs">
                   <CompanyBadge name={c?.name ?? o.publisherId} color={c?.color ?? '#888'} size={34} />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-[12rem] flex-1">
                     <div className="text-sm font-semibold">
                       {c?.name}
                       {(s.publisherTrust?.[o.publisherId] ?? 0) >= 2 && <span className="ml-1.5 text-xs font-normal text-good">· trusts you</span>}
@@ -186,7 +186,7 @@ function Publishing() {
                     </div>
                   </div>
                   {!o.negotiated && (
-                    <div className="flex shrink-0 flex-col gap-1">
+                    <div className="flex shrink-0 flex-wrap gap-1 sm:flex-col">
                       <Button size="sm" variant="ghost" title={`${Math.round(negotiateOdds(s) * 100)}% chance they agree to +25% advance; otherwise they walk away (and won’t call for months)`} onClick={() => useGame.getState().actOrToast({ type: 'negotiateDeal', dealId: o.id, ask: 'advance' }, 'You made your pitch')}>
                         Ask +25% advance
                       </Button>
@@ -449,8 +449,8 @@ function IP() {
       {fr.map((f) => {
         const price = Math.max(money(5_000, s.day), f.fans * 4 * (f.bestScore / 100) * inflation(s.day) * 0.8);
         return (
-          <li key={f.id} className="flex items-center gap-3 rounded-xl border border-line p-2.5 text-xs">
-            <div className="min-w-0 flex-1">
+          <li key={f.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-2.5 text-xs">
+            <div className="min-w-[12rem] flex-1">
               <div className="text-sm font-semibold">
                 {f.name} {f.origin && <Pill tone="gold">Acquired classic</Pill>}
               </div>

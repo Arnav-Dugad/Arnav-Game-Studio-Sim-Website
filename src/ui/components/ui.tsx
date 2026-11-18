@@ -267,9 +267,12 @@ export function Modal({
         className={cx('glass relative max-h-[90vh] w-full overflow-y-auto scroll-pb-20 rounded-2xl p-5 scroll-thin animate-pop', wide ? 'max-w-3xl' : 'max-w-lg')}
       >
         {dismissable && onClose && (
-          <button type="button" aria-label="Close" className="absolute right-3 top-3 grid size-8 place-items-center rounded-lg text-ink3 hover:bg-bg2 hover:text-ink" onClick={onClose}>
-            <Icon name="close" size={16} />
-          </button>
+          // stays in the corner however far a long dialog scrolls (and takes no room from the content)
+          <div className="pointer-events-none sticky -top-3 z-10 -mb-8 -mr-2 -mt-2 flex justify-end">
+            <button type="button" aria-label="Close" className="pointer-events-auto grid size-8 place-items-center rounded-lg bg-panel/80 text-ink3 backdrop-blur hover:bg-bg2 hover:text-ink" onClick={onClose}>
+              <Icon name="close" size={16} />
+            </button>
+          </div>
         )}
         {children}
       </div>
@@ -308,7 +311,7 @@ export function Segmented<T extends string | number>({ value, options, onChange,
             onChange(o.value);
           }}
           className={cx(
-            'rounded-lg px-2.5 py-1 text-xs font-semibold transition disabled:opacity-40',
+            'rounded-lg px-2.5 py-1 text-xs font-semibold transition disabled:opacity-40 pointer-coarse:min-h-9 pointer-coarse:py-2', // finger-sized on touch screens
             o.value === value ? 'bg-panel text-ink shadow-sm' : 'text-ink2 hover:text-ink',
           )}
         >

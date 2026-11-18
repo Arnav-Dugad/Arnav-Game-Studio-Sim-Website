@@ -134,8 +134,9 @@ function Multiplier({ k, label, desc, min, max, step, format, neutral }: { k: 's
           value={v}
           aria-label={label}
           onChange={(e) => setV(Number(e.target.value))}
-          onPointerUp={() => commit(v)}
-          onKeyUp={() => commit(v)}
+          // only an actual change counts as using a cheat (tabbing past the slider or clicking it in place doesn't)
+          onPointerUp={() => v !== cur && commit(v)}
+          onKeyUp={() => v !== cur && commit(v)}
         />
         <Button
           size="sm"

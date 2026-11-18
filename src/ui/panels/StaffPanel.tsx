@@ -119,7 +119,7 @@ function Hire() {
         <span>
           <span title="Everyone needs a desk; hiring places one for you if none is free">Free desks: <b className={desks <= 0 ? 'text-warn' : ''}>{desks}</b>{desks <= 0 && !full ? ' (hiring adds one)' : ''}</span> · <span title="The most people this office can hold — move to a bigger office for more">People {Object.keys(s.staff).length} of {cap} this office holds</span>
         </span>
-        <span className="flex gap-1.5">
+        <span className="flex flex-wrap gap-1.5">
           {cramped >= 3 && (
             <Button
               size="sm"

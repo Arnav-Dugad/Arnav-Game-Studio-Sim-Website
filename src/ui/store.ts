@@ -189,7 +189,11 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   openPanel: (p, tab = null) => {
     sound.play('click');
-    set({ panel: get().panel === p && !tab ? null : p, panelTab: tab, build: p === 'office' ? get().build : null });
+    const next = get().panel === p && !tab ? null : p;
+    // build mode lives with the office: switching to another panel ends it, closing the office sheet doesn't (on a phone the
+    // sheet is the furniture catalogue — closing it is how you get back to the floor)
+    const keep = next === 'office' || (next === null && get().panel === 'office');
+    set({ panel: next, panelTab: tab, build: keep ? get().build : null });
   },
   pushModal: (m) => set({ modals: [...get().modals, m] }),
   openModalNow: (m) => set({ modals: [m, ...get().modals.filter((x) => JSON.stringify(x) !== JSON.stringify(m))] }),

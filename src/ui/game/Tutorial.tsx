@@ -15,12 +15,12 @@ interface Step {
 
 const STEPS: Step[] = [
   { title: 'Welcome to your garage', body: 'You’ve just founded a game studio. Let’s make your first game — it only takes a minute.', next: 'Let’s go' },
-  { title: 'Open the Develop panel', body: 'Click Develop on the left (or press N), then choose “New game”.', done: (g) => g.panel === 'develop', target: 'rail-develop' },
+  { title: 'Open the Develop panel', body: 'Open Develop — on the left, or in the bottom bar on a phone (key: N) — then choose “New game”.', done: (g) => g.panel === 'develop', target: 'rail-develop' },
   { title: 'Design your game', body: 'Pick a name, genre, topic and platform. Good genre/topic combos score better — you learn how well they fit by shipping games (or by paying for market research). Then press “Start development”.', done: (g) => !!g.s && Object.values(g.s.projects).some((p) => p.kind === 'game'), target: 'start-dev' },
   { title: 'Let time run', body: 'Press play (Space) or pick a speed at the top. Watch your team work. At each phase gate you’ll decide where to focus effort.', done: (g) => g.speed > 0 },
   { title: 'Phase gates & reviews', body: 'When a phase ends, the game pauses so you can adjust focus. When it ships, critics review it — hover any number to see why.', done: (g) => !!g.s && g.s.releaseOrder.length > 0 },
   { title: 'Grow the studio', body: 'Hire people from the Staff panel (H) when you can afford them, and assign someone to Research (R) to unlock new tech.', done: (g) => !!g.s && (g.s.progress.stats.staffHired > 0 || !!g.s.research.active), target: 'rail-staff' },
-  { title: 'You’ve got this', body: 'Shape your office in build mode (B) — break areas, décor and space affect morale and productivity. The (?) button at the top has a full guide. Good luck!', next: 'Finish' },
+  { title: 'You’ve got this', body: 'Shape your office in build mode (Office → Edit layout, or key B) — break areas, décor and space affect morale and productivity. The (?) button at the top has a full guide. Good luck!', next: 'Finish' },
 ];
 
 export function Tutorial() {
@@ -53,8 +53,13 @@ export function Tutorial() {
 
   // A studio that has already shipped a few games has clearly found its feet: retire the tutorial.
   const veteran = (s?.releaseOrder.length ?? 0) >= 3;
+  // …unless the player asked to see it again (Settings → Replay tutorial takes it from done back to the start)
+  const prevStep = useRef(step);
+  const replayed = useRef(false);
   useEffect(() => {
-    if (veteran && step < 99) act({ type: 'tutorial', step: 99 });
+    if (prevStep.current >= 99 && step === 0) replayed.current = true;
+    prevStep.current = step;
+    if (veteran && step < 99 && !replayed.current) act({ type: 'tutorial', step: 99 });
   }, [veteran, step, act]);
 
   // Highlight the target element
@@ -69,6 +74,16 @@ export function Tutorial() {
       el.style.outlineOffset = '';
     };
   }, [cur, panel]);
+
+  // on a phone the hint strip sits under an open panel sheet: tell the sheet to make room for it
+  const strip = !!(s && show && cur && s.status === 'running' && panel);
+  useEffect(() => {
+    if (!strip) return;
+    document.documentElement.style.setProperty('--tut-strip', '3.75rem');
+    return () => {
+      document.documentElement.style.removeProperty('--tut-strip');
+    };
+  }, [strip]);
 
   if (!s || !show || !cur || s.status !== 'running') return null;
   const nextBtn = cur.next && (

@@ -81,4 +81,6 @@ export function isDarkTheme(): boolean {
 if (typeof window !== 'undefined') {
   applySettings(useSettings.getState());
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applySettings(useSettings.getState()));
+  // following the system: an OS reduced-motion change applies straight away too
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', () => applySettings(useSettings.getState()));
 }

@@ -96,6 +96,11 @@ export function BuildBar() {
                 Desks for everyone ({deskless})
               </Button>
             )}
+            {!panelOpen && (
+              <Button size="sm" icon="build" className="sm:hidden" onClick={() => useGame.setState({ panel: 'office' })}>
+                Furniture
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={() => g.setBuild(null)}>
               Done (Esc)
             </Button>
