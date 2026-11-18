@@ -1,4 +1,7 @@
 /** UI-side helpers that derive presentation data from the sim (pure functions). */
+import { AREAS } from '@/data/types';
+import { areaSkill, benchmarkPoints, teamSynergy } from '@/sim/systems/dev';
+import { productivity } from '@/sim/systems/staff';
 import { TITLE_NOUN } from '@/data/names';
 import { genrePopularity, topicPopularity } from '@/sim/systems/market';
 import { GENRES, GENRE_BY_ID } from '@/data/genres';
@@ -102,6 +105,25 @@ export function estimateCost(s: GameState, size: Size, team: Staff[], workShare 
   const salaries = team.reduce((t, st) => t + st.salary, 0) * (days / 365);
   const production = sizeDailyCost(size, s.day) * days;
   return { salaries, production, total: salaries + production, days };
+}
+
+/**
+ * Before a game starts: how much work this team would put in, against what a game of this size needs today
+ * (the "Development effort" part of the score). ratio 1 = a typical team for the size; effort is the score factor.
+ */
+export function teamEffortEstimate(s: GameState, size: Size, team: Staff[], work = 1): { ratio: number; effort: number } {
+  if (!team.length) return { ratio: 0, effort: 0 };
+  const days = BALANCE.SIZE[size].days * work;
+  const syn = teamSynergy(s, team).total;
+  let perDay = 0;
+  for (const st of team) {
+    let skill = 0;
+    for (const a of AREAS) skill += areaSkill(st, a);
+    perDay += (skill / AREAS.length / 100) * productivity(s, st).total;
+  }
+  const pts = perDay * BALANCE.POINTS_PER_DAY * syn * days * (5 / 7);
+  const ratio = pts / (benchmarkPoints(size, s.day) * work);
+  return { ratio, effort: ratio / (ratio + 0.35) };
 }
 
 export function bestSkill(st: Staff): [string, number] {

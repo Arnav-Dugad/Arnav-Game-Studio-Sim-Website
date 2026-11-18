@@ -331,6 +331,53 @@ export function assignDesks(s: GameState): void {
   }
 }
 
+/** Crowding above this costs morale (see staff.ts moraleTarget). */
+export const CROWD_OK = 3;
+
+/** How many people sit at a cramped desk. */
+export function crampedCount(s: GameState): number {
+  const L = layout(s);
+  return Object.values(s.staff).filter((st) => st.deskId && (L.desks[st.deskId]?.crowding ?? 0) > CROWD_OK).length;
+}
+
+/**
+ * Spread the team out: move people from the most cramped desks to the roomiest free ones, then sell empty desks
+ * that crowd their neighbours (keeping a few free desks for new hires). Returns how many moved and desks removed.
+ */
+export function spreadOut(s: GameState, keepFree = 5): { moved: number; removed: number; refund: number } {
+  assignDesks(s);
+  const L = layout(s);
+  const crowdOf = (id: string) => L.desks[id]?.crowding ?? 0;
+  const deskIds = s.office.items.filter((i) => ITEM_BY_ID[i.item].category === 'desk').map((i) => i.id);
+  const used = new Set(Object.values(s.staff).flatMap((st) => (st.deskId ? [st.deskId] : [])));
+  const free = deskIds.filter((d) => !used.has(d)).sort((a, b) => crowdOf(a) - crowdOf(b));
+  let moved = 0;
+  const people = Object.values(s.staff)
+    .filter((st) => st.deskId && crowdOf(st.deskId) > CROWD_OK)
+    .sort((a, b) => crowdOf(b.deskId!) - crowdOf(a.deskId!));
+  for (const st of people) {
+    const best = free[0];
+    if (!best || crowdOf(best) >= crowdOf(st.deskId!) - 1) break;
+    free.shift();
+    const old = st.deskId!;
+    st.deskId = best;
+    // the old desk is free now (it goes back in order)
+    const at = free.findIndex((d) => crowdOf(d) > crowdOf(old));
+    free.splice(at < 0 ? free.length : at, 0, old);
+    moved++;
+  }
+  // clear the most cramped empty desks, keeping the roomiest few free
+  const spare = free.filter((d) => crowdOf(d) > CROWD_OK).sort((a, b) => crowdOf(b) - crowdOf(a));
+  const removable = spare.slice(0, Math.max(0, free.length - keepFree));
+  let refund = 0;
+  if (removable.length) {
+    const gone = new Set(removable);
+    for (const it of s.office.items) if (gone.has(it.id)) refund += ITEM_BY_ID[it.item].cost;
+    s.office.items = s.office.items.filter((i) => !gone.has(i.id));
+  }
+  return { moved, removed: removable.length, refund };
+}
+
 export function freeDesks(s: GameState): number {
   return deskCount(s) - Object.values(s.staff).filter((st) => st.deskId).length;
 }

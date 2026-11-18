@@ -215,6 +215,8 @@ export function handleEvents(events: SimEvent[]): void {
   let hardStop = false;
   /** This batch opened a popup — answering it (and any others) resumes time. Pauses without a popup stay paused. */
   let popped = false;
+  let reviewsShown = 0;
+  const moreLaunches: string[] = [];
   let income = 0;
   let gala = false;
   let cheer = false;
@@ -231,9 +233,13 @@ export function handleEvents(events: SimEvent[]): void {
         else g.toast({ text: `Contract paid ${fmtMoney(e.amount)}`, tone: 'good', icon: 'cash' });
         break;
       case 'reviews':
-        g.pushModal({ kind: 'reviews', releaseId: e.releaseId });
-        sound.play('review');
-        if (s.settings.autopause.releases) pause = popped = true;
+        // several launches on one day: show the first two in full, list the rest
+        if (reviewsShown < 2) {
+          g.pushModal({ kind: 'reviews', releaseId: e.releaseId });
+          sound.play('review');
+          if (s.settings.autopause.releases) pause = popped = true;
+        } else moreLaunches.push(e.releaseId);
+        reviewsShown += 1;
         break;
       case 'event':
         g.pushModal({ kind: 'event', uid: e.uid });
@@ -307,6 +313,10 @@ export function handleEvents(events: SimEvent[]): void {
       default:
         break;
     }
+  }
+  if (moreLaunches.length) {
+    const list = moreLaunches.map((id) => s.releases[id]).filter((r): r is NonNullable<typeof r> => !!r);
+    if (list.length) g.toast({ text: `Also launched: ${list.map((r) => `${r.name} (${r.score})`).join(', ')} — reviews in Releases`, tone: 'neutral', icon: 'news' });
   }
   if (gala) cheer = true;
   if (cheer) useGame.setState((st) => ({ cheer: st.cheer + 1 }));

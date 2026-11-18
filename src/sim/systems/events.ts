@@ -397,7 +397,7 @@ export const EVENT_DEFS: EventDef[] = [
     // A feud between colleagues (raised when a relationship sours past the feud line; never rolled at random).
     id: 'feud',
     art: 'conflict',
-    cooldown: 60,
+    cooldown: 120,
     weight: () => 0,
     make: ({ s }) => {
       const f = worstFeud(s);
@@ -2789,6 +2789,13 @@ export function fireEvent(c: Ctx, defId: string): boolean {
   if (!def || s.pendingEvents.some((e) => e.defId === defId) || (s.eventCooldowns[defId] ?? -1) > s.day) return false;
   const made = def.make(c);
   if (!made) return false;
+  // policy: feuds go straight to a mediator, no popup
+  if (defId === 'feud' && s.company.policies.autoMediate && s.company.cash >= Number(made.ctx.cost)) {
+    s.nextEventUid += 1;
+    def.resolve(c, { uid: s.nextEventUid, defId, day: s.day, title: made.title, body: made.body, options: made.options, ctx: made.ctx, expiresDay: s.day, art: def.art }, 'mediate');
+    s.eventCooldowns[def.id] = s.day + def.cooldown;
+    return true;
+  }
   s.nextEventUid += 1;
   const inst: EventInstance = { uid: s.nextEventUid, defId: def.id, day: s.day, title: made.title, body: made.body, options: made.options, ctx: made.ctx, expiresDay: s.day + 21, art: def.art };
   s.pendingEvents.push(inst);

@@ -15,7 +15,7 @@ export interface PulseItem {
 }
 
 const HINTS: Record<string, string> = {
-  'Pay vs market': 'Raises (or Generous benefits in Policies)',
+  'Pay vs market': 'Team tab → select everyone → Pay market rate',
   'No desk': 'Build more desks',
   Crowding: 'Spread desks out or move to a bigger office',
   Noise: 'Keep loud things away from desks',

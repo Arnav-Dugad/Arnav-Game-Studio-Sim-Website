@@ -171,8 +171,8 @@ export function YearInReview() {
       </dl>
       {summary.games.length > 0 && (
         <ul className="mt-2 space-y-0.5 text-xs">
-          {summary.games.slice(0, 4).map((g) => (
-            <li key={g.name} className="flex justify-between">
+          {summary.games.slice(0, 4).map((g, i) => (
+            <li key={`${g.name}-${i}`} className="flex justify-between">
               <span className="truncate">{g.name}</span>
               <span className="num font-semibold">{g.score}</span>
             </li>

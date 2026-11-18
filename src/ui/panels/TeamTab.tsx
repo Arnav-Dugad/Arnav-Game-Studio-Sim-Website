@@ -11,7 +11,7 @@ import { BALANCE } from '@/data/balance';
 import { fromDay } from '@/sim/calendar';
 import { fmtMoney, money } from '@/sim/util';
 import { tierDef } from '@/sim/systems/office';
-import { isAway, ROLE_NAMES } from '@/sim/systems/staff';
+import { isAway, ROLE_NAMES, ROLE_SKILLS, marketSalary } from '@/sim/systems/staff';
 import { layoffMoraleHit } from '@/sim/actions';
 import type { GameState, Project, Role, Staff } from '@/sim/types';
 import { Button, Meter, Pill, cx, inputCls } from '../components/ui';
@@ -653,11 +653,12 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
           className={cx(inputCls, 'h-8 !w-32 text-xs')}
           value=""
           onChange={(e) => {
-            const skill = e.target.value as Skill;
-            if (!skill) return;
+            const pick = e.target.value;
+            if (!pick) return;
             runEach(
-              `Training ${skill}`,
+              pick === 'role' ? 'Training (own skill)' : `Training ${pick}`,
               (st) => {
+                const skill = (pick === 'role' ? ROLE_SKILLS[st.role][0] : pick) as Skill;
                 if (leaving(st)) return null;
                 // Check first, so nobody is pulled off a project for a course that won't start.
                 if (st.assignment.kind === 'training') return { ok: false, error: 'already training' };
@@ -674,6 +675,7 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
           title="Send them to a four-week course (takes them off their projects)"
         >
           <option value="">Train…</option>
+          <option value="role">Each in their role’s skill</option>
           {SKILLS.map((k) => (
             <option key={k} value={k}>
               {k === 'qa' ? 'QA' : k}
@@ -692,6 +694,20 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
         title="A 10% raise lifts morale and loyalty"
       >
         +10% pay
+      </Button>
+      <Button
+        size="sm"
+        icon="cash"
+        onClick={() =>
+          runEach('Pay market rate', (st) => {
+            const market = Math.round(marketSalary(useGame.getState().s!, st.skills));
+            if (st.role === 'founder' || st.salary >= market) return null;
+            return res(act({ type: 'setSalary', staffId: st.id, salary: market }));
+          })
+        }
+        title="Bring everyone selected who earns less than the going rate up to it (nobody is paid less)"
+      >
+        Pay market rate
       </Button>
       {confirmFire ? (
         <Button

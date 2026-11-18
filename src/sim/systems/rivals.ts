@@ -42,6 +42,13 @@ for (const f of FRANCHISES) {
 }
 SCHEDULE.sort((a, b) => a.day - b.day);
 
+/** A rival's name follows its games: each release pulls its reputation toward what that game earned (a 65 holds
+ *  steady around 50, an 85 lifts it toward 90) — so studios rise and fall instead of all drifting up to 100. */
+export function rivalRepAfter(rep: number, score: number): number {
+  const target = clamp((score - 40) * 2, 0, 100);
+  return clamp(rep + (target - rep) * 0.08, 0, 100);
+}
+
 export function franchiseOwner(s: GameState, franchiseId: string): string | undefined {
   // the player may own a real franchise after acquiring its company
   for (const f of Object.values(s.franchises)) if (f.origin === franchiseId) return '__player';
@@ -125,7 +132,7 @@ export function rivalScheduledReleases(c: Ctx, cursor: { i: number }): void {
     if (r) {
       r.lastRelease = s.day;
       r.cash += g.units * 15 * inflation(s.day) * 0.3;
-      r.reputation = clamp(r.reputation + (g.score - 70) / 10, 0, 100);
+      r.reputation = rivalRepAfter(r.reputation, g.score);
     }
     const cname = COMPANY_BY_ID[ev.company]?.name ?? ev.company;
     pushNews(s, {
@@ -182,7 +189,7 @@ export function rivalsMonthly(c: Ctx): void {
       const revenue = units * 20 * inflation(s.day) * 0.35;
       r.cash += revenue;
       r.revenue12m = r.revenue12m * 0.9 + revenue;
-      r.reputation = clamp(r.reputation + (score - 65) / 15, 0, 100);
+      r.reputation = rivalRepAfter(r.reputation, score);
     }
     // costs
     r.cash -= r.staff * 2_800 * inflation(s.day) * 0.25;

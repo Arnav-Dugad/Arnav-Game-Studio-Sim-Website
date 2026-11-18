@@ -6,7 +6,7 @@ import { WELLNESS_COST } from '@/sim/systems/finance';
 import { RETREAT_MORALE, retreatBlocked, retreatCost } from '@/sim/systems/studioLife';
 import { PERSON_BY_ID } from '@/data/people';
 import { fmtMoney, money } from '@/sim/util';
-import { tierDef, freeDesks } from '@/sim/systems/office';
+import { tierDef, freeDesks, crampedCount } from '@/sim/systems/office';
 import { ROLE_NAMES, marketSalary } from '@/sim/systems/staff';
 import type { Candidate, GameProject } from '@/sim/types';
 import { BALANCE } from '@/data/balance';
@@ -58,6 +58,7 @@ function Hire() {
   const room = cap - Object.keys(s.staff).length;
   const full = room <= 0;
   const desks = freeDesks(s);
+  const cramped = crampedCount(s);
   const list = s.candidates
     .filter((c) => role === 'all' || c.role === role)
     .sort((a, b) =>
@@ -118,6 +119,21 @@ function Hire() {
           <span title="Everyone needs a desk; hiring places one for you if none is free">Free desks: <b className={desks <= 0 ? 'text-warn' : ''}>{desks}</b>{desks <= 0 && !full ? ' (hiring adds one)' : ''}</span> · <span title="The most people this office can hold — move to a bigger office for more">People {Object.keys(s.staff).length} of {cap} this office holds</span>
         </span>
         <span className="flex gap-1.5">
+          {cramped >= 3 && (
+            <Button
+              size="sm"
+              icon="move"
+              onClick={() => {
+                const before = cramped;
+                const r = act({ type: 'spreadOut' });
+                if (!r.ok) toast({ text: r.error, tone: 'bad' });
+                else toast({ text: `Moved people to roomier desks: ${before} → ${crampedCount(useGame.getState().s!)} cramped`, tone: 'good' });
+              }}
+              title="Give everyone room: people move to roomier desks, cramped desks are sold (40% back) and new ones placed across every floor. Undone automatically if it wouldn’t help."
+            >
+              Spread out ({cramped} cramped)
+            </Button>
+          )}
           {desks <= 0 && !full && (
             <Button size="sm" icon="plus" onClick={() => useGame.getState().actOrToast({ type: 'furnishDesks', extra: Math.min(5, room) }, 'Desks added')} title="Place up to five more of your best desk">
               Add desks
@@ -260,6 +276,13 @@ function Policies() {
             <span className="block text-xs text-ink3">When your researchers run out of work, start the quickest available project (only if it costs under 10% of your cash).</span>
           </span>
           <input type="checkbox" checked={!!p.autoQueue} onChange={(e) => act({ type: 'setPolicy', autoQueue: e.target.checked })} className="size-5 accent-[var(--accent)]" />
+        </label>
+        <label className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
+          <span>
+            <b>Always mediate feuds</b>
+            <span className="block text-xs text-ink3">When two people fall out, bring in a mediator straight away (a small fee each time) — no popup.</span>
+          </span>
+          <input type="checkbox" checked={!!p.autoMediate} onChange={(e) => act({ type: 'setPolicy', autoMediate: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
       </Section>
       <Section title="Work culture">

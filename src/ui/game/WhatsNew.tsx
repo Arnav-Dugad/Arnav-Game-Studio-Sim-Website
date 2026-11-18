@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21s';
+export const WHATS_NEW_VERSION = '2026-11-21t';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'Running a big studio', body: 'Staff → Spread out gives a cramped team room across every floor in one click. Team tab: Pay market rate for everyone selected, and Train… each person in their own role’s skill. Policies: Always mediate feuds (no popups). New games show the team’s effort against what the size needs — and warn before a thin team takes on a big game. Every new game gets its own title, when the tech tree runs dry nobody is parked in research, big acquisitions ask first, and several launches on one day no longer stack up popups. Rival studios now rise and fall with their games.' },
   { icon: 'play', title: 'Smoother play', body: 'Time picks up again once you’ve answered a popup, and stops when nothing is left in development. Popups never pile onto a phase gate and keep their distance. A design/tech balance gauge on every project (and at each gate) shows where you stand against the genre’s ideal and what to change. New hires join the game you’re making. Reputation now builds over years: contracts and goals help a young studio, but great games make a famous one.' },
   { icon: 'brush', title: 'Design your box art', body: 'Click a game’s cover in Develop → Projects to design it: twelve palettes, seven layouts and over fifty motifs, with a live preview. Your cover goes with the game everywhere — the release screen, your shelf and your Studio Card — and no longer changes on launch day.' },
   { icon: 'letters', title: 'Type-in listings', body: 'In the early ’80s, a hobbyist magazine may ask to print one of your small computer games as code for readers to type in. A small fee, some fans — and the kids who typed it in won’t forget. Plus: couriers bring collector’s edition samples to the team, and the Overview suggests a Collector’s Edition when fans would buy one.' },

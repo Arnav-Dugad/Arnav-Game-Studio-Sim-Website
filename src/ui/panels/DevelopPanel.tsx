@@ -37,7 +37,7 @@ import { isAway } from '@/sim/systems/staff';
 import { BalanceBar, FocusSliders } from '../game/FocusEditor';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
-import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, idealFocus, knowsCombo, suggestConcept, suggestName } from '../game/lib';
+import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, idealFocus, knowsCombo, suggestConcept, suggestName, teamEffortEstimate } from '../game/lib';
 import { sound } from '../sound';
 
 export default function DevelopPanel() {
@@ -555,6 +555,16 @@ function NewGame({ onDone }: { onDone: () => void }) {
     return ok.reduce((best, id) => (comboFitValue(firstGenre, id) > comboFitValue(firstGenre, best) ? id : best), ok[0]!);
   };
   const [topic, setTopic] = useState<string>(() => baseRel?.concept.topic ?? presetFr?.topic ?? starterTopic() ?? 'fantasy');
+  // titles already used by your games (in development or released)
+  const takenNames = new Set<string>([...Object.values(s.projects).flatMap((p) => (p.kind === 'game' ? [p.concept.name.toLowerCase()] : [])), ...Object.values(s.releases).map((r) => r.name.toLowerCase())]);
+  /** A suggested title nobody at the studio has used yet. */
+  const freshName = (t: string, seed: number) => {
+    for (let k = 0; k < 40; k++) {
+      const n = suggestName(seed + k * 7919, t);
+      if (!takenNames.has(n.toLowerCase())) return n;
+    }
+    return suggestName(seed, t);
+  };
   const [name, setName] = useState(() =>
     remasterRel
       ? `${remasterRel.name} Remastered`
@@ -562,7 +572,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
         ? `${expansionRel.name}: ${expansionSubtitle(s.day + expansionRel.day)}`
         : presetFr
           ? `${presetFr.name} ${presetFr.entries.length + 1 + (presetFr.origin ? 1 : 0)}`
-          : suggestName(s.day, 'fantasy'),
+          : freshName(topic, s.day),
   );
   const [audience, setAudience] = useState<Audience>(baseRel?.concept.audience ?? 'everyone');
   const locked = !!baseRel;
@@ -616,11 +626,12 @@ function NewGame({ onDone }: { onDone: () => void }) {
     [34, 33, 33],
   ]);
   const ideal = learned ? idealFocus(genre) : undefined;
-  const franchises = Object.values(s.franchises).filter((f) => f.bestScore > 0 || f.origin);
+  const franchises = Object.values(s.franchises).filter((f) => f.bestScore > 0 || f.origin).sort((a, b) => b.fans - a.fans); // most-loved series first
   const teamStaff = team.map((id) => s.staff[id]!).filter(Boolean);
   const locs = useMemo(() => (yr >= LOC_YEAR ? localized.filter((r) => r !== home && !(s.company.branches ?? []).includes(r)) : []), [yr, localized, home, s.company.branches]);
   const work = workShare({ remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs });
   const cost = estimateCost(s, size, teamStaff, work);
+  const effortEst = teamEffortEstimate(s, size, teamStaff, work);
   const featCost = features.reduce((tt, id) => tt + money(FEATURE_BY_ID[id]?.cost ?? 0, s.day), 0) + locs.length * money(LOC_COST[size], s.day);
   const kitCost = platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
   const deal = s.offers.deals.find((d) => d.id === dealId);
@@ -673,7 +684,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             variant="ghost"
             onClick={() => {
               setBased(undefined);
-              setName(suggestName(s.day, topic));
+              setName(freshName(topic, s.day));
             }}
           >
             Make a new game instead
@@ -708,7 +719,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               setInspiration(idea);
               setGenre(idea.genre);
               setTopic(idea.topic);
-              setName(suggestName(Math.random() * 1e6, idea.topic));
+              setName(freshName(idea.topic, Math.random() * 1e6));
             }}>
             Inspire me
           </Button>
@@ -729,8 +740,9 @@ function NewGame({ onDone }: { onDone: () => void }) {
           <Field label="Title">
             <div className="flex gap-2">
               <input className={inputCls} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
-              <Button icon="refresh" aria-label="Suggest a name" onClick={() => setName(suggestName(Math.random() * 1e6, topic))} />
+              <Button icon="refresh" aria-label="Suggest a name" onClick={() => setName(freshName(topic, Math.random() * 1e6))} />
             </div>
+            {takenNames.has(name.trim().toLowerCase()) && <p className="mt-1 text-[11px] text-warn">You already have a game called “{name.trim()}” — players (and your own lists) will mix them up.</p>}
           </Field>
           {franchises.length > 0 && (
             <Field label={baseRel ? 'Franchise' : 'Sequel to'}>
@@ -1048,6 +1060,12 @@ function NewGame({ onDone }: { onDone: () => void }) {
               </div>
             </div>
           </Tip>
+          <Tip content={<span>How much work this team would put in over the schedule, against what {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs in {yr}. It’s the “Development effort” part of the score — a thin team can’t make a great big game.</span>}>
+            <div className="w-full cursor-help rounded-xl bg-bg2/70 p-2 text-left">
+              <div className="text-ink3">Team effort</div>
+              <div className={cx('num font-semibold', effortEst.ratio >= 0.9 ? 'text-good' : effortEst.ratio < 0.6 ? 'text-warn' : 'text-ink')}>{liveTeam.length ? `${Math.round(effortEst.ratio * 100)}% of needed` : '—'}</div>
+            </div>
+          </Tip>
           <div className="rounded-xl bg-bg2/70 p-2">
             <div className="text-ink3">Est. cost</div>
             <div className="num font-semibold">{fmtMoney(cost.total + kitCost + featCost)}</div>
@@ -1074,6 +1092,11 @@ function NewGame({ onDone }: { onDone: () => void }) {
             </p>
           ) : null;
         })()}
+        {liveTeam.length > 0 && effortEst.ratio < 0.6 && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-warn">
+            <Icon name="warning" size={14} /> This team can only put in about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs — expect a low score. Pick a smaller size, add stronger people, or start with an engine that suits it.
+          </p>
+        )}
         {kitCost + cost.production > s.company.cash && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-warn">
             <Icon name="warning" size={14} /> This will cost more cash than you have. Consider a publisher deal or a smaller game.

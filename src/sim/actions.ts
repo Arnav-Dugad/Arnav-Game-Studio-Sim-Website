@@ -53,7 +53,7 @@ import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projec
 import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount, bundleCost, MAX_BUNDLE, launchPrice } from './systems/release';
 import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
-import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
+import { CROWD_OK, assignDesks, canPlace, crampedCount, freeDesks, itemRequirement, layout, spreadOut, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost } from './systems/research';
 import { SABBATICAL, candidateToStaff, invalidateMentees, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
@@ -182,6 +182,7 @@ export type Action =
   | { type: 'awardsCampaign'; releaseId: string }
   | { type: 'launchBonus'; releaseId: string }
   | { type: 'releaseDemo'; projectId: string }
+  | { type: 'spreadOut' }
   | { type: 'setCover'; projectId: string; cover: { pal: string; layout: string; motif: string } | null }
   | { type: 'orderCollectors'; projectId: string; run: CeRun }
   | { type: 'dismissEvent'; uid: number }
@@ -201,7 +202,7 @@ export type Action =
   | { type: 'setSubsidiary'; id: string; budget: 'low' | 'normal' | 'high'; focusGenre?: GenreId }
   | { type: 'sellFranchise'; franchiseId: string }
   | { type: 'resolveEvent'; uid: number; option: string }
-  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; charity?: 0 | 1 | 5; parentalLeave?: 'minimal' | 'standard' | 'generous'; interns?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean }
+  | { type: 'setPolicy'; salaryPolicy?: 'lean' | 'market' | 'generous'; remote?: boolean; fourDayWeek?: boolean; wellness?: boolean; charity?: 0 | 1 | 5; parentalLeave?: 'minimal' | 'standard' | 'generous'; interns?: boolean; autoResearch?: boolean; autoVacation?: boolean; autoQueue?: boolean; autoMediate?: boolean }
   | { type: 'setRecruiting'; level: number }
   | { type: 'buyDevkit'; platform: string }
   | { type: 'continueEndless' }
@@ -1080,6 +1081,44 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'releaseDemo':
       return releaseDemo(s, a.projectId);
+    case 'spreadOut': {
+      // 1) swap people onto roomier free desks and clear cramped empty ones; 2) re-place the desks of whoever is
+      // still cramped, spread over every floor. If it doesn't help (or anyone ends up without a desk), undo it all.
+      const snapItems = s.office.items.map((i) => ({ ...i }));
+      const snapDesks = new Map(Object.values(s.staff).map((st) => [st.id, st.deskId]));
+      const cash0 = s.company.cash;
+      const ledger0 = JSON.stringify(s.finance.ledger?.[s.finance.ledger.length - 1] ?? null);
+      const before = crampedCount(s);
+      const undo = (why: string) => {
+        s.office.items = snapItems;
+        for (const st of Object.values(s.staff)) st.deskId = snapDesks.get(st.id);
+        s.company.cash = cash0;
+        const last = s.finance.ledger?.[s.finance.ledger.length - 1];
+        if (last && ledger0 !== 'null') Object.assign(last, JSON.parse(ledger0));
+        touchOffice(s);
+        return why;
+      };
+      const r = spreadOut(s);
+      if (r.refund) earn(s, 'asset_sales', money(r.refund, s.day) * 0.4);
+      touchOffice(s);
+      const L = layout(s);
+      const cramped = Object.values(s.staff).filter((st) => st.deskId && (L.desks[st.deskId]?.crowding ?? 0) > CROWD_OK);
+      if (cramped.length) {
+        const gone = new Set(cramped.map((st) => st.deskId!));
+        let refund = 0;
+        for (const it of s.office.items) if (gone.has(it.id)) refund += ITEM_BY_ID[it.item].cost;
+        s.office.items = s.office.items.filter((i) => !gone.has(i.id));
+        for (const st of cramped) delete st.deskId;
+        earn(s, 'asset_sales', money(refund, s.day) * 0.4);
+        touchOffice(s);
+        const f = dispatch(s, { type: 'furnishDesks', extra: 0 });
+        if (!f.ok && f.error !== 'Everyone already has a desk') return undo(f.error === 'Not enough cash' ? 'Not enough cash to re-desk everyone' : 'There isn’t room to spread out — build another floor or move to a bigger office');
+      }
+      assignDesks(s);
+      if (Object.values(s.staff).some((st) => !st.deskId)) return undo('There isn’t room for everyone to spread out — build another floor or move to a bigger office');
+      if (crampedCount(s) >= before) return undo('Nobody can be given more room — build another floor or move to a bigger office');
+      return null;
+    }
     case 'setCover': {
       const p = s.projects[a.projectId];
       if (!p || p.kind !== 'game') return 'No such game';
@@ -1243,6 +1282,7 @@ function apply(c: Ctx, a: Action): string | null {
       }
       if (a.autoResearch !== undefined) s.company.policies.autoResearch = !!a.autoResearch;
       if (a.autoVacation !== undefined) s.company.policies.autoVacation = !!a.autoVacation;
+      if (a.autoMediate !== undefined) s.company.policies.autoMediate = !!a.autoMediate;
       if (a.autoQueue !== undefined) s.company.policies.autoQueue = !!a.autoQueue;
       for (const st of Object.values(s.staff)) st.moraleWhy = undefined;
       return null;

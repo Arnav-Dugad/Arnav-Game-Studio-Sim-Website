@@ -16,6 +16,11 @@ export function researchAvailable(s: GameState, r: ResearchDef): { ok: boolean; 
   return { ok: true };
 }
 
+/** Is there anything for researchers to do — something active, queued, or ready to start? */
+export function researchLeft(s: GameState): boolean {
+  return !!s.research.active || s.research.queue.length > 0 || RESEARCH.some((r) => researchAvailable(s, r).ok);
+}
+
 export function researchCost(s: GameState, r: ResearchDef): number {
   return money(r.cost, s.day);
 }

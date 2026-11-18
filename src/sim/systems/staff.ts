@@ -1,6 +1,7 @@
 /**
  * Staff: generation, salary, productivity, morale, energy, burnout, loyalty, growth, quitting.
  */
+import { RESEARCH } from '../../data/research';
 import { possessive } from '../util';
 import { PLEDGE_MORALE, pledged } from './crunchPledge';
 import type { GenreId } from '../../data/types';
@@ -473,6 +474,13 @@ export function staffAutomationWeekly(s: GameState): void {
   const pol = s.company.policies;
   if (!pol.autoResearch && !pol.autoVacation) return;
   const sentFrom = new Map<string, number>();
+  // nothing left to research (this year): don't park people there — send them back to be assigned
+  const yr = fromDay(s.day).year;
+  const researchLeft =
+    !!s.research.active ||
+    s.research.queue.length > 0 ||
+    RESEARCH.some((r) => !s.research.done.includes(r.id) && yr >= r.year && r.requires.every((q) => s.research.done.includes(q)));
+  if (pol.autoResearch && !researchLeft) for (const st of Object.values(s.staff)) if (st.assignment.kind === 'research') st.assignment = { kind: 'idle' };
   for (const st of Object.values(s.staff)) {
     if (pol.autoVacation && st.burnout >= AUTO_VACATION_BURNOUT && !vacationBlocked(s, st) && canSpare(s, st, sentFrom)) {
       st.vacationDays = 14;
@@ -480,7 +488,7 @@ export function staffAutomationWeekly(s: GameState): void {
       st.loyalty = clamp(st.loyalty + 5, 0, 100);
       continue;
     }
-    if (pol.autoResearch && st.assignment.kind === 'idle' && !isAway(st)) st.assignment = { kind: 'research' };
+    if (pol.autoResearch && researchLeft && st.assignment.kind === 'idle' && !isAway(st)) st.assignment = { kind: 'research' };
   }
 }
 

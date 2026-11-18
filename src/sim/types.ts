@@ -967,6 +967,8 @@ export interface Company {
     autoVacation?: boolean;
     /** When research runs dry, start the cheapest available project (if under 10% of cash). */
     autoQueue?: boolean;
+    /** Feuds go straight to a mediator (no popup) whenever the studio can pay. */
+    autoMediate?: boolean;
   };
   /** Day of the last major layoff (morale shock). */
   lastLayoffDay?: number;
