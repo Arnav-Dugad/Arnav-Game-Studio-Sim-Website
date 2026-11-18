@@ -154,7 +154,7 @@ export function WhatsNew({ newcomer = false }: { newcomer?: boolean }) {
         </button>
       </div>
       <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-        {(all ? ITEMS : ITEMS.slice(0, 8)).map((it) => (
+        {(all ? ITEMS : ITEMS.slice(0, 3)).map((it) => (
           <li key={it.title} className="flex gap-2.5 text-xs">
             <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent/15 text-accent">
               <Icon name={it.icon} size={14} />

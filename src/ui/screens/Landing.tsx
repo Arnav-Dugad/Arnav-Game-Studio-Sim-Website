@@ -33,6 +33,7 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
 
 export function Landing() {
   const user = useAuth((a) => a.user);
+  const ready = useAuth((a) => a.ready); // sign-in state settled (avoids buttons swapping under the cursor)
   const [stateRef] = useState<{ current: GameState | null }>(() => ({ current: buildDemoState() }));
 
   useEffect(() => {
@@ -53,7 +54,9 @@ export function Landing() {
         <Wordmark />
         <nav className="flex items-center gap-2">
           <ThemeToggle />
-          {user ? (
+          {!ready ? (
+            <span className="h-10 w-44" aria-hidden />
+          ) : user ? (
             <Button variant="primary" onClick={() => navigate('slots')}>
               Continue
             </Button>
@@ -85,7 +88,7 @@ export function Landing() {
             <Button variant="primary" size="lg" icon="play" onClick={play}>
               Play free
             </Button>
-            {!user && (
+            {ready && !user && (
               <Button
                 size="lg"
                 onClick={() => {
