@@ -1,6 +1,8 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
 import { pitchText } from '@/sim/systems/pitches';
 import { demoBlocked } from '@/sim/systems/demos';
+import { CE_RUN, ceBlocked, ceCost, ceDemand } from '@/sim/systems/collectors';
+import { launchPrice } from '@/sim/systems/release';
 import { bonusBlocked, bonusCost, bonusTeam } from '@/sim/systems/launchBonus';
 import { pulseKey, teamPulse, type PulseItem } from './pulse';
 import { campaignBlocked, campaignFor } from '@/sim/systems/awardsCampaign';
@@ -117,6 +119,15 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
     // a game good enough to show off: a demo would win players over
     const showable = projects.find((p) => p.kind === 'game' && !demoBlocked(s, p) && p.qualityPreview && qualityToScore(p.qualityPreview.total) >= 75);
     if (showable && showable.kind === 'game') out.push({ id: 'demo', tone: 'info', icon: 'play', text: `${showable.concept.name} is looking great — a public demo would win players over.`, action: { label: 'Develop', run: () => open('develop', 'projects') } });
+    // fans who'd queue for a deluxe box: suggest a collector's edition (comfortably affordable, even at modest reviews)
+    const boxable = projects.find((p): p is GameProject => {
+      if (p.kind !== 'game' || p.phase < 1) return false;
+      const pl = p.concept.platforms.map((id) => platformInfo(s, id)).find((x) => !!x);
+      if (!pl) return false;
+      const std = launchPrice(s, pl, p.concept);
+      return !ceBlocked(s, p, 'small', std) && s.company.cash >= ceCost('small', std) * 4 && ceDemand(s, p, 70) >= CE_RUN.small * 1.2;
+    });
+    if (boxable) out.push({ id: 'collectors', tone: 'info', icon: 'box', text: `Fans are excited about ${boxable.concept.name} — a Collector’s Edition would sell.`, action: { label: 'Develop', run: () => open('develop', 'projects') } });
     // a greenlit pitch waiting to be made
     const pitch = s.company.pitch;
     const pitcher = pitch && pitch.until >= s.day ? s.staff[pitch.staffId] : undefined;

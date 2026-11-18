@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21p';
+export const WHATS_NEW_VERSION = '2026-11-21q';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'letters', title: 'Type-in listings', body: 'In the early ’80s, a hobbyist magazine may ask to print one of your small computer games as code for readers to type in. A small fee, some fans — and the kids who typed it in won’t forget. Plus: couriers bring collector’s edition samples to the team, and the Overview suggests a Collector’s Edition when fans would buy one.' },
   { icon: 'box', title: 'Collector’s Editions', body: 'From 1984, once a game is announced, order a limited run of deluxe boxes (Develop → the game → Collector’s Edition). Superfans pay 2.5× the price — how many buy depends on your fans, the series, the hype and the reviews. You pay for the run up front: sell out and it’s pure profit, overestimate and the boxes pile up.' },
   { icon: 'crowd', title: 'Breakout mods', body: 'Games that ship with mod tools grow a modding scene — and now and then one mod becomes a phenomenon. Hire its creator (who arrives with a pitch to make it a full game), buy it and ship it officially, or feature it. Either way, players come back to the original.' },
   { icon: 'heart', title: 'Alumni Wall', body: 'A new decor item (Build → Decor): framed portraits of the people who retired from your studio, gold frames for the legends.' },

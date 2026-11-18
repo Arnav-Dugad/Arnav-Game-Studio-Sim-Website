@@ -138,6 +138,12 @@ export class VisitorSystem {
       const team = people.filter((p) => p.project === hyped.id);
       if (team.length) opts.push({ w: 2, go: () => this.spawn(s, floor, 'journalist', pick(team), [pick([`Can I get a quote on ${hyped.concept.name.slice(0, 16)}?`, 'Exclusive preview?', 'Any release date?']), pick(['It’s going to be huge!', 'No comment! 😄', 'You’ll love it.', 'Soon™'])]) });
     }
+    // the first collector's edition boxes arrive for the team to admire
+    const boxed = projects.find((p) => p.kind === 'game' && p.collectors && p.phase >= 2);
+    if (boxed && boxed.kind === 'game') {
+      const team = people.filter((p) => p.project === boxed.id);
+      if (team.length) opts.push({ w: 1.5, go: () => this.spawn(s, floor, 'courier', pick(team), [pick(['Collector’s edition samples!', 'Careful — there’s a statue in here.', `The ${boxed.concept.name.slice(0, 16)} boxes are in!`]), pick(['Look at the statue! 😍', 'It’s real now. It’s really real.', 'Can I keep one?', 'The map is gorgeous!'])]) });
+    }
     // a documentary crew filming the team behind the game
     const filmed = projects.find((p) => p.kind === 'game' && p.documentary);
     if (filmed && filmed.kind === 'game' && !this.list.some((v) => v.kind === 'filmcrew')) {

@@ -961,6 +961,8 @@ export interface Company {
   lastLayoffDay?: number;
   /** The no-crunch pledge (systems/crunchPledge.ts): active since, ever taken, last broken. */
   crunchPledge?: { since?: number; ever?: boolean; brokenDay?: number; withdrawnDay?: number };
+  /** A magazine printed one of your games as a type-in listing (1980s); years later, someone who typed it in may apply. */
+  typeIn?: { day: number; game: string; magazine: string; grown?: boolean };
   /** A greenlit staff pitch waiting to be made (systems/pitches.ts). */
   pitch?: { staffId: string; genre: GenreId; topic: string; until: number };
   /** The year's awards campaign (systems/awardsCampaign.ts). */

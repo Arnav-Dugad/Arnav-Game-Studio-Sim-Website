@@ -53,7 +53,7 @@ export function orderCollectors(s: GameState, projectId: string, run: CeRun, std
   const why = ceBlocked(s, p, run, stdPrice);
   if (why) return why;
   const cost = ceCost(run, stdPrice);
-  spend(s, 'marketing', cost);
+  spend(s, 'manufacturing', cost);
   p.collectors = { run, cost };
   pushNews(s, { category: 'studio', headline: `${p.concept.name} Collector’s Edition announced`, body: `${fmtUnits(CE_RUN[run])} numbered boxes, made to order. Pre-orders are open.`, tone: 'neutral' });
   return null;

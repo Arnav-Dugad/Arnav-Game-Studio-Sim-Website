@@ -81,6 +81,11 @@ const accessibilityCandidate = (s: GameState) =>
   Object.values(s.releases).find((r) => !r.delisted && !r.accessibilityAsked && r.score >= 70 && s.day - r.day < 365 * 2 && !(r.concept.features ?? []).includes('accessibility'));
 const isAwayStaff = (x: Staff) => x.sickDays > 0 || (x.vacationDays ?? 0) > 0;
 /** Series with at least two games, most-loved first. */
+/** A home-computer game of yours a magazine could print as a type-in listing (small games only). */
+const typeInGame = (s: GameState) =>
+  s.releaseOrder
+    .map((id) => s.releases[id]!)
+    .find((r) => r && r.concept.size === 'small' && !r.concept.deal && r.concept.platforms.some((pid) => platformInfo(s, pid)?.kind === 'computer'));
 const votableSeries = (s: GameState) =>
   Object.values(s.franchises)
     .filter((f) => f.entries.length >= 2 && f.fans > 1000 && !Object.values(s.projects).some((p) => p.kind === 'game' && p.concept.franchiseId === f.id))
@@ -2262,6 +2267,75 @@ export const EVENT_DEFS: EventDef[] = [
     },
   },
   // ── Grassroots (help small studios get noticed) ───────────────────────────
+  {
+    id: 'type_in',
+    art: 'letters',
+    cooldown: 365,
+    weight: (s) => (yr(s) <= 1987 && !s.company.typeIn && typeInGame(s) ? 0.35 : 0),
+    make: ({ s, rng }) => {
+      const r = typeInGame(s);
+      if (!r) return null;
+      const magazine = rng.pick(['Keyboard Club Monthly', 'The Micro Listing', 'Pixel & Program', 'Bits for Beginners', 'Home Micro Hobbyist']);
+      const fee = money(400, s.day);
+      return {
+        title: 'A magazine wants your code',
+        body: `${magazine} would like to print a cut-down ${r.name} as a type-in listing: twelve pages of code readers copy out by hand. It pays a small fee — and teaches a lot of kids how games work.`,
+        options: [
+          { id: 'print', label: `Send them the listing (+${fmtMoney(fee)})`, preview: 'Fans +3%, reputation +1 — and a generation of young programmers learns from your code' },
+          { id: 'no', label: 'Our code stays secret', preview: 'No change' },
+        ],
+        ctx: { game: r.name, magazine, fee },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      if (opt !== 'print' || s.company.typeIn) return;
+      earn(s, 'licensing', Number(e.ctx.fee));
+      s.company.fans = Math.round(s.company.fans * 1.03);
+      addRep(s, 1, 'A type-in listing in a magazine');
+      s.company.typeIn = { day: s.day, game: String(e.ctx.game), magazine: String(e.ctx.magazine) };
+      pushNews(s, { category: 'studio', headline: `${String(e.ctx.game)} printed in ${String(e.ctx.magazine)}`, body: 'Somewhere, a kid is typing it in line by line — and fixing their own typos.', tone: 'good' });
+    },
+  },
+  {
+    id: 'type_in_grown_up',
+    art: 'student',
+    cooldown: 365,
+    weight: (s) => {
+      const ti = s.company.typeIn;
+      return ti && !ti.grown && s.day - ti.day >= 365 * 12 && freeDesks(s) > 0 && Object.keys(s.staff).length < tierDef(s.office.tier).staffCap ? 0.4 : 0;
+    },
+    make: ({ s, rng }) => {
+      const ti = s.company.typeIn;
+      if (!ti) return null;
+      const cand = generateCandidate(s, rng, { role: rng.pick(['programmer', 'designer'] as const), quality: 70 });
+      cand.potential = clamp(Math.max(cand.potential, 85), 0, 100);
+      const salary = Math.round(marketSalary(s, cand.skills) * 0.85);
+      const role = ROLE_NAMES[cand.role].toLowerCase();
+      return {
+        title: 'They learned from your code',
+        body: `${cand.name}, ${aOrAn(cand.level)} ${role}, has applied. As a kid they typed ${ti.game} in from ${ti.magazine}, line by line, in ${fromDay(ti.day).year} — it’s why they make games. They’d take less than they could earn elsewhere to work here.`,
+        options: [
+          { id: 'hire', label: `Hire ${cand.name.split(' ')[0]} (${fmtMoney(salary)}/yr)`, preview: `A ${cand.level} ${role} (potential ${cand.potential}), fiercely loyal` },
+          { id: 'no', label: 'Send a signed copy and a kind reply', preview: 'Morale +2 for a month — the team loves the story' },
+        ],
+        ctx: { cand: JSON.stringify(cand), salary },
+      };
+    },
+    resolve: ({ s }, e, opt) => {
+      const ti = s.company.typeIn;
+      if (!ti || ti.grown) return;
+      ti.grown = true;
+      if (opt === 'hire' && freeDesks(s) > 0 && Object.keys(s.staff).length < tierDef(s.office.tier).staffCap) {
+        const cand = JSON.parse(String(e.ctx.cand));
+        const id = newId(s, 's');
+        s.staff[id] = candidateToStaff(s, cand, id, Number(e.ctx.salary));
+        s.staff[id]!.loyalty = 95;
+        s.progress.stats.staffHired += 1;
+        assignDesks(s);
+        pushNews(s, { category: 'staff', headline: `${s.staff[id]!.name} joins the studio whose code they learned from`, body: `${ti.game}, printed in ${ti.magazine} in ${fromDay(ti.day).year}, comes full circle.`, tone: 'good' });
+      } else mod(s, 2, 30, 'A letter from a fan who became a developer');
+    },
+  },
   {
     id: 'club_demo_night',
     art: 'crowd',
