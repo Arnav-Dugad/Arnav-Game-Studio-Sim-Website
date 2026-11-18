@@ -1332,7 +1332,7 @@ function apply(c: Ctx, a: Action): string | null {
       const st = s.finance.stock;
       if (!st) return 'Not public';
       const raised = secondaryOffering(s, Math.min(0.2, Math.max(0.02, a.pct)));
-      if (raised <= 0) return 'No shares left to sell';
+      if (raised <= 0) return 'You’d keep too little of your own studio';
       pushNews(s, { category: 'studio', headline: `${s.company.name} raises ${fmtMoney(raised)} in a share sale`, tone: 'neutral' });
       return null;
     }

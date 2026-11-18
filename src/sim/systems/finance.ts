@@ -307,15 +307,22 @@ export function yearOf(s: GameState): number {
   return fromDay(s.day).year;
 }
 
-/** Sell more shares (secondary offering): cash now, less control. */
+/** Your stake after issuing `pct` more shares. */
+export function controlAfterOffering(st: { shares: number; founderShares: number }, pct: number): number {
+  return st.founderShares / (st.shares + Math.round(st.shares * pct));
+}
+
+/**
+ * Issue new shares (a follow-on offering): cash for the studio, and your stake is diluted. The new money is
+ * spread over more shares, so it can't conjure value per share out of nothing.
+ */
 export function secondaryOffering(s: GameState, pct: number): number {
   const st = s.finance.stock;
   if (!st) return 0;
   const n = Math.round(st.shares * pct);
-  const sell = Math.min(n, st.founderShares);
-  if (sell <= 0) return 0;
-  const raised = sell * st.price * 0.92;
-  st.founderShares -= sell;
+  if (n <= 0 || controlAfterOffering(st, pct) < 0.05) return 0;
+  const raised = n * st.price * 0.92;
+  st.shares += n;
   st.price *= 0.96;
   s.company.cash += Math.round(raised);
   return raised;

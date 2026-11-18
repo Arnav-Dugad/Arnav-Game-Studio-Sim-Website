@@ -8,7 +8,7 @@ import { TRADE_SHOWS } from '@/data/marketing';
 import type { GenreId } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits, inflation, money } from '@/sim/util';
-import { fundingAmount, fundingBlocked, ipoEligible, nextFunding, valuation } from '@/sim/systems/finance';
+import { fundingAmount, fundingBlocked, ipoEligible, nextFunding, valuation, controlAfterOffering } from '@/sim/systems/finance';
 import { LineChart } from '../charts';
 import { Button, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
@@ -317,10 +317,10 @@ function Stock() {
       <p className="mt-2 text-xs text-ink3">Quarterly profit expectation: {fmtMoney(st.expectation)}. Beat it to lift the price and keep the board happy.</p>
       <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
         <span>
-          Sell 5% more shares for cash
-          {own - 0.05 < 0.5 && <b className="ml-1 text-bad">· drops you below 50% — takeover risk</b>}
+          Issue 5% more shares for cash (your stake falls to {Math.round(controlAfterOffering(st, 0.05) * 100)}%)
+          {controlAfterOffering(st, 0.05) < 0.5 && <b className="ml-1 text-bad">· below 50% — takeover risk</b>}
         </span>
-        <Button size="sm" disabled={own < 0.06} onClick={() => useGame.getState().actOrToast({ type: 'secondaryOffering', pct: 0.05 }, 'Shares sold')}>
+        <Button size="sm" disabled={controlAfterOffering(st, 0.05) < 0.05} onClick={() => useGame.getState().actOrToast({ type: 'secondaryOffering', pct: 0.05 }, 'Shares issued')}>
           +{fmtMoney(st.shares * 0.05 * st.price * 0.92)}
         </Button>
       </div>
