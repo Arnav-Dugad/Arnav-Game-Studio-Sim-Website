@@ -809,7 +809,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 <option value="">New IP</option>
                 {franchises.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.name} · {fmtUnits(f.fans)} fans{f.fatigue > 0.2 ? ' · fatigued' : ''}{cliffhangerPending(s, f.id) ? ' · cliffhanger!' : ''}
+                    {f.name} · {f.fans >= 1 ? `${fmtUnits(f.fans)} fans` : 'fans still gathering'}{f.fatigue > 0.2 ? ' · fatigued' : ''}{cliffhangerPending(s, f.id) ? ' · cliffhanger!' : ''}
                   </option>
                 ))}
               </select>
@@ -1182,7 +1182,12 @@ function NewGame({ onDone }: { onDone: () => void }) {
         })()}
         {liveTeam.length > 0 && effortEst.ratio < 0.6 && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-warn">
-            <Icon name="warning" size={14} /> This team can only put in about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs — expect a low score. Pick a smaller size, add stronger people, or start with an engine that suits it.
+            <Icon name="warning" size={14} /> This team can only put in about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs — expect a {size === 'small' ? 'modest' : 'low'} score.{' '}
+            {size === 'small'
+              ? s.releaseOrder.length === 0
+                ? 'That’s normal for a first game made alone; hiring a helper (Staff → Hire) makes the next one much stronger.'
+                : 'Add people to the team (hire if everyone is busy), or pick stronger ones.'
+              : 'Pick a smaller size, add stronger people, or hire.'}
           </p>
         )}
         {kitCost + cost.production > s.company.cash && (

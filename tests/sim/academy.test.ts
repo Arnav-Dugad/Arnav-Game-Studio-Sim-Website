@@ -67,3 +67,14 @@ describe('studio academy', () => {
     expect(dispatch(s, { type: 'closeAcademy' }).ok).toBe(false);
   });
 });
+
+describe('recruiter role search', () => {
+  it('brings four candidates for the chosen role, keeps special candidates and the pool size', () => {
+    const s = studio();
+    const before = s.candidates.length;
+    expect(dispatch(s, { type: 'searchRole', role: 'founder' }).ok).toBe(false);
+    expect(dispatch(s, { type: 'searchRole', role: 'artist' }).ok).toBe(true);
+    expect(s.candidates.slice(0, 4).every((c) => c.role === 'artist')).toBe(true);
+    expect(s.candidates.length).toBeLessThanOrEqual(Math.max(14, before));
+  });
+});

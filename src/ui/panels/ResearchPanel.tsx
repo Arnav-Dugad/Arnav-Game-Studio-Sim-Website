@@ -5,7 +5,7 @@ import { RESEARCH, RESEARCH_BY_ID, type ResearchBranch } from '@/data/research';
 import { ENGINES } from '@/data/engines';
 import { fromDay } from '@/sim/calendar';
 import { fmtMoney, money } from '@/sim/util';
-import { activeResearch, researchAvailable, researchCost, researchRate, researchers } from '@/sim/systems/research';
+import { activeResearch, researchAvailable, researchCost, researchLeft, researchRate, researchers } from '@/sim/systems/research';
 import { RND, RND_MAX, RND_UNLOCK, rndBlocked, rndCost, rndLevel, rndPoints, rndUnlocked } from '@/sim/systems/rnd';
 import { engineBuildPoints, engineTechFor } from '@/sim/systems/dev';
 import { Button, Empty, Field, Meter, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
@@ -134,13 +134,13 @@ function Tree() {
             {s.research.queue.length > 0 && <div className="mt-1 text-[11px] text-ink3">Next: {s.research.queue.map((q) => RESEARCH_BY_ID[q]?.name).join(' → ')}</div>}
           </>
         ) : (
-          <div className="text-sm text-ink2">No active research. Pick a project below.</div>
+          <div className="text-sm text-ink2">{researchLeft(s) ? 'No active research. Pick a project below.' : 'Nothing to research yet — new projects open up as the industry moves on.'}</div>
         )}
         <div className="mt-2 flex items-center justify-between text-xs">
           <span className={cx(team.length ? 'text-ink3' : 'text-warn')}>
-            {team.length ? `${team.length} researcher${team.length > 1 ? 's' : ''} · ${rate.toFixed(2)} pts/day` : 'Nobody is researching. Idle staff can — or pick people in the Staff panel.'}
+            {team.length ? `${team.length} researcher${team.length > 1 ? 's' : ''} · ${rate.toFixed(2)} pts/day` : researchLeft(s) ? 'Nobody is researching. Idle staff can — or pick people in the Staff panel.' : 'Nobody needs to research until something new opens up.'}
           </span>
-          {!team.length && idleNow.length > 0 && (
+          {!team.length && idleNow.length > 0 && researchLeft(s) && (
             <Button
               size="sm"
               variant="primary"

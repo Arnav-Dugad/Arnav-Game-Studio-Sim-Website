@@ -4,7 +4,7 @@ import { itemRequirement } from '@/sim/systems/office';
 import { ITEMS, OFFICE_TIERS, type ItemCategory } from '@/data/facilities';
 import { RESEARCH_BY_ID } from '@/data/research';
 import { fromDay } from '@/sim/calendar';
-import { aOrAn, fmtMoney, money } from '@/sim/util';
+import { aOrAn, fmtMoney, inflation, money } from '@/sim/util';
 import { layout, tierDef } from '@/sim/systems/office';
 import { monthlyRent, monthlyUpkeep } from '@/sim/systems/finance';
 import { Button, Pill, Section, Segmented, cx } from '../components/ui';
@@ -28,10 +28,13 @@ export default function OfficePanel() {
   const toast = useGame((g) => g.toast);
   const [cat, setCat] = useState<ItemCategory | 'all'>('desk');
   const [confirmDown, setConfirmDown] = useState(false);
+  const [confirmUp, setConfirmUp] = useState(false);
   const yr = fromDay(s.day).year;
   const t = tierDef(s.office.tier);
   const next = OFFICE_TIERS.find((x) => x.tier === s.office.tier + 1);
   const prev = OFFICE_TIERS.find((x) => x.tier === s.office.tier - 1);
+  // what the rent will be there (branches abroad keep their own rent)
+  const nextRent = next ? monthlyRent(s) + (next.rent - tierDef(s.office.tier).rent) * inflation(s.day) : 0;
   const L = layout(s);
   const desks = Object.values(L.desks);
   const avg = (f: (d: (typeof desks)[number]) => number) => (desks.length ? desks.reduce((a, d) => a + f(d), 0) / desks.length : 0);
@@ -46,7 +49,7 @@ export default function OfficePanel() {
         <p className="text-xs text-ink3">{t.desc}</p>
         {next && (
           <p className="mt-1 text-xs text-ink3">
-            Next: <b className="text-ink2">{next.name}</b> — room for {next.staffCap} people{next.floors > 1 ? ` on ${next.floors} floors` : ''}.
+            Next: <b className="text-ink2">{next.name}</b> — room for {next.staffCap} people{next.floors > 1 ? ` on ${next.floors} floors` : ''}, rent {fmtMoney(nextRent)}/mo.
           </p>
         )}
         <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
@@ -74,12 +77,15 @@ export default function OfficePanel() {
               icon="building"
               disabled={s.company.reputation < next.minReputation || s.company.cash < money(next.moveCost, s.day)}
               title={s.company.reputation < next.minReputation ? `Needs ${next.minReputation} reputation` : undefined}
+              variant={confirmUp ? 'primary' : 'secondary'}
               onClick={() => {
+                if (!confirmUp) return setConfirmUp(true);
+                setConfirmUp(false);
                 const r = act({ type: 'moveOffice', tier: next.tier });
                 toast(r.ok ? { text: `Welcome to your ${next.name}!`, tone: 'gold', icon: 'building' } : { text: r.error, tone: 'bad' });
               }}
             >
-              Move to {next.name} ({fmtMoney(money(next.moveCost, s.day))})
+              {confirmUp ? `Confirm: pay ${fmtMoney(money(next.moveCost, s.day))}, rent ${fmtMoney(monthlyRent(s))} → ${fmtMoney(nextRent)}/mo` : `Move to ${next.name} (${fmtMoney(money(next.moveCost, s.day))})…`}
             </Button>
           )}
           {prev &&
@@ -101,7 +107,7 @@ export default function OfficePanel() {
           <Health label="Walk to breaks" value={noBreak ? `${noBreak} desk(s) with none!` : `${avg((d) => d.energyDist).toFixed(1)} tiles`} good={!noBreak && avg((d) => d.energyDist) < 6} />
           <Health label="Décor aura" value={avg((d) => d.decor).toFixed(1)} good={avg((d) => d.decor) > 4} />
           <Health label="Crowding" value={`${avg((d) => d.crowding).toFixed(1)} desks nearby`} good={avg((d) => d.crowding) <= 3} />
-          <Health label="Noise" value={avg((d) => d.noise).toFixed(1)} good={avg((d) => d.noise) < 1} />
+          <Health label="Noise" value={(Math.abs(avg((d) => d.noise)) < 0.05 ? 0 : avg((d) => d.noise)).toFixed(1)} good={avg((d) => d.noise) < 1} />
         </div>
         <p className="mt-1.5 text-[11px] text-ink3">Breaks restore energy; long walks waste time. Décor lifts morale nearby; crowding and noise hurt it. Use the overlays in build mode to see it.</p>
       </Section>

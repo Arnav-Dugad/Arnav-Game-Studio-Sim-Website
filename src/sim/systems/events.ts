@@ -2781,7 +2781,10 @@ export const EVENT_DEFS: EventDef[] = [
 
 const DEF_BY_ID = Object.fromEntries(EVENT_DEFS.map((d) => [d.id, d]));
 
-/** Weekly roll for a random event. */
+/** Days between random popups at the least, and the daily chance of one after that (about one every 5–6 weeks). */
+export const EVENT_GAP = 28;
+export const EVENT_CHANCE = 0.1;
+
 /** Raise a specific event now (scheduled events such as the shareholder meeting). */
 export function fireEvent(c: Ctx, defId: string): boolean {
   const { s } = c;
@@ -2812,10 +2815,10 @@ export function rollRandomEvent(c: Ctx): void {
   if (s.pendingEvents.length >= 2) return;
   // New studios get a quiet first few months.
   if (s.day - toDay(s.settings.startYear, 1, 1) < 150) return;
-  // one thing at a time: never on top of a phase gate, and at least two weeks after the last popup
-  if (s.lastEventDay !== undefined && s.day - s.lastEventDay < 14) return;
+  // one thing at a time: never on top of a phase gate, and at least four weeks after the last popup
+  if (s.lastEventDay !== undefined && s.day - s.lastEventDay < EVENT_GAP) return;
   if (Object.values(s.projects).some((p) => p.kind === 'game' && p.awaitingGate)) return;
-  if (!rng.chance(0.16)) return;
+  if (!rng.chance(EVENT_CHANCE)) return;
   const eligible = EVENT_DEFS.filter((d) => (s.eventCooldowns[d.id] ?? -1) <= s.day && d.weight(s) > 0);
   if (!eligible.length) return;
   const def = rng.weighted(eligible, (d) => d.weight(s));
@@ -2833,6 +2836,14 @@ export function rollRandomEvent(c: Ctx): void {
     expiresDay: s.day + 21,
     art: def.art,
   };
+  // nothing to decide: it happens, and the news says so (no popup, no pause)
+  const open = made.options.filter((o) => !o.disabled);
+  if (open.length === 1 && open[0]!.cost === undefined) {
+    def.resolve(c, inst, open[0]!.id);
+    s.eventCooldowns[def.id] = s.day + def.cooldown;
+    pushNews(s, { category: 'studio', headline: made.title, body: `${made.body}${open[0]!.preview ? ` ${open[0]!.preview}.` : ''}`, tone: 'good' });
+    return;
+  }
   s.pendingEvents.push(inst);
   s.eventCooldowns[def.id] = s.day + def.cooldown;
   s.lastEventDay = s.day;

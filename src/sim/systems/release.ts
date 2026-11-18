@@ -90,7 +90,8 @@ function partKey(label: string): string {
 }
 
 function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, gameName: string, idx = 0): string {
-  const muls = quality.parts.filter((p) => p.kind === 'mul' && p.label !== 'Engine R&D'); // the studio's R&D isn't something critics see
+  // the studio's R&D isn't something critics see, and the high bar is how critics score, not a trait of the game
+  const muls = quality.parts.filter((p) => p.kind === 'mul' && p.label !== 'Engine R&D' && !p.label.startsWith('Critics’ high bar'));
   // Each outlet notices different things: rotate through the top strengths / weaknesses.
   const bests = [...muls].sort((a, b) => b.value - a.value).slice(0, 3);
   const worsts = [...muls].sort((a, b) => a.value - b.value).slice(0, 3);
@@ -107,7 +108,9 @@ function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, g
     let gk = best && best.value > 1 ? partKey(best.label) : 'focus';
     if (gk === 'effort' && !effortGood) gk = 'focus'; // don't praise effort that wasn't there
     // never praise and knock the same thing in one breath
-    const bw = worsts.filter((w) => w.value < 1).map((w) => partKey(w.label)).filter((k) => k !== gk && !!CRITIQUE[k]);
+    // …nor call it fresh and then say players have moved on (or that it's more of the same)
+    const clash = (k: string) => k === gk || (gk === 'fresh' && (k === 'trend' || k === 'repeat')) || (gk === 'trend' && k === 'fresh');
+    const bw = worsts.filter((w) => w.value < 1).map((w) => partKey(w.label)).filter((k) => !clash(k) && !!CRITIQUE[k]);
     // nothing actually weak: a mild verdict rather than an invented flaw
     let bk = bw.length ? bw[idx % bw.length]! : 'mild';
     if (bk === 'effort' && effortGood) bk = 'mild';

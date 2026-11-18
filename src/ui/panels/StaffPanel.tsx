@@ -7,7 +7,7 @@ import { RETREAT_MORALE, retreatBlocked, retreatCost } from '@/sim/systems/studi
 import { PERSON_BY_ID } from '@/data/people';
 import { fmtMoney, money } from '@/sim/util';
 import { tierDef, freeDesks, crampedCount } from '@/sim/systems/office';
-import { ROLE_NAMES, marketSalary } from '@/sim/systems/staff';
+import { HIREABLE_ROLES, ROLE_NAMES, ROLE_SEARCH_COST, ROLE_SEARCH_SIZE, marketSalary } from '@/sim/systems/staff';
 import type { Candidate, GameProject } from '@/sim/types';
 import { BALANCE } from '@/data/balance';
 import { Button, Empty, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
@@ -143,6 +143,24 @@ function Hire() {
           <Button size="sm" icon="refresh" disabled={full} onClick={() => useGame.getState().actOrToast({ type: 'refreshCandidates' }, 'Fresh candidates found')} title={full ? 'Your office is full — move to a bigger one before hiring' : 'Pay a recruiter for a fresh pool'}>
             New candidates ({fmtMoney(money(1_200, s.day))})
           </Button>
+          <select
+            className={cx(inputCls, 'h-8 !w-auto text-xs')}
+            value=""
+            disabled={full}
+            aria-label="Search for a role"
+            title={`A recruiter finds ${ROLE_SEARCH_SIZE} candidates for the role you pick`}
+            onChange={(e) => {
+              const r = e.target.value;
+              if (r) useGame.getState().actOrToast({ type: 'searchRole', role: r }, `${ROLE_SEARCH_SIZE} ${ROLE_NAMES[r as keyof typeof ROLE_NAMES].toLowerCase()}s found`);
+            }}
+          >
+            <option value="">Find a… ({fmtMoney(money(ROLE_SEARCH_COST, s.day))})</option>
+            {HIREABLE_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_NAMES[r]}
+              </option>
+            ))}
+          </select>
         </span>
       </div>
       {full && <p className="mb-2 text-xs text-warn">Your office is full. Move to a bigger office to grow the team.</p>}

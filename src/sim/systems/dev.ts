@@ -396,7 +396,25 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   const density = total > 0 ? (p.bugs * scale) / total : 0;
   bd.mul(project ? `Bugs (~${Math.round(p.bugs * scale)} expected)` : `Bugs (${Math.round(p.bugs)} remaining)`, 1 - Math.min(0.45, density * 1.6));
   bd.clamp(0, 1.2);
+  const raw = qualityToScore(bd.value);
+  const top = criticsCeiling(raw, c.size);
+  if (top < raw - 0.05) bd.mul(ceilingLabel(c.size), top / raw);
   return bd.done();
+}
+
+/** Scores above this are hard won: each extra point of quality buys less. */
+export const SCORE_KNEE = 80;
+/** Where scores level off for each size: critics save their very highest marks for ambitious games. */
+export const SCORE_CEILING: Record<Size, number> = { small: 90, medium: 95, large: 98, aaa: 100 };
+export const CEILING_LABEL = 'Critics’ high bar';
+export function ceilingLabel(size: Size): string {
+  return size === 'small' || size === 'medium' ? `${CEILING_LABEL} (${size} games top out near ${SCORE_CEILING[size]})` : `${CEILING_LABEL} (every point above ${SCORE_KNEE} is hard won)`;
+}
+/** The score critics actually give a game whose quality alone would earn `raw`. */
+export function criticsCeiling(raw: number, size: Size): number {
+  if (raw <= SCORE_KNEE) return raw;
+  const room = SCORE_CEILING[size] - SCORE_KNEE;
+  return SCORE_KNEE + room * (1 - Math.exp(-(raw - SCORE_KNEE) / room));
 }
 
 /** Quality bonus from Early Access feedback: grows over the first six months on sale. */

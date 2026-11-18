@@ -236,6 +236,7 @@ function buildLineModel(
   if (!single) {
     for (let count = Math.min(8, Math.max(2, Math.floor(innerW / 70))); count >= 1; count--) {
       const cand = innerTicks(xMin0, xMax0, count, allInt);
+      if (new Set(cand.map(fx)).size < cand.length) continue; // e.g. two ticks inside one year: "1980, 1980"
       const widest = Math.max(0, ...cand.map((v) => estimateTextWidth(fx(v))));
       if (cand.length <= 1 || (widest + 14) * cand.length <= innerW) {
         xTickVals = cand;

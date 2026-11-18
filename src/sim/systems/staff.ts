@@ -183,6 +183,18 @@ function legendaryCandidate(s: GameState, rng: Rng): Candidate | null {
   return cand;
 }
 
+/** How good the people who apply are: reputation, recruiting, headhunters, the local talent pool and a recent talk. */
+export function candidateQuality(s: GameState): number {
+  const talent = talentMultiplier(s);
+  const head = s.research.done.includes('biz_headhunters') ? 1 : 0;
+  const buzz = s.company.talkBuzzUntil !== undefined && s.day < s.company.talkBuzzUntil ? 1 : 0;
+  return s.company.reputation * 0.6 + head * 12 + s.company.recruiting * 6 + (talent - 1) * 25 + buzz * 10;
+}
+
+/** A recruiter's targeted search: this many candidates for one role. */
+export const ROLE_SEARCH_SIZE = 4;
+export const ROLE_SEARCH_COST = 1_800;
+
 export function refreshCandidates(c: Ctx): void {
   const { s, rng } = c;
   s.candidates = s.candidates.filter((x) => x.expiresDay > s.day);
@@ -191,7 +203,7 @@ export function refreshCandidates(c: Ctx): void {
   const rec = s.company.recruiting;
   const buzz = s.company.talkBuzzUntil !== undefined && s.day < s.company.talkBuzzUntil ? 1 : 0; // a good conference talk
   const n = Math.round((BALANCE.HIRE_POOL_BASE + s.company.reputation / 14 + head * 2 + rec * 1.5 + buzz * 2) * Math.sqrt(talent));
-  const quality = s.company.reputation * 0.6 + head * 12 + rec * 6 + (talent - 1) * 25 + buzz * 10;
+  const quality = candidateQuality(s);
   while (s.candidates.length < Math.min(14, n)) s.candidates.push(generateCandidate(s, rng, { quality }));
   // Headhunters can lure a rival's senior developer (premium salary, small reputation cost).
   if (s.research.done.includes('biz_headhunters') && !s.candidates.some((c) => c.fromRival) && rng.chance(0.6)) {

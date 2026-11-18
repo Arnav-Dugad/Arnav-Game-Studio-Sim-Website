@@ -40,14 +40,16 @@ export function makePitch(s: GameState, rng: Rng, st: Staff): { genre: GenreId; 
   return { genre, topic: rng.pick(topics).id };
 }
 
-/** "an Insects strategy game" (with `article`), or "Insects strategy game". */
 /** A genre name for running text: "strategy", but "RPG" and "MMO" stay as they are. */
 export function genreWord(name: string): string {
   return /^[A-Z]{2,}$/.test(name) ? name : name.toLowerCase();
 }
 
+/** "an Insects strategy game" (with `article`), or "Insects strategy game" — but "Pro Sports game", not "Pro Sports sports game". */
 export function pitchText(p: { genre: GenreId; topic: string }, article = false): string {
-  const text = `${TOPIC_BY_ID[p.topic]?.name ?? p.topic} ${genreWord(GENRE_BY_ID[p.genre].name)} game`;
+  const topic = TOPIC_BY_ID[p.topic]?.name ?? p.topic;
+  const g = genreWord(GENRE_BY_ID[p.genre].name);
+  const text = topic.toLowerCase().split(/\s+/).includes(g.toLowerCase()) ? `${topic} game` : `${topic} ${g} game`;
   return article ? aOrAn(text) : text;
 }
 

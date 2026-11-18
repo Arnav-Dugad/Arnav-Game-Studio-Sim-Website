@@ -69,6 +69,11 @@ export function postMortem(r: Release): PostMortem {
       continue;
     }
     if (part.kind !== 'mul') continue;
+    if (part.label.startsWith('Critics’ high bar')) {
+      // a small game that maxed out: the next step is a bigger one
+      if (part.value < 0.95 && (r.concept.size === 'small' || r.concept.size === 'medium')) push(false, { text: `A ${r.concept.size} game can only impress critics so much`, lesson: r.concept.size === 'small' ? 'For 90+, make a medium or large game' : 'The very top scores go to large games', weight: W(part.value) });
+      continue;
+    }
     if (part.label.startsWith('Bugs')) {
       if (part.value <= 0.9) push(false, { text: `It shipped buggy (${r.bugs.toLocaleString('en-US')} known bugs)`, lesson: 'Give QA more time, hire testers, or run an open beta', weight: W(part.value) });
       else if (part.value >= 0.985 && r.bugs < 50) push(true, { text: 'It launched remarkably polished', weight: 0.05 });

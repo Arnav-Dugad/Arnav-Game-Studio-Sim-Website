@@ -161,7 +161,9 @@ export function tick(c: Ctx): void {
   ambitionsDaily(s);
   trainingDaily(s);
   crowdfundDaily(c); // before projects: a campaign settles before its game can ship that day
+  const shipped = s.releaseOrder.length;
   updateProjectsDaily(c);
+  if (s.releaseOrder.length !== shipped) checkAchievements(c); // a launch can unlock them the day it happens
   updateResearchDaily(c);
   cheatsDaily(s);
 

@@ -133,6 +133,9 @@ export function bestSkill(st: Staff): [string, number] {
   return [k === 'qa' ? 'QA' : k, Math.round(v)];
 }
 
+/** Everyday topics: "Final League", never "League of the Shadow Heroes". */
+const GROUNDED = new Set(['sports_topic', 'extreme_sports', 'esports_topic', 'cars', 'business', 'cooking', 'school', 'hospital', 'dating', 'pets', 'fishing', 'cozy_village', 'farming', 'city', 'music', 'trains', 'comedy', 'battle_royale']);
+
 export function suggestName(seed: number, topic: string): string {
   const A = ['Neon', 'Lost', 'Iron', 'Silent', 'Wild', 'Super', 'Star', 'Shadow', 'Pixel', 'Crystal', 'Thunder', 'Hidden', 'Final', 'Brave', 'Cosmic'];
   const B: Record<string, string[]> = {
@@ -153,7 +156,8 @@ export function suggestName(seed: number, topic: string): string {
   };
   const noun = pool[Math.floor(r(2) * pool.length)]!;
   const adj = A.filter((x) => x !== noun); // never "Shadow Shadow"
-  if (r(3) < 0.25) {
+  // the storybook form ("Legends of the Silent Dawn") only for topics with some myth in them
+  if (r(3) < 0.25 && !GROUNDED.has(topic)) {
     const others = TITLE_NOUN.default!.filter((x) => x !== noun);
     return `${noun} of the ${adj[Math.floor(r(1) * adj.length)]} ${others[Math.floor(r(4) * others.length)]}`;
   }

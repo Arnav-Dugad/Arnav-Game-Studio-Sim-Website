@@ -9,7 +9,7 @@ import { acquisitionPrice } from './rivals';
 import { benchmarkPoints } from './dev';
 
 const CONTRACT_TEMPLATES = [
-  { t: 'Port a {genre} game to {platform}', d: 0.25 },
+  { t: 'Port {genre} game to {platform}', d: 0.25 },
   { t: 'Tech demo for {client}', d: 0.15 },
   { t: 'Educational game for a school board', d: 0.7 },
   { t: 'Licensed tie-in minigame', d: 0.6 },
@@ -21,7 +21,7 @@ const CONTRACT_TEMPLATES = [
   { t: 'Prototype pitch for {client}', d: 0.5 },
 ];
 
-const GENRE_WORDS = ['racing', 'puzzle', 'arcade', 'sports', 'strategy', 'platform'];
+const GENRE_WORDS = ['a racing', 'a puzzle', 'an arcade', 'a sports', 'a strategy', 'a platform'];
 
 export function refreshOffers(c: Ctx): void {
   const { s, rng } = c;

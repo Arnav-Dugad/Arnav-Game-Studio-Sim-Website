@@ -9,7 +9,7 @@ import { payLaunchBonus } from './systems/launchBonus';
 import { claimPitch } from './systems/pitches';
 import { runCampaign } from './systems/awardsCampaign';
 import { breakPledge, takePledge, withdrawPledge } from './systems/crunchPledge';
-import type { CeRun, PriceTier, Release } from './types';
+import type { CeRun, PriceTier, Release, Role } from './types';
 import { priceTierAllowed } from './systems/pricing';
 import { checkIn } from './systems/checkIns';
 import { docOnCancel } from './systems/documentary';
@@ -56,7 +56,7 @@ import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, seco
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { CROWD_OK, assignDesks, canPlace, crampedCount, freeDesks, itemRequirement, layout, spreadOut, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost, activeResearch } from './systems/research';
-import { SABBATICAL, candidateToStaff, invalidateMentees, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
+import { HIREABLE_ROLES, ROLE_SEARCH_COST, ROLE_SEARCH_SIZE, SABBATICAL, candidateQuality, candidateToStaff, generateCandidate, invalidateMentees, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
@@ -213,6 +213,7 @@ export type Action =
   | { type: 'setAutopause'; key: 'gates' | 'events' | 'releases' | 'research'; on: boolean }
   | { type: 'tutorial'; step: number }
   | { type: 'refreshCandidates' }
+  | { type: 'searchRole'; role: string }
   | { type: 'patchGame'; releaseId: string }
   | { type: 'cheat'; cheat: CheatOp }
   | { type: 'openBeta'; projectId: string }
@@ -1741,6 +1742,18 @@ function apply(c: Ctx, a: Action): string | null {
       const hw = s.hardware[i]!;
       s.hardware.splice(i, 1);
       pushNews(s, { category: 'studio', headline: `${s.company.name} scraps its ${hw.name} hardware project`, body: `${fmtMoney(hw.rdPaid)} of R&D written off.`, tone: 'bad' });
+      return null;
+    }
+    case 'searchRole': {
+      if (!(HIREABLE_ROLES as string[]).includes(a.role)) return 'Pick a role';
+      const cost = money(ROLE_SEARCH_COST, s.day);
+      if (s.company.cash < cost) return 'Not enough cash';
+      spend(s, 'recruiting', cost);
+      // the new people go first; the pool keeps its size by letting the oldest ordinary applicants go
+      const fresh = Array.from({ length: ROLE_SEARCH_SIZE }, () => generateCandidate(s, c.rng, { role: a.role as Role, quality: candidateQuality(s) }));
+      const keep = s.candidates.filter((x) => x.personId || x.returning || x.academy || x.fromRival);
+      const rest = s.candidates.filter((x) => !keep.includes(x)).slice(0, Math.max(0, 14 - keep.length - fresh.length));
+      s.candidates = [...fresh, ...keep, ...rest];
       return null;
     }
     case 'refreshCandidates': {
