@@ -1,4 +1,5 @@
 /** "Coming up": the next few months of dated events across the game's systems, for the Overview. */
+import { possessive } from '@/sim/util';
 import { pitchText } from '@/sim/systems/pitches';
 import { licenceDue } from '@/sim/systems/licences';
 import { TRADE_SHOWS } from '@/data/marketing';
@@ -32,7 +33,7 @@ export function comingUp(s: GameState, days = 120, max = 10): CalendarEntry[] {
     if (p.kind !== 'game') continue;
     add({ day: s.day + daysLeft(p), icon: 'rocket', text: `${p.concept.name} launches (planned)`, tone: 'good' });
     if (p.concept.deal) add({ day: p.concept.deal.deadlineDay, icon: 'calendar', text: `Publisher deadline for ${p.concept.name}`, tone: 'bad' });
-    if (p.crowdfund && p.crowdfund.end === undefined) add({ day: p.crowdfund.day + CAMPAIGN_DAYS, icon: 'crowd', text: `${p.concept.name}’s crowdfunding campaign ends` });
+    if (p.crowdfund && p.crowdfund.end === undefined) add({ day: p.crowdfund.day + CAMPAIGN_DAYS, icon: 'crowd', text: `${possessive(p.concept.name)} crowdfunding campaign ends` });
     if (p.crowdfund?.promised !== undefined) add({ day: p.crowdfund.promised, icon: 'crowd', text: `Promised to backers: ${p.concept.name}`, tone: 'bad' });
     if (p.earlyAccess && !p.earlyAccess.stale) add({ day: p.earlyAccess.day + EA_STALE_WEEKS * 7, icon: 'hourglass', text: `${p.concept.name}: Early Access patience runs out`, tone: 'bad' });
   }
@@ -43,7 +44,7 @@ export function comingUp(s: GameState, days = 120, max = 10): CalendarEntry[] {
   for (const id of s.releaseOrder) {
     const r = s.releases[id];
     const due = r ? licenceDue(r) : null;
-    if (r && due !== null && r.active) add({ day: due, icon: 'calendar', text: `${r.name}’s licences expire`, tone: 'bad' });
+    if (r && due !== null && r.active) add({ day: due, icon: 'calendar', text: `${possessive(r.name)} licences expire`, tone: 'bad' });
   }
   for (const f of Object.values(s.franchises)) if (f.votedUntil !== undefined) add({ day: f.votedUntil, icon: 'crowd', text: `Last day to start the ${f.name} sequel fans voted for` });
   const pitch = s.company.pitch;

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { possessive } from '@/sim/util';
 import { OFFICE_TIERS } from '@/data/facilities';
 import { RESEARCH } from '@/data/research';
 import { fromDay } from '@/sim/calendar';
@@ -546,7 +547,7 @@ function TraitEditor({ staffId }: { staffId: string }) {
   const toggle = (id: TraitId) => setSel((x) => (x.includes(id) ? x.filter((y) => y !== id) : x.length >= 4 ? x : [...x, id]));
   const clash = sel.flatMap((id) => (TRAIT_BY_ID[id].excludes ?? []).filter((x) => sel.includes(x)).map((x) => `${TRAIT_BY_ID[id].name} / ${TRAIT_BY_ID[x].name}`))[0];
   return (
-    <Card title={`${st.name}’s traits`} desc="Pick up to four. Some traits rule each other out.">
+    <Card title={`${possessive(st.name)} traits`} desc="Pick up to four. Some traits rule each other out.">
       <div className="flex flex-wrap gap-1.5">
         {TRAITS.map((tr) => {
           const on = sel.includes(tr.id);
@@ -568,7 +569,7 @@ function TraitEditor({ staffId }: { staffId: string }) {
         })}
       </div>
       {clash && <p className="mt-2 text-xs text-warn">{clash} can’t go together.</p>}
-      <Button size="sm" className="mt-2" disabled={!!clash} onClick={() => cheat({ op: 'staffTraits', staffId, traits: sel }, `${st.name}’s traits updated`)}>
+      <Button size="sm" className="mt-2" disabled={!!clash} onClick={() => cheat({ op: 'staffTraits', staffId, traits: sel }, `${possessive(st.name)} traits updated`)}>
         Save traits
       </Button>
     </Card>

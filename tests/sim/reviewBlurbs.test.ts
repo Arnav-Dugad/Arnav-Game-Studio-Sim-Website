@@ -51,7 +51,7 @@ describe('review blurbs', () => {
       for (const r of reviews) {
         const sentences = r.blurb.match(/[^.!?]+[.!?]/g)?.map((x) => x.trim()) ?? [];
         const knocked = sentences.map((x) => keyOf(CRITIQUE, x)).filter(Boolean);
-        for (const k of knocked) expect(['balance', 'focus']).toContain(k);
+        for (const k of knocked) expect(['balance', 'focus', 'mild']).toContain(k);
       }
     }
   });

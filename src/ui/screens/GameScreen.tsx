@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { possessive } from '@/sim/util';
 import { isRainy } from '@/render/weather';
 import { OfficeCanvas } from '@/render/OfficeCanvas';
 import type { OfficeRenderer } from '@/render/OfficeRenderer';
@@ -183,7 +184,7 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
     <div className="relative h-dvh w-full overflow-hidden bg-[var(--scene-bg)]">
       <OfficeCanvas
         className="absolute inset-0"
-        ariaLabel={`${s.company.name}'s ${tier.name}`}
+        ariaLabel={`${possessive(s.company.name)} ${tier.name}`}
         getState={() => useGame.getState().s}
         getUI={() => {
           const g = useGame.getState();

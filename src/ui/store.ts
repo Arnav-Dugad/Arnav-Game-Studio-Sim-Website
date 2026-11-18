@@ -68,6 +68,8 @@ interface GameStore {
   uid: string | null;
   speed: Speed;
   lastSpeed: Exclude<Speed, 0>;
+  /** The game paused itself for a popup: once the popups are dealt with, time runs again. */
+  autoPaused: boolean;
   panel: PanelId | null;
   panelTab: string | null;
   modals: Modal[];
@@ -117,6 +119,7 @@ export const useGame = create<GameStore>((set, get) => ({
   uid: null,
   speed: 0,
   lastSpeed: 1,
+  autoPaused: false,
   panel: null,
   panelTab: null,
   modals: [],
@@ -140,7 +143,7 @@ export const useGame = create<GameStore>((set, get) => ({
       for (const e of s.pendingEvents) modals.push({ kind: 'event', uid: e.uid });
       for (const p of Object.values(s.projects)) if (p.kind === 'game' && p.awaitingGate) modals.push({ kind: 'gate', projectId: p.id });
     }
-    set({ s, slotId, uid, v: get().v + 1, speed: 0, modals, toasts: [], pops: [], panel: null, build: null, floor: 0, lastSavedDay: s.day });
+    set({ s, slotId, uid, v: get().v + 1, speed: 0, autoPaused: false, modals, toasts: [], pops: [], panel: null, build: null, floor: 0, lastSavedDay: s.day });
   },
   unload: () => set({ s: null, slotId: null, uid: null, speed: 0, modals: [], toasts: [], pops: [], panel: null, build: null }),
   actOrToast: (a, ok) => {
@@ -163,11 +166,11 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   setSpeed: (sp) => {
     if (sp !== 0) set({ lastSpeed: sp });
-    set({ speed: sp });
+    set({ speed: sp, autoPaused: false });
   },
   togglePause: () => {
     const { speed, lastSpeed } = get();
-    set({ speed: speed === 0 ? lastSpeed : 0 });
+    set({ speed: speed === 0 ? lastSpeed : 0, autoPaused: false });
   },
   step: (days) => {
     const s = get().s;
@@ -182,7 +185,13 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   pushModal: (m) => set({ modals: [...get().modals, m] }),
   openModalNow: (m) => set({ modals: [m, ...get().modals.filter((x) => JSON.stringify(x) !== JSON.stringify(m))] }),
-  popModal: () => set({ modals: get().modals.slice(1) }),
+  popModal: () => {
+    const modals = get().modals.slice(1);
+    set({ modals });
+    // the last popup is answered: carry on at the speed the player was playing at
+    const { autoPaused, lastSpeed, s } = get();
+    if (!modals.length && autoPaused && s?.status === 'running') set({ speed: lastSpeed, autoPaused: false });
+  },
   toast: (t) => {
     const id = nextId++;
     set({ toasts: [...get().toasts.slice(-4), { ...t, id }] });
@@ -202,6 +211,8 @@ export function handleEvents(events: SimEvent[]): void {
   const s = g.s;
   if (!s || !events.length) return;
   let pause = false;
+  /** Game over or broke: the player decides when time moves again. */
+  let hardStop = false;
   let income = 0;
   let gala = false;
   let cheer = false;
@@ -259,10 +270,12 @@ export function handleEvents(events: SimEvent[]): void {
         g.pushModal({ kind: 'insolvent' });
         sound.play('error');
         pause = true;
+        hardStop = true;
         break;
       case 'gameOver':
         g.pushModal({ kind: 'gameOver' });
         pause = true;
+        hardStop = true;
         break;
       case 'award':
         gala = true; // one ceremony for all of this year's wins
@@ -309,5 +322,13 @@ export function handleEvents(events: SimEvent[]): void {
     setTimeout(() => useGame.setState({ pops: useGame.getState().pops.filter((p) => p.id !== id) }), 1600);
     sound.play(income > 1_000_000 ? 'bigCoin' : 'coin');
   }
-  if (pause) useGame.setState({ speed: 0 });
+  // the last project just finished and nothing else is underway: stop the clock rather than burn salaries
+  // in silence (a panel may be hiding the idle reminder)
+  const idleNow = events.some((e) => e.type === 'projectDone') && !Object.keys(s.projects).length && s.status === 'running' && g.speed > 0;
+  if (idleNow) {
+    g.toast({ text: 'Nothing in development — time paused. Start a game or take a contract.', tone: 'neutral', icon: 'hourglass' });
+    pause = true;
+    hardStop = true;
+  }
+  if (pause) useGame.setState((st) => ({ speed: 0, autoPaused: hardStop ? false : st.autoPaused || st.speed > 0 }));
 }

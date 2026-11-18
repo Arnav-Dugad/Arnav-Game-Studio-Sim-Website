@@ -142,7 +142,7 @@ export function suggestName(seed: number, topic: string): string {
  * "Inspire me": a promising genre × topic from what the player can already see — trends, combos they've
  * learned, a fresh idea rather than a repeat, and genres the studio knows. Never reveals hidden fits.
  */
-export function suggestConcept(s: GameState, rand: () => number = Math.random): { genre: GenreId; topic: string; why: string } | null {
+export function suggestConcept(s: GameState, rand: () => number = Math.random, prev?: { genre: GenreId; topic: string }): { genre: GenreId; topic: string; why: string } | null {
   const genres = availableGenres(s).filter((x) => x.ok).map((x) => x.g);
   const topics = availableTopics(s).filter((x) => x.ok).map((x) => x.t);
   if (!genres.length || !topics.length) return null;
@@ -154,13 +154,16 @@ export function suggestConcept(s: GameState, rand: () => number = Math.random): 
       const gp = genrePopularity(s, g.id);
       const tp = topicPopularity(s, t.id);
       let score = gp * Math.sqrt(tp);
-      if (gp > 1.15) why.push(`${g.name}s are hot right now`);
+      if (gp > 1.15) why.push(`${g.name} games are hot right now`);
       if (tp > 1.15) why.push(`${t.name} is trending`);
       if (knowsCombo(s, g.id, t.id)) {
         const fit = comboFitValue(g.id, t.id);
         if (fit <= 0) continue; // you know this one doesn't work
         score *= [0.5, 0.9, 1.15, 1.35][fit] ?? 1;
-        if (fit >= 2) why.push('you’ve seen this pairing work');
+        if (fit >= 2) {
+          const shipped = Object.values(s.releases).some((r) => r.concept.genre === g.id && r.concept.topic === t.id && r.score >= 70);
+          why.push(shipped ? 'you’ve seen this pairing work' : s.progress.researchedCombos?.includes(`${g.id}|${t.id}`) ? 'your research says it fits' : `${t.name} suits ${g.name.toLowerCase()} games`);
+        }
       }
       if (recent.some((r) => r.concept.genre === g.id && r.concept.topic === t.id)) score *= 0.5;
       else if (!Object.values(s.releases).some((r) => r.concept.genre === g.id && r.concept.topic === t.id) && s.releaseOrder.length) {
@@ -170,11 +173,18 @@ export function suggestConcept(s: GameState, rand: () => number = Math.random): 
       const exp = genreExperience(s, g.id);
       if (exp) {
         score *= 1 + Math.min(0.15, exp * 0.05);
-        why.push(`your team knows ${g.name}s`);
+        why.push(`your team knows ${g.name.toLowerCase()} games`);
       }
+      // variety: lean away from the genres of your last few games, and from the idea just suggested
+      const sameGenre = recent.slice(-3).filter((r) => r.concept.genre === g.id).length;
+      score *= Math.pow(0.8, sameGenre);
+      if (prev && prev.genre === g.id) score *= prev.topic === t.id ? 0.1 : 0.6;
       scored.push({ genre: g.id, topic: t.id, score, why });
     }
   scored.sort((a, b) => b.score - a.score);
-  const pick = scored[Math.floor(rand() * Math.min(6, scored.length))]!;
+  // the best idea in each genre, then one of the top few genres — so it isn't always the same genre
+  const bestPerGenre = scored.filter((x, i) => scored.findIndex((y) => y.genre === x.genre) === i);
+  const pool = bestPerGenre.slice(0, 4);
+  const pick = pool[Math.floor(rand() * pool.length)]!;
   return { genre: pick.genre, topic: pick.topic, why: pick.why.slice(0, 2).join(', ') || 'a solid, balanced pick' };
 }

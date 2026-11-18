@@ -1,4 +1,7 @@
 import { PHASE_AREAS } from '@/data/types';
+import { GENRE_BY_ID } from '@/data/genres';
+import { DESIGN_AREAS } from '@/sim/systems/dev';
+import type { GameProject } from '@/sim/types';
 import type { Focus3 } from '@/sim/types';
 import { AREA_LABEL, PHASE_NAMES } from './lib';
 
@@ -24,7 +27,7 @@ export function FocusSliders({ phase, value, onChange, ideal, disabled }: { phas
         <label key={a} className="grid grid-cols-[7rem_1fr_3rem] items-center gap-2 text-xs">
           <span className="text-ink2">{AREA_LABEL[a]}</span>
           <span className="relative">
-            <input type="range" min={0} max={100} step={5} value={value[i]} onChange={(e) => set(i, Number(e.target.value))} className="w-full" aria-label={`${AREA_LABEL[a]} focus`} />
+            <input type="range" min={0} max={100} step={1} value={value[i]} onChange={(e) => set(i, Number(e.target.value))} className="w-full" aria-label={`${AREA_LABEL[a]} focus`} />
             {ideal && <span className="pointer-events-none absolute top-0 h-1.5 w-0.5 rounded bg-gold" style={{ left: `calc(${ideal[i]}% - 1px)` }} title="What worked before" />}
           </span>
           <span className="num text-right font-semibold">{value[i]}%</span>
@@ -33,3 +36,36 @@ export function FocusSliders({ phase, value, onChange, ideal, disabled }: { phas
     </fieldset>
   );
 }
+
+/** How the game's points split between design and tech, against what its genre wants — and what to do about it. */
+export function BalanceBar({ p, className }: { p: GameProject; className?: string }) {
+  const total = p.design + p.tech;
+  if (total < 10) return null;
+  const g = GENRE_BY_ID[p.concept.genre];
+  const share = p.design / total;
+  const ideal = g.designRatio;
+  const off = share - ideal;
+  const areas = PHASE_AREAS[Math.min(2, p.phase)]!;
+  const want = areas.filter((a) => (off > 0 ? !DESIGN_AREAS.has(a) : DESIGN_AREAS.has(a))).map((a) => AREA_LABEL[a]);
+  const ok = Math.abs(off) <= 0.08;
+  const hint = ok
+    ? `On target for ${g.name.toLowerCase()} games`
+    : `${off > 0 ? 'Too much design' : 'Too much tech'} for ${aOrAnWord(g.name.toLowerCase())} — ${p.phase < 3 && want.length ? `favour ${want.join(' and ')}, or ` : ''}add more ${off > 0 ? 'programmers' : 'designers, writers or artists'}`;
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-ink3">
+          Design {Math.round(share * 100)}% · Tech {100 - Math.round(share * 100)}%
+        </span>
+        <span className="text-ink3">ideal ≈ {Math.round(ideal * 100)}% design</span>
+      </div>
+      <div className="relative mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--line)]" role="img" aria-label={`Design ${Math.round(share * 100)} percent, ideal ${Math.round(ideal * 100)} percent`}>
+        <div className={ok ? 'h-full bg-good' : 'h-full bg-warn'} style={{ width: `${share * 100}%` }} />
+        <span className="absolute top-0 h-full w-0.5 bg-gold" style={{ left: `calc(${ideal * 100}% - 1px)` }} />
+      </div>
+      <div className={ok ? 'mt-1 text-[11px] text-good' : 'mt-1 text-[11px] text-warn'}>{hint}</div>
+    </div>
+  );
+}
+
+const aOrAnWord = (w: string) => `${/^[aeiou]/.test(w) ? 'an' : 'a'} ${w} game`;

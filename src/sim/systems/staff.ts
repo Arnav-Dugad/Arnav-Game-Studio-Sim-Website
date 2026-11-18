@@ -1,6 +1,7 @@
 /**
  * Staff: generation, salary, productivity, morale, energy, burnout, loyalty, growth, quitting.
  */
+import { possessive } from '../util';
 import { PLEDGE_MORALE, pledged } from './crunchPledge';
 import type { GenreId } from '../../data/types';
 import { GENRE_BY_ID } from '../../data/genres';
@@ -603,7 +604,7 @@ export function updateStaffMonthly(c: Ctx): void {
           const m = s.staff[st.mentorId];
           st.mentorId = undefined;
           if (m) {
-            pushNews(s, { category: 'staff', headline: `${st.name} graduates from ${m.name}’s mentorship`, tone: 'good' });
+            pushNews(s, { category: 'staff', headline: `${st.name} graduates from ${possessive(m.name)} mentorship`, tone: 'good' });
             s.progress.stats.graduates = (s.progress.stats.graduates ?? 0) + 1;
             invalidateMentees(s);
           }

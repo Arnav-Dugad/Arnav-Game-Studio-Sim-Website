@@ -95,7 +95,7 @@ export function Meter({ value, max = 100, tone, className, label }: { value: num
 }
 
 /** Explains a number: renders a Breakdown as a readable list. */
-export function BreakdownList({ bd, format = (v: number) => v.toFixed(2), title }: { bd: Breakdown; format?: (v: number) => string; title?: string }) {
+export function BreakdownList({ bd, format = (v: number) => v.toFixed(2), title, result = 'Result' }: { bd: Breakdown; format?: (v: number) => string; title?: string; result?: string }) {
   return (
     <div className="min-w-56 text-xs">
       {title && <div className="mb-1.5 font-semibold text-ink">{title}</div>}
@@ -110,7 +110,7 @@ export function BreakdownList({ bd, format = (v: number) => v.toFixed(2), title 
         ))}
       </ul>
       <div className="mt-1.5 flex justify-between border-t border-line pt-1.5 font-semibold">
-        <span>Result</span>
+        <span>{result}</span>
         <span className="num">{format(bd.total)}</span>
       </div>
     </div>

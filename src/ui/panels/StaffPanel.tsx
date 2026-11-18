@@ -99,7 +99,7 @@ function Hire() {
     <div className="pb-14">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
         <span>
-          Free desks: <b className={desks <= 0 ? 'text-bad' : ''}>{desks}</b> · Office capacity {Object.keys(s.staff).length}/{cap}
+          <span title="Everyone needs a desk; hiring places one for you if none is free">Free desks: <b className={desks <= 0 ? 'text-warn' : ''}>{desks}</b>{desks <= 0 && !full ? ' (hiring adds one)' : ''}</span> · <span title="The most people this office can hold — move to a bigger office for more">People {Object.keys(s.staff).length} of {cap} this office holds</span>
         </span>
         <span className="flex gap-1.5">
           {desks <= 0 && !full && (

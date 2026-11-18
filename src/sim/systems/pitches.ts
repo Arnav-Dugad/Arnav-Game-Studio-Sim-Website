@@ -3,6 +3,7 @@
  * genre, with a topic that suits it. Greenlight it and the pitch waits in the new-game screen for six months; make
  * it with them on the team and it becomes their passion project (fresh ideas, and one very happy person).
  */
+import { possessive } from '../util';
 import { GENRE_BY_ID, GENRES } from '../../data/genres';
 import type { GenreId } from '../../data/types';
 import { TOPICS, TOPIC_BY_ID } from '../../data/topics';
@@ -66,7 +67,7 @@ export function claimPitch(s: GameState, p: GameProject): void {
   p.novelty += PASSION_NOVELTY;
   if (!st.mood || st.mood.until <= s.day || st.mood.v < 6) st.mood = { v: 6, until: s.day + 240, label: 'Making my dream game' };
   st.moraleWhy = undefined;
-  pushNews(s, { category: 'staff', headline: `${st.name}’s passion project begins`, body: `${p.concept.name} — the ${pitchText(pitch)} ${st.name.split(' ')[0]} has pitched for years — is finally in development.`, tone: 'good' });
+  pushNews(s, { category: 'staff', headline: `${possessive(st.name)} passion project begins`, body: `${p.concept.name} — the ${pitchText(pitch)} ${st.name.split(' ')[0]} has pitched for years — is finally in development.`, tone: 'good' });
 }
 
 /** Monthly: a greenlit pitch nobody made fades. */

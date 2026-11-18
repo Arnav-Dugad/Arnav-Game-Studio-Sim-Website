@@ -4,6 +4,7 @@
  * game wins. Each rival keeps a win/loss record against you; the one you've clashed with most is your
  * nemesis. Small reputation swings make the clashes matter without dominating the economy.
  */
+import { possessive } from '../util';
 import { COMPANY_BY_ID } from '../../data/companies';
 import { GENRE_BY_ID } from '../../data/genres';
 import type { GameState, Release, RivalryRecord } from '../types';
@@ -34,13 +35,13 @@ export function showdownOnRelease(s: GameState, rel: Release): void {
   } else if (diff > 0) {
     rec.wins += 1;
     rec.last = `${rel.name} beat ${foe.name} (${rel.score}–${foe.score})`;
-    addRep(s, foe.score >= 80 ? 1 : 0.5, `Beat ${them}'s ${foe.name}`);
+    addRep(s, foe.score >= 80 ? 1 : 0.5, `Beat ${possessive(them)} ${foe.name}`);
     pushNews(s, { category: 'studio', headline: `${rel.name} wins the ${genre} showdown with ${them}`, body: `Reviewers prefer it to ${foe.name} (${rel.score} vs ${foe.score}).${rec.wins >= 3 && rec.wins > rec.losses * 2 ? ` That's ${rec.wins} wins against ${them} now.` : ''}`, tone: 'good' });
   } else {
     rec.losses += 1;
     rec.last = `${foe.name} beat ${rel.name} (${foe.score}–${rel.score})`;
-    addRep(s, -0.3, `Lost out to ${them}'s ${foe.name}`);
-    pushNews(s, { category: 'studio', headline: `${them}'s ${foe.name} upstages ${rel.name}`, body: `Critics side with the rival in this season's ${genre} battle (${foe.score} vs ${rel.score}).`, tone: 'bad' });
+    addRep(s, -0.3, `Lost out to ${possessive(them)} ${foe.name}`);
+    pushNews(s, { category: 'studio', headline: `${possessive(them)} ${foe.name} upstages ${rel.name}`, body: `Critics side with the rival in this season's ${genre} battle (${foe.score} vs ${rel.score}).`, tone: 'bad' });
   }
 }
 

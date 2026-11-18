@@ -13,6 +13,11 @@ export function aOrAn(word: string): string {
   return /^([aeiou]|RPG|MMO|FPS|RTS|MOBA|SNES|NES|X)/i.test(word) && !/^(uni|use|one)/i.test(word) ? `an ${word}` : `a ${word}`;
 }
 
+/** “Atari’s”, but “Midway Games’” — a possessive that reads right for names ending in s. */
+export function possessive(name: string): string {
+  return /s\.?$/i.test(name.trim()) ? `${name}’` : `${name}’s`;
+}
+
 /** Convert a 1980-dollar amount to nominal dollars on `day`. */
 export function money(amount1980: number, day: number): number {
   return Math.round(amount1980 * inflation(day));

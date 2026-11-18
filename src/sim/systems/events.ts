@@ -2,6 +2,8 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
+import { possessive } from '../util';
+import { ITEM_BY_ID } from '../../data/facilities';
 import { MOD_BUY, MOD_FEATURE, MOD_HIRE, breakoutCandidate, modBuyScore, modRevival, modTopic, pcAlive, rollMod } from './mods';
 import { TOPIC_BY_ID } from '../../data/topics';
 import { GENRE_BY_ID } from '../../data/genres';
@@ -190,7 +192,7 @@ export const EVENT_DEFS: EventDef[] = [
       const ups = money(4_000, s.day);
       return {
         title: 'Power cut',
-        body: 'The whole block has lost power. Unsaved work is gone, and anything online is down until it’s back.',
+        body: `The whole block has lost power. Unsaved work is gone${yr(s) >= 1995 ? ', and anything online is down until it’s back' : ''}.`,
         options: [
           { id: 'ups', label: `Buy backup power for next time (${fmtMoney(ups)})`, preview: 'Lose today; never again', cost: ups },
           { id: 'wait', label: 'Send everyone home early', preview: 'Energy +10, a little progress lost' },
@@ -545,7 +547,7 @@ export const EVENT_DEFS: EventDef[] = [
         } else {
           st.price *= 0.88;
           addRep(s, -4, 'Lost a shareholder vote');
-          pushNews(s, { category: 'studio', headline: `Shareholders rebuke ${s.company.name}’s leadership`, tone: 'bad' });
+          pushNews(s, { category: 'studio', headline: `Shareholders rebuke ${possessive(s.company.name)} leadership`, tone: 'bad' });
         }
       } else if (opt === 'concede') {
         st.boardMood = clamp(st.boardMood + 20, 0, 100);
@@ -608,7 +610,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (!r) return null;
       return {
         title: 'A game preservation society writes',
-        body: `Historians want to archive ${r.name}’s source code, design documents and builds so it’s never lost. It costs you nothing but a little time.`,
+        body: `Historians want to archive ${possessive(r.name)} source code, design documents and builds so it’s never lost. It costs you nothing but a little time.`,
         options: [
           { id: 'donate', label: 'Donate the archive', preview: 'Reputation +1.5, fans +1% — history will remember' },
           { id: 'no', label: 'Keep it private', preview: 'No change' },
@@ -738,7 +740,7 @@ export const EVENT_DEFS: EventDef[] = [
       const fond = Number(e.ctx.avg) >= 60;
       if (opt === 'embrace') {
         addRep(s, fond ? 1 : -1.5, fond ? 'A fond memoir' : 'An unflattering memoir');
-        pushNews(s, { category: 'industry', headline: fond ? `${e.ctx.name}’s memoir paints a warm picture of ${s.company.name}` : `${e.ctx.name}’s memoir lifts the lid on ${s.company.name}`, tone: fond ? 'good' : 'bad' });
+        pushNews(s, { category: 'industry', headline: fond ? `${possessive(String(e.ctx.name))} memoir paints a warm picture of ${s.company.name}` : `${possessive(String(e.ctx.name))} memoir lifts the lid on ${s.company.name}`, tone: fond ? 'good' : 'bad' });
       } else if (opt === 'lawyers') {
         spend(s, 'other_expense', money(20_000, e.day));
         addRep(s, -1, 'Sued over a memoir');
@@ -884,7 +886,7 @@ export const EVENT_DEFS: EventDef[] = [
       const cost = Number(e.ctx.cost);
       if (opt === 'patch') {
         if (s.company.cash < cost) {
-          pushNews(s, { category: 'studio', headline: `No budget for ${r.name}’s accessibility patch`, body: 'The players who asked are disappointed.', tone: 'bad' });
+          pushNews(s, { category: 'studio', headline: `No budget for ${possessive(r.name)} accessibility patch`, body: 'The players who asked are disappointed.', tone: 'bad' });
           return;
         }
         spend(s, 'other_expense', cost);
@@ -1014,7 +1016,7 @@ export const EVENT_DEFS: EventDef[] = [
         s.company.fans = Math.round(s.company.fans * 1.03);
         const fr = r.concept.franchiseId ? s.franchises[r.concept.franchiseId] : undefined;
         if (fr) fr.fans = Math.round(fr.fans * 1.03);
-        pushNews(s, { category: 'studio', headline: `${r.name}’s store page now features ${name}`, body: `Players are buying ${r.name} just to play the ${style} mod.`, tone: 'good' });
+        pushNews(s, { category: 'studio', headline: `${possessive(r.name)} store page now features ${name}`, body: `Players are buying ${r.name} just to play the ${style} mod.`, tone: 'good' });
       }
     },
   },
@@ -1143,7 +1145,7 @@ export const EVENT_DEFS: EventDef[] = [
       p.certified = true;
       return {
         title: `${p.concept.name} failed certification`,
-        body: `${holder ? `${holder.name}’s` : 'The platform holder’s'} testers sent ${p.concept.name} back with a list of crash bugs. It can’t ship on their console until they’re fixed.`,
+        body: `${holder ? `${possessive(holder.name)}` : 'The platform holder’s'} testers sent ${p.concept.name} back with a list of crash bugs. It can’t ship on their console until they’re fixed.`,
         options: [
           { id: 'rush', label: `Pay for an expedited re-test (${fmtMoney(cost)})`, preview: `A week’s hold; fixes the worst of it (bugs −10%)${lateNote(p)}`, cost: cost },
           { id: 'fix', label: 'Fix it properly and resubmit', preview: `Two weeks’ hold; bugs −25%${lateNote(p)}` },
@@ -1177,7 +1179,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (!p) return null;
       return {
         title: 'The hard drive died',
-        body: `A disk crash took about two weeks of work on ${p.concept.name} with it — the last backup is older than anyone would like. (A server rack in the office would have kept backups.)`,
+        body: `A disk crash took about two weeks of work on ${p.concept.name} with it — the last backup is older than anyone would like.${yr(s) >= (ITEM_BY_ID.server_rack?.year ?? 1990) ? ' (A server rack in the office would have kept backups.)' : ''}`,
         options: [
           { id: 'weekend', label: 'Rebuild it over the weekend', preview: 'Keep the date: the lost work stays lost, morale −4, a few more bugs' },
           { id: 'redo', label: 'Take the time to redo it', preview: `Two more weeks to make the work back${lateNote(p)}` },
@@ -1310,7 +1312,7 @@ export const EVENT_DEFS: EventDef[] = [
       const st = s.staff[String(e.ctx.staff)];
       if (!st) return;
       if (opt === 'yes' && s.company.pitch && s.company.pitch.until >= s.day && s.staff[s.company.pitch.staffId]) {
-        pushNews(s, { category: 'staff', headline: `${st.name}’s pitch will have to wait`, body: 'Another pitch is already greenlit — one dream project at a time.', tone: 'neutral' });
+        pushNews(s, { category: 'staff', headline: `${possessive(st.name)} pitch will have to wait`, body: 'Another pitch is already greenlit — one dream project at a time.', tone: 'neutral' });
       } else if (opt === 'yes') {
         s.company.pitch = { staffId: st.id, genre: String(e.ctx.genre) as GenreId, topic: String(e.ctx.topic), until: s.day + PITCH_DAYS };
         if (!st.mood || st.mood.until <= s.day || (st.mood.v >= 0 && st.mood.v < 3)) st.mood = { v: 3, until: s.day + 60, label: 'Pitch greenlit' };
@@ -1329,7 +1331,7 @@ export const EVENT_DEFS: EventDef[] = [
       const cost = renewalCost(s, r);
       const what = licensedParts(r).map((id) => (id === 'official_license' ? 'league licence' : 'soundtrack licence')).join(' and the ');
       return {
-        title: `${r.name}’s licences are up`,
+        title: `${possessive(r.name)} licences are up`,
         body: `The ${what} for ${r.name} expire this month. Renew for another seven years, or let the game be delisted from stores for good.`,
         options: [
           { id: 'renew', label: `Renew for seven years (${fmtMoney(cost)})`, preview: 'It stays on sale — storefront sales and re-releases still possible', cost: cost },
@@ -1345,12 +1347,12 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt === 'renew') {
         if (s.company.cash < cost) {
           // can't pay today: the licence stays due and the question comes back next month
-          pushNews(s, { category: 'studio', headline: `Couldn’t afford to renew ${r.name}’s licences`, body: 'The licence holders will ask again next month.', tone: 'bad' });
+          pushNews(s, { category: 'studio', headline: `Couldn’t afford to renew ${possessive(r.name)} licences`, body: 'The licence holders will ask again next month.', tone: 'bad' });
           return;
         }
         spend(s, 'other_expense', cost);
         r.licenceUntil = s.day + Math.round(LICENCE_YEARS * 365.25);
-        pushNews(s, { category: 'studio', headline: `${r.name}’s licences renewed`, body: 'It stays on store shelves for another seven years.', tone: 'neutral' });
+        pushNews(s, { category: 'studio', headline: `${possessive(r.name)} licences renewed`, body: 'It stays on store shelves for another seven years.', tone: 'neutral' });
       } else {
         delist(s, r, true);
         addRep(s, -0.5, `${r.name} delisted`);
@@ -1423,7 +1425,7 @@ export const EVENT_DEFS: EventDef[] = [
       const pool = activeGames(s).filter((x) => x.phase >= 1 && x.phase <= 2);
       const p = pool.length ? rng.pick(pool) : undefined;
       if (!p) return null;
-      const thing = rng.pick(['a silly physics glitch', 'the side-quest with the talking cat', 'a throwaway mini-game', 'the hidden dance emote', 'one minor character', 'the speedrun shortcut']);
+      const thing = rng.pick(['a silly physics glitch', 'the side-quest with the talking cat', 'a throwaway mini-game', ...(yr(s) >= 2005 ? ['the hidden dance emote'] : ['the secret bonus level']), 'one minor character', ...(yr(s) >= 1995 ? ['the speedrun shortcut'] : ['the high-score table'])]);
       return {
         title: 'Playtesters can’t get enough of it',
         body: `In playtests of ${p.concept.name}, everyone keeps going back to ${thing}. Lean into it?`,
@@ -2353,7 +2355,7 @@ export const EVENT_DEFS: EventDef[] = [
         title: 'Computer club demo night',
         body: `The local computer club invites you to show ${last.name} at their monthly meeting. Mostly hobbyists — but one of them writes for a magazine.`,
         options: [
-          { id: 'go', label: 'Bring the floppies (a day off work)', preview: 'Reputation +3; games in development get a little hype' },
+          { id: 'go', label: 'Bring a demo machine (a day off work)', preview: 'Reputation +3; games in development get a little hype' },
           { id: 'skip', label: 'Too busy', preview: 'No change' },
         ],
         ctx: {},
@@ -2753,7 +2755,7 @@ export const EVENT_DEFS: EventDef[] = [
       const cost = money(40_000, s.day);
       return {
         title: 'Voice actors are on strike',
-        body: `The performers' union is striking over pay and AI clauses. ${p.concept.name}'s recording sessions are on hold.`,
+        body: `The performers' union is striking over pay and AI clauses. ${possessive(p.concept.name)} recording sessions are on hold.`,
         options: [
           { id: 'agree', label: `Sign the union's terms (${fmtMoney(cost)})`, preview: 'Reputation +2, recording resumes', cost: cost },
           { id: 'wait', label: 'Wait it out', preview: 'Release slips by about a month' },

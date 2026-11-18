@@ -194,7 +194,7 @@ export default function ReleasesPanel() {
                       {r.awards.length > 0 && <Pill tone="gold">🏆 {r.awards.length}</Pill>}
                     </div>
                     <div className="truncate text-xs text-ink3">
-                      {GENRE_BY_ID[r.concept.genre].name} · {formatDate(r.day, false)} · users {r.userScore}
+                      {GENRE_BY_ID[r.concept.genre].name} · {formatDate(r.day, false)} · players {r.userScore}/100
                       {base ? ` · for ${base.name}` : ''}
                     </div>
                     <div className="num text-xs">

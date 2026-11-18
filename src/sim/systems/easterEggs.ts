@@ -3,6 +3,7 @@
  * game, a dancing developer. Leave it in and, some months after launch, players find it: a little burst of buzz
  * for the game and a proud developer. (Take it out and they're a bit deflated.)
  */
+import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameProject, GameState, Release } from '../types';
 import { pushNews } from '../util';
@@ -40,5 +41,5 @@ function found(s: GameState, r: Release): void {
     st.mood = { v: 4, until: s.day + 60, label: 'They found my easter egg!' };
     st.moraleWhy = undefined;
   }
-  pushNews(s, { category: 'studio', headline: `Players discover a secret in ${r.name}`, body: `Hidden away in ${r.name}: ${egg.what}. ${egg.name.split(' ')[0]} put it there, and the internet is delighted.`, tone: 'good' });
+  pushNews(s, { category: 'studio', headline: `Players discover a secret in ${r.name}`, body: `Hidden away in ${r.name}: ${egg.what}. ${egg.name.split(' ')[0]} put it there, and ${fromDay(s.day).year >= 1996 ? 'the internet is delighted' : 'kids are swapping the secret in playgrounds and letters pages'}.`, tone: 'good' });
 }

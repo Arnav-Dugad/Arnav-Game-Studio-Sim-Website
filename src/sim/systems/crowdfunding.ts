@@ -4,6 +4,7 @@
  * Funded campaigns pay out (minus fees), turn backers into fans and unlock stretch goals — more content that also
  * means more polish time. Backers are promised a delivery date, and they remember whether you kept it.
  */
+import { possessive } from '../util';
 import { communityPledgeMul } from './community';
 import { clamp } from '../breakdown';
 import type { Ctx } from '../ctx';
@@ -143,7 +144,7 @@ function settle(c: Ctx, p: GameProject): void {
     addRep(s, -1.5, 'Crowdfunding fell short');
     p.hype = Math.max(0, p.hype - 0.1);
     s.company.moraleMods.push({ v: -2, until: s.day + 30, label: 'Campaign fell short' });
-    pushNews(s, { category: 'studio', headline: `${p.concept.name}’s campaign falls short`, body: `${fmtMoney(cf.raised)} of ${fmtMoney(cf.goal)} (${Math.round((cf.raised / cf.goal) * 100)}%). Nobody is charged; the team is gutted.`, tone: 'bad' });
+    pushNews(s, { category: 'studio', headline: `${possessive(p.concept.name)} campaign falls short`, body: `${fmtMoney(cf.raised)} of ${fmtMoney(cf.goal)} (${Math.round((cf.raised / cf.goal) * 100)}%). Nobody is charged; the team is gutted.`, tone: 'bad' });
   }
 }
 

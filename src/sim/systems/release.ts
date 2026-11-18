@@ -50,6 +50,7 @@ export const PRAISE: Record<string, string[]> = {
   focus: ['Every system pulls in the same direction.', 'It knows exactly what kind of game it wants to be.', 'The core loop is tight and endlessly replayable.', 'Smart priorities: the team put effort exactly where it counts.'],
   combo: ['A premise and genre made for each other.', 'The setting and mechanics click instantly.', 'The theme gives every mechanic a reason to exist.'],
   tech: ['A technical showcase that pushes the hardware.', 'Looks and runs like a generation ahead.', 'Silky smooth on the hardware it targets.'],
+  platform: ['Feels right at home on this system.', 'Plays to the strengths of its platform.', 'A perfect match for the hardware.'],
   bugs: ['Rock solid. Not a crash in sight.', 'Polished to a mirror shine.', 'Remarkably stable for a launch build.'],
   trend: ['Lands right in the middle of what players crave.', 'Perfectly in tune with the moment.', 'Exactly the game everyone is talking about this season.'],
   fresh: ['Something genuinely new.', 'A breath of fresh air.', 'Bold, original and a little bit strange — in a good way.'],
@@ -62,6 +63,8 @@ export const CRITIQUE: Record<string, string[]> = {
   focus: ['Pulls in too many directions at once.', 'The priorities feel muddled.', 'Strong parts, wrong emphasis.'],
   combo: ['The theme and the mechanics never gel.', 'An odd pairing that never quite works.'],
   tech: ['Looks dated next to its peers.', 'The engine is showing its age.'],
+  platform: ['Feels out of place on this system.', 'A poor fit for its platform.'],
+  mild: ['Solid, if not spectacular.', 'Good, but it rarely surprises.', 'Fun while it lasts.'],
   bugs: ['Riddled with bugs and crashes.', 'Needed another month of QA.', 'Glitches undermine every good idea.'],
   trend: ['Arrives after the party ended.', 'Players have moved on from this.'],
   repeat: ['We have played this before. Several times.', 'Familiar to a fault.'],
@@ -74,7 +77,8 @@ function partKey(label: string): string {
   if (label.startsWith('Focus')) return 'focus';
   if (label.startsWith('Audience')) return 'audience';
   if (label.includes('×')) return 'combo';
-  if (label.startsWith('Engine') || label.startsWith('Platform')) return 'tech';
+  if (label.startsWith('Platform')) return 'platform';
+  if (label.startsWith('Engine')) return 'tech';
   if (label.startsWith('Bugs')) return 'bugs';
   if (label.includes('trend')) return 'trend';
   if (label.startsWith('Fresh') || label.startsWith('Visionary')) return 'fresh';
@@ -103,8 +107,9 @@ function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, g
     if (gk === 'effort' && !effortGood) gk = 'focus'; // don't praise effort that wasn't there
     // never praise and knock the same thing in one breath
     const bw = worsts.filter((w) => w.value < 1).map((w) => partKey(w.label)).filter((k) => k !== gk && !!CRITIQUE[k]);
-    let bk = bw.length ? bw[idx % bw.length]! : gk === 'focus' ? 'balance' : 'focus';
-    if (bk === 'effort' && effortGood) bk = gk === 'focus' ? 'balance' : 'focus';
+    // nothing actually weak: a mild verdict rather than an invented flaw
+    let bk = bw.length ? bw[idx % bw.length]! : 'mild';
+    if (bk === 'effort' && effortGood) bk = 'mild';
     const good = rng.pick(PRAISE[gk] ?? PRAISE.focus!);
     const bad = rng.pick(CRITIQUE[bk] ?? CRITIQUE.balance!);
     line = `${good} ${bad}`;

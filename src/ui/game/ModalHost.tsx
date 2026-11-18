@@ -45,7 +45,7 @@ import { LineChart } from '../charts';
 import { Icon, type IconName } from '../icons';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { useGame } from '../store';
-import { FocusSliders } from './FocusEditor';
+import { BalanceBar, FocusSliders } from './FocusEditor';
 import { GuideModal } from './Guide';
 import { RivalModal } from './RivalModal';
 import { genreExperience, idealFocus, PHASE_NAMES } from './lib';
@@ -232,7 +232,7 @@ function ReviewsModal({ releaseId, onClose }: { releaseId: string; onClose: () =
       </ul>
       {allShown && (
         <Section title="What drove the score" className="mt-4">
-          <BreakdownList bd={r.quality} format={(v) => v.toFixed(2)} />
+          <BreakdownList bd={r.quality} format={(v) => v.toFixed(2)} result={`Quality (critics gave ${r.score})`} />
         </Section>
       )}
       <div className="mt-2 flex justify-end gap-2">
@@ -521,11 +521,11 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
       </Section>
       <div className="grid gap-4 sm:grid-cols-2">
         <Section title="Why it scored">
-          <BreakdownList bd={r.quality} format={(v) => v.toFixed(2)} />
+          <BreakdownList bd={r.quality} format={(v) => v.toFixed(2)} result={`Quality (critics gave ${r.score})`} />
         </Section>
         {r.why.sales && (
           <Section title="Why it sold">
-            <BreakdownList bd={r.why.sales} format={(v) => v.toFixed(3)} />
+            <BreakdownList bd={r.why.sales} format={(v) => v.toFixed(3)} result="Sales multiplier" />
           </Section>
         )}
       </div>
@@ -947,14 +947,16 @@ function GateModal({ projectId, onClose }: { projectId: string; onClose: () => v
           Est. score <b className="num block text-base">{est ?? '—'}</b>
         </div>
       </div>
+      <BalanceBar p={p} className="mt-3" />
       <div className="mt-4">
         <FocusSliders phase={phase} value={focus} onChange={setFocus} ideal={learned ? idealFocus(p.concept.genre)[phase] : undefined} />
+        <p className="mt-1.5 text-[11px] text-ink3">Focus shapes the points your team earns from now on — the estimate moves as the work comes in.</p>
       </div>
       {p.qualityPreview && (
         <details className="mt-3 text-xs">
           <summary className="cursor-pointer font-semibold text-ink2">Why this estimate?</summary>
           <div className="mt-2">
-            <BreakdownList bd={p.qualityPreview} format={(v) => v.toFixed(2)} />
+            <BreakdownList bd={p.qualityPreview} format={(v) => v.toFixed(2)} result={`Quality (≈ score ${est ?? '—'})`} />
           </div>
         </details>
       )}

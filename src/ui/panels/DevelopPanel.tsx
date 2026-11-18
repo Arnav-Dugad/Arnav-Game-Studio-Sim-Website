@@ -34,7 +34,7 @@ import { CompanyBadge } from '../art/CompanyBadge';
 import { Icon } from '../icons';
 import { useGame } from '../store';
 import { isAway } from '@/sim/systems/staff';
-import { FocusSliders } from '../game/FocusEditor';
+import { BalanceBar, FocusSliders } from '../game/FocusEditor';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
 import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, idealFocus, knowsCombo, suggestConcept, suggestName } from '../game/lib';
@@ -173,13 +173,14 @@ function GameCard({ p }: { p: GameProject }) {
               <div className="text-ink3">Bugs</div>
               <div className={cx('num font-semibold', p.bugs > (p.design + p.tech) * 0.08 ? 'text-bad' : 'text-ink')}>{Math.round(p.bugs)}</div>
             </div>
-            <Tip content={q ? <BreakdownList bd={q} title="Why this estimate?" format={(v) => v.toFixed(2)} /> : 'Builds as the team works'}>
+            <Tip content={q ? <BreakdownList bd={q} title="Why this estimate?" format={(v) => v.toFixed(2)} result={`Quality (≈ score ${est ?? '—'})`} /> : 'Builds as the team works'}>
               <div className="w-full cursor-help rounded-lg bg-bg2 py-1">
                 <div className="text-ink3">Est. score</div>
                 <div className="num font-semibold">{est ?? '—'}</div>
               </div>
             </Tip>
           </div>
+          <BalanceBar p={p} className="mt-2" />
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-ink3">
@@ -221,7 +222,7 @@ function GameCard({ p }: { p: GameProject }) {
             </>
           )}
           <span title="Hype: excitement before launch. More hype, more day-one buyers — it fades a little every week without marketing.">
-            Hype <b className="num text-ink">{p.hype.toFixed(2)}</b>
+            Hype <b className="num text-ink">{p.hype < 0.005 ? '0' : p.hype.toFixed(2)}</b>
             {waiting >= 1000 && <> (~{fmtUnits(waiting)} players waiting)</>}
           </span>
           {p.announcedDay === undefined && (fromDay(s.day).year >= 2015 && !p.concept.expansionOf ? ' · unannounced (a shadow drop if it stays that way)' : ' · unannounced')}
@@ -702,7 +703,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
         <div className="flex items-center justify-between gap-2 rounded-xl bg-bg2/60 px-3 py-2 text-xs">
           <span className="min-w-0 text-ink2">{inspiration && inspiration.genre === genre && inspiration.topic === topic ? <>💡 <b className="text-ink">{GENRE_BY_ID[inspiration.genre].name} × {TOPIC_BY_ID[inspiration.topic]?.name}</b> — {inspiration.why}</> : 'Stuck for an idea? Get a suggestion from the trends and what your studio knows.'}</span>
           <Button size="sm" icon="lightbulb" onClick={() => {
-              const idea = suggestConcept(s);
+              const idea = suggestConcept(s, Math.random, inspiration ?? { genre, topic });
               if (!idea) return;
               setInspiration(idea);
               setGenre(idea.genre);
