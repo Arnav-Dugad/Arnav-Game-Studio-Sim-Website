@@ -56,7 +56,7 @@ import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, seco
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { CROWD_OK, assignDesks, canPlace, crampedCount, freeDesks, itemRequirement, layout, spreadOut, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost, activeResearch } from './systems/research';
-import { HIREABLE_ROLES, ROLE_SEARCH_COST, ROLE_SEARCH_SIZE, SABBATICAL, candidateQuality, candidateToStaff, generateCandidate, invalidateMentees, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
+import { HIREABLE_ROLES, ROLE_SEARCH_COST, ROLE_SEARCH_SIZE, SABBATICAL, candidateQuality, candidateToStaff, generateCandidate, invalidateMentees, isAway, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
@@ -884,6 +884,9 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.type === 'research' && !s.research.active) {
         s.research.active = def.id;
         s.research.progress = 0;
+        // nobody on it yet: whoever is idle picks it up (you can move them any time)
+        if (!Object.values(s.staff).some((x) => x.assignment.kind === 'research'))
+          for (const st of Object.values(s.staff)) if (st.assignment.kind === 'idle' && !isAway(st)) st.assignment = { kind: 'research' };
       } else s.research.queue.push(def.id);
       return null;
     }

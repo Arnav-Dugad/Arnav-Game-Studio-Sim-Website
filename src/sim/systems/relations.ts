@@ -37,6 +37,12 @@ function bump(s: GameState, a: Staff, b: Staff, crunch: boolean, rnd: () => numb
   }
   if ((hasTrait(a, 'mentor') && b.level === 'junior') || (hasTrait(b, 'mentor') && a.level === 'junior')) d += 0.8;
   if (crunch) d -= 1;
+  // a truce (after mediation or a split) holds: bad weeks still happen, but no blow-ups
+  const truce = s.truces?.[k];
+  if (truce !== undefined) {
+    if (s.day < truce) d = Math.max(d, -0.5);
+    else delete s.truces![k];
+  }
   const after = clamp(before + d, -100, 100);
   rel[k] = Math.round(after * 10) / 10;
   return { before, after };
@@ -48,6 +54,7 @@ export function relationsWeekly(c: Ctx): boolean {
   const { s, rng } = c;
   const rel = (s.relations ??= {});
   const touched = new Set<string>();
+  for (const [k, until] of Object.entries(s.truces ?? {})) if (s.day >= until) delete s.truces![k]; // old truces (and departed staff) don't linger
   for (const p of Object.values(s.projects)) {
     const team = p.team.map((id) => s.staff[id]).filter((x): x is Staff => !!x && x.role !== 'founder' && (x.sickDays ?? 0) <= 0);
     if (team.length < 2) continue;

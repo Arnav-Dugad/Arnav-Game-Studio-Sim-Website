@@ -19,10 +19,14 @@ export function employeeOfTheMonth(c: Ctx): void {
   const { s } = c;
   const staff = Object.values(s.staff).filter((x) => x.role !== 'founder' && !x.intern);
   let best: { id: string; pts: number } | null = null;
+  const last = s.eotm?.id;
   for (const st of staff) {
-    const pts = st.contributed - (st.contribMark ?? st.contributed);
+    const raw = st.contributed - (st.contribMark ?? st.contributed);
     st.contribMark = st.contributed;
-    if (pts > 0 && (!best || pts > best.pts)) best = { id: st.id, pts };
+    // never twice in a row, and past wins weigh a little: the plaque goes around
+    if (st.id === last) continue;
+    const pts = raw / (1 + 0.15 * (st.eotmCount ?? 0));
+    if (raw > 0 && (!best || pts > best.pts)) best = { id: st.id, pts };
   }
   if (!best || staff.length < 4) {
     s.eotm = undefined;

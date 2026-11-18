@@ -405,7 +405,7 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
 /** Scores above this are hard won: each extra point of quality buys less. */
 export const SCORE_KNEE = 80;
 /** Where scores level off for each size: critics save their very highest marks for ambitious games. */
-export const SCORE_CEILING: Record<Size, number> = { small: 90, medium: 95, large: 98, aaa: 100 };
+export const SCORE_CEILING: Record<Size, number> = { small: 88, medium: 94, large: 98, aaa: 100 };
 export const CEILING_LABEL = 'Critics’ high bar';
 export function ceilingLabel(size: Size): string {
   return size === 'small' || size === 'medium' ? `${CEILING_LABEL} (${size} games top out near ${SCORE_CEILING[size]})` : `${CEILING_LABEL} (every point above ${SCORE_KNEE} is hard won)`;

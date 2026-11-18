@@ -120,7 +120,7 @@ const FACES: readonly FaceShape[] = [
   { hw: 18.5, el: (f) => <path d="M32 40Q32 25 50 25Q68 25 68 40L69 52Q68 63 58 66.5Q50 69 42 66.5Q32 63 31 52Z" fill={f} /> },
 ];
 
-type HairStyle =
+export type HairStyle =
   | 'bald'
   | 'buzz'
   | 'crop'
@@ -195,6 +195,12 @@ interface Traits {
   frame: string;
   headphones: boolean;
   earrings: boolean;
+}
+
+/** The parts of a portrait the office sprite copies, so a person looks the same in both places. */
+export function portraitBasics(seed: number): { skin: string; hairColor: string; hair: HairStyle; glasses: boolean; headphones: boolean } {
+  const t = traitsFor(seed);
+  return { skin: t.skin, hairColor: t.hairColor, hair: t.hair, glasses: t.glasses !== 'none', headphones: t.headphones };
 }
 
 function traitsFor(seed: number): Traits {

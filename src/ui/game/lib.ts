@@ -224,7 +224,7 @@ export function suggestName(seed: number, topic: string): string {
   const adj = A.filter((x) => x !== noun); // never "Shadow Shadow"
   // the storybook form ("Legends of the Silent Dawn") only for topics with some myth in them
   if (r(3) < 0.25 && !GROUNDED.has(topic)) {
-    const others = TITLE_NOUN.default!.filter((x) => x !== noun);
+    const others = TITLE_NOUN.default!.filter((x) => x !== noun && x !== 'Tycoon' && x !== 'Tactics' && x !== 'Story'); // genre words don't belong in a storybook title
     return `${noun} of the ${adj[Math.floor(r(1) * adj.length)]} ${others[Math.floor(r(4) * others.length)]}`;
   }
   return `${adj[Math.floor(r(1) * adj.length)]} ${noun}`;

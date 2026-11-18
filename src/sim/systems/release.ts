@@ -301,8 +301,11 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   if (loc.mul / homeMul > 1.0005) sb.mul(`Localised for ${reached.filter((r) => r !== home).map((r) => REGION_BY_ID[r].short).join(', ')}`, loc.mul / homeMul);
   if (fr && fr.fans > 0) {
     const fanBuy = fr.fans * clamp((effScore - 40) / 50, 0.05, 1) * fatigueMul;
+    const before = platforms.reduce((tt, ps) => tt + ps.potential, 0);
     for (const ps of platforms) ps.potential += fanBuy * (((s.market.users[ps.platform] ?? 0) * 1e6) / Math.max(1, totalUsers));
-    sb.add('Franchise fans (units)', Math.round(fanBuy));
+    const after = platforms.reduce((tt, ps) => tt + ps.potential, 0);
+    // shown as the lift it gives (the breakdown is all multipliers), with the head count in the label
+    if (before > 0 && after > before) sb.mul(`Series fans (~${fmtUnits(fanBuy)} buy it)`, after / before);
   }
   const base = concept.expansionOf ? s.releases[concept.expansionOf] : undefined;
   if (base) return expansionPotential(base, concept.size, platforms, effScore, hype, attach);

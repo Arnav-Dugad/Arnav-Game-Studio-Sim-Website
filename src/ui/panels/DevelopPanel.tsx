@@ -901,9 +901,13 @@ function NewGame({ onDone }: { onDone: () => void }) {
       </Section>
 
       <Section title="4 · Audience & size">
-        {audFit(audience) < 0.97 || audFit(bestAudience) > audFit(audience) + 0.02 ? (
+        {audFit(bestAudience) > audFit(audience) + 0.02 ? (
           <p className="mb-2 text-xs text-ink3">
-            {GENRE_BY_ID[genre].name} × {TOPIC_BY_ID[topic]?.name ?? topic} works best for <b className="text-ink2">{bestAudience === 'everyone' ? 'everyone' : `${bestAudience}s`}</b> ★ — your pick scores {Math.round((1 - audFit(audience) / audFit(bestAudience)) * 100)}% lower on audience fit.
+            {GENRE_BY_ID[genre].name} × {TOPIC_BY_ID[topic]?.name ?? topic} works best for <b className="text-ink2">{bestAudience === 'everyone' ? 'everyone' : `${bestAudience}s`}</b> ★ — your pick scores {Math.max(1, Math.round((1 - audFit(audience) / audFit(bestAudience)) * 100))}% lower on audience fit.
+          </p>
+        ) : audFit(audience) < 0.845 ? (
+          <p className="mb-2 text-xs text-ink3">
+            You’ve picked the best audience for {GENRE_BY_ID[genre].name} × {TOPIC_BY_ID[topic]?.name ?? topic}, but no crowd really loves this pairing (audience fit ×{audFit(audience).toFixed(2)}). A topic with a natural audience scores higher.
           </p>
         ) : null}
         <div className="flex flex-wrap gap-3">
@@ -982,7 +986,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 {f.name}
                 {fit && <span className={cx('rounded-full px-1.5 text-[10px] font-bold', on ? 'bg-white/25' : 'bg-good/15 text-good')}>great fit</span>}
                 {!fit && f.misfit < 1 && <span className={cx('rounded-full px-1.5 text-[10px] font-bold', on ? 'bg-white/25' : 'bg-bad/10 text-bad')}>odd fit</span>}
-                <span className="num text-[10px] opacity-70">{f.work ? `${f.work > 0 ? '+' : ''}${Math.round(f.work * 100)}%` : f.cost ? fmtMoney(money(f.cost, s.day)) : ''}</span>
+                <span className="num text-[10px] opacity-70">{f.work ? `${f.work > 0 ? '+' : '−'}${Math.abs(Math.round(f.work * 100))}% work` : f.cost ? fmtMoney(money(f.cost, s.day)) : ''}</span>
               </button>
             );
           })}
@@ -992,7 +996,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               return next ? <span className="text-xs text-ink3">None invented yet — the first, {next.name}, arrives around {next.year}.</span> : null;
             })()}
         </div>
-        <p className="mt-2 text-[11px] text-ink3">Features add scope (the percentage is extra work) and lift quality in genres they suit; a poor fit drags a little. Some change sales or how players feel — hover for details.</p>
+        <p className="mt-2 text-[11px] text-ink3">Features change the scope (+ more work, − less) and lift quality in genres they suit; an odd fit drags a little. Some change sales or how players feel — hover for details.</p>
       </Section>
 
       {yr >= LOC_YEAR && (

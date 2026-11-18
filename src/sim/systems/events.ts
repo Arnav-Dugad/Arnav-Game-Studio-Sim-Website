@@ -425,6 +425,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt === 'mediate') {
         spend(s, 'other_expense', Number(e.ctx.cost));
         rel[k] = Math.max(rel[k] ?? 0, 0) + 10;
+        (s.truces ??= {})[k] = s.day + 365; // a real peace: a year without blow-ups
         pushNews(s, { category: 'staff', headline: `${a.name} and ${b.name} make peace`, tone: 'good' });
       } else if (opt === 'split') {
         const p = s.projects[String(e.ctx.project)];
@@ -434,6 +435,7 @@ export const EVENT_DEFS: EventDef[] = [
           b.assignment = { kind: 'idle' };
         }
         rel[k] = (rel[k] ?? 0) + 15;
+        (s.truces ??= {})[k] = s.day + 180;
       } else {
         for (const x of [a, b]) x.morale = clamp(x.morale - 8, 0, 100);
         rel[k] = clamp((rel[k] ?? 0) - 10, -100, 100);
@@ -1747,8 +1749,8 @@ export const EVENT_DEFS: EventDef[] = [
         title: `${r.name} wants to buy you`,
         body: `${r.name} offers ${fmtMoney(price)} for ${s.company.name}. Accepting ends your run with a "Sold" ending.`,
         options: [
-          { id: 'sell', label: `Sell for ${fmtMoney(price)}`, preview: 'Game ends — scored in the Hall of Fame' },
           { id: 'decline', label: 'We are not for sale', preview: 'Morale +4 (the team loves independence)' },
+          { id: 'sell', label: `Sell for ${fmtMoney(price)}`, preview: 'Game ends — scored in the Hall of Fame', confirm: `Sell ${s.company.name} and end this run? This can’t be undone.` },
         ],
         ctx: { rival: r.id, price },
       };
@@ -2839,7 +2841,7 @@ export function rollRandomEvent(c: Ctx): void {
   };
   // nothing to decide: it happens, and the news says so (no popup, no pause)
   const open = made.options.filter((o) => !o.disabled);
-  if (open.length === 1 && open[0]!.cost === undefined) {
+  if (open.length === 1 && open[0]!.cost === undefined && !open[0]!.confirm) {
     def.resolve(c, inst, open[0]!.id);
     s.eventCooldowns[def.id] = s.day + def.cooldown;
     pushNews(s, { category: 'studio', headline: made.title, body: `${made.body}${open[0]!.preview ? ` ${open[0]!.preview}.` : ''}`, tone: 'good' });
@@ -2869,7 +2871,8 @@ export function expireEvents(c: Ctx): void {
   const { s } = c;
   for (const e of [...s.pendingEvents]) {
     if (e.expiresDay <= s.day) {
-      const last = [...e.options].reverse().find((o) => !o.disabled && (o.cost === undefined || s.company.cash >= o.cost));
+      // never an irreversible choice by default (selling the studio needs a yes)
+      const last = [...e.options].reverse().find((o) => !o.disabled && !o.confirm && (o.cost === undefined || s.company.cash >= o.cost));
       // nothing you can take any more: the moment passes without an outcome (never stuck pending)
       if (!last || !resolveEvent(c, e.uid, last.id)) s.pendingEvents = s.pendingEvents.filter((x) => x.uid !== e.uid);
     }

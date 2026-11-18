@@ -187,7 +187,9 @@ export function runScore(s: GameState): number {
   const st = s.progress.stats;
   const val = Math.max(st.peakValuation, ownerValue(s));
   const diff = { relaxed: 0.8, standard: 1, hardcore: 1.3 }[s.settings.difficulty];
+  // a career counts: years at the helm (a quick sale shouldn't rival four decades)
+  const years = Math.max(0, (s.day - toDay(s.settings.startYear, 1, 1)) / 365);
   return Math.round(
-    (Math.log10(1 + val) * 800 + Math.log10(1 + st.totalRevenue) * 400 + st.bestScore * 20 + st.hits * 150 + Object.keys(s.progress.achievements).length * 120 + Object.values(s.franchises).filter((f) => f.entries.length >= 3).length * 300) * diff,
+    (Math.min(60, years) * 120 + Math.log10(1 + val) * 800 + Math.log10(1 + st.totalRevenue) * 400 + st.bestScore * 20 + st.hits * 150 + Object.keys(s.progress.achievements).length * 120 + Object.values(s.franchises).filter((f) => f.entries.length >= 3).length * 300) * diff,
   );
 }

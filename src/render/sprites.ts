@@ -5,6 +5,7 @@
 import type { Graphics } from 'pixi.js';
 import type { ItemId } from '@/data/facilities';
 import { type ScenePalette, mix, shade } from './palette';
+import { portraitBasics, type HairStyle } from '../ui/art/Avatar';
 
 export const T = 40; // world px per tile
 export const LIFT = 0.42; // how far tall objects rise above their footprint (in tiles)
@@ -714,8 +715,6 @@ export function itemLift(id: ItemId): number {
 
 // ── Staff ───────────────────────────────────────────────────────────────────
 
-const SKIN = [0xf6d6bd, 0xeec0a0, 0xd9a07b, 0xc68a62, 0xa8714b, 0x8d5a3b, 0x6e432a, 0x4e2f1f];
-const HAIR = [0x2b211b, 0x4a3426, 0x7a5232, 0xb98957, 0xe0c27a, 0x8a8f99, 0xc2563a, 0x1f1f2a, 0xd9d4cc];
 export const ROLE_COLORS: Record<string, number> = {
   founder: 0xe07a5f,
   designer: 0xe07a5f,
@@ -737,26 +736,39 @@ export interface Look {
   headphones: boolean;
 }
 
-function hash32(n: number): () => number {
-  let a = n >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+/** The portrait's hairstyles drawn with the sprite's simpler shapes (6 = none). */
+const SPRITE_HAIR: Record<HairStyle, number> = {
+  bald: 6,
+  buzz: 5,
+  crop: 0,
+  swept: 2,
+  curly: 3,
+  afro: 1,
+  long: 4,
+  bob: 4,
+  bun: 0,
+  ponytail: 0,
+  mohawk: 5,
+  hijab: 4,
+  beanie: 0,
+  cap: 0,
+  spiky: 3,
+  wavy: 4,
+  locs: 4,
+  quiff: 2,
+};
 
+/** A staff member's office look: the same skin, hair and glasses as their portrait, in their role's colour. */
 export function lookFor(seed: number, role: string, companyColor?: number): Look {
-  const r = hash32(seed || 1);
+  const p = portraitBasics(seed || 1);
+  const hex = (c: string) => parseInt(c.replace('#', ''), 16);
   return {
-    skin: SKIN[Math.floor(r() * SKIN.length)]!,
-    hair: HAIR[Math.floor(r() * HAIR.length)]!,
-    hairStyle: Math.floor(r() * 6),
+    skin: hex(p.skin),
+    hair: hex(p.hairColor),
+    hairStyle: SPRITE_HAIR[p.hair] ?? 0,
     top: role === 'founder' && companyColor !== undefined ? companyColor : (ROLE_COLORS[role] ?? 0x888888),
-    glasses: r() < 0.3,
-    headphones: role === 'audio' || r() < 0.12,
+    glasses: p.glasses,
+    headphones: role === 'audio' || p.headphones,
   };
 }
 
@@ -794,6 +806,8 @@ export function drawPerson(g: Graphics, look: Look, pose: 'stand' | 'sit' | 'slu
       g.roundRect(headX - 8, headY - 3, 3, 10, 2).fill(look.hair);
       g.roundRect(headX + 5, headY - 3, 3, 10, 2).fill(look.hair);
       break;
+    case 6:
+      break; // bald
     default:
       g.ellipse(headX, headY - 6, 6, 2.5).fill(look.hair);
   }

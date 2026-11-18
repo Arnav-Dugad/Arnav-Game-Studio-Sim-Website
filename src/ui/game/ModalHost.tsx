@@ -122,6 +122,7 @@ function EventModal({ uid, onClose }: { uid: number; onClose: () => void }) {
   const s = useGame((g) => g.s)!;
   const act = useGame((g) => g.act);
   const e = s.pendingEvents.find((x) => x.uid === uid);
+  const [armed, setArmed] = useState<string | null>(null); // an irreversible choice waiting for its second click
   useEffect(() => {
     if (!e) onClose();
   }, [e, onClose]);
@@ -144,15 +145,16 @@ function EventModal({ uid, onClose }: { uid: number; onClose: () => void }) {
             disabled={o.disabled || (o.cost !== undefined && s.company.cash < o.cost)}
             title={o.cost !== undefined && s.company.cash < o.cost ? 'Not enough cash' : undefined}
             onClick={() => {
+              if (o.confirm && armed !== o.id) return setArmed(o.id);
               const r = act({ type: 'resolveEvent', uid, option: o.id });
               if (r.ok) {
                 sound.play('click');
                 onClose();
               }
             }}
-            className="w-full rounded-xl border border-line bg-panel2 p-3 text-left transition hover:border-accent hover:bg-accent/5 disabled:opacity-45"
+            className={cx('w-full rounded-xl border p-3 text-left transition disabled:opacity-45', armed === o.id ? 'border-bad bg-bad/10' : 'border-line bg-panel2 hover:border-accent hover:bg-accent/5')}
           >
-            <div className="text-sm font-semibold">{o.label}</div>
+            <div className="text-sm font-semibold">{armed === o.id ? `${o.confirm} Click again to confirm.` : o.label}</div>
             <div className="text-xs text-ink3">{o.preview}</div>
           </button>
         ))}

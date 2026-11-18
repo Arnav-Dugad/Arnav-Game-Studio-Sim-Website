@@ -9,6 +9,7 @@ import type { Role, Staff } from '@/sim/types';
 import { Button, cx, inputCls } from './ui';
 import { Icon } from '../icons';
 import { Face } from '../panels/staffBits';
+import { useGame } from '../store';
 import { autoPickTeam, genreFit, matchesQuery, roleName, topSkill } from '../panels/staffTools';
 
 type Sort = 'fit' | 'skill' | 'morale' | 'name';
@@ -65,7 +66,8 @@ export function StaffPicker({
   };
   const best = genre ? autoPickTeam(pool, genre, cap) : score ? [...pool].sort((a, b) => (fit.get(b.id) ?? 0) - (fit.get(a.id) ?? 0)).slice(0, cap).map((x) => x.id) : null;
   // people taken off research by this team (and whether that leaves nobody researching)
-  const pulled = pool.filter((st) => selected.includes(st.id) && st.assignment.kind === 'research');
+  const researching = !!useGame((g) => g.s?.research.active); // people 'on research' with nothing running are really free
+  const pulled = researching ? pool.filter((st) => selected.includes(st.id) && st.assignment.kind === 'research') : [];
   const researchersLeft = pool.filter((st) => st.assignment.kind === 'research' && !selected.includes(st.id)).length;
   const avgFit = selected.length ? selected.reduce((t, id) => t + (fit.get(id) ?? 0), 0) / selected.length : 0;
 
@@ -144,7 +146,7 @@ export function StaffPicker({
                     </span>
                     <span className="block truncate text-[11px] text-ink3">
                       {st.level} {roleName(st.role)}
-                      {st.assignment.kind === 'research' ? ' · researching' : ''}
+                      {st.assignment.kind === 'research' ? (researching ? ' · researching' : ' · free (no research running)') : ''}
                       {st.burnout >= 60 ? ' · burning out' : ''}
                     </span>
                   </span>

@@ -19,8 +19,8 @@ describe('critics’ high bar', () => {
       }
     }
     // a near-perfect small game lands in the high 80s; the same quality in a large game goes further
-    expect(criticsCeiling(99, 'small')).toBeLessThan(90);
-    expect(criticsCeiling(99, 'small')).toBeGreaterThan(87);
+    expect(criticsCeiling(99, 'small')).toBeLessThan(88);
+    expect(criticsCeiling(99, 'small')).toBeGreaterThan(85);
     expect(criticsCeiling(110, 'large')).toBeGreaterThan(criticsCeiling(110, 'medium'));
   });
 });

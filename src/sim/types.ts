@@ -700,6 +700,8 @@ export interface EventOption {
   disabled?: boolean;
   /** What it costs: it can't be chosen once the money isn't there. */
   cost?: number;
+  /** Irreversible: the player must click twice (this is the question asked). */
+  confirm?: string;
 }
 
 export interface EventInstance {
@@ -1006,6 +1008,8 @@ export type GameStatus = 'running' | 'bankrupt' | 'acquired' | 'retired';
 export interface GameState {
   /** Relationships between colleagues (pair key 'a|b' → −100..100; systems/relations.ts). */
   relations?: Record<string, number>;
+  /** Truces after a feud was handled (pair key → until day): the relationship can't nosedive meanwhile. */
+  truces?: Record<string, number>;
   /** A scenario run (systems/scenarios.ts): goals met (index → day) and the result. */
   scenario?: { id: string; deadlineDay: number; met: Record<number, number>; hold?: Record<number, number>; result?: 'won' | 'failed' };
   /** This quarter's objectives (systems/objectives.ts). */

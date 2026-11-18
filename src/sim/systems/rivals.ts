@@ -151,11 +151,20 @@ export function addRivalGame(s: GameState, g: RivalGame): void {
   if (s.rivalGames.length > 1200 || (s.rivalGames[0] && s.rivalGames[0].day < cutoff)) s.rivalGames = s.rivalGames.filter((x) => x.day >= cutoff).slice(-1200);
 }
 
-export function genTitle(rng: Rng, topic: string): string {
-  const nouns = TITLE_NOUN[topic] ?? TITLE_NOUN.default!;
-  const n = rng.pick(rng.chance(0.6) ? nouns : TITLE_NOUN.default!);
+/** Generic title words that only make sense for some genres ("Tycoon" isn't a shooter). */
+const GENRE_ONLY: Record<string, readonly string[]> = {
+  Tycoon: ['simulation', 'strategy', 'casual'],
+  Tactics: ['strategy', 'rpg', 'simulation'],
+  Story: ['adventure', 'visual_novel', 'rpg', 'casual'],
+};
+
+export function genTitle(rng: Rng, topic: string, genre?: string): string {
+  const fits = (w: string) => !genre || !GENRE_ONLY[w] || GENRE_ONLY[w]!.includes(genre);
+  const generic = TITLE_NOUN.default!.filter(fits);
+  const nouns = TITLE_NOUN[topic] ?? generic;
+  const n = rng.pick(rng.chance(0.6) ? nouns : generic);
   const r = rng.next();
-  const other = TITLE_NOUN.default!.filter((x) => x !== n); // never "Legends of the Broken Legends"
+  const other = generic.filter((x) => x !== n); // never "Legends of the Broken Legends"
   const adj = TITLE_ADJ.filter((x) => x !== n); // nor "Eternal Eternal"
   if (r < 0.35) return `${rng.pick(adj)} ${n}`;
   if (r < 0.6) return `${n} of the ${rng.pick(adj)} ${rng.pick(other)}`;
@@ -176,7 +185,8 @@ export function rivalsMonthly(c: Ctx): void {
     if (rng.chance(p) && live.length) {
       const genres = r.genres.filter((g) => GENRES.find((x) => x.id === g && x.year <= yr));
       const genre = genres.length ? rng.pick(genres) : rng.pick(GENRES.filter((g) => g.year <= yr)).id;
-      const topic = rng.pick(topics).id;
+      // studios pick topics that suit the genre (mostly): no fairy-tale shooters by the dozen
+      const topic = rng.weighted(topics, (t) => [0.15, 1, 2.5, 4][t.genreFit[genre] ?? 1]!).id;
       const compDef = COMPANY_BY_ID[r.id];
       const pref = compDef?.strategy.platforms?.filter((pid) => live.some((l) => l.id === pid));
       const own = live.filter((l) => l.maker === r.id).map((l) => l.id);
@@ -184,7 +194,7 @@ export function rivalsMonthly(c: Ctx): void {
       const plats = rng.shuffle([...pool]).slice(0, rng.int(1, Math.min(3, pool.length)));
       const score = clamp(Math.round(rng.normal(BALANCE.RIVAL_SCORE_BASE + r.quality * BALANCE.RIVAL_SCORE_QUALITY - 8 + r.reputation / 12, BALANCE.RIVAL_SCORE_SD)), 15, 93);
       const units = Math.round(Math.pow(score / 100, 4) * sizeF * 400_000 * rng.range(0.4, 1.6) * Math.pow(1.04, yr - 1980));
-      addRivalGame(s, { name: genTitle(rng, topic), company: r.id, genre, topic, platforms: plats, day: s.day, score, units });
+      addRivalGame(s, { name: genTitle(rng, topic, genre), company: r.id, genre, topic, platforms: plats, day: s.day, score, units });
       r.lastRelease = s.day;
       const revenue = units * 20 * inflation(s.day) * 0.35;
       r.cash += revenue;
