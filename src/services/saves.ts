@@ -332,6 +332,8 @@ export interface HallEntry {
   day: number; // real ms
   /** The run used cheats. */
   cheats?: boolean;
+  /** The run's seed: tells one run from another (with the company name and ending). */
+  seed?: number;
 }
 
 const HALL_KEY = (uid: string) => `ase:hall:${uid}`;
@@ -359,9 +361,13 @@ export async function getHallOfFame(uid: string): Promise<HallEntry[]> {
 
 export async function addHallOfFame(uid: string, entry: HallEntry): Promise<void> {
   const existing = await getHallOfFame(uid);
-  // the same finished run (reopened) is recorded once; a different run with the same name and years still counts
-  const key = (e: HallEntry) => `${e.company}|${e.years}|${e.ending}|${e.score}|${!!e.cheats}`;
-  if (existing.some((e) => key(e) === key(entry))) return;
+  // the same finished run (reopened, even after an update changed its score) is recorded once; a different run counts
+  const norm = (y: string) => y.replace(/^(\d{4})–\1$/, '$1'); // older entries wrote "1980–1980"
+  const same = (e: HallEntry) =>
+    e.seed !== undefined && entry.seed !== undefined
+      ? e.seed === entry.seed && e.company === entry.company && e.ending === entry.ending && (!entry.ending.startsWith('Daily') || e.score === entry.score) // daily runs share a seed
+      : e.company === entry.company && norm(e.years) === norm(entry.years) && e.ending === entry.ending && e.score === entry.score;
+  if (existing.some(same)) return;
   const all = [entry, ...existing].sort((a, b) => b.score - a.score).slice(0, 50);
   try {
     localStorage.setItem(HALL_KEY(uid), JSON.stringify(all));

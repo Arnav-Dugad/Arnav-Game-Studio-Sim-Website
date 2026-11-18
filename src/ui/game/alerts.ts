@@ -11,7 +11,7 @@ import { pulseKey, teamPulse, type PulseItem } from './pulse';
 import { campaignBlocked, campaignFor } from '@/sim/systems/awardsCampaign';
 import { sabbaticalBlocked } from '@/sim/systems/staff';
 import { formatDate, fromDay } from '@/sim/calendar';
-import { fmtMoney } from '@/sim/util';
+import { fmtMoney, plural } from '@/sim/util';
 import { monthlyBurn, trailingRevenue, insolvencyDaysLeft } from '@/sim/systems/finance';
 import { devProgress, qualityToScore } from '@/sim/systems/dev';
 import { platformInfo } from '@/sim/systems/market';
@@ -27,7 +27,6 @@ import type { GameProject, GameState, Project } from '@/sim/types';
 import type { IconName } from '../icons';
 import { useGame, type PanelId } from '../store';
 import { atRisk } from '../panels/staffTools';
-import { plural } from '@/sim/util';
 
 export interface Alert {
   id: string;
@@ -66,7 +65,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   const burn = monthlyBurn(s);
   const income = trailingRevenue(s) / 12;
   const net = income - burn;
-  if (s.company.cash < 0) out.push({ id: 'cash-neg', tone: 'bad', icon: 'warning', text: `You're ${fmtMoney(-s.company.cash)} in the red — ${insolvencyDaysLeft(s)} days until bankruptcy. Take a loan, cut costs or land a contract fast.`, action: { label: 'Finance', run: () => open('finance') } });
+  if (s.company.cash < 0) out.push({ id: 'cash-neg', tone: 'bad', icon: 'warning', text: `You're ${fmtMoney(-s.company.cash)} in the red — ${insolvencyDaysLeft(s) > 0 ? `${plural(insolvencyDaysLeft(s), 'day')} until bankruptcy` : 'past the grace period: only your credit line is keeping you going'}. Take a loan, cut costs or land a contract fast.`, action: { label: 'Finance', run: () => open('finance') } });
   else if (net < 0 && s.company.cash < -net * 6)
     out.push({ id: 'runway', tone: 'warn', icon: 'hourglass', text: Math.floor(s.company.cash / -net) < 1 ? `Less than a month of cash left at this burn rate (${fmtMoney(-net)}/mo).` : `About ${plural(Math.floor(s.company.cash / -net), 'month')} of cash left at this burn rate (${fmtMoney(-net)}/mo).`, action: { label: 'Finance', run: () => open('finance') } });
   // Decisions waiting

@@ -1,3 +1,4 @@
+import { ownerValue } from '@/sim/systems/finance';
 import { useRef, useState } from 'react';
 import { fromDay } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
@@ -62,7 +63,7 @@ export function StudioCardModal({ onClose }: { onClose: () => void }) {
     ['Hits (85+)', String(st.hits ?? 0)],
     ['Awards', String(awards)],
     ['People', String(staffN)],
-    [s.finance.stock ? 'Your stake (peak)' : 'Peak valuation', fmtMoney(st.peakValuation ?? 0)],
+    [s.finance.stock ? 'Your stake (peak)' : 'Peak valuation', fmtMoney(Math.max(st.peakValuation ?? 0, ownerValue(s)))],
   ];
   const download = async () => {
     if (!ref.current) return;

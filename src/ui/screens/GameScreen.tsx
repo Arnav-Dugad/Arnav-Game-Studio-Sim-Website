@@ -152,6 +152,8 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       const g = useGame.getState();
       if (g.modals.length) return;
       const k = e.key.toLowerCase();
+      // Space presses a focused button, option or link; it only pauses when nothing like that has focus
+      if (k === ' ' && (e.target as HTMLElement | null)?.closest?.('button, a[href], summary, [role="radio"], [role="tab"], [role="checkbox"], [role="switch"], [role="button"]')) return;
       if (k === ' ') {
         e.preventDefault();
         g.togglePause();

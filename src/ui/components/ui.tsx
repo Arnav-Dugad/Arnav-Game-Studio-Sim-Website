@@ -1,5 +1,5 @@
 /** Shared UI primitives. */
-import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { isValidElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Breakdown } from '@/sim/breakdown';
 import { Icon, type IconName } from '../icons';
@@ -281,14 +281,18 @@ export function Modal({
   );
 }
 
+/** A choice group (named by its own aria-label) mustn't sit in a <label>: clicking the heading would pick its first option. */
+export const isChoiceGroup = (children: ReactNode) => isValidElement(children) && children.type === Segmented;
+
 export function Field({ label, hint, children, error }: { label: string; hint?: ReactNode; children: ReactNode; error?: string }) {
+  const Tag = isChoiceGroup(children) ? 'div' : 'label';
   return (
-    <label className="block">
+    <Tag className="block">
       <span className="mb-1 block text-xs font-semibold text-ink2">{label}</span>
       {children}
       {hint && !error && <span className="mt-1 block text-[11px] text-ink3">{hint}</span>}
       {error && <span className="mt-1 block text-[11px] font-medium text-bad">{error}</span>}
-    </label>
+    </Tag>
   );
 }
 
@@ -296,14 +300,29 @@ export const inputCls =
   'h-10 w-full rounded-xl border border-line bg-panel2 px-3 text-sm text-ink placeholder:text-ink3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30';
 
 export function Segmented<T extends string | number>({ value, options, onChange, ariaLabel, className }: { value: T; options: { value: T; label: ReactNode; disabled?: boolean; title?: string }[]; onChange: (v: T) => void; ariaLabel: string; className?: string }) {
+  // a radio group: one Tab stop (the chosen option), arrow keys move between the options and choose
+  const enabled = options.filter((o) => !o.disabled);
+  const tabValue = options.some((o) => o.value === value && !o.disabled) ? value : enabled[0]?.value;
+  const onKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    if (!step || !enabled.length) return;
+    e.preventDefault();
+    const i = enabled.findIndex((o) => o.value === tabValue);
+    const next = enabled[(i + step + enabled.length) % enabled.length]!;
+    sound.play('click');
+    onChange(next.value);
+    const btns = e.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="radio"]');
+    btns[options.indexOf(next)]?.focus();
+  };
   return (
-    <div role="radiogroup" aria-label={ariaLabel} className={cx('inline-flex flex-wrap gap-1 rounded-xl bg-bg2 p-1', className)}>
+    <div role="radiogroup" aria-label={ariaLabel} onKeyDown={onKey} className={cx('inline-flex flex-wrap gap-1 rounded-xl bg-bg2 p-1', className)}>
       {options.map((o) => (
         <button
           key={String(o.value)}
           type="button"
           role="radio"
           aria-checked={o.value === value}
+          tabIndex={o.value === tabValue ? 0 : -1}
           disabled={o.disabled}
           title={o.title}
           onClick={() => {

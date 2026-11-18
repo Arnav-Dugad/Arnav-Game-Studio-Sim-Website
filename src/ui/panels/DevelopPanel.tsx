@@ -1148,7 +1148,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           </Field>
           <Field label="Publishing" hint={selfPub ? 'Self-publish to keep all revenue (your reach grows with reputation), or take a deal for an advance and a publisher’s reach.' : 'Research Self-Publishing to ship consoles yourself.'}>
             <select className={inputCls} value={liveDealId} onChange={(e) => setDealId(e.target.value)}>
-              <option value="">{selfPub ? 'Self-publish' : yr >= 2008 ? 'Self-publish (computers & phones)' : 'Self-publish (computers only)'} · {Math.round(selfReach(s) * 100)}% reach</option>
+              <option value="">{selfPub ? 'Self-publish' : plats.some((p) => p.kind === 'mobile') ? 'Self-publish (computers & phones)' : 'Self-publish (computers only)'} · {Math.round(selfReach(s) * 100)}% reach</option>
               {s.offers.deals.map((d) => (
                 <option key={d.id} value={d.id} title={`${fmtMoney(dealAdvanceFor(d, size, s.day))} advance · ${Math.round(d.royalty * 100)}% royalty · needs ${d.minScore}+`}>
                   {COMPANY_BY_ID[d.publisherId]?.name ?? d.publisherId} · {fmtMoney(dealAdvanceFor(d, size, s.day))} · {Math.round(d.royalty * 100)}%

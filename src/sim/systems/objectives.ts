@@ -71,7 +71,8 @@ export function objectiveText(o: Objective): string {
 export function objectiveProgress(s: GameState, o: Objective): number {
   if (o.done !== undefined) return 1;
   const v = objectiveValue(s, o.kind);
-  if (o.kind === 'score' || o.kind === 'morale' || o.kind === 'cash') return clamp(v / o.target, 0, 1);
+  if (o.kind === 'score') return v >= o.target ? 1 : 0; // a game either scores it or not (earlier games' scores aren't progress)
+  if (o.kind === 'morale' || o.kind === 'cash') return clamp(v / o.target, 0, 1);
   return clamp((v - o.base) / Math.max(1, o.target - o.base), 0, 1);
 }
 

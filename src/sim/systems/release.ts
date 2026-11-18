@@ -32,7 +32,8 @@ import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
 import type { AwardWinner, CriticReview, GameProject, GameState, PlatformSales, Release, Size } from '../types';
 import { addRep, earn, fmtMoney, fmtUnits, hasFlag, inflation, newId, pushNews, spend } from '../util';
-import { finishProject, qualityToScore } from './dev';
+import { comboFit, finishProject, qualityToScore } from './dev';
+import { AUDIENCES, type Audience } from '../../data/types';
 import { activeUsersM, demandMul, genreInterest, isPlatformAvailable, platformAudienceFit, platformGenreFit, platformInfo, topicPopularity, type PlatformInfo } from './market';
 import { plural } from '../util';
 
@@ -100,7 +101,9 @@ function partKey(label: string): string {
   return 'effort';
 }
 
-function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, gameName: string, idx = 0): string {
+function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, gameName: string, idx = 0, audienceBest = false): string {
+  // a weakness critics can name: clearly below par, and never the audience when it was already the best this game could have
+  const weak = (w: { label: string; value: number }) => (partKey(w.label) === 'audience' ? !audienceBest && w.value < 0.9 : w.value < 0.95);
   // the studio's R&D isn't something critics see, and the high bar is how critics score, not a trait of the game
   const muls = quality.parts.filter((p) => p.kind === 'mul' && p.label !== 'Engine R&D' && !p.label.startsWith('Critics’ high bar'));
   // Each outlet notices different things: rotate through the top strengths / weaknesses.
@@ -122,7 +125,7 @@ function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, g
     // …nor call it fresh and then say players have moved on (or that it's more of the same)
     const clash = (k: string) => k === gk || (gk === 'fresh' && (k === 'trend' || k === 'repeat')) || (gk === 'trend' && k === 'fresh');
     // only a real weakness gets named (the starred audience can still sit a little under 1)
-    const bw = worsts.filter((w) => w.value < (partKey(w.label) === 'audience' ? 0.9 : 0.95)).map((w) => partKey(w.label)).filter((k) => !clash(k) && !!CRITIQUE[k]);
+    const bw = worsts.filter(weak).map((w) => partKey(w.label)).filter((k) => !clash(k) && !!CRITIQUE[k]);
     // nothing actually weak: a mild verdict rather than an invented flaw
     let bk = bw.length ? bw[idx % bw.length]! : 'mild';
     if (bk === 'effort' && effortGood) bk = 'mild';
@@ -130,7 +133,7 @@ function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, g
     const bad = rng.pick(CRITIQUE[bk] ?? CRITIQUE.balance!);
     line = `${good} ${bad}`;
   } else {
-    const k = worst && worst.value < (partKey(worst.label) === 'audience' ? 0.9 : 0.95) ? partKey(worst.label) : effortGood ? 'focus' : 'effort';
+    const k = worst && weak(worst) ? partKey(worst.label) : effortGood ? 'focus' : 'effort';
     line = rng.pick(CRITIQUE[k] ?? CRITIQUE.effort!);
   }
   switch (outlet.voice) {
@@ -154,7 +157,7 @@ function displayScore(score: number, scale: OutletDef['scale']): string {
   return `${stars}/5`;
 }
 
-export function generateReviews(rng: Rng, s: GameState, quality: Breakdown, baseScore: number, bugDensity: number, genre: string, name: string): { reviews: CriticReview[]; aggregate: number } {
+export function generateReviews(rng: Rng, s: GameState, quality: Breakdown, baseScore: number, bugDensity: number, genre: string, name: string, audienceBest = false): { reviews: CriticReview[]; aggregate: number } {
   const yr = fromDay(s.day).year;
   const outlets = OUTLETS.filter((o) => o.from <= yr && (o.to ?? 9999) >= yr);
   const reviews: CriticReview[] = [];
@@ -162,7 +165,7 @@ export function generateReviews(rng: Rng, s: GameState, quality: Breakdown, base
   let total = 0;
   for (const o of outlets) {
     const sc = clamp(baseScore + o.bias + (o.genreBias[genre as keyof typeof o.genreBias] ?? 0) + rng.normal(0, BALANCE.CRITIC_NOISE) - o.bugHate * bugDensity * 40, 1, 100);
-    reviews.push({ outlet: o.name, score: sc, display: displayScore(sc, o.scale), blurb: blurb(rng, o, quality, sc, name, reviews.length) });
+    reviews.push({ outlet: o.name, score: sc, display: displayScore(sc, o.scale), blurb: blurb(rng, o, quality, sc, name, reviews.length, audienceBest) });
     total += sc * o.weight;
     wsum += o.weight;
   }
@@ -354,7 +357,10 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const total = p.design + p.tech;
   const density = total > 0 ? p.bugs / total : 0;
   const base = qualityToScore(quality.total);
-  const { reviews, aggregate } = generateReviews(rng, s, quality, base, density, p.concept.genre, p.concept.name);
+  // was the chosen audience already the best this genre × topic can have? (then critics don't blame it)
+  const audFit = (a: Audience) => comboFit(p.concept.genre, p.concept.topic, a).aud;
+  const audienceBest = AUDIENCES.every((a) => audFit(a) <= audFit(p.concept.audience) + 1e-9);
+  const { reviews, aggregate } = generateReviews(rng, s, quality, base, density, p.concept.genre, p.concept.name, audienceBest);
   const score = clamp(Math.round(aggregate + (s.cheats?.scoreBonus ?? 0)), 1, 100);
   const fr = p.concept.franchiseId ? s.franchises[p.concept.franchiseId] : undefined;
   // User score

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Section, Segmented } from '../components/ui';
+import { Button, Section, Segmented, isChoiceGroup } from '../components/ui';
 import { useGame } from '../store';
 import { useSettings, type MotionPref, type ThemePref } from '../settings';
 import { sound } from '../sound';
@@ -186,10 +186,11 @@ export default function SettingsPanel() {
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  const Tag = isChoiceGroup(children) ? 'div' : 'label'; // (clicking "Theme" mustn't pick the first theme)
   return (
-    <label className="flex items-center justify-between gap-3 rounded-xl bg-bg2/50 px-3 py-2">
+    <Tag className="flex items-center justify-between gap-3 rounded-xl bg-bg2/50 px-3 py-2">
       <span className="text-sm">{label}</span>
       {children}
-    </label>
+    </Tag>
   );
 }

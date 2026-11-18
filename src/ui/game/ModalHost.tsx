@@ -1240,6 +1240,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
       peakValuation: Math.max(s.progress.stats.peakValuation, ownerValue(s)), // (the monthly peak may not have caught this month yet)
       day: Date.now(),
       ...(s.cheatsUsed ? { cheats: true } : {}),
+      seed: s.seed,
     });
   }, [user, s, ending, score]);
   const storyEnd = s.status === 'retired' && (s.endReason?.startsWith('The story') || s.endReason?.startsWith('Scenario'));
@@ -1309,7 +1310,7 @@ function InsolventModal({ onClose }: { onClose: () => void }) {
         <div>
           <h2 className="font-display text-xl font-semibold">You’re out of cash</h2>
           <p className="mt-1 text-sm text-ink2">
-            Cash is {fmtMoney(s.company.cash)}. Get back above zero within {insolvencyDaysLeft(s)} days or the company goes bankrupt (unless your credit line covers the debt). Monthly burn is {fmtMoney(monthlyBurn(s))}.
+            Cash is {fmtMoney(s.company.cash)}. Get back above zero within {plural(insolvencyDaysLeft(s), 'day')} or the company goes bankrupt (unless your credit line covers the debt). Monthly burn is {fmtMoney(monthlyBurn(s))}.
           </p>
         </div>
       </div>

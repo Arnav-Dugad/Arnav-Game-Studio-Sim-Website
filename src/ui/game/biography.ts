@@ -1,4 +1,5 @@
 /** "The story of your studio": a short biography written from what actually happened in the run. */
+import { ownerValue } from '@/sim/systems/finance';
 import { GENRE_BY_ID } from '@/data/genres';
 import { knownFor } from '@/sim/systems/renown';
 import { SCENARIO_BY_ID } from '@/sim/systems/scenarios';
@@ -18,6 +19,7 @@ export function biography(s: GameState): string[] {
   const founder = s.staff['founder']?.name ?? (s.alumni ?? []).find((a) => a.role === 'founder')?.name;
   const home = REGION_BY_ID[s.company.homeRegion ?? 'na']?.name;
   const rels: Release[] = s.releaseOrder.map((id) => s.releases[id]!).filter(Boolean);
+  const peakValue = Math.max(s.progress.stats.peakValuation, ownerValue(s)); // (the monthly peak may not have caught this month yet)
   const startTier = s.scenario ? (SCENARIO_BY_ID[s.scenario.id]?.tier ?? 1) : 1;
   const startHires = s.scenario ? (SCENARIO_BY_ID[s.scenario.id]?.hires ?? 0) : 0;
   out.push(`${name} was founded in ${s.settings.startYear}${founder ? ` by ${founder}` : ''}${home ? `, in ${home}` : ''}, with ${startTier <= 1 ? (startHires > 0 ? 'a garage, a small team and a dream' : 'little more than a garage and a dream') : `a ${tierDef(startTier).name} and big ambitions`}.`);
@@ -65,6 +67,6 @@ export function biography(s: GameState): string[] {
   if (s.company.crunchPledge?.since !== undefined && s.day - s.company.crunchPledge.since > 365 * 3) extras.push(`a no-crunch pledge kept for ${Math.floor((s.day - s.company.crunchPledge.since) / 365)} years`);
   else if (s.company.crunchPledge?.brokenDay !== undefined) extras.push('a no-crunch pledge it didn’t keep');
   if (extras.length) out.push(`Along the way: ${list(extras)}.`);
-  out.push(`In all, ${name} released ${rels.length} game${rels.length > 1 ? 's' : ''} and sold ${fmtUnits(s.progress.stats.totalUnits)} copies${s.progress.stats.peakValuation > 0 ? `, peaking at a ${fmtMoney(s.progress.stats.peakValuation)} valuation` : ''}.`);
+  out.push(`In all, ${name} released ${rels.length} game${rels.length > 1 ? 's' : ''} and sold ${fmtUnits(s.progress.stats.totalUnits)} copies${peakValue > 0 ? `, peaking at a ${fmtMoney(peakValue)} valuation` : ''}.`);
   return out;
 }

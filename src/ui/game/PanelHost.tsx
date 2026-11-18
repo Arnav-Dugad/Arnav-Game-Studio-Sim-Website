@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { Icon } from '../icons';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useGame, type PanelId } from '../store';
@@ -53,11 +53,21 @@ export function PanelHost() {
   const panel = useGame((g) => g.panel);
   const openPanel = useGame((g) => g.openPanel);
   const loaded = useGame((g) => !!g.s); // panels always read the game: never render one without it
+  // closing a panel from the keyboard (Esc) puts focus back on its rail button, not at the top of the page
+  const last = useRef<PanelId | null>(null);
+  useEffect(() => {
+    const prev = last.current;
+    last.current = panel;
+    if (!prev || panel) return;
+    const a = document.activeElement;
+    if (!a || a === document.body) document.querySelector<HTMLElement>(`[data-tutorial="rail-${prev}"]`)?.focus({ preventScroll: true });
+  }, [panel]);
   if (!panel || !loaded) return null;
   return (
     <aside
       aria-label={TITLES[panel]}
-      className="glass absolute inset-x-2 bottom-[calc(4rem+var(--tut-strip,0rem))] top-auto z-30 flex max-h-[62vh] flex-col rounded-2xl animate-fade-up sm:inset-x-auto sm:bottom-3 sm:left-[4.75rem] sm:top-[7.25rem] xl:top-[4.5rem] sm:max-h-none sm:w-[min(560px,calc(100vw-6rem))] [@media(max-height:560px)]:bottom-[4.5rem] [@media(max-height:560px)]:left-3"
+      tabIndex={-1}
+      className="glass absolute inset-x-2 bottom-[calc(4rem+var(--tut-strip,0rem))] outline-none top-auto z-30 flex max-h-[62vh] flex-col rounded-2xl animate-fade-up sm:inset-x-auto sm:bottom-3 sm:left-[4.75rem] sm:top-[7.25rem] xl:top-[4.5rem] sm:max-h-none sm:w-[min(560px,calc(100vw-6rem))] [@media(max-height:560px)]:bottom-[4.5rem] [@media(max-height:560px)]:left-3"
     >
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <h2 className="font-display text-lg font-semibold">{TITLES[panel]}</h2>

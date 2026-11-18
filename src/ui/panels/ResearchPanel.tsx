@@ -141,10 +141,16 @@ function Tree() {
                     {RESEARCH_BY_ID[q]?.name ?? q}
                     <button
                       type="button"
-                      className="rounded px-1 text-ink3 hover:bg-bg2 hover:text-bad"
+                      data-queue-x
+                      className="grid min-h-6 min-w-6 place-items-center rounded px-1 text-ink3 hover:bg-bg2 hover:text-bad pointer-coarse:min-h-9 pointer-coarse:min-w-9"
                       title={`Take ${RESEARCH_BY_ID[q]?.name ?? q} off the queue (full refund — no work has started)`}
                       aria-label={`Remove ${RESEARCH_BY_ID[q]?.name ?? q} from the queue`}
-                      onClick={() => useGame.getState().actOrToast({ type: 'unqueueResearch', id: q }, `${RESEARCH_BY_ID[q]?.name ?? q} taken off the queue — budget refunded`)}
+                      onClick={(e) => {
+                        const box = e.currentTarget.closest('section, div');
+                        useGame.getState().actOrToast({ type: 'unqueueResearch', id: q }, `${RESEARCH_BY_ID[q]?.name ?? q} taken off the queue — budget refunded`);
+                        // keep keyboard focus nearby: the next queued item's ✕, or the panel
+                        setTimeout(() => (document.querySelector<HTMLElement>('[data-queue-x]') ?? box?.closest<HTMLElement>('aside'))?.focus({ preventScroll: true }), 0);
+                      }}
                     >
                       ✕
                     </button>
@@ -200,6 +206,7 @@ function Tree() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5 text-sm font-semibold">
                   {r.name}
+                  {done && <span className="sr-only">(researched)</span>}
                   {r.engineTech && <Pill tone="tech">engine +{r.engineTech}</Pill>}
                 </div>
                 <div className="text-xs text-ink3">{done ? r.desc : av.ok || prereqOnly ? r.desc : av.why}</div>

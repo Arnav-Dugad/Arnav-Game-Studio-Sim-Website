@@ -81,6 +81,7 @@ function Hire() {
     return act({ type: 'setTeam', projectId: g.id, team: [...g.team, ...joining] }).ok ? g.concept.name : null;
   };
   // the desk "Hire" adds when nobody has a free one (the newest kind you can buy, as furnishing does)
+  const deskless = Object.values(s.staff).filter((x) => !x.deskId).length;
   const hireDesk = Object.values(ITEM_BY_ID).filter((i) => i.category === 'desk' && i.year <= fromDay(s.day).year && (!i.research || s.research.done.includes(i.research))).pop();
   const hireOne = (c: Candidate) => {
     if (freeDesks(s) <= 0) act({ type: 'furnishDesks', extra: 1 });
@@ -187,7 +188,7 @@ function Hire() {
       {s.candidates.length > 0 && (
         <p className="mb-2 text-[11px] text-ink3">
           Each hire costs a {fmtMoney(money(300, s.day))} recruiting fee
-          {freeDesks(s) <= 0 && hireDesk ? `, plus a desk (${fmtMoney(money(hireDesk.cost, s.day))}) — none are free` : ''}. People poached from a rival add a headhunter’s fee of a quarter of their salary.
+          {freeDesks(s) <= 0 && hireDesk && !s.cheats?.freeBuild ? deskless > 0 ? `, plus ${deskless + 1} desks (${fmtMoney(money(hireDesk.cost, s.day) * (deskless + 1))}) — none are free and ${deskless} ${deskless === 1 ? 'person has' : 'people have'} no desk yet` : `, plus a desk (${fmtMoney(money(hireDesk.cost, s.day))}) — none are free` : ''}. People poached from a rival add a headhunter’s fee of a quarter of their salary.
         </p>
       )}
       <div className="space-y-2">
