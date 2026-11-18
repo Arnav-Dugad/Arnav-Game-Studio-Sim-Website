@@ -40,6 +40,11 @@ const SIZE_REP: Record<Size, number> = { small: 0.6, medium: 1, large: 1.4, aaa:
 const SIZE_PRICE_RETAIL: Record<Size, number> = { small: 0.8, medium: 0.92, large: 1, aaa: 1 };
 const SIZE_PRICE_DIGITAL: Record<Size, number> = { small: 0.25, medium: 0.45, large: 0.8, aaa: 1 };
 
+/** How far your own distribution reaches when self-publishing: weak for an unknown, strong for a famous studio. */
+export function selfReach(s: GameState): number {
+  return 0.9 + 0.6 * Math.max(0, s.company.reputation - 50) / 50 + (s.research.done.includes('biz_self_publishing') ? 0.1 : 0);
+}
+
 export function reputationReach(rep: number): number {
   return BALANCE.REPUTATION_REACH_MIN + (BALANCE.REPUTATION_REACH_MAX - BALANCE.REPUTATION_REACH_MIN) * (rep / 100);
 }
@@ -243,7 +248,7 @@ export function salesPotential(s: GameState, concept: GameProject['concept'], ef
   const hype = Math.min(BALANCE.HYPE_MAX, rawHype + marketingHype);
   const yrs = fromDay(s.day).year - 1980;
   const indie = concept.size === 'small' || concept.size === 'medium' ? 1 + BALANCE.INDIE_ERA_BOOST * Math.max(0, 1 - yrs / 25) : 1;
-  const reach = BALANCE.SIZE[concept.size].reach * indie * reputationReach(s.company.reputation) * (deal ? deal.reach : 0.9) * BALANCE.DIFFICULTY[s.settings.difficulty].sales;
+  const reach = BALANCE.SIZE[concept.size].reach * indie * reputationReach(s.company.reputation) * (deal ? deal.reach : selfReach(s)) * BALANCE.DIFFICULTY[s.settings.difficulty].sales;
   const monet = BALANCE.MONETIZATION[concept.monetization];
   const fatigueMul = (fr ? 1 - fr.fatigue * 0.45 : 1) * (concept.remasterOf ? BALANCE.REMASTER_REACH : 1);
   const sb = new BD('Reach (size × reputation × distribution)', reach);

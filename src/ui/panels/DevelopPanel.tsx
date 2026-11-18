@@ -23,7 +23,7 @@ import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { comboFit, qualityToScore, workShare } from '@/sim/systems/dev';
 import { clamp } from '@/sim/breakdown';
-import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential } from '@/sim/systems/release';
+import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential, selfReach } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, Franchise, GameProject, GameState, Release, Size, Staff } from '@/sim/types';
@@ -1085,9 +1085,9 @@ function NewGame({ onDone }: { onDone: () => void }) {
               ))}
             </select>
           </Field>
-          <Field label="Publishing" hint={selfPub ? 'Self-publish to keep all revenue, or take a deal for an advance and wider reach.' : 'Research Self-Publishing to ship consoles yourself.'}>
+          <Field label="Publishing" hint={selfPub ? 'Self-publish to keep all revenue (your reach grows with reputation), or take a deal for an advance and a publisher’s reach.' : 'Research Self-Publishing to ship consoles yourself.'}>
             <select className={inputCls} value={liveDealId} onChange={(e) => setDealId(e.target.value)}>
-              <option value="">{selfPub ? 'Self-publish' : 'Self-publish (computers only)'}</option>
+              <option value="">{selfPub ? 'Self-publish' : 'Self-publish (computers only)'} · {Math.round(selfReach(s) * 100)}% reach</option>
               {s.offers.deals.map((d) => (
                 <option key={d.id} value={d.id} title={`${fmtMoney(dealAdvanceFor(d, size, s.day))} advance · ${Math.round(d.royalty * 100)}% royalty · needs ${d.minScore}+`}>
                   {COMPANY_BY_ID[d.publisherId]?.name ?? d.publisherId} · {fmtMoney(dealAdvanceFor(d, size, s.day))} · {Math.round(d.royalty * 100)}%
@@ -1188,6 +1188,11 @@ function NewGame({ onDone }: { onDone: () => void }) {
             </p>
           ) : null;
         })()}
+        {liveTeam.length > 0 && size !== 'small' && effortEst.ratio >= 0.6 && effortEst.ratio < 0.85 && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-ink3">
+            <Icon name="info" size={14} /> This team covers about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs. Bigger games only pay off with the people to fill them: a smaller size may score higher with this team.
+          </p>
+        )}
         {liveTeam.length > 0 && effortEst.ratio < 0.6 && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-warn">
             <Icon name="warning" size={14} /> This team can only put in about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs — expect a {size === 'small' ? 'modest' : 'low'} score.{' '}
