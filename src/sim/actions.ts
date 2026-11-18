@@ -2,6 +2,7 @@
  * Player commands. Every UI interaction (and every bot decision) goes through dispatch(), which
  * validates and applies the action deterministically.
  */
+import { startRnd } from './systems/rnd';
 import { releaseDemo } from './systems/demos';
 import { orderCollectors } from './systems/collectors';
 import { payLaunchBonus } from './systems/launchBonus';
@@ -54,7 +55,7 @@ import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canEx
 import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { CROWD_OK, assignDesks, canPlace, crampedCount, freeDesks, itemRequirement, layout, spreadOut, tierDef, touchOffice } from './systems/office';
-import { researchAvailable, researchCost } from './systems/research';
+import { researchAvailable, researchCost, activeResearch } from './systems/research';
 import { SABBATICAL, candidateToStaff, invalidateMentees, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
 import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
@@ -182,6 +183,7 @@ export type Action =
   | { type: 'awardsCampaign'; releaseId: string }
   | { type: 'launchBonus'; releaseId: string }
   | { type: 'releaseDemo'; projectId: string }
+  | { type: 'startRnd'; id: string }
   | { type: 'spreadOut' }
   | { type: 'setCover'; projectId: string; cover: { pal: string; layout: string; motif: string } | null }
   | { type: 'orderCollectors'; projectId: string; run: CeRun }
@@ -877,10 +879,10 @@ function apply(c: Ctx, a: Action): string | null {
       return null;
     }
     case 'cancelResearch': {
-      const def = s.research.active ? RESEARCH_BY_ID[s.research.active] : undefined;
+      const def = activeResearch(s);
       if (!def) return 'Nothing to stop';
       // half the budget comes back (booked as reduced research spending, not as revenue)
-      const refund = Math.round(researchCost(s, def) * 0.5);
+      const refund = Math.round(def.cost * 0.5);
       s.company.cash += refund;
       const led = s.finance.ledger[s.finance.ledger.length - 1];
       if (led) led.expense.research = Math.max(0, (led.expense.research ?? 0) - refund);
@@ -1081,6 +1083,8 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'releaseDemo':
       return releaseDemo(s, a.projectId);
+    case 'startRnd':
+      return startRnd(s, String(a.id));
     case 'spreadOut': {
       // 1) swap people onto roomier free desks and clear cramped empty ones; 2) re-place the desks of whoever is
       // still cramped, spread over every floor. If it doesn't help (or anyone ends up without a desk), undo it all.

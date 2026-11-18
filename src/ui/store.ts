@@ -2,6 +2,7 @@
  * UI state + the bridge to the simulation. The GameState object is mutated in place by the sim;
  * `v` is bumped whenever it changes so React re-renders subscribers.
  */
+import { RND_BY_ID } from '@/sim/systems/rnd';
 import { create } from 'zustand';
 import { advance } from '@/sim/advance';
 import { dispatch, type Action, type ActionResult } from '@/sim/actions';
@@ -258,7 +259,7 @@ export function handleEvents(events: SimEvent[]): void {
         break;
       }
       case 'researchDone':
-        g.toast({ text: `Research complete: ${RESEARCH_BY_ID[e.id]?.name ?? e.id}`, tone: 'good', icon: 'research' });
+        g.toast({ text: `Research complete: ${RESEARCH_BY_ID[e.id]?.name ?? RND_BY_ID[e.id]?.name ?? e.id}`, tone: 'good', icon: 'research' });
         sound.play('success');
         if (s.settings.autopause.research) pause = true;
         break;

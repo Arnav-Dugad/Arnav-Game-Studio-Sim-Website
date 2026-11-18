@@ -1,4 +1,5 @@
 import { RESEARCH, RESEARCH_BY_ID, type ResearchDef } from '../../data/research';
+import { RND, RND_BY_ID, RND_MAX, rndCost, rndLevel, rndOpen, rndPoints, rndUnlocked } from './rnd';
 import { CULTURE_FX } from '../../data/culture';
 import { hasValue } from './culture';
 import { fromDay, weekday } from '../calendar';
@@ -17,8 +18,19 @@ export function researchAvailable(s: GameState, r: ResearchDef): { ok: boolean; 
 }
 
 /** Is there anything for researchers to do — something active, queued, or ready to start? */
+/** What's being researched — a tree project or the next level of an R&D programme. */
+export function activeResearch(s: GameState): { id: string; name: string; desc: string; points: number; cost: number; rnd: boolean } | undefined {
+  const id = s.research.active;
+  if (!id) return undefined;
+  const def = RESEARCH_BY_ID[id];
+  if (def) return { id, name: def.name, desc: def.desc, points: def.points, cost: researchCost(s, def), rnd: false };
+  const r = RND_BY_ID[id];
+  if (r) return { id, name: `${r.name} (level ${rndLevel(s, id) + 1})`, desc: r.desc, points: rndPoints(s, id), cost: rndCost(s, id), rnd: true };
+  return undefined;
+}
+
 export function researchLeft(s: GameState): boolean {
-  return !!s.research.active || RESEARCH.some((r) => researchAvailable(s, r).ok); // (a queued item only matters once it can start — and then it's available)
+  return !!s.research.active || RESEARCH.some((r) => researchAvailable(s, r).ok) || rndOpen(s); // (a queued item only matters once it can start — and then it's available)
 }
 
 export function researchCost(s: GameState, r: ResearchDef): number {
@@ -35,7 +47,16 @@ export function autoQueueResearch(s: GameState): void {
     .map((r) => ({ r, cost: researchCost(s, r) }))
     .filter((x) => x.cost <= s.company.cash * 0.1)
     .sort((a, b) => a.r.points - b.r.points || a.cost - b.cost)[0];
-  if (!pick) return;
+  if (!pick) {
+    // the tree is done for now: keep going with the cheapest R&D programme level
+    const rd = RND.filter((r) => rndUnlocked(s) && rndLevel(s, r.id) < RND_MAX && rndCost(s, r.id) <= s.company.cash * 0.1).sort((a, b) => rndCost(s, a.id) - rndCost(s, b.id))[0];
+    if (!rd) return;
+    spend(s, 'research', rndCost(s, rd.id));
+    s.research.active = rd.id;
+    s.research.progress = 0;
+    pushNews(s, { category: 'tech', headline: `R&D team starts on ${rd.name}`, body: 'Picked automatically (Staff → Policies → Keep research going).', tone: 'neutral' });
+    return;
+  }
   spend(s, 'research', pick.cost);
   s.research.active = pick.r.id;
   s.research.progress = 0;
@@ -70,7 +91,7 @@ export function updateResearchDaily(c: Ctx): void {
     }
     return;
   }
-  const def = RESEARCH_BY_ID[active];
+  const def = activeResearch(s);
   if (!def) {
     s.research.active = null;
     return;
@@ -82,11 +103,17 @@ export function updateResearchDaily(c: Ctx): void {
     growSkill(s, st, 'design', 0.4, 0);
   }
   if (s.research.progress >= def.points) {
-    s.research.done.push(def.id);
+    if (def.rnd) {
+      const lv = (s.research.levels ??= {});
+      lv[def.id] = (lv[def.id] ?? 0) + 1;
+      pushNews(s, { category: 'tech', headline: `R&D: ${def.name} complete`, body: `${RND_BY_ID[def.id]!.effect(lv[def.id]!)} in total.`, tone: 'good' });
+    } else {
+      s.research.done.push(def.id);
+      s.progress.stats.researchDone += 1;
+      pushNews(s, { category: 'tech', headline: `Research complete: ${def.name}`, body: def.desc, tone: 'good' });
+    }
     s.research.active = null;
     s.research.progress = 0;
-    s.progress.stats.researchDone += 1;
-    pushNews(s, { category: 'tech', headline: `Research complete: ${def.name}`, body: def.desc, tone: 'good' });
     c.out.push({ type: 'researchDone', id: def.id });
   }
 }

@@ -2,6 +2,7 @@
  * Releasing games: critic reviews + blurbs, user score, sales potential, weekly sales, franchises,
  * reputation, live-service income and yearly awards.
  */
+import { rndLive, rndSales } from './rnd';
 import { eggOnRelease } from './easterEggs';
 import { collectorsOnRelease } from './collectors';
 import { campaignBoost } from './awardsCampaign';
@@ -395,6 +396,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const pot = salesPotential(s, p.concept, effScore, (ea && ea.units > 0 ? p.hype * 0.85 : p.hype) + (shadowDrop ? Math.max(0, 0.6 * clamp((score - 60) / 25, 0, 1) * clamp(0.3 + s.company.reputation / 60, 0.3, 1) - p.hype) : 0));
   const { hype, salesWhy } = pot;
   const plats = pot.platforms;
+  if (rndSales(s) > 1) for (const pp of plats) pp.potential *= rndSales(s); // market research R&D
   const pricePl = plats[0]!.pl;
   const price = launchPrice(s, pricePl, p.concept);
   const baseDecay = score >= 88 ? BALANCE.LIFECYCLE_DECAY_EVERGREEN : digitalShare(s, pricePl) > 0.5 ? BALANCE.LIFECYCLE_DECAY_DIGITAL : BALANCE.LIFECYCLE_DECAY_RETAIL;
@@ -724,7 +726,7 @@ export function updateLiveMonthly(c: Ctx): void {
       if (age < 1) continue;
       const tail = BALANCE.MONETIZATION[m].tailMul;
       const base = (rel.net / Math.max(1, age)) * 0.12 * (tail - 0.9) * (s.research.done.includes('online_liveops') ? 1.3 : 1);
-      rel.liveIncome = Math.max(0, base * Math.pow(0.96, age) * clamp(rel.userScore / 75, 0.3, 1.3) * (rel.liveMul ?? 1));
+      rel.liveIncome = Math.max(0, base * Math.pow(0.96, age) * clamp(rel.userScore / 75, 0.3, 1.3) * (rel.liveMul ?? 1) * rndLive(s));
       if (rel.liveEvent) {
         if (s.day <= rel.liveEvent.until) rel.liveIncome *= rel.liveEvent.mul;
         else rel.liveEvent = undefined;

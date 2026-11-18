@@ -1034,7 +1034,7 @@ export interface GameState {
   releases: Record<Id, Release>;
   releaseOrder: Id[];
   franchises: Record<Id, Franchise>;
-  research: { done: string[]; active: string | null; progress: number; queue: string[] };
+  research: { done: string[]; active: string | null; progress: number; queue: string[]; /** R&D programme levels (systems/rnd.ts). */ levels?: Record<string, number> };
   engines: Record<Id, Engine>;
   market: MarketState;
   rivals: Record<Id, Rival>;

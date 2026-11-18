@@ -2,6 +2,7 @@
  * Development pipeline: daily progress for game / contract / engine projects, bug creation and QA,
  * phase gates, and the quality model (with full breakdown).
  */
+import { rndBugs, rndQuality, rndSpeed } from './rnd';
 import { docDaily } from './documentary';
 import { teamChemistry } from './relations';
 import { CULTURE_FX } from '../../data/culture';
@@ -159,6 +160,8 @@ function progressGame(c: Ctx, p: GameProject): void {
   if (workday && team.length) {
     const syn = teamSynergy(s, team).total;
     const portPenalty = 1 - Math.min(0.2, 0.06 * (p.concept.platforms.length - 1));
+    const rdSpd = rndSpeed(s);
+    const rdBug = rndBugs(s);
     let avgProg = 0;
     for (const st of team) avgProg += st.skills.programming;
     avgProg /= team.length;
@@ -170,7 +173,7 @@ function progressGame(c: Ctx, p: GameProject): void {
         const a = areas[i]!;
         const w = focus[i]! / fsum;
         if (w <= 0) continue;
-        let pts = w * (areaSkill(st, a) / 100) * prod.total * BALANCE.POINTS_PER_DAY * syn * portPenalty * (s.cheats?.workMul ?? 1);
+        let pts = w * (areaSkill(st, a) / 100) * prod.total * BALANCE.POINTS_PER_DAY * syn * portPenalty * rdSpd * (s.cheats?.workMul ?? 1);
         const sb = st.spec ? SPEC_AREA_BONUS[st.spec]?.[a] : undefined;
         if (sb) pts *= 1 + sb;
         if (a === 'sound' && L.audio > 0) pts *= 1 + L.audio;
@@ -189,7 +192,7 @@ function progressGame(c: Ctx, p: GameProject): void {
           if (hasTrait(st, 'quick')) br *= 1.15;
           if (hasTrait(st, 'meticulous')) br *= 0.7;
           if (p.concept.platforms.length > 2) br *= 1.1;
-          p.bugs += pts * br;
+          p.bugs += pts * br * rdBug;
         }
         for (const k of AREA_SKILL[a]) growSkill(s, st, k, w, mb);
         st.contributed += pts;
@@ -333,6 +336,7 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   // design/tech ratio
   const ratio = total > 0 ? (p.design * scale) / total : g.designRatio;
   bd.mul(`Design/tech balance (${Math.round(ratio * 100)}% design, ideal ${Math.round(g.designRatio * 100)}%)`, 1 - Math.min(0.35, Math.abs(ratio - g.designRatio) * 1.2));
+  if (rndQuality(s) > 1) bd.mul('Engine R&D', rndQuality(s));
   // focus alignment
   const al = focusAlignment(p);
   bd.mul('Focus matches genre', 0.62 + 0.43 * clamp((al - 0.55) / 0.45, 0, 1));

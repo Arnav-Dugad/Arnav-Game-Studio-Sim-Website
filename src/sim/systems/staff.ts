@@ -1,6 +1,7 @@
 /**
  * Staff: generation, salary, productivity, morale, energy, burnout, loyalty, growth, quitting.
  */
+import { rndOpen } from './rnd';
 import { RESEARCH } from '../../data/research';
 import { possessive } from '../util';
 import { PLEDGE_MORALE, pledged } from './crunchPledge';
@@ -478,6 +479,7 @@ export function staffAutomationWeekly(s: GameState): void {
   const yr = fromDay(s.day).year;
   const researchLeft =
     !!s.research.active ||
+    rndOpen(s) ||
     RESEARCH.some((r) => !s.research.done.includes(r.id) && yr >= r.year && r.requires.every((q) => s.research.done.includes(q)));
   if (pol.autoResearch && !researchLeft) for (const st of Object.values(s.staff)) if (st.assignment.kind === 'research') st.assignment = { kind: 'idle' };
   for (const st of Object.values(s.staff)) {

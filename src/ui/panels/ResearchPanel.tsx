@@ -5,7 +5,8 @@ import { RESEARCH, RESEARCH_BY_ID, type ResearchBranch } from '@/data/research';
 import { ENGINES } from '@/data/engines';
 import { fromDay } from '@/sim/calendar';
 import { fmtMoney, money } from '@/sim/util';
-import { researchAvailable, researchCost, researchRate, researchers } from '@/sim/systems/research';
+import { activeResearch, researchAvailable, researchCost, researchRate, researchers } from '@/sim/systems/research';
+import { RND, RND_MAX, RND_UNLOCK, rndBlocked, rndCost, rndLevel, rndPoints, rndUnlocked } from '@/sim/systems/rnd';
 import { engineBuildPoints, engineTechFor } from '@/sim/systems/dev';
 import { Button, Empty, Field, Meter, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
 import { Icon } from '../icons';
@@ -47,13 +48,76 @@ export default function ResearchPanel() {
   );
 }
 
+/** Long-running R&D programmes: open once most of the tree is done; ten levels each, each costing more. */
+function RndSection() {
+  const s = useGame((g) => g.s)!;
+  const act = useGame((g) => g.act);
+  const toast = useGame((g) => g.toast);
+  if (!rndUnlocked(s)) {
+    const left = RND_UNLOCK - s.research.done.length;
+    return left <= 8 ? <p className="mb-3 rounded-xl bg-bg2/60 p-2.5 text-xs text-ink3">R&amp;D programmes open after {left} more research project{left === 1 ? '' : 's'}: long-running work on your pipeline, engine, testing, analytics and market research.</p> : null;
+  }
+  return (
+    <section className="mb-3 rounded-2xl border border-tech/30 bg-tech/5 p-3" aria-label="R&D programmes">
+      <h3 className="text-sm font-semibold">R&amp;D programmes</h3>
+      <p className="mt-0.5 text-[11px] text-ink3">Long-running work that makes every game a little better — {RND_MAX} levels each, each dearer than the last.</p>
+      <ul className="mt-2 space-y-1.5">
+        {RND.map((r) => {
+          const lv = rndLevel(s, r.id);
+          const maxed = lv >= RND_MAX;
+          const why = rndBlocked(s, r.id);
+          const running = s.research.active === r.id;
+          return (
+            <li key={r.id} className={cx('flex items-center gap-3 rounded-xl border p-2', running ? 'border-tech bg-tech/10' : 'border-line bg-panel2/40')}>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  {r.name}
+                  <span className="num text-[11px] font-normal text-ink3">level {lv}/{RND_MAX}</span>
+                </div>
+                <div className="text-xs text-ink3">{lv ? `${r.effect(lv)} so far.` : r.desc}{!maxed && ` Next: ${r.effect(lv + 1)}.`}</div>
+                <div className="mt-1 flex gap-0.5" aria-hidden>
+                  {Array.from({ length: RND_MAX }, (_, i) => (
+                    <span key={i} className={cx('h-1 flex-1 rounded-full', i < lv ? 'bg-tech' : 'bg-[var(--line)]')} />
+                  ))}
+                </div>
+              </div>
+              {running ? (
+                <Pill tone="tech">In progress</Pill>
+              ) : maxed ? (
+                <Pill tone="good">Complete</Pill>
+              ) : (
+                <div className="text-right">
+                  <div className="num mb-1 text-[11px] text-ink3">
+                    {rndPoints(s, r.id)} pts · {fmtMoney(rndCost(s, r.id))}
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={!!why}
+                    title={why ?? `Start level ${lv + 1}`}
+                    onClick={() => {
+                      const res = act({ type: 'startRnd', id: r.id });
+                      if (!res.ok) toast({ text: res.error, tone: 'bad' });
+                    }}
+                  >
+                    Start
+                  </Button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function Tree() {
   const s = useGame((g) => g.s)!;
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const [branch, setBranch] = useState<ResearchBranch>('graphics');
   const rate = researchRate(s);
-  const active = s.research.active ? RESEARCH_BY_ID[s.research.active] : undefined;
+  const active = activeResearch(s);
   const team = researchers(s);
   const idleNow = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' && !isAway(x));
   const yr = fromDay(s.day).year;
@@ -96,6 +160,7 @@ function Tree() {
           )}
         </div>
       </div>
+      <RndSection />
       <Segmented ariaLabel="Research branch" value={branch} onChange={setBranch} className="mb-2" options={BRANCHES.map((b) => ({ value: b.id, label: b.label }))} />
       <ol className="space-y-1.5">
         {RESEARCH.filter((r) => r.branch === branch).map((r) => {

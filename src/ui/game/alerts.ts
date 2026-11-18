@@ -2,6 +2,7 @@
 import { pitchText } from '@/sim/systems/pitches';
 import { researchAvailable, researchCost, researchLeft } from '@/sim/systems/research';
 import { RESEARCH } from '@/data/research';
+import { RND, RND_MAX, rndCost, rndLevel, rndUnlocked } from '@/sim/systems/rnd';
 import { demoBlocked } from '@/sim/systems/demos';
 import { CE_RUN, ceBlocked, ceCost, ceDemand } from '@/sim/systems/collectors';
 import { launchPrice } from '@/sim/systems/release';
@@ -49,7 +50,10 @@ let pulseCache: { key: string; drag?: PulseItem } = { key: '' };
 
 /** Would "Keep research going" find something to start (affordable, not the AI one)? */
 function autoPickable(s: GameState): boolean {
-  return RESEARCH.some((r) => r.id !== 'ai_genai' && researchAvailable(s, r).ok && researchCost(s, r) <= s.company.cash * 0.1);
+  return (
+    RESEARCH.some((r) => r.id !== 'ai_genai' && researchAvailable(s, r).ok && researchCost(s, r) <= s.company.cash * 0.1) ||
+    (rndUnlocked(s) && RND.some((r) => rndLevel(s, r.id) < RND_MAX && rndCost(s, r.id) <= s.company.cash * 0.1))
+  );
 }
 
 export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => void, pushGate: (id: string) => void, furnishDesks: () => void = () => undefined, urgentOnly = false): Alert[] {
