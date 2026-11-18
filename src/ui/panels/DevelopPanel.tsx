@@ -655,7 +655,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
     for (const pp of pot.platforms) toYou += pp.potential * netPerUnit(s, pp.pl, price, !d) * (d ? d.royalty : 1);
     toYou *= 1 - (s.engines[conceptPreview.engineId]?.royalty ?? 0); // a licensed engine takes its cut
     if (d) toYou += dealAdvanceFor(d, size, s.day);
-    return { units: pot.platforms.reduce((t, p) => t + p.potential, 0), why: pot.salesWhy, toYou };
+    const unitsAt = (score: number) => salesPotential(s, conceptPreview, score, 0.2).platforms.reduce((t, p) => t + p.potential, 0);
+    return { units: pot.platforms.reduce((t, p) => t + p.potential, 0), why: pot.salesWhy, toYou, low: unitsAt(60), high: unitsAt(85) };
   }, [s, conceptPreview, platforms.length, size]);
   const fit = comboFitValue(genre, topic);
   const known = knowsCombo(s, genre, topic);
@@ -1135,6 +1136,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               <div className="w-full cursor-help rounded-xl bg-bg2/70 p-2 text-left">
                 <div className="text-ink3">Sales if reviews ≈ 72</div>
                 <div className="num font-semibold">{fmtUnits(forecast.units)} units</div>
+                <div className="num text-[11px] text-ink3">{fmtUnits(forecast.low)} at 60 · {fmtUnits(forecast.high)} at 85</div>
                 <div className="num text-[11px] text-ink3">≈ {fmtMoney(forecast.toYou)} to you from sales{conceptPreview.deal ? ' (incl. advance)' : ''}{monet !== 'premium' && monet !== 'shareware' ? ' + live income' : ''}</div>
               </div>
             </Tip>
