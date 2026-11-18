@@ -292,9 +292,17 @@ describe('regressions from code review', () => {
     s.day = toDay(1990, 1, 1); // a 1980 studio that never researched save games
     s.company.cash = 1e6;
     dispatch(s, { type: 'assign', staffId: 'founder', to: 'research' });
-    expect(dispatch(s, { type: 'queueResearch', id: 'sys_dialogue' }).ok).toBe(true); // needs sys_save
-    advance(s, 300);
+    // on its own it could never start (needs sys_save), so it isn't taken — or charged for
+    const r = dispatch(s, { type: 'queueResearch', id: 'sys_dialogue' });
+    expect(r.ok).toBe(false);
+    // queued after what it builds on, it waits its turn and then follows
+    expect(dispatch(s, { type: 'research', id: 'sys_save' }).ok).toBe(true);
+    expect(dispatch(s, { type: 'queueResearch', id: 'sys_dialogue' }).ok).toBe(true);
+    advance(s, 20);
     expect(s.research.done.includes('sys_dialogue')).toBe(false);
+    advance(s, 900);
+    expect(s.research.done.includes('sys_save')).toBe(true);
+    expect(s.research.done.includes('sys_dialogue')).toBe(true);
   });
   it('rejects non-finite numbers', () => {
     const s = game();

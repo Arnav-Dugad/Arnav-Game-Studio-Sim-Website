@@ -286,10 +286,16 @@ export function SlotsScreen() {
             const s = opts.scenario ? createScenarioGame({ seed, ...opts, scenario: opts.scenario }) : createGame({ seed, ...opts });
             if (opts.daily) s.settings.daily = opts.daily; // the same world as everyone else today
             // A stale list could show a slot as empty that another device has since filled.
-            if ((await cloudSlotStatus(user.uid, creating)) === 'taken') {
+            const cloud = await cloudSlotStatus(user.uid, creating);
+            if (cloud === 'taken') {
               setError('That slot already has a save in the cloud (maybe from another device). Refreshing the list — pick an empty slot.');
               setCreating(null);
               void refresh();
+              return;
+            }
+            if (cloud === 'unknown') {
+              setError('Couldn’t check your cloud saves right now, so nothing was created (to keep any save in that slot safe). Try again when you’re online.');
+              setCreating(null);
               return;
             }
             try {

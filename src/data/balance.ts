@@ -78,7 +78,7 @@ export const BALANCE = {
   MANUFACTURING_PER_UNIT: { cartridge: 6, tape: 1.5, floppy: 2, cd: 1.2, dvd: 1, bluray: 1.5, digital: 0, card: 4 },
   REPUTATION_REACH_MIN: 0.4,
   /** Small/medium games reach further in the early, uncrowded era (fades out by ~2005). */
-  INDIE_ERA_BOOST: 1.5, // reach multiplier for an unknown studio
+  INDIE_ERA_BOOST: 0.9, // early-era reach boost for small/medium games (fades out over 25 years)
   REPUTATION_REACH_MAX: 1.25,
   FAN_CONVERSION: 0.18, // buyers of a liked game who become franchise fans
   FATIGUE_PER_SEQUEL: 0.18,

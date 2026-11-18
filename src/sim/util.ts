@@ -144,11 +144,16 @@ export function repGain(s: GameState, delta: number): number {
   return delta > 0 && rep > REP_TAPER_FROM ? delta * Math.max(0.08, 1 - (rep - REP_TAPER_FROM) / 40) : delta;
 }
 
+/** A reputation gain for display: "+2", "+0.4", or "+a little" when it rounds to nothing. */
+export function fmtRepGain(v: number): string {
+  if (v < 0) return `−${Math.abs(v) >= 0.95 ? Math.round(Math.abs(v)) : Math.abs(v).toFixed(1)}`;
+  return v >= 0.95 ? `+${Math.round(v)}` : v >= 0.1 ? `+${v.toFixed(1)}` : '+a little';
+}
+
 /** "Reputation +2" in a preview → the gain this studio would actually get ("Reputation +0.5"). */
 export function realRepText(s: GameState, text: string): string {
   return text.replace(/([Rr]eputation) \+(\d+(?:\.\d+)?)/g, (_m, word: string, n: string) => {
-    const v = repGain(s, Number(n));
-    return `${word} +${v >= 0.95 ? Math.round(v) : v.toFixed(1)}`;
+    return `${word} ${fmtRepGain(repGain(s, Number(n)))}`;
   });
 }
 

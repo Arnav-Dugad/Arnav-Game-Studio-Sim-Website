@@ -7,7 +7,7 @@ import { GENRE_BY_ID } from '@/data/genres';
 import { TRADE_SHOWS } from '@/data/marketing';
 import type { GenreId } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
-import { fmtMoney, fmtUnits, inflation, money, repGain } from '@/sim/util';
+import { fmtMoney, fmtRepGain, fmtUnits, inflation, money, repGain } from '@/sim/util';
 import { fundingAmount, fundingBlocked, ipoEligible, nextFunding, valuation, controlAfterOffering, offeringBlocked } from '@/sim/systems/finance';
 import { LineChart } from '../charts';
 import { Button, ConfirmButton, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
@@ -145,7 +145,7 @@ function Showcase() {
         <Icon name="megaphone" size={18} className="text-accent" />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold">{showcaseName(s)}</div>
-          <div className="text-ink3">Present every announced game to the world. +{showcaseHype(s).toFixed(2)} hype each, franchise fans +3%, reputation +{repGain(s, 2).toFixed(1)}. Once a year.</div>
+          <div className="text-ink3">Present every announced game to the world. +{showcaseHype(s).toFixed(2)} hype each, franchise fans +3%, reputation {fmtRepGain(repGain(s, 2))}. Once a year.</div>
         </div>
         <Button size="sm" variant="primary" disabled={!!why} title={why ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'hostShowcase' }, `${showcaseName(s)} is live — the crowd goes wild!`)}>
           Host · {fmtMoney(showcaseCost(s))}
@@ -223,7 +223,7 @@ function Publishing() {
                         key={label}
                         size="sm"
                         disabled={!announced.length || s.company.cash < money(t.booths[i]!, s.day)}
-                        title={!announced.length ? 'Announce a game first' : `+${t.hype[i]} hype, +${repGain(s, t.rep[i]!).toFixed(1)} reputation`}
+                        title={!announced.length ? 'Announce a game first' : `+${t.hype[i]} hype, ${fmtRepGain(repGain(s, t.rep[i]!))} reputation`}
                         onClick={() => {
                           const r = act({ type: 'tradeShow', show: t.id, booth: i as 0 | 1 | 2 });
                           toast(r.ok ? { text: `Booth booked at ${t.name}`, tone: 'good', icon: 'megaphone' } : { text: r.error, tone: 'bad' });
@@ -321,6 +321,7 @@ function Stock() {
         <span>
           Issue 5% more shares for cash (your stake falls to {Math.round(controlAfterOffering(st, 0.05) * 100)}%)
           {controlAfterOffering(st, 0.05) < 0.5 && <b className="ml-1 text-bad">· below 50% — takeover risk</b>}
+          {offeringBlocked(s) && <span className="block text-ink3">{offeringBlocked(s)}</span>}
         </span>
         <Button size="sm" disabled={controlAfterOffering(st, 0.05) < 0.05 || !!offeringBlocked(s)} title={offeringBlocked(s) ?? undefined} onClick={() => useGame.getState().actOrToast({ type: 'secondaryOffering', pct: 0.05 }, 'Shares issued')}>
           +{fmtMoney(st.shares * 0.05 * st.price * 0.92)}
@@ -346,8 +347,11 @@ function Acquire() {
   return (
     <div>
       <Section title="Acquisition targets">
+        {ownedStudios(s) >= MAX_SUBSIDIARIES && s.offers.acquisitions.length > 0 && (
+          <p className="mb-2 text-xs text-ink3">Your group runs {ownedStudios(s)} studios — {MAX_SUBSIDIARIES} is the most management can take on, so no more acquisitions.</p>
+        )}
         {s.offers.acquisitions.length === 0 ? (
-          <Empty icon="cart" title="No studios for sale right now">{ownedStudios(s) >= MAX_SUBSIDIARIES ? `Your group runs ${MAX_SUBSIDIARIES} studios — the most management can handle.` : s.company.reputation < 35 ? 'Targets appear once your reputation reaches 35.' : 'New targets come up every month or so.'}</Empty>
+          <Empty icon="cart" title="No studios for sale right now">{ownedStudios(s) >= MAX_SUBSIDIARIES ? `Your group runs ${ownedStudios(s)} studios — ${MAX_SUBSIDIARIES} is the most management can take on.` : s.company.reputation < 35 ? 'Targets appear once your reputation reaches 35.' : 'New targets come up every month or so.'}</Empty>
         ) : (
           <ul className="space-y-1.5">
             {s.offers.acquisitions.map((a) => {
@@ -369,7 +373,7 @@ function Acquire() {
                     size="sm"
                     variant="primary"
                     disabled={s.company.cash < a.price || ownedStudios(s) >= MAX_SUBSIDIARIES}
-                    title={ownedStudios(s) >= MAX_SUBSIDIARIES ? `Your group already runs ${MAX_SUBSIDIARIES} studios` : undefined}
+                    title={ownedStudios(s) >= MAX_SUBSIDIARIES ? `Your group already runs ${ownedStudios(s)} studios (the most is ${MAX_SUBSIDIARIES})` : undefined}
                     ask={`Buy for ${fmtMoney(a.price)} (${a.price < s.company.cash * 0.01 ? '<1' : Math.round((a.price / Math.max(1, s.company.cash)) * 100)}% of your cash)? It can’t be undone.`}
                     onConfirm={() => {
                       const res = act({ type: 'acquire', targetId: a.id });

@@ -63,6 +63,7 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
     // Never write another slot's game into this slot (e.g. if a different save was loaded meanwhile).
     const mine = () => useGame.getState().slotId === slotId;
     useGame.setState({ onMonth: (st) => void (mine() && saver.save(st)) });
+    saver.setSource(() => (mine() ? useGame.getState().s : null)); // closing the tab saves even a brand-new game
     return () => {
       const st = useGame.getState().s;
       if (st && mine()) void saver.save(st, true);

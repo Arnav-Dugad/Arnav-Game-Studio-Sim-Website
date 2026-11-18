@@ -55,7 +55,16 @@ export async function readSaveFile(file: File): Promise<GameState> {
     isObj(s.progress) &&
     isObj(s.progress.stats) &&
     Array.isArray(s.news) &&
-    Array.isArray(s.candidates);
+    Array.isArray(s.candidates) &&
+    Array.isArray(s.pendingEvents) &&
+    isObj(s.research) &&
+    Array.isArray(s.research.done) &&
+    isObj(s.settings.autopause) &&
+    ['running', 'bankrupt', 'acquired', 'retired'].includes(s.status) &&
+    Number.isFinite(s.day) &&
+    [s.staff, s.projects, s.releases, s.rivals, s.franchises, s.engines].every(
+      (m) => !Object.prototype.hasOwnProperty.call(m, '__proto__') && Object.values(m).every((v) => isObj(v) && typeof (v as { id?: unknown }).id === 'string'),
+    );
   if (!ok) throw new SaveError('That file is missing parts of a save (it may be damaged or edited)');
   return s;
 }

@@ -62,8 +62,11 @@ export function refreshOffers(c: Ctx): void {
     const d = COMPANY_BY_ID[r.id];
     return d && (d.kind === 'publisher' || d.kind === 'platform_holder') && r.reputation >= 30 && (s.offers.snubbed?.[r.id] ?? 0) <= s.day && (s.publisherTrust?.[r.id] ?? 0) > -3; // burned publishers stop calling
   });
-  while (s.offers.deals.length < 3 && publishers.length) {
-    const pub = rng.pick(publishers);
+  while (s.offers.deals.length < 3) {
+    // one offer per publisher at a time (two different deals from the same company reads like a glitch)
+    const pool = publishers.filter((p) => !s.offers.deals.some((d) => d.publisherId === p.id));
+    if (!pool.length) break;
+    const pub = rng.pick(pool);
     const size = (['small', 'medium', 'large', 'aaa'] as Size[])[clamp(Math.floor(s.company.reputation / 25), 0, 3)]!;
     const bench = benchmarkPoints(size, s.day);
     const trust = s.publisherTrust?.[pub.id] ?? 0;

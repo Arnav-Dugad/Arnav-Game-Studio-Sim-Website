@@ -371,8 +371,19 @@ const resale = (s: GameState, def: { cost: number }, it: { paid?: number }) => M
 const focusValid = (f: unknown): boolean =>
   Array.isArray(f) && f.length === 3 && f.every((ph) => Array.isArray(ph) && ph.length === 3 && finite(...ph) && ph.reduce((t: number, v: number) => t + Math.max(0, Math.round(v)), 0) > 0);
 
+/** "constructor", "toString", "__proto__"…: names every object answers to, so they'd slip past lookups. */
+const RESERVED = new Set(Object.getOwnPropertyNames(Object.prototype));
+const FREE_TEXT = new Set(['name', 'title', 'text', 'motto', 'message', 'founderName', 'companyName']);
+const hasReserved = (v: unknown, depth = 0): boolean => {
+  if (typeof v === 'string') return RESERVED.has(v);
+  if (depth > 2 || !v || typeof v !== 'object') return false;
+  // free text (names, titles) may say anything; ids and kinds may not
+  return Object.entries(v).some(([k, x]) => RESERVED.has(k) || (!FREE_TEXT.has(k) && hasReserved(x, depth + 1)));
+};
+
 function apply(c: Ctx, a: Action): string | null {
   const { s } = c;
+  if (hasReserved(a)) return 'Invalid input';
   if ('amount' in a && !finite(a.amount)) return 'Invalid amount';
   if ('salary' in a && a.salary !== undefined && !finite(a.salary)) return 'Invalid salary';
   if ('shares' in a && !finite(a.shares)) return 'Invalid share count';
@@ -616,6 +627,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (p.kind === 'game' && p.crowdfund?.success) {
         addRep(s, -8, 'Cancelled a crowdfunded game');
         refund(s, 'other_income', p.crowdfund.raised * 0.9, p.crowdfund.end ?? p.startDay); // the platform forces refunds
+        s.progress.stats.crowdfunded = Math.max(0, (s.progress.stats.crowdfunded ?? 0) - p.crowdfund.raised);
         s.company.fans = Math.round(s.company.fans * 0.95);
         pushNews(s, { category: 'studio', headline: `${p.concept.name} cancelled after raising ${fmtMoney(p.crowdfund.raised)}`, body: `${p.crowdfund.backers.toLocaleString('en-US')} backers are furious. “Where did our money go?”`, tone: 'bad' });
       } else if (p.kind === 'game' && p.crowdfund && p.crowdfund.end === undefined) addRep(s, -1, 'Pulled a crowdfunding campaign');
@@ -906,6 +918,8 @@ function apply(c: Ctx, a: Action): string | null {
       if (!def) return 'Unknown research';
       const av = researchAvailable(s, def);
       if (!av.ok && !(a.type === 'queueResearch' && av.why?.startsWith('Requires'))) return av.why ?? 'Unavailable';
+      // queued ahead of its prerequisites it could never start: each one must be done, under way or queued first
+      if (a.type === 'queueResearch' && !def.requires.every((q) => s.research.done.includes(q) || s.research.active === q || s.research.queue.includes(q))) return `Queue ${def.requires.filter((q) => !s.research.done.includes(q) && s.research.active !== q && !s.research.queue.includes(q)).map((q) => RESEARCH_BY_ID[q]?.name ?? q).join(' and ')} first`;
       if (s.research.active === def.id || s.research.queue.includes(def.id)) return 'Already queued';
       const cost = researchCost(s, def);
       if (s.company.cash < cost) return 'Not enough cash';

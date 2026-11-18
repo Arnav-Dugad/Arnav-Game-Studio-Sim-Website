@@ -1125,7 +1125,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
             <CompanyBadge name={COMPANY_BY_ID[deal.publisherId]?.name ?? deal.publisherId} color={COMPANY_BY_ID[deal.publisherId]?.color ?? '#888'} size={28} />
             <div>
-              You get <b>{fmtMoney(dealAdvanceFor(deal, size, s.day))}</b> now{deal.size && dealAdvanceFor(deal, size, s.day) < deal.advance ? ` (the full ${fmtMoney(deal.advance)} is for a ${SIZE_LABEL[deal.size]} game)` : ''} and <b>{Math.round(deal.royalty * 100)}%</b> of net revenue. Their distribution gives <b>{Math.round(deal.reach * 100)}%</b> reach. They expect a score of {deal.minScore}+ by {formatDate(deal.deadlineDay, false)}.
+              You get <b>{fmtMoney(dealAdvanceFor(deal, size, s.day))}</b> now{deal.size && dealAdvanceFor(deal, size, s.day) < deal.advance ? ` (the full ${fmtMoney(deal.advance)} is for a ${SIZE_LABEL[deal.size]} game)` : ''} and <b>{Math.round(deal.royalty * 100)}%</b> of net revenue. Their distribution puts it in front of <b>{(deal.reach / selfReach(s)).toFixed(1)}×</b> the players you’d reach alone. They expect a score of {deal.minScore}+ by {formatDate(deal.deadlineDay, false)}.
             </div>
           </div>
         )}

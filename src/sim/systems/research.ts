@@ -42,7 +42,8 @@ const NO_AUTO = new Set(['ai_genai']);
 
 /** "Keep research going" policy: when nothing is active or queued, start the cheapest available project. */
 export function autoQueueResearch(s: GameState): void {
-  if (!s.company.policies.autoQueue || s.research.active || s.research.queue.length || !researchers(s).length) return;
+  // a queue only holds things up if something in it can start now
+  if (!s.company.policies.autoQueue || s.research.active || s.research.queue.some((id) => RESEARCH_BY_ID[id] && researchAvailable(s, RESEARCH_BY_ID[id]!).ok) || !researchers(s).length) return;
   const pick = RESEARCH.filter((r) => researchAvailable(s, r).ok && !NO_AUTO.has(r.id))
     .map((r) => ({ r, cost: researchCost(s, r) }))
     .filter((x) => x.cost <= s.company.cash * 0.1)
@@ -80,6 +81,25 @@ export function updateResearchDaily(c: Ctx): void {
   const { s } = c;
   const active = s.research.active;
   if (!active) {
+    // a queued item whose prerequisite can no longer come (it was cancelled) would wait forever: drop it, refunded
+    const reachable = (id: string, seen = new Set<string>()): boolean => {
+      const d = RESEARCH_BY_ID[id];
+      if (!d || seen.has(id)) return false;
+      seen.add(id);
+      return d.requires.every((q) => s.research.done.includes(q) || (s.research.queue.includes(q) && reachable(q, seen)));
+    };
+    for (const id of [...s.research.queue]) {
+      if (reachable(id)) continue;
+      s.research.queue = s.research.queue.filter((x) => x !== id);
+      const d = RESEARCH_BY_ID[id];
+      if (d) {
+        const back = researchCost(s, d);
+        s.company.cash += back;
+        const led = s.finance.ledger[s.finance.ledger.length - 1];
+        if (led) led.expense.research = Math.max(0, (led.expense.research ?? 0) - back);
+        pushNews(s, { category: 'tech', headline: `${d.name} taken off the research queue`, body: 'What it builds on was never finished. The budget is back in the bank.', tone: 'neutral' });
+      }
+    }
     // auto-advance to the first queued item whose prerequisites are now met
     const idx = s.research.queue.findIndex((id) => {
       const d = RESEARCH_BY_ID[id];

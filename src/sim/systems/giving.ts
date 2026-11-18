@@ -51,7 +51,8 @@ export function openSourceEngine(s: GameState, engineId: string): string | null 
   const e = s.engines[engineId]!;
   e.openSourced = true;
   e.licensees = 0; // nobody pays for what's free
-  addRep(s, 2 * (1 - s.company.reputation / 130), `Open-sourced the ${e.name} engine`);
+  // goodwill comes from engines that made real games (open-sourcing a stub is a press release, not a gift)
+  if ((e.gamesShipped ?? 0) > 0) addRep(s, 2 * (1 - s.company.reputation / 130), `Open-sourced the ${e.name} engine`);
   for (const st of Object.values(s.staff)) if (st.role === 'programmer') st.morale = clamp(st.morale + 4, 0, 100);
   pushNews(s, { category: 'studio', headline: `${s.company.name} open-sources the ${e.name} engine`, body: 'Students, modders and indie developers are already digging into the code. The programmers are proud.', tone: 'good' });
   return null;

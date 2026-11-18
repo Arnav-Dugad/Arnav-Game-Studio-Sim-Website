@@ -77,7 +77,7 @@ export function ModalHost({ slotId }: { slotId: SlotId }) {
       (modal.kind === 'event' && !s.pendingEvents.some((e) => e.uid === modal.uid)));
   useEffect(() => {
     if (stale) pop();
-  }, [stale, pop]);
+  }, [stale, pop, modal]);
   if (!modal || stale) return null;
   switch (modal.kind) {
     case 'event':
@@ -1274,6 +1274,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
           onClick={() => {
             onClose();
             navigate('slots');
+            useGame.getState().unload(); // a finished game doesn't linger behind the slots screen
           }}
         >
           Back to save slots

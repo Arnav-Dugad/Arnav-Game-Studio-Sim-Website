@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGame } from '../../src/sim/create';
 import { dispatch } from '../../src/sim/actions';
 import { advance } from '../../src/sim/advance';
+import { toDay } from '../../src/sim/calendar';
 import { valuation } from '../../src/sim/systems/finance';
 import { realRepText, refund, repGain } from '../../src/sim/util';
 import { marketSalary } from '../../src/sim/systems/staff';
@@ -135,5 +136,30 @@ describe('review follow-ups', () => {
     s.finance.revenue12m = [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
     refund(s, 'advances', 50, s.day - 600); // booked 20 months ago: outside the trailing year
     expect(s.finance.revenue12m.every((v) => v === 100)).toBe(true);
+  });
+});
+
+describe('second audit round', () => {
+  it('ids and kinds that every object answers to are refused (free-text names are fine)', () => {
+    const s = studio(1995);
+    expect(dispatch(s, { type: 'research', id: 'constructor' }).ok).toBe(false);
+    expect(dispatch(s, { type: 'startRnd', id: 'toString' } as never).ok).toBe(false);
+    expect(dispatch(s, { type: 'mediaDeal', franchiseId: 'x', kind: 'constructor', control: 'involved' } as never).ok).toBe(false);
+    expect(startSmall(s, { name: 'constructor' }).ok).toBe(true); // a game may be called anything
+    expect(s.research.active).not.toBe('constructor');
+  });
+
+  it('a queued item whose prerequisite was cancelled is dropped and refunded', () => {
+    const s = studio(1980);
+    s.day = toDay(1990, 1, 1); // a studio that never researched save games
+    s.company.cash = 1e6;
+    dispatch(s, { type: 'assign', staffId: Object.keys(s.staff)[0]!, to: 'research' });
+    expect(dispatch(s, { type: 'research', id: 'sys_save' }).ok).toBe(true);
+    expect(dispatch(s, { type: 'queueResearch', id: 'sys_dialogue' }).ok).toBe(true);
+    expect(dispatch(s, { type: 'cancelResearch' }).ok).toBe(true);
+    const cash = s.company.cash;
+    advance(s, 3);
+    expect(s.research.queue).not.toContain('sys_dialogue');
+    expect(s.company.cash).toBeGreaterThan(cash);
   });
 });

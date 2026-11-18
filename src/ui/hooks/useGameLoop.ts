@@ -21,7 +21,7 @@ export function useGameLoop(): void {
         return;
       }
       // Blocking modals pause time
-      if (modals.some((m) => m.kind === 'event' || m.kind === 'gate' || m.kind === 'gameOver' || m.kind === 'insolvent' || m.kind === 'majorNews' || m.kind === 'guide' || m.kind === 'shortcuts' || m.kind === 'bugBash' || m.kind === 'trailerCut')) {
+      if (modals.some((m) => m.kind === 'event' || m.kind === 'gate' || m.kind === 'gameOver' || m.kind === 'insolvent' || m.kind === 'majorNews' || m.kind === 'guide' || m.kind === 'shortcuts' || m.kind === 'bugBash' || m.kind === 'trailerCut' || m.kind === 'coverArt' || m.kind === 'identity')) {
         acc = 0;
         return;
       }
@@ -31,7 +31,16 @@ export function useGameLoop(): void {
       while (acc >= msPerDay && days < 6) {
         acc -= msPerDay;
         days++;
-        handleEvents(advance(s, 1));
+        try {
+          handleEvents(advance(s, 1));
+        } catch (e) {
+          // never spin on a broken day: stop the clock and say so (the save is untouched)
+          console.error('Simulation error', e);
+          useGame.setState({ speed: 0 });
+          useGame.getState().toast({ text: 'Something went wrong simulating this day — the game is paused. Your save is safe.', tone: 'bad' });
+          acc = 0;
+          break;
+        }
         // A pausing event (gate, review, choice) stops the batch on that exact day.
         if (useGame.getState().speed === 0 || s.status !== 'running') {
           acc = 0;

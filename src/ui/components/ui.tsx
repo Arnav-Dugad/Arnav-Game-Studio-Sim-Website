@@ -120,7 +120,8 @@ export function BreakdownList({ bd, format = (v: number) => v.toFixed(2), title,
 
 /**
  * A button for something you can't undo: the first click asks (in place, in the game's own style), the second does it.
- * Moving the pointer away or waiting a few seconds puts it back.
+ * The button keeps its size (so the second click lands where the first did); the question shows in a bubble below it.
+ * It disarms itself after a few seconds.
  */
 export function ConfirmButton({ ask, onConfirm, children, ...rest }: Omit<Parameters<typeof Button>[0], 'onClick'> & { ask: string; onConfirm: () => void }) {
   const [armed, setArmed] = useState(false);
@@ -130,19 +131,24 @@ export function ConfirmButton({ ask, onConfirm, children, ...rest }: Omit<Parame
     return () => clearTimeout(t);
   }, [armed]);
   return (
-    <Button
-      {...rest}
-      variant={armed ? 'danger' : rest.variant}
-      title={armed ? ask : rest.title}
-      onMouseLeave={() => setArmed(false)}
-      onClick={() => {
-        if (!armed) return setArmed(true);
-        setArmed(false);
-        onConfirm();
-      }}
-    >
-      {armed ? `${ask} Click to confirm` : children}
-    </Button>
+    <span className="relative inline-flex">
+      <Button
+        {...rest}
+        variant={armed ? 'danger' : rest.variant}
+        onClick={() => {
+          if (!armed) return setArmed(true);
+          setArmed(false);
+          onConfirm();
+        }}
+      >
+        {armed ? 'Confirm' : children}
+      </Button>
+      {armed && (
+        <span role="status" className="glass absolute right-0 top-full z-20 mt-1 w-60 rounded-xl p-2 text-left text-xs text-ink2 shadow-lg">
+          {ask} <b className="text-ink">Click again to confirm.</b>
+        </span>
+      )}
+    </span>
   );
 }
 

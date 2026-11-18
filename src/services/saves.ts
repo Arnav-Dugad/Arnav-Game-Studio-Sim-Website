@@ -454,6 +454,40 @@ export class AutoSaver {
     for (const l of this.listeners) l(this.status);
   }
 
+  /** Where flush() finds the current game (so a tab closed before the first autosave still saves it). */
+  private source: (() => GameState | null) | null = null;
+  setSource(fn: () => GameState | null): void {
+    this.source = fn;
+  }
+
+  /** Cloud sync runs on its own track: a stalled connection never blocks saving on this device. */
+  private syncing: Promise<void> | null = null;
+  private syncAgain = false;
+  private syncCloud(): Promise<void> {
+    if (this.syncing) {
+      this.syncAgain = true;
+      return this.syncing;
+    }
+    this.syncing = (async () => {
+      try {
+        const r = await syncSlot(this.uid, this.slotId);
+        if (r === 'synced') {
+          this.lastCloud = Date.now();
+          this.emit({ state: 'saved', lastCloud: this.lastCloud });
+        } else this.emit({ state: r === 'offline' ? 'offline' : 'saved' });
+      } catch (e) {
+        this.emit({ state: navigator.onLine === false ? 'offline' : 'error', error: e instanceof Error ? e.message : String(e) });
+      } finally {
+        this.syncing = null;
+        if (this.syncAgain) {
+          this.syncAgain = false;
+          void this.syncCloud();
+        }
+      }
+    })();
+    return this.syncing;
+  }
+
   /** Save locally now; sync to the cloud if the throttle window has passed (or force). */
   save(s: GameState, force = false): Promise<unknown> {
     this.latest = s;
@@ -470,22 +504,20 @@ export class AutoSaver {
         this.emit({ state: 'saving' });
         await saveLocal(this.uid, this.slotId, s);
         this.emit({ lastLocal: Date.now() });
-        if (force || Date.now() - this.lastCloud > 60_000) {
-          const r = await syncSlot(this.uid, this.slotId);
-          if (r === 'synced') {
-            this.lastCloud = Date.now();
-            this.emit({ state: 'saved', lastCloud: this.lastCloud });
-          } else this.emit({ state: r === 'offline' ? 'offline' : 'saved' });
-        } else this.emit({ state: 'saved' });
+        if (force || Date.now() - this.lastCloud > 60_000) void this.syncCloud();
+        else this.emit({ state: 'saved' });
       } catch (e) {
         this.emit({ state: navigator.onLine === false ? 'offline' : 'error', error: e instanceof Error ? e.message : String(e) });
       }
     });
-    return this.pending;
+    if (!force) return this.pending;
+    // a deliberate save waits for the cloud too — but never more than a few seconds
+    return this.pending.then(() => (this.syncing ? Promise.race([this.syncing, new Promise((r) => setTimeout(r, 4_000))]) : undefined));
   }
 
   flush(): Promise<unknown> {
-    return this.latest ? this.save(this.latest, true) : this.pending;
+    const s = this.source?.() ?? this.latest;
+    return s ? this.save(s, true) : this.pending;
   }
 }
 
