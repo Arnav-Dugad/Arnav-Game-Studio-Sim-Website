@@ -434,6 +434,13 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
             {r.concept.expansionOf && s.releases[r.concept.expansionOf] && <Pill tone="tech">Expansion for {s.releases[r.concept.expansionOf]!.name}</Pill>}
             {r.concept.remasterOf && <Pill tone="gold">Remaster</Pill>}
             {r.modded && <Pill tone="tech">Mod support</Pill>}
+            {r.collectors && (
+              <span title={`${fmtUnits(r.collectors.sold)} of ${fmtUnits(r.collectors.run)} boxes sold at ${fmtMoney(r.collectors.price)} · the run cost ${fmtMoney(r.collectors.cost)}`}>
+                <Pill tone={r.collectors.sold >= r.collectors.run ? 'good' : r.collectors.sold < r.collectors.run * 0.5 ? 'bad' : undefined}>
+                  Collector’s Edition: {r.collectors.sold >= r.collectors.run ? 'sold out' : `${Math.round((r.collectors.sold / r.collectors.run) * 100)}% sold`}
+                </Pill>
+              </span>
+            )}
             {r.breakoutMod && (
               <span title={`${r.breakoutMod.name} (${r.breakoutMod.style} mod) took off in ${formatDate(r.breakoutMod.day)}${r.breakoutMod.choice === 'hire' ? ` — you hired its creator${r.breakoutMod.by ? `, ${r.breakoutMod.by}` : ''}` : r.breakoutMod.choice === 'buy' ? ' — you bought it and shipped it officially' : ' — you featured it on the store page'}`}>
                 <Pill tone="good">Breakout mod: {r.breakoutMod.name}</Pill>

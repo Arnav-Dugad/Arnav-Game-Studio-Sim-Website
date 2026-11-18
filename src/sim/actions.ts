@@ -3,11 +3,12 @@
  * validates and applies the action deterministically.
  */
 import { releaseDemo } from './systems/demos';
+import { orderCollectors } from './systems/collectors';
 import { payLaunchBonus } from './systems/launchBonus';
 import { claimPitch } from './systems/pitches';
 import { runCampaign } from './systems/awardsCampaign';
 import { breakPledge, takePledge, withdrawPledge } from './systems/crunchPledge';
-import type { PriceTier, Release } from './types';
+import type { CeRun, PriceTier, Release } from './types';
 import { priceTierAllowed } from './systems/pricing';
 import { checkIn } from './systems/checkIns';
 import { docOnCancel } from './systems/documentary';
@@ -49,7 +50,7 @@ import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
-import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount, bundleCost, MAX_BUNDLE } from './systems/release';
+import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount, bundleCost, MAX_BUNDLE, launchPrice } from './systems/release';
 import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { assignDesks, canPlace, freeDesks, itemRequirement, tierDef, touchOffice } from './systems/office';
@@ -181,6 +182,7 @@ export type Action =
   | { type: 'awardsCampaign'; releaseId: string }
   | { type: 'launchBonus'; releaseId: string }
   | { type: 'releaseDemo'; projectId: string }
+  | { type: 'orderCollectors'; projectId: string; run: CeRun }
   | { type: 'dismissEvent'; uid: number }
   | { type: 'mediaDeal'; franchiseId: string; kind: MediaKind; control: 'licensed' | 'involved' }
   | { type: 'readFanMail' }
@@ -1077,6 +1079,13 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'releaseDemo':
       return releaseDemo(s, a.projectId);
+    case 'orderCollectors': {
+      const p = s.projects[a.projectId];
+      if (!p || p.kind !== 'game') return 'No such game';
+      const pl = p.concept.platforms.map((id) => platformInfo(s, id)).find((x) => !!x);
+      if (!pl) return 'No platform to sell it on';
+      return orderCollectors(s, a.projectId, a.run, launchPrice(s, pl, p.concept));
+    }
     case 'launchBonus':
       return payLaunchBonus(s, a.releaseId);
     case 'awardsCampaign':

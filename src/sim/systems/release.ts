@@ -3,6 +3,7 @@
  * reputation, live-service income and yearly awards.
  */
 import { eggOnRelease } from './easterEggs';
+import { collectorsOnRelease } from './collectors';
 import { campaignBoost } from './awardsCampaign';
 import { renownSalesMul, renownUserEffect } from './renown';
 import { PRICE_MUL, priceDemandMul, priceTierOf, priceUserEffect } from './pricing';
@@ -455,6 +456,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   partnersOnRelease(s, rel);
   docOnRelease(s, p, rel);
   eggOnRelease(p, rel);
+  collectorsOnRelease(s, rng, p, rel);
   s.releases[id] = rel;
   s.releaseOrder.push(id);
   exclusiveBuzz(s, rel);

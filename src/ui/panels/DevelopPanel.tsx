@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DEMO_YEAR, demoBlocked, demoCost } from '@/sim/systems/demos';
+import { CE_PRICE_MUL, CE_RUN, CE_RUNS, CE_YEAR, ceAllowed, ceBlocked, ceCost, ceDemand } from '@/sim/systems/collectors';
 import { pitchText } from '@/sim/systems/pitches';
 import { pledged } from '@/sim/systems/crunchPledge';
 import { knownFor } from '@/sim/systems/renown';
@@ -24,7 +25,8 @@ import { qualityToScore, workShare } from '@/sim/systems/dev';
 import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, salesPotential } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
-import type { ContractProject, EngineProject, Focus3, GameProject, Release, Size, Staff } from '@/sim/types';
+import type { ContractProject, EngineProject, Focus3, GameProject, GameState, Release, Size, Staff } from '@/sim/types';
+import type { Action } from '@/sim/actions';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { Cover } from '../art/Cover';
 import { Avatar, InitialsBadge } from '../art/Avatar';
@@ -102,6 +104,7 @@ function GameCard({ p }: { p: GameProject }) {
   const [showTeam, setShowTeam] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [showCf, setShowCf] = useState(false);
+  const [showCe, setShowCe] = useState(false);
   const [showCo, setShowCo] = useState(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const eaRating = useMemo(() => (p.phase >= 1 && p.phase <= 2 && !p.earlyAccess ? earlyAccessRating(s, p) : 0), [s.day, p.id, p.phase, p.earlyAccess]);
@@ -253,6 +256,11 @@ function GameCard({ p }: { p: GameProject }) {
             Release a demo
           </Button>
         )}
+        {!p.collectors && ceAllowed(p.concept) && fromDay(s.day).year >= CE_YEAR && (
+          <Button size="sm" icon="box" onClick={() => setShowCe((x) => !x)} aria-expanded={showCe} title={ceBlocked(s, p, undefined, 0) ?? 'A limited run of deluxe boxes for superfans, at a premium price'}>
+            Collector’s Edition
+          </Button>
+        )}
         {p.phase >= 2 && !p.bugBashed && (
           <Button size="sm" icon="bug" onClick={() => {
               if (!useGame.getState().modals.some((m) => m.kind === 'bugBash')) useGame.getState().openModalNow({ kind: 'bugBash', projectId: p.id });
@@ -338,6 +346,13 @@ function GameCard({ p }: { p: GameProject }) {
             })}
           </ul>
         </div>
+      )}
+      {showCe && !p.collectors && <CollectorsBox s={s} p={p} run={run} close={() => setShowCe(false)} />}
+      {p.collectors && (
+        <p className="mt-2 text-xs text-ink3">
+          <Icon name="box" size={12} className="mr-1 inline" />
+          Collector’s Edition: <b className="num text-ink">{fmtUnits(CE_RUN[p.collectors.run])}</b> boxes ordered ({fmtMoney(p.collectors.cost)}) — on sale at launch.
+        </p>
       )}
       {showCf && !p.crowdfund && (
         <div className="mt-2 rounded-xl bg-bg2/60 p-2.5 text-xs">
@@ -1114,6 +1129,37 @@ function Contracts() {
           </article>
         );
       })}
+    </div>
+  );
+}
+
+/** Order a Collector's Edition: three print runs, with what fans would likely buy. */
+function CollectorsBox({ s, p, run, close }: { s: GameState; p: GameProject; run: (a: Action) => void; close: () => void }) {
+  const pl = p.concept.platforms.map((id) => platformInfo(s, id)).find((x) => !!x);
+  const std = pl ? launchPrice(s, pl, p.concept) : 0;
+  const lo = Math.round(ceDemand(s, p, 70) * 0.85);
+  const hi = Math.round(ceDemand(s, p, 85) * 1.15);
+  const blocked = ceBlocked(s, p, undefined, std);
+  return (
+    <div className="mt-2 rounded-xl bg-bg2/60 p-2.5 text-xs">
+      <div className="font-semibold">Collector’s Edition</div>
+      <p className="mt-0.5 text-ink3">
+        A numbered box with a map, a statue and the soundtrack, at {fmtMoney(std * CE_PRICE_MUL)} ({CE_PRICE_MUL}× the standard price). You pay for the whole run now; unsold boxes are a loss. With today’s hype, your superfans would buy about <b className="num text-ink">{fmtUnits(lo)}–{fmtUnits(hi)}</b> if reviews land between 70 and 85 — more hype and better reviews, more buyers.
+      </p>
+      {blocked ? (
+        <p className="mt-1.5 text-bad">{blocked}</p>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {CE_RUNS.map((r) => (
+            <Button key={r} size="sm" variant={CE_RUN[r] <= hi && CE_RUN[r] >= lo * 0.6 ? 'primary' : 'secondary'} disabled={s.company.cash < ceCost(r, std)} onClick={() => {
+                run({ type: 'orderCollectors', projectId: p.id, run: r });
+                close();
+              }}>
+              {fmtUnits(CE_RUN[r])} boxes · {fmtMoney(ceCost(r, std))}
+            </Button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

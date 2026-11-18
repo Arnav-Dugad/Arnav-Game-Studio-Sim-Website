@@ -11,6 +11,8 @@ export type Id = string;
 export type Size = 'small' | 'medium' | 'large' | 'aaa';
 export type Role = 'founder' | 'designer' | 'programmer' | 'artist' | 'audio' | 'writer' | 'qa' | 'marketer' | 'producer';
 export type Level = 'junior' | 'mid' | 'senior' | 'lead';
+/** Collector's Edition print runs. */
+export type CeRun = 'small' | 'medium' | 'large';
 export type Specialisation =
   | 'engine_programmer'
   | 'lead_designer'
@@ -344,6 +346,8 @@ export interface GameProject {
   certified?: boolean;
   /** A public demo (systems/demos.ts): when, and the score players saw. */
   demo?: { day: number; score: number };
+  /** A Collector's Edition print run ordered (systems/collectors.ts), and what it cost. */
+  collectors?: { run: CeRun; cost: number };
   /** A secret someone hid in it (systems/easterEggs.ts). */
   easterEgg?: { by: string; name: string; what: string };
   /** A documentary crew is filming its making (systems/documentary.ts): since when, and crunch days caught on camera. */
@@ -469,6 +473,8 @@ export interface Release {
   passion?: string;
   /** Fans asked to translate it (the event happened, whatever you chose). */
   fanTranslated?: boolean;
+  /** Its Collector's Edition: boxes printed and sold at launch, the box price, and what the run cost. */
+  collectors?: { run: number; sold: number; price: number; cost: number };
   /** It had a public demo before launch (the score players saw). */
   demo?: { day: number; score: number };
   /** Players asked for accessibility options (the event happened). */

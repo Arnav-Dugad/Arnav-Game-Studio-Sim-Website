@@ -467,6 +467,7 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   (_s, rng) => ({ type: 'setPolicy', parentalLeave: rng.pick(['minimal', 'standard', 'generous', 'bogus'] as never[]), interns: rng.chance(0.5) }),
   (_s, rng) => ({ type: 'crunchPledge', on: rng.chance(0.6) }),
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'releaseDemo', projectId: rng.chance(0.9) ? rng.pick(p) : 'nope' } : null; },
+  (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'orderCollectors', projectId: rng.chance(0.9) ? rng.pick(p) : 'nope', run: rng.pick(['small', 'medium', 'large', 'huge'] as never[]) } : null; },
   (s, rng) => { const r = s.releaseOrder.slice(-3); return r.length ? { type: 'launchBonus', releaseId: rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
   (s, rng) => { const r = Object.keys(s.releases); return r.length ? { type: 'awardsCampaign', releaseId: rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
   (s, rng) => { const st = Object.keys(s.staff); return st.length ? { type: 'checkIn', staffId: rng.chance(0.9) ? rng.pick(st) : 'nope' } : null; },

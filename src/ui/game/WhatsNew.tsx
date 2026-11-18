@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21o';
+export const WHATS_NEW_VERSION = '2026-11-21p';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'box', title: 'Collector’s Editions', body: 'From 1984, once a game is announced, order a limited run of deluxe boxes (Develop → the game → Collector’s Edition). Superfans pay 2.5× the price — how many buy depends on your fans, the series, the hype and the reviews. You pay for the run up front: sell out and it’s pure profit, overestimate and the boxes pile up.' },
   { icon: 'crowd', title: 'Breakout mods', body: 'Games that ship with mod tools grow a modding scene — and now and then one mod becomes a phenomenon. Hire its creator (who arrives with a pitch to make it a full game), buy it and ship it officially, or feature it. Either way, players come back to the original.' },
   { icon: 'heart', title: 'Alumni Wall', body: 'A new decor item (Build → Decor): framed portraits of the people who retired from your studio, gold frames for the legends.' },
   { icon: 'crowd', title: 'Fan votes', body: 'From 2008, with two or more series, your community may ask fans to vote on which gets a sequel. The winner gains fans — and a sequel started within a year begins with extra hype.' },
