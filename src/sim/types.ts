@@ -627,6 +627,8 @@ export interface Subsidiary {
   nextReleaseDay: number;
   /** Day of the previous release (revenue covers the time since). */
   lastReleaseDay?: number;
+  /** The budget actually paid month by month since the last release (its quality/revenue effects, summed). */
+  budgetPaid?: { q: number; rev: number; months: number };
   releases: number;
   revenue: number;
   bought: number;

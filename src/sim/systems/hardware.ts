@@ -10,7 +10,7 @@ import { PLATFORMS } from '../../data/platforms';
 import { COMPANY_BY_ID } from '../../data/companies';
 import { livePlatforms } from './market';
 import { BD, clamp } from '../breakdown';
-import { fromDay, parseYM } from '../calendar';
+import { fromDay, parseYM, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState, PlayerConsole, Release } from '../types';
 import { addRep, earn, money, pushNews, spend } from '../util';
@@ -23,14 +23,14 @@ export type ConsoleMarketing = PlayerConsole['marketing'];
 
 /** Design constants in 1980 dollars. */
 export const TIERS: Record<ConsoleTier, { label: string; techDelta: number; rd: number; months: number; unitCost: number; refPrice: number; desc: string }> = {
-  budget: { label: 'Budget', techDelta: -1, rd: 7_000_000, months: 14, unitCost: 100, refPrice: 120, desc: 'Last-gen power at a friendly price. Cheap to build, easy to sell.' },
-  standard: { label: 'Standard', techDelta: 0, rd: 16_000_000, months: 20, unitCost: 150, refPrice: 170, desc: 'Matches the current generation. The safe bet.' },
+  budget: { label: 'Budget', techDelta: -1, rd: 7_000_000, months: 14, unitCost: 108, refPrice: 120, desc: 'Last-gen power at a friendly price. Cheap to build, easy to sell.' },
+  standard: { label: 'Standard', techDelta: 0, rd: 16_000_000, months: 20, unitCost: 156, refPrice: 170, desc: 'Matches the current generation. The safe bet.' },
   premium: { label: 'Premium', techDelta: 1, rd: 35_000_000, months: 26, unitCost: 245, refPrice: 250, desc: 'Leapfrogs the competition. Expensive, but enthusiasts flock to it.' },
 };
 
 export const KIND_MUL: Record<ConsoleKind, { rd: number; cost: number; price: number }> = {
   console: { rd: 1, cost: 1, price: 1 },
-  handheld: { rd: 0.7, cost: 0.6, price: 0.65 },
+  handheld: { rd: 0.7, cost: 0.64, price: 0.65 }, // (a wider handheld margin let a cheap handheld out-earn the whole studio)
 };
 
 export const MARKETING: Record<ConsoleMarketing, { label: string; cost: number; mul: number }> = {
@@ -114,6 +114,13 @@ export function canDesignConsole(s: GameState): string | null {
  * Manufacturing cost per unit (nominal) for a console on a given day: falls ~10% a year (cheaper chips, die shrinks,
  * slimmer revisions), so a console sold at a loss on launch day turns a profit on each unit within a couple of years.
  */
+/** When a console started today would launch: on the first of the month after its development time (launches happen then). */
+export function plannedLaunchDay(day: number, months: number): number {
+  const raw = day + Math.round(months * 30.44);
+  const d = fromDay(raw);
+  return d.day === 1 ? raw : toDay(d.month === 12 ? d.year + 1 : d.year, d.month === 12 ? 1 : d.month + 1, 1);
+}
+
 export function unitCost(c: PlayerConsole, day: number): number {
   const age = Math.max(0, (day - c.launchDay) / YEAR);
   return money(c.unitCost1980, day) * Math.pow(0.9, age);

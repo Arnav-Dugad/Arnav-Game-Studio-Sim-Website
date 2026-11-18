@@ -20,9 +20,8 @@ export function useGameLoop(): void {
         acc = 0;
         return;
       }
-      // Blocking modals pause time (a decision only does when "pause when a decision is needed" is on; otherwise the
-      // clock keeps running under it, and an unanswered one settles itself as the event says)
-      if (modals.some((m) => (m.kind === 'event' && s.settings.autopause.events) || m.kind === 'gate' || m.kind === 'gameOver' || m.kind === 'insolvent' || m.kind === 'majorNews' || m.kind === 'guide' || m.kind === 'shortcuts' || m.kind === 'bugBash' || m.kind === 'trailerCut' || m.kind === 'coverArt' || m.kind === 'identity')) {
+      // Blocking modals pause time
+      if (modals.some((m) => m.kind === 'event' || m.kind === 'gate' || m.kind === 'gameOver' || m.kind === 'insolvent' || m.kind === 'majorNews' || m.kind === 'guide' || m.kind === 'shortcuts' || m.kind === 'bugBash' || m.kind === 'trailerCut' || m.kind === 'coverArt' || m.kind === 'identity')) {
         acc = 0;
         return;
       }

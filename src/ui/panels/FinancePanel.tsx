@@ -29,7 +29,7 @@ export default function FinancePanel() {
         <Stat label="Cash" value={fmtMoney(s.company.cash)} tone={s.company.cash < 0 ? 'bad' : undefined} />
         <Stat label="Revenue (12 mo)" value={fmtMoney(trailingRevenue(s))} />
         <Stat label="Profit (12 mo)" value={fmtMoney(profit)} tone={profit >= 0 ? 'good' : 'bad'} />
-        <Stat label="Monthly burn" value={fmtMoney(monthlyBurn(s))} sub="salaries, rent, upkeep, loans" />
+        <Stat label="Monthly burn" value={fmtMoney(monthlyBurn(s))} sub="salaries, rent, upkeep, loans, running costs" />
         <Stat label="Valuation" value={fmtMoney(valuation(s))} />
         <Stat label="Credit score" value={Math.round(s.company.creditScore)} sub={`limit ${fmtMoney(limit)}`} />
       </div>

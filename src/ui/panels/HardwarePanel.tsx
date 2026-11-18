@@ -2,29 +2,7 @@ import { useState } from 'react';
 import { RESEARCH_BY_ID } from '@/data/research';
 import { formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits, money } from '@/sim/util';
-import {
-  MARKETING,
-  MIN_REPUTATION,
-  RESEARCH_ID,
-  TIERS,
-  WHOLESALE,
-  canDesignConsole,
-  consoleProfit,
-  consoleSpec,
-  frontierTech,
-  launchPotential,
-  packInMul,
-  mediaFor,
-  priceBounds,
-  priceFactor,
-  projectsTargeting,
-  refPrice,
-  supportFactor,
-  unitCost,
-  type ConsoleKind,
-  type ConsoleMarketing,
-  type ConsoleTier,
-} from '@/sim/systems/hardware';
+import { MARKETING, MIN_REPUTATION, RESEARCH_ID, TIERS, WHOLESALE, canDesignConsole, consoleProfit, consoleSpec, frontierTech, launchPotential, packInMul, mediaFor, priceBounds, priceFactor, projectsTargeting, refPrice, supportFactor, unitCost, type ConsoleKind, type ConsoleMarketing, type ConsoleTier, plannedLaunchDay } from '@/sim/systems/hardware';
 import type { Action } from '@/sim/actions';
 import type { PlayerConsole } from '@/sim/types';
 import { fromDay } from '@/sim/calendar';
@@ -186,7 +164,7 @@ function Designer() {
   const spec = consoleSpec(s, kind, tier);
   const [priceRaw, setPriceRaw] = useState<number | null>(null);
   const price = priceRaw ?? Math.round(spec.refPrice);
-  const launchDay = s.day + Math.round(spec.months * 30.44);
+  const launchDay = plannedLaunchDay(s.day, spec.months);
   const preview: PlayerConsole = {
     id: 'preview',
     name,

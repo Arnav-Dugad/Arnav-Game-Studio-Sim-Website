@@ -70,7 +70,8 @@ export function subscriptionMonthly(c: Ctx): void {
   const sub = s.subscription;
   if (!sub?.active) return;
   const target = subTarget(s).subsM * 1e6;
-  sub.subscribers = Math.max(0, Math.round(sub.subscribers + (target - sub.subscribers) * 0.18));
+  // sign-ups build slowly; cancellations (after a price rise, a weaker catalogue) come quickly
+  sub.subscribers = Math.max(0, Math.round(sub.subscribers + (target - sub.subscribers) * (target < sub.subscribers ? 0.45 : 0.18)));
   sub.peak = Math.max(sub.peak, sub.subscribers);
   const revenue = sub.subscribers * sub.price * 0.7; // stores keep ~30%
   const servers = sub.subscribers * subServerCost(s);

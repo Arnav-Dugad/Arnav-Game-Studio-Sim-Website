@@ -19,15 +19,22 @@ export function subsidiariesMonthly(c: Ctx): void {
     const b = BUDGET[sub.budget];
     // running costs
     spend(s, 'salaries', sub.staff * 2_300 * inflation(s.day) * 0.3 * b.cost);
+    // a release reflects the budget it was made on (not whatever is set the day it ships)
+    const paid = (sub.budgetPaid ??= { q: 0, rev: 0, months: 0 });
+    paid.q += b.q;
+    paid.rev += b.rev;
+    paid.months += 1;
     if (s.day < sub.nextReleaseDay) continue;
+    const made = { q: paid.q / paid.months, rev: paid.rev / paid.months };
+    sub.budgetPaid = { q: 0, rev: 0, months: 0 };
     const genre = sub.focusGenre ?? rng.pick(sub.genres);
     const yr = fromDay(s.day).year;
     const topic = rng.pick(TOPICS.filter((t) => t.year <= yr)).id;
-    const score = clamp(Math.round(rng.normal(55 + sub.quality * 30 + b.q + s.company.reputation / 15, 8)), 20, 97);
+    const score = clamp(Math.round(rng.normal(55 + sub.quality * 30 + made.q + s.company.reputation / 15, 8)), 20, 97);
     // A year's worth of output per person, scaled to the time this release covers (bigger studios ship more often,
     // so per-release revenue must not also scale with headcount — that made big subsidiaries print money).
     const covered = clamp((s.day - (sub.lastReleaseDay ?? s.day - 365)) / 365, 0.3, 1.5);
-    const revenue = Math.round(Math.pow(score / 100, 4) * sub.staff * SUB_REVENUE_PER_HEAD * covered * b.rev * inflation(s.day) * rng.range(0.6, 1.4));
+    const revenue = Math.round(Math.pow(score / 100, 4) * sub.staff * SUB_REVENUE_PER_HEAD * covered * made.rev * inflation(s.day) * rng.range(0.6, 1.4));
     sub.lastReleaseDay = s.day;
     earn(s, 'subsidiaries', revenue);
     sub.revenue += revenue;

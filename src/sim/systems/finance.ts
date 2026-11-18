@@ -78,6 +78,12 @@ export function monthlyBurn(s: GameState): number {
   if (s.company.academy) burn += academyBudget(s, s.company.academy.funding);
   if (s.community) burn += money(MOD_BUDGET[s.community.mods] ?? 0, s.day);
   for (const lg of s.leagues ?? []) if (lg.status === 'live') burn += leagueMonthlyCost(s, lg.tier) + leaguePrize(s, lg.tier) / 12;
+  // hardware still in development bills its R&D every month (systems/hardware.ts)
+  for (const hw of s.hardware ?? []) {
+    if (hw.status !== 'dev') continue;
+    const months = Math.max(1, Math.round((hw.launchDay - hw.devStartDay) / 30.44));
+    burn += Math.min(hw.rdTotal - hw.rdPaid, Math.ceil(hw.rdTotal / months));
+  }
   return burn;
 }
 

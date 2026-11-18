@@ -50,8 +50,8 @@ import { benchmarkPoints, engineBuildPoints, engineTechFor, gameQuality, phaseLe
 import { resolveEvent } from './systems/events';
 import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
-import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
-import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
+import { canLaunchSub, launchSub, subLaunchCost, subRefPrice, subTarget } from './systems/subscription';
+import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier, plannedLaunchDay } from './systems/hardware';
 import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount, bundleCost, MAX_BUNDLE, launchPrice } from './systems/release';
 import { creditLimit, doIPO, ipValue, ipoEligible, offeringBlocked, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
@@ -1672,7 +1672,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (a.price < spec.refPrice * 0.3 || a.price > spec.refPrice * 4) return 'That price is unrealistic';
       spend(s, 'marketing', mkt);
       const n = s.hardware.length + 1;
-      const launchDay = s.day + Math.round(spec.months * 30.44);
+      const launchDay = plannedLaunchDay(s.day, spec.months); // (launches happen on the first of a month)
       s.hardware.push({
         id: `own_${n}_${s.nextId++}`,
         name,
@@ -1750,7 +1750,14 @@ function apply(c: Ctx, a: Action): string | null {
     case 'setSubscriptionPrice': {
       if (!s.subscription?.active) return 'No pass is running';
       if (a.price < subRefPrice(s) * 0.25 || a.price > subRefPrice(s) * 4) return 'That price is unrealistic';
-      s.subscription.price = Math.round(a.price * 100) / 100;
+      const newPrice = Math.round(a.price * 100) / 100;
+      const old = s.subscription.price;
+      // a price rise: plenty of subscribers cancel at once (at least enough that the hike brings in no more than before)
+      if (newPrice > old) {
+        const keep = Math.max(subTarget(s, newPrice).subsM / Math.max(1e-9, subTarget(s, old).subsM), old / newPrice);
+        s.subscription.subscribers = Math.round(s.subscription.subscribers * Math.min(1, keep));
+      }
+      s.subscription.price = newPrice;
       return null;
     }
     case 'foundAcademy': {

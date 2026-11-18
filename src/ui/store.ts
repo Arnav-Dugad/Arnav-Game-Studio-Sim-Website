@@ -256,7 +256,7 @@ export function handleEvents(events: SimEvent[]): void {
       case 'event':
         g.pushModal({ kind: 'event', uid: e.uid });
         sound.play('notify');
-        if (s.settings.autopause.events) pause = popped = true;
+        pause = popped = true; // a decision always waits for you (the clock shows it; your speed comes back after)
         break;
       case 'gate':
         g.pushModal({ kind: 'gate', projectId: e.projectId });

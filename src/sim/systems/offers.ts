@@ -1,5 +1,6 @@
 /** Monthly offers: contract work, publisher deals, acquisition targets. */
 import { COMPANY_BY_ID } from '../../data/companies';
+import { BALANCE } from '../../data/balance';
 import { clamp } from '../breakdown';
 import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
@@ -77,7 +78,8 @@ export function refreshOffers(c: Ctx): void {
       advance,
       royalty: Math.round(clamp(0.3 + s.company.reputation / 300 + 0.015 * trust + rng.range(-0.05, 0.06), 0.22, 0.65) * 100) / 100,
       minScore: Math.round(clamp(55 + pub.reputation / 8 - trust + rng.range(-5, 5), 50, 85)),
-      deadlineDay: s.day + Math.round(rng.range(200, 420)),
+      // time to make the size of game they're paying for, with some slack (a fixed window made big deals impossible)
+      deadlineDay: s.day + Math.round(Math.max(200, BALANCE.SIZE[size].days * rng.range(1.25, 1.7))),
       reach: Math.round(clamp(1.15 + pub.reputation / 80 + pub.staff / 1500, 1.15, 2.4) * 100) / 100,
       marketingBudget: Math.round(money(rng.range(10_000, 40_000) * (1 + pub.reputation / 50), s.day)),
       size,

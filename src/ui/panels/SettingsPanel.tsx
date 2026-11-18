@@ -145,7 +145,6 @@ export default function SettingsPanel() {
             {(
               [
                 ['gates', 'At development phase gates'],
-                ['events', 'When a decision is needed'],
                 ['releases', 'When reviews come in'],
                 ['research', 'When research finishes'],
               ] as const

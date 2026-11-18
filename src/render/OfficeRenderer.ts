@@ -432,6 +432,7 @@ export class OfficeRenderer {
   };
 
   private onKey = (e: KeyboardEvent) => {
+    if (e.type === 'keydown' && e.defaultPrevented) return; // a focused control (an option group) already used this key
     const tag = (e.target as HTMLElement | null)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     const k = e.key.toLowerCase();

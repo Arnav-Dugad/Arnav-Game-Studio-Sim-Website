@@ -793,6 +793,15 @@ function NewGame({ onDone }: { onDone: () => void }) {
               setGenre(idea.genre);
               setTopic(idea.topic);
               if (!locked) setAudience(bestAudienceFor(idea.genre, idea.topic)); // the idea comes with its best crowd
+              // …and a machine that suits it, if the one picked is a poor fit (a hand-picked set of several is left alone)
+              const fitOn = (pid?: string) => {
+                const pl = plats.find((p) => p.id === pid);
+                return pl ? platformGenreFit(pl, idea.genre) : 0;
+              };
+              if (!expPlats && platforms.length <= 1 && fitOn(platforms[0]) < 0.95) {
+                const best = [...plats].sort((x, y) => platformGenreFit(y, idea.genre) * Math.sqrt((s.market.users[y.id] ?? 0) + 0.1) - platformGenreFit(x, idea.genre) * Math.sqrt((s.market.users[x.id] ?? 0) + 0.1))[0];
+                if (best && platformGenreFit(best, idea.genre) > fitOn(platforms[0])) setPlatforms([best.id]);
+              }
               setName(freshName(idea.topic, Math.random() * 1e6));
               setNameTyped(false);
             }}>
@@ -1163,6 +1172,11 @@ function NewGame({ onDone }: { onDone: () => void }) {
             )}
           </Field>
         </div>
+        {deal && s.day + cost.days > deal.deadlineDay && (
+          <p className="mt-2 text-[11px] text-warn">
+            This plan ships around {formatDate(s.day + cost.days, false)}, after {COMPANY_BY_ID[deal.publisherId]?.name ?? 'the publisher'}’s {formatDate(deal.deadlineDay, false)} deadline — a late game costs reputation and their trust. Pick a smaller size, cut features, or another deal.
+          </p>
+        )}
         {deal && (
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
             <CompanyBadge name={COMPANY_BY_ID[deal.publisherId]?.name ?? deal.publisherId} color={COMPANY_BY_ID[deal.publisherId]?.color ?? '#888'} size={28} />

@@ -44,7 +44,7 @@ export function SubscriptionTab() {
               </span>
             </Tip>
             <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-              <Field label={`Monthly price (${fmtPrice(ref * 0.25)}–${fmtPrice(ref * 4)})`} hint={`At this price: ~${fmtUnits(preview.subsM * 1e6)} subscribers, ~${fmtMoney(monthly)}/mo after store cut and servers`}>
+              <Field label={`Monthly price (${fmtPrice(ref * 0.25)}–${fmtPrice(ref * 4)})`} hint={`At this price, once it settles: ~${fmtUnits(preview.subsM * 1e6)} subscribers, ~${fmtMoney(monthly)}/mo after store cut and servers (a price rise loses many subscribers at once)`}>
                 <input type="number" min={Math.ceil(ref * 0.25 * 2) / 2} max={Math.floor(ref * 4 * 2) / 2} step={0.5} className={inputCls} value={price || ''} onChange={(e) => setPrice(Number(e.target.value) || 0)} onBlur={() => setPrice(clampPrice(price))} />
               </Field>
               <Button size="sm" disabled={price === sub.price} onClick={() => act({ type: 'setSubscriptionPrice', price }, 'Price updated')}>
