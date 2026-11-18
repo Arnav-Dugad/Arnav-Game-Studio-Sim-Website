@@ -132,6 +132,11 @@ export function fmtUnits(n: number): string {
 }
 
 /** Change reputation (clamped 0..100) and remember why. */
+/** "1 game", "3 games" (the count and the word, with the right ending). */
+export function plural(n: number, word: string, many = `${word}s`): string {
+  return `${n.toLocaleString('en-US')} ${n === 1 ? word : many}`;
+}
+
 /** Above this reputation, every gain is smaller. */
 export const REP_TAPER_FROM = 50;
 

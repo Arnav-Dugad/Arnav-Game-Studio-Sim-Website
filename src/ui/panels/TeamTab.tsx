@@ -364,7 +364,7 @@ export function TeamTab() {
           </ul>
         </section>
       ))}
-      {group === 'none' && list.length > limit && (
+      {list.length > limit && (
         <Button size="sm" variant="ghost" className="w-full" onClick={() => setLimit((l) => l + PAGE)}>
           Show {Math.min(PAGE, list.length - limit)} more
         </Button>
@@ -715,12 +715,14 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
           variant="danger"
           icon="trash"
           onClick={() => {
-            const n = people.filter((p) => p.role !== 'founder').length;
+            // interns just go home early: they don't count as a layoff
+            const n = people.filter((p) => p.role !== 'founder' && !p.intern).length;
+            const interns = people.filter((p) => p.intern).length;
             const r = act({ type: 'fireMany', staffIds: people.map((p) => p.id) });
             toast(
               r.ok
                 ? {
-                    text: `Let ${n} go · morale −${layoffMoraleHit(n)} for everyone`,
+                    text: n ? `Let ${n} go · morale −${layoffMoraleHit(n)} for everyone${interns ? ` (and ${interns} intern${interns > 1 ? 's' : ''} went home)` : ''}` : `${interns} intern${interns > 1 ? 's' : ''} went home early`,
                     tone: 'neutral',
                     icon: 'staff',
                   }
@@ -732,8 +734,8 @@ function BulkBar({ ids, clear }: { ids: string[]; clear: () => void }) {
           onBlur={() => setConfirmFire(false)}
           autoFocus
         >
-          Really let {people.filter((p) => p.role !== 'founder').length} go? (morale −
-          {layoffMoraleHit(people.filter((p) => p.role !== 'founder').length)})
+          Really let {people.filter((p) => p.role !== 'founder').length} go?
+          {people.some((p) => p.role !== 'founder' && !p.intern) ? ` (morale −${layoffMoraleHit(people.filter((p) => p.role !== 'founder' && !p.intern).length)})` : ''}
         </Button>
       ) : (
         <Button

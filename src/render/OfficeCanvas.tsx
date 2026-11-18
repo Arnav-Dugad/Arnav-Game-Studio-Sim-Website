@@ -15,6 +15,8 @@ export interface OfficeCanvasProps {
   onReady?: (r: OfficeRenderer) => void;
   className?: string;
   ariaLabel?: string;
+  /** Look-only (no panning, zooming or keys). */
+  passive?: boolean;
 }
 
 /** Mounts the Pixi office renderer. Callbacks are read through refs so they can change freely. */
@@ -29,6 +31,7 @@ export function OfficeCanvas(props: OfficeCanvasProps) {
     const el = host.current;
     if (!el) return;
     const r = new OfficeRenderer({
+      passive: cbRef.current.passive, // fixed for the life of the canvas
       getState: () => cbRef.current.getState(),
       getUI: () => cbRef.current.getUI(),
       onTileClick: (x, y, f) => cbRef.current.onTileClick?.(x, y, f),

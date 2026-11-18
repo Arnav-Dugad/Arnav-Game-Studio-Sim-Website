@@ -189,7 +189,9 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
         getState={() => useGame.getState().s}
         getUI={() => {
           const g = useGame.getState();
-          return { floor: g.floor, build: g.build, heat: g.heat, selectedStaff: g.selectedStaff, speed: g.speed, reducedMotion: prefersReducedMotion(useSettings.getState()), leftInset: g.panel ? 640 : 80, modalOpen: g.modals.length > 0 };
+          const floors = g.s ? tierDef(g.s.office.tier).floors : 1;
+          // a smaller office has fewer floors: drawing and input must agree on one that exists
+          return { floor: Math.max(0, Math.min(g.floor, floors - 1)), build: g.build, heat: g.heat, selectedStaff: g.selectedStaff, speed: g.speed, reducedMotion: prefersReducedMotion(useSettings.getState()), leftInset: g.panel ? 640 : 80, modalOpen: g.modals.length > 0 };
         }}
         onReady={(r) => {
           rendererRef.current = r;

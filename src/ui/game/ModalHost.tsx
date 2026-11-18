@@ -54,6 +54,7 @@ import { Face, SkillBars, Traits } from '../panels/staffBits';
 import { sound } from '../sound';
 import { navigate } from '../router';
 import { prefersReducedMotion, useSettings } from '../settings';
+import { plural } from '@/sim/util';
 
 export function ModalHost({ slotId }: { slotId: SlotId }) {
   const modal = useGame((g) => g.modals[0]);
@@ -454,7 +455,7 @@ function ReleaseModal({ releaseId, onClose }: { releaseId: string; onClose: () =
               </span>
             )}
             {r.crowdfund && (
-              <span title={`${r.crowdfund.backers.toLocaleString('en-US')} backers pledged ${fmtMoney(r.crowdfund.raised)}${r.crowdfund.late > 0 ? ` · shipped ${Math.ceil(r.crowdfund.late / 30)} month(s) late` : ' · delivered on time'}`}>
+              <span title={`${r.crowdfund.backers.toLocaleString('en-US')} backers pledged ${fmtMoney(r.crowdfund.raised)}${r.crowdfund.late > 0 ? ` · shipped ${plural(Math.ceil(r.crowdfund.late / 30), 'month')} late` : ' · delivered on time'}`}>
                 <Pill tone={r.crowdfund.late > 0 ? 'bad' : 'good'}>Crowdfunded</Pill>
               </span>
             )}
@@ -999,6 +1000,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
   };
   const morale = st.moraleWhy ?? moraleTarget(s, st);
   const prod = productivity(s, st);
+  const trainWhy = !s.research.done.includes('biz_training') ? 'Research the Training Programme first' : st.assignment.kind === 'training' ? 'Already in training' : st.assignment.kind === 'project' ? 'Take them off their project first (Assign → Idle) to send them on a course' : (st.vacationDays ?? 0) > 0 ? 'Away on holiday' : null;
   return (
     <Modal open onClose={onClose} title={st.name} wide>
       <div className="flex items-start gap-4">
@@ -1007,7 +1009,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
           <h2 className="font-display text-2xl font-semibold">{st.name}</h2>
           <div className="text-sm text-ink2">
             {st.intern ? `summer intern (until ${formatDate(st.intern.until, false)})` : st.level} {ROLE_NAMES[st.role]}
-            {st.spec && ` · ${SPECS.find((x) => x.id === st.spec)?.label}`} · since {fromDay(st.hiredDay).year} · {st.gamesShipped} games shipped
+            {st.spec && ` · ${SPECS.find((x) => x.id === st.spec)?.label}`} · since {fromDay(st.hiredDay).year} · {plural(st.gamesShipped, 'game')} shipped
             {retirementDay(st) !== null && retirementDay(st)! - s.day < 5 * 365 && ` · retires around ${fromDay(retirementDay(st)!).year}`}
           </div>
           {person && <div className="mt-1 text-xs text-gold">★ {person.knownFor}</div>}
@@ -1139,10 +1141,11 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
                   </option>
                 ))}
               </select>
-              <Button size="sm" onClick={() => run({ type: 'train', staffId, skill }, 'Training started')} disabled={!s.research.done.includes('biz_training') || st.assignment.kind === 'training'} title={s.research.done.includes('biz_training') ? '4 weeks off work, +~8 skill' : 'Research the Training Programme first'}>
+              <Button size="sm" onClick={() => run({ type: 'train', staffId, skill }, 'Training started')} disabled={!!trainWhy} title={trainWhy ?? '4 weeks off work, +~8 skill'}>
                 Train
               </Button>
             </div>
+            {trainWhy && s.research.done.includes('biz_training') && <p className="mt-1 text-[11px] text-ink3">{trainWhy}</p>}
           </Section>
           <CheckInSection staffId={staffId} />
           <TalkSection staffId={staffId} />

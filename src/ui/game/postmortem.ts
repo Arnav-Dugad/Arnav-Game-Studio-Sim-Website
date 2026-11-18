@@ -8,6 +8,7 @@ import { AUDIENCES, type Audience } from '@/data/types';
 import { comboFit } from '@/sim/systems/dev';
 import { SIZE_LABEL, audienceWords } from './lib';
 import type { Release } from '@/sim/types';
+import { plural } from '@/sim/util';
 
 export interface PMPoint {
   text: string;
@@ -126,7 +127,7 @@ export function postMortem(r: Release): PostMortem {
   else if (profit < 0 && settled) push(false, { text: 'It lost money', lesson: r.hypeAtLaunch < 0.3 ? 'Market it before launch so people know it’s coming' : 'Keep the budget in line with what the game can earn', weight: 0.25 });
   if (r.hypeAtLaunch >= 1) push(true, { text: 'Launch hype was huge', weight: 0.12 });
   else if (r.hypeAtLaunch < 0.15 && !r.shadowDrop && !r.concept.expansionOf) push(false, { text: 'Few people knew it was coming', lesson: 'Announce it and run some marketing before launch', weight: 0.1 });
-  if (r.crowdfund && r.crowdfund.late > 0) push(false, { text: `Backers waited ${Math.ceil(r.crowdfund.late / 30)} month(s) longer than promised`, lesson: 'Promise backers a date you can keep', weight: 0.1 });
+  if (r.crowdfund && r.crowdfund.late > 0) push(false, { text: `Backers waited ${plural(Math.ceil(r.crowdfund.late / 30), 'month')} longer than promised`, lesson: 'Promise backers a date you can keep', weight: 0.1 });
   if (r.numberOne) push(true, { text: 'It topped the sales chart', weight: 0.2 });
   if (r.demo && r.demo.score >= 75) push(true, { text: 'The demo won players over before launch', weight: 0.06 });
   else if (r.demo && r.demo.score < 60) push(false, { text: 'The demo put players off', lesson: 'Only release a demo when the game is ready to show', weight: 0.06 });

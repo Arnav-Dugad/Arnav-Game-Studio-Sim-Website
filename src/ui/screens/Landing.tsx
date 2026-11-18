@@ -106,6 +106,7 @@ export function Landing() {
           <OfficeCanvas
             className="absolute inset-0"
             ariaLabel="A live preview of a game studio office with staff at work"
+            passive
             getState={() => stateRef.current}
             getUI={() => ({ floor: 0, build: null, heat: 'none', selectedStaff: null, speed: 1, reducedMotion: prefersReducedMotion(useSettings.getState()) })}
           />

@@ -46,6 +46,8 @@ export interface RendererUI {
 }
 
 export interface RendererCallbacks {
+  /** A look-only office (the landing page): no input, so the page scrolls over it normally. */
+  passive?: boolean;
   getState: () => GameState | null;
   getUI: () => RendererUI;
   onTileClick?: (x: number, y: number, floor: number) => void;
@@ -145,6 +147,8 @@ export class OfficeRenderer {
   private itemsKey = '';
   private heatKey = '';
   private ghostKey = '';
+  /** What the last placement check was for (see updateGhost). */
+  private ghostPre = '';
   private P: ScenePalette = LIGHT;
   private zoom = 1;
   private targetZoom = 1;
@@ -201,7 +205,7 @@ export class OfficeRenderer {
       return;
     }
     el.appendChild(this.app.canvas);
-    this.app.canvas.style.touchAction = 'none';
+    if (!this.cb.passive) this.app.canvas.style.touchAction = 'none';
     this.app.canvas.style.display = 'block';
     this.itemLayer.sortableChildren = true;
     this.world.addChild(this.staticLayer, this.dusk, this.heatLayer, this.itemLayer, this.ghost, this.fxLayer);
@@ -209,7 +213,7 @@ export class OfficeRenderer {
     this.readTheme();
     this.themeObserver = new MutationObserver(() => this.readTheme());
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    this.bindInput();
+    if (!this.cb.passive) this.bindInput();
     this.app.ticker.add((tk) => this.update(tk.deltaMS));
     this.ready = true;
   }
@@ -235,6 +239,11 @@ export class OfficeRenderer {
       this.itemsKey = '';
       for (const a of this.agents.values()) a.c.destroy({ children: true });
       this.agents.clear();
+      // the people are redrawn, not re-hired: no "first day!" parade after a theme switch
+      this.agentsReady = false;
+      this.ghostKey = '';
+      this.ghostPre = '';
+      this.ghost.removeChildren().forEach((c) => c.destroy());
     }
   }
 
@@ -403,6 +412,7 @@ export class OfficeRenderer {
     const s = this.cb.getState();
     if (s && ui.build) {
       const t = tierDef(s.office.tier);
+      if (tx < 0 || ty < 0 || tx >= t.w || ty >= t.h) return; // outside the walls: nothing to pick (and no row wrap-around)
       const id = occupancy(s, ui.floor).get(ty * t.w + tx);
       const it = id ? s.office.items.find((i) => i.id === id) : undefined;
       if (it) this.cb.onItemClick?.(it);
@@ -468,7 +478,7 @@ export class OfficeRenderer {
   }
 
   private unbindInput(): void {
-    if (!this.ready) return;
+    if (!this.ready || this.cb.passive) return;
     const c = this.app.canvas;
     c.removeEventListener('pointerdown', this.onPointerDown);
     c.removeEventListener('pointermove', this.onPointerMove);
@@ -769,30 +779,28 @@ export class OfficeRenderer {
     const moving = b?.moving ? s.office.items.find((i) => i.id === b.moving) : undefined;
     const itemId = b?.item ?? moving?.item;
     if (!b || !itemId || !this.hoverTile) {
-      if (this.ghostKey) {
-        this.ghost.removeChildren().forEach((c) => c.destroy());
-        this.ghostKey = '';
-      }
-      // selection outline
-      if (b?.selected) {
-        const it = s.office.items.find((i) => i.id === b.selected);
-        if (it && it.floor === floor) {
-          const fp = footprint(it);
-          const key = `sel|${it.id}|${it.x}|${it.y}|${fp.w}|${fp.h}`;
-          if (key !== this.ghostKey) {
-            this.ghost.removeChildren().forEach((c) => c.destroy());
-            const g = new Graphics();
-            g.roundRect(it.x * T - 2, it.y * T - 2, fp.w * T + 4, fp.h * T + 4, 8).stroke({ width: 3, color: 0xf2c450 });
-            this.ghost.addChild(g);
-            this.ghostKey = key;
-          }
-        }
+      this.ghostPre = ''; // not placing: the next placement check starts fresh
+      // the selection outline (if any) — redrawn only when the selection itself changes
+      const it = b?.selected ? s.office.items.find((i) => i.id === b.selected) : undefined;
+      const fp = it && it.floor === floor ? footprint(it) : undefined;
+      const key = it && fp ? `sel|${it.id}|${it.x}|${it.y}|${fp.w}|${fp.h}` : '';
+      if (key === this.ghostKey) return;
+      this.ghost.removeChildren().forEach((c) => c.destroy());
+      this.ghostKey = key;
+      if (it && fp) {
+        const g = new Graphics();
+        g.roundRect(it.x * T - 2, it.y * T - 2, fp.w * T + 4, fp.h * T + 4, 8).stroke({ width: 3, color: 0xf2c450 });
+        this.ghost.addChild(g);
       }
       return;
     }
     const rot = b.rot;
     const [tx, ty] = this.hoverTile;
     const def = ITEM_BY_ID[itemId];
+    // the placement check walks the whole floor: only redo it when something it depends on changed
+    const pre = `${itemId}|${rot}|${tx}|${ty}|${floor}|${moving?.id ?? ''}|${this.itemsKey}`;
+    if (pre === this.ghostPre) return;
+    this.ghostPre = pre;
     const ok = canPlace(s, def, floor, tx, ty, rot, moving?.id).ok;
     const key = `${itemId}|${rot}|${tx}|${ty}|${ok}|${floor}`;
     if (key === this.ghostKey) return;
@@ -976,8 +984,9 @@ export class OfficeRenderer {
           const ry = Math.floor(Math.random() * t.h);
           if (!occupancy(s, floor).has(ry * t.w + rx)) {
             const [tx, ty] = this.tileCenter(rx, ry);
-            a.path = this.route(s, floor, a, tx, ty);
-            if (a.path.length) {
+            const path = this.route(s, floor, a, tx, ty, true); // a corner boxed in by furniture isn't somewhere to stroll to
+            if (path.length) {
+              a.path = path;
               a.mode = 'walk';
               a.next = 'wander';
             }
@@ -1681,14 +1690,15 @@ ${bits.join(' · ')}` : def.name;
     else if (/\bHa\b|😄|Right\?!|My favourite/.test(text)) a.anim.laugh = 1.3;
   }
 
-  private route(s: GameState, floor: number, a: Agent, wx: number, wy: number): [number, number][] {
+  /** A walking path; with `strict`, nothing at all when the spot can't be reached (rather than a beeline through furniture). */
+  private route(s: GameState, floor: number, a: Agent, wx: number, wy: number, strict = false): [number, number][] {
     const from: [number, number] = [Math.max(0, Math.floor(a.x / T)), Math.max(0, Math.floor((a.y + 6) / T))];
     const to: [number, number] = [Math.floor(wx / T), Math.floor(wy / T)];
     const t = tierDef(s.office.tier);
     from[0] = Math.min(t.w - 1, from[0]);
     from[1] = Math.min(t.h - 1, from[1]);
     const p = findPath(s, floor, from, to);
-    if (!p || p.length === 0) return [[wx, wy]];
+    if (!p || p.length === 0) return strict ? [] : [[wx, wy]];
     return p.slice(1).map(([x, y]) => this.tileCenter(x, y));
   }
 

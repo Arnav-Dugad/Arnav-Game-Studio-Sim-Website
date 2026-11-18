@@ -201,7 +201,7 @@ export const useGame = create<GameStore>((set, get) => ({
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
   setBuild: (b) => set(b ? { build: b } : { build: null, heat: 'none' }), // overlays belong to build mode: leaving it clears them
   setHeat: (h) => set({ heat: h }),
-  setFloor: (f) => set({ floor: f }),
+  setFloor: (f) => set({ floor: Math.max(0, Math.round(f)) }),
   selectStaff: (id) => set({ selectedStaff: id }),
   bump: () => set({ v: get().v + 1 }),
 }));

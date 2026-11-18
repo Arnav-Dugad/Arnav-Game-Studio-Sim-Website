@@ -14,6 +14,7 @@ import { useGame } from '../store';
 import HardwarePanel from './HardwarePanel';
 import { StaffPicker } from '../components/StaffPicker';
 import { freeStaff } from './staffTools';
+import { plural } from '@/sim/util';
 
 const BRANCHES: { id: ResearchBranch; label: string }[] = [
   { id: 'graphics', label: 'Graphics' },
@@ -250,8 +251,8 @@ function Engines() {
                     {e.name} {e.licensedFrom && <Pill tone="tech">licensed</Pill>} {e.openSourced && <Pill tone="good">open source</Pill>}
                   </div>
                   <div className="text-xs text-ink3">
-                    Tech {e.tech} · maturity {Math.round(e.maturity * 100)}% · {e.gamesShipped} games{e.royalty ? ` · ${Math.round(e.royalty * 100)}% royalty` : ''}
-                    {e.licensees > 0 && ` · licensed to ${e.licensees} studios`}
+                    Tech {e.tech} · maturity {Math.round(e.maturity * 100)}% · {plural(e.gamesShipped, 'game')}{e.royalty ? ` · ${Math.round(e.royalty * 100)}% royalty` : ''}
+                    {e.licensees > 0 && ` · licensed to ${plural(e.licensees, 'studio')}`}
                   </div>
                 </div>
                 {!e.licensedFrom && !e.openSourced && s.day - e.builtDay >= OPEN_SOURCE_AGE_YEARS * 365 && e.builtDay > 0 && (

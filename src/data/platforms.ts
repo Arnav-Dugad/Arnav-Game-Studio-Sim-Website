@@ -914,7 +914,7 @@ export const PLATFORMS: readonly PlatformDef[] = [
     kind: 'console',
     generation: 8,
     launch: '2013-11',
-    discontinued: '2020-12',
+    discontinued: '2024-12', // cross-gen releases carried on (as with PS4)
     unitsM: 58,
     peakYears: 3,
     curve: 'normal',

@@ -27,6 +27,7 @@ import type { GameProject, GameState, Project } from '@/sim/types';
 import type { IconName } from '../icons';
 import { useGame, type PanelId } from '../store';
 import { atRisk } from '../panels/staffTools';
+import { plural } from '@/sim/util';
 
 export interface Alert {
   id: string;
@@ -67,7 +68,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   const net = income - burn;
   if (s.company.cash < 0) out.push({ id: 'cash-neg', tone: 'bad', icon: 'warning', text: `You're ${fmtMoney(-s.company.cash)} in the red. Take a loan, cut costs or land a contract fast.`, action: { label: 'Finance', run: () => open('finance') } });
   else if (net < 0 && s.company.cash < -net * 6)
-    out.push({ id: 'runway', tone: 'warn', icon: 'hourglass', text: `About ${Math.max(0, Math.floor(s.company.cash / -net))} months of cash left at this burn rate (${fmtMoney(-net)}/mo).`, action: { label: 'Finance', run: () => open('finance') } });
+    out.push({ id: 'runway', tone: 'warn', icon: 'hourglass', text: Math.floor(s.company.cash / -net) < 1 ? `Less than a month of cash left at this burn rate (${fmtMoney(-net)}/mo).` : `About ${plural(Math.floor(s.company.cash / -net), 'month')} of cash left at this burn rate (${fmtMoney(-net)}/mo).`, action: { label: 'Finance', run: () => open('finance') } });
   // Decisions waiting
   for (const p of projects) if (p.kind === 'game' && p.awaitingGate) out.push({ id: `gate-${p.id}`, tone: 'warn', icon: 'develop', text: `${p.concept.name} is waiting for your phase review.`, action: { label: 'Review', run: () => pushGate(p.id) } });
   if (s.pendingEvents.length) out.push({ id: 'events', tone: 'info', icon: 'mail', text: `${s.pendingEvents.length} decision${s.pendingEvents.length > 1 ? 's' : ''} waiting in your inbox.` });

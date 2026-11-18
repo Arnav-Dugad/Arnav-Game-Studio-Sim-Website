@@ -2,6 +2,9 @@
  * Finance: monthly payroll/rent/upkeep, loans & credit, taxes, insolvency → bankruptcy,
  * company valuation, IPO and the stock price.
  */
+import { academyBudget } from './academy';
+import { MOD_BUDGET } from './community';
+import { leagueMonthlyCost, leaguePrize } from './esports';
 import { BRANCH } from '../../data/regions';
 import { BALANCE } from '../../data/balance';
 import { ITEM_BY_ID } from '../../data/facilities';
@@ -70,8 +73,18 @@ export function monthlyRent(s: GameState): number {
 /** Wellness program cost per person per month (1980 dollars). */
 export const WELLNESS_COST = 40;
 
+/** Everything that leaves the bank on the 1st of each month, whatever you do (the runway and insolvency checks use it). */
 export function monthlyBurn(s: GameState): number {
-  return payrollMonthly(s) + monthlyRent(s) + monthlyUpkeep(s) + sum(s.finance.loans.map((l) => l.monthly)) + (s.company.policies.wellness ? WELLNESS_COST * inflation(s.day) * Object.keys(s.staff).length : 0);
+  const payroll = payrollMonthly(s);
+  const owed = s.company.perksOwed ?? {};
+  let burn = payroll + monthlyRent(s) + monthlyUpkeep(s) + sum(s.finance.loans.map((l) => l.monthly));
+  if (s.company.policies.wellness || owed.wellness) burn += WELLNESS_COST * inflation(s.day) * Object.keys(s.staff).length;
+  if (s.company.policies.salaryPolicy === 'generous' || owed.generous) burn += payroll * 0.08;
+  burn += Math.max(s.company.recruiting, owed.recruiting ?? 0) * 1_500 * inflation(s.day);
+  if (s.company.academy) burn += academyBudget(s, s.company.academy.funding);
+  if (s.community) burn += money(MOD_BUDGET[s.community.mods] ?? 0, s.day);
+  for (const lg of s.leagues ?? []) if (lg.status === 'live') burn += leagueMonthlyCost(s, lg.tier) + leaguePrize(s, lg.tier) / 12;
+  return burn;
 }
 
 /** First day of each month: pay bills, roll the ledger, check solvency. */

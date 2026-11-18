@@ -16,7 +16,7 @@ import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
 import type { GameState, Rival, RivalGame } from '../types';
 import { addRep, inflation, money, pushNews } from '../util';
-import { livePlatforms } from './market';
+import { livePlatforms, platformInfo } from './market';
 
 /** Flattened schedule of real franchise releases, sorted by day. */
 interface Scheduled {
@@ -117,12 +117,17 @@ export function rivalScheduledReleases(c: Ctx, cursor: { i: number }): void {
     if (franchiseOwner(s, ev.franchise) === '__player') continue;
     const r = s.rivals[ev.company];
     if (r && (!r.alive || r.ownedByPlayer)) continue;
+    // only platforms that are actually on sale that month (some dates are Japanese launches, some versions came later)
+    const onSale = ev.platforms.filter((pid) => {
+      const pl = platformInfo(s, pid);
+      return !!pl && pl.launchDay <= s.day && (pl.endDay === null || pl.endDay === undefined || pl.endDay >= s.day);
+    });
     const g: RivalGame = {
       name: ev.title,
       company: ev.company,
       genre: ev.genre,
       topic: ev.topic,
-      platforms: ev.platforms,
+      platforms: onSale.length ? onSale : ev.platforms,
       day: s.day,
       score: clamp(Math.round(ev.score + rng.normal(0, 1.5)), 1, 100),
       units: Math.round(ev.unitsM * 1e6),

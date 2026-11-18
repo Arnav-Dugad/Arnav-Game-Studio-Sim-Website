@@ -43,7 +43,7 @@ export function SubscriptionTab() {
             </Tip>
             <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
               <Field label="Monthly price" hint={`At this price: ~${fmtUnits(preview.subsM * 1e6)} subscribers, ~${fmtMoney(monthly)}/mo after store cut and servers`}>
-                <input type="number" min={0.5} step={0.5} className={inputCls} value={price} onChange={(e) => setPrice(Math.max(0.5, Number(e.target.value) || 0.5))} />
+                <input type="number" min={Math.ceil(ref * 0.25 * 2) / 2} max={Math.floor(ref * 4 * 2) / 2} step={0.5} className={inputCls} value={price} onChange={(e) => setPrice(Math.min(Math.floor(ref * 4 * 2) / 2, Math.max(Math.ceil(ref * 0.25 * 2) / 2, Number(e.target.value) || ref)))} />
               </Field>
               <Button size="sm" disabled={price === sub.price} onClick={() => act({ type: 'setSubscriptionPrice', price }, 'Price updated')}>
                 Apply
@@ -90,8 +90,8 @@ export function SubscriptionTab() {
               <Field label="Name">
                 <input className={inputCls} value={name} maxLength={32} onChange={(e) => setName(e.target.value)} />
               </Field>
-              <Field label={`Monthly price · players expect ~${fmtPrice(ref)}`}>
-                <input type="number" min={0.5} step={0.5} className={inputCls} value={price} onChange={(e) => setPrice(Math.max(0.5, Number(e.target.value) || 0.5))} />
+              <Field label={`Monthly price · players expect ~${fmtPrice(ref)} (${fmtPrice(ref * 0.25)}–${fmtPrice(ref * 4)})`}>
+                <input type="number" min={Math.ceil(ref * 0.25 * 2) / 2} max={Math.floor(ref * 4 * 2) / 2} step={0.5} className={inputCls} value={price} onChange={(e) => setPrice(Math.min(Math.floor(ref * 4 * 2) / 2, Math.max(Math.ceil(ref * 0.25 * 2) / 2, Number(e.target.value) || ref)))} />
               </Field>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2.5 text-xs">

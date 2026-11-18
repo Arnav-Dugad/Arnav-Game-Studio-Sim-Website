@@ -1160,7 +1160,6 @@ export const FRANCHISES: readonly FranchiseDef[] = [
       r('The Secret of Monkey Island', '1990-10', ['pc', 'amiga'], 90, 0.5),
       r("Monkey Island 2: LeChuck's Revenge", '1991-12', ['pc', 'amiga'], 92, 0.5),
       r('The Curse of Monkey Island', '1997-11', ['pc'], 87, 0.5),
-      r('Return to Monkey Island', '2022-09', ['pc', 'switch'], 87, 0.5),
     ],
   },
 
@@ -1236,6 +1235,7 @@ export const FRANCHISES: readonly FranchiseDef[] = [
     id: 'runeterra',
     name: 'Legends of Runeterra',
     company: 'riot',
+    transfers: [['tencent', 2011]],
     genre: 'cards',
     topic: 'fantasy',
     audience: 'teen',
@@ -1339,6 +1339,7 @@ export const FRANCHISES: readonly FranchiseDef[] = [
     id: 'tony_hawk',
     name: "Tony Hawk's Pro Skater",
     company: 'activision',
+    transfers: [['microsoft', 2023]],
     genre: 'sports',
     topic: 'sports_topic',
     audience: 'teen',

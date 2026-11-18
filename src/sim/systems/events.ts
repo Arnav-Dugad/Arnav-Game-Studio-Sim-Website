@@ -754,7 +754,7 @@ export const EVENT_DEFS: EventDef[] = [
     id: 'lootbox_regulation',
     art: 'audit',
     cooldown: 2000,
-    weight: (s) => (yr(s) >= 2018 && Object.values(s.releases).some((r) => r.active && (r.concept.features ?? []).includes('loot_boxes')) ? 0.5 : 0),
+    weight: (s) => (hasFlag(s, 'lootboxRegulation') && Object.values(s.releases).some((r) => r.active && (r.concept.features ?? []).includes('loot_boxes')) ? 0.5 : 0),
     make: ({ s }) => {
       const games = Object.values(s.releases).filter((r) => r.active && (r.concept.features ?? []).includes('loot_boxes'));
       if (!games.length) return null;

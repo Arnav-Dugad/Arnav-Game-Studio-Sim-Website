@@ -34,6 +34,7 @@ import type { AwardWinner, CriticReview, GameProject, GameState, PlatformSales, 
 import { addRep, earn, fmtMoney, fmtUnits, hasFlag, inflation, newId, pushNews, spend } from '../util';
 import { finishProject, qualityToScore } from './dev';
 import { activeUsersM, demandMul, genreInterest, isPlatformAvailable, platformAudienceFit, platformGenreFit, platformInfo, topicPopularity, type PlatformInfo } from './market';
+import { plural } from '../util';
 
 const SIZE_REP: Record<Size, number> = { small: 0.6, medium: 1, large: 1.4, aaa: 1.8 };
 /** Price multiplier by size: retail-era games all cost about the same; digital lets small games sell cheap. */
@@ -948,8 +949,8 @@ function saleShare(s: GameState, ps: PlatformSales): number {
 export function canRunSale(s: GameState, rel: Release): string | null {
   if (rel.delisted) return 'Delisted — its licences expired';
   if (!SALE_MONET.has(rel.concept.monetization)) return 'Only one-off purchases go on sale';
-  if (s.day - rel.day < SALE_MIN_AGE_DAYS) return `Too new — wait ${Math.ceil((SALE_MIN_AGE_DAYS - (s.day - rel.day)) / 7)} more weeks`;
-  if (rel.lastSaleDay !== undefined && s.day - rel.lastSaleDay < SALE_COOLDOWN_DAYS) return `On sale recently — again in ${Math.ceil((SALE_COOLDOWN_DAYS - (s.day - rel.lastSaleDay)) / 7)} weeks`;
+  if (s.day - rel.day < SALE_MIN_AGE_DAYS) return `Too new — wait ${plural(Math.ceil((SALE_MIN_AGE_DAYS - (s.day - rel.day)) / 7), 'more week', 'more weeks')}`;
+  if (rel.lastSaleDay !== undefined && s.day - rel.lastSaleDay < SALE_COOLDOWN_DAYS) return `On sale recently — again in ${plural(Math.ceil((SALE_COOLDOWN_DAYS - (s.day - rel.lastSaleDay)) / 7), 'week')}`;
   if (!rel.platforms.some((ps) => saleShare(s, ps) >= 0.2)) {
     const dead = rel.platforms.every((ps) => {
       const pl = platformInfo(s, ps.platform);

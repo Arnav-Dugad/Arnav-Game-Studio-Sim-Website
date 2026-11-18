@@ -7,7 +7,7 @@ import { GENRE_BY_ID } from '@/data/genres';
 import { TRADE_SHOWS } from '@/data/marketing';
 import type { GenreId } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
-import { fmtMoney, fmtRepGain, fmtUnits, inflation, money, repGain } from '@/sim/util';
+import { fmtMoney, fmtRepGain, fmtUnits, inflation, money, plural, repGain } from '@/sim/util';
 import { fundingAmount, fundingBlocked, ipoEligible, nextFunding, valuation, controlAfterOffering, offeringBlocked } from '@/sim/systems/finance';
 import { LineChart } from '../charts';
 import { Button, ConfirmButton, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
@@ -398,7 +398,7 @@ function Acquire() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">{sub.name}</span>
                   <span className="text-ink3">
-                    {sub.releases} games · {fmtMoney(sub.revenue)} earned · next ~{formatDate(sub.nextReleaseDay, false)}
+                    {plural(sub.releases, 'game')} · {fmtMoney(sub.revenue)} earned · next ~{formatDate(sub.nextReleaseDay, false)}
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -455,7 +455,7 @@ function IP() {
                 {f.name} {f.origin && <Pill tone="gold">Acquired classic</Pill>}
               </div>
               <div className="text-ink3">
-                {GENRE_BY_ID[f.genre].name} · {f.entries.length} games · best {f.bestScore} · {fmtUnits(f.fans)} fans
+                {GENRE_BY_ID[f.genre].name} · {plural(f.entries.length, 'game')} · best {f.bestScore} · {fmtUnits(f.fans)} fans
                 {f.fatigue > 0.15 && ` · fatigue ${Math.round(f.fatigue * 100)}%`}
               </div>
             </div>
@@ -467,16 +467,17 @@ function IP() {
                 Fan con · {fmtMoney(fanConCost(s, f))}
               </Button>
             )}
-            <Button
+            <ConfirmButton
               size="sm"
               variant="ghost"
-              onClick={() => {
+              ask={`Sell ${f.name} for ${fmtMoney(price)}? No more sequels, remasters or expansions — it’s gone for good.`}
+              onConfirm={() => {
                 const r = act({ type: 'sellFranchise', franchiseId: f.id });
                 toast(r.ok ? { text: `Sold ${f.name} for ${fmtMoney(price)}`, tone: 'neutral', icon: 'sell' } : { text: r.error, tone: 'bad' });
               }}
             >
               Sell {fmtMoney(price)}
-            </Button>
+            </ConfirmButton>
           </li>
         );
       })}
