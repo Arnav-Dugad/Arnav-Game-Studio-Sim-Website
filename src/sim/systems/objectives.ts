@@ -73,7 +73,8 @@ export function objectiveProgress(s: GameState, o: Objective): number {
 }
 
 export function objectiveReward(s: GameState): ObjectiveReward {
-  return { rep: 1, morale: 2, cash: Math.round(money(4_000, s.day) * (1 + s.company.reputation / 25)) };
+  // goals help a young studio find its feet; they matter less to an established name
+  return { rep: Math.round(Math.max(0.2, 1 - s.company.reputation / 70) * 10) / 10, morale: 2, cash: Math.round(money(4_000, s.day) * (1 + s.company.reputation / 25)) };
 }
 
 /** Start of each quarter: lapse the old goals and set three new ones that fit the studio. */

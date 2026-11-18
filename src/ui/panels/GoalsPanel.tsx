@@ -55,7 +55,7 @@ export default function GoalsPanel() {
         <section className="mb-4 rounded-2xl border border-line p-3">
           <div className="flex items-baseline justify-between">
             <div className="text-xs font-semibold uppercase tracking-wide text-accent">This quarter</div>
-            <div className="text-[11px] text-ink3">Each: +{fmtMoney(objectiveReward(s).cash)}, rep +1, morale lift</div>
+            <div className="text-[11px] text-ink3">Each: +{fmtMoney(objectiveReward(s).cash)}, rep +{objectiveReward(s).rep}, morale lift</div>
           </div>
           <ul className="mt-1.5 space-y-1.5">
             {(s.objectives ?? []).map((o, i) => {

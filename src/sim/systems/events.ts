@@ -382,14 +382,14 @@ export const EVENT_DEFS: EventDef[] = [
       title: 'Best Places to Work',
       body: `${s.company.name} has been shortlisted as one of the industry’s best places to work. A magazine wants a photo shoot and interviews.`,
       options: [
-        { id: 'yes', label: 'Open the doors', preview: 'Reputation +4' },
+        { id: 'yes', label: 'Open the doors', preview: `Reputation +${(2.5 * (1 - s.company.reputation / 130)).toFixed(1)}` },
         { id: 'no', label: 'Keep our heads down', preview: 'Nothing changes' },
       ],
       ctx: {},
     }),
     resolve: ({ s }, _e, opt) => {
       if (opt !== 'yes') return;
-      addRep(s, 4, 'Best Places to Work');
+      addRep(s, 2.5 * (1 - s.company.reputation / 130), 'Best Places to Work');
       pushNews(s, { category: 'studio', headline: `${s.company.name} named one of the best places to work in games`, tone: 'good' });
     },
   },

@@ -438,7 +438,8 @@ function progressContract(c: Ctx, p: ContractProject): void {
     if (done) {
       earn(s, 'contracts', p.pay);
       c.out.push({ type: 'income', amount: p.pay, source: 'contract' });
-      addRep(s, 0.6, 'Delivered a contract');
+      // reliable contract work builds a small studio's name — it doesn't make a famous one
+      addRep(s, 0.6 * Math.max(0, 1 - s.company.reputation / 35), 'Delivered a contract');
       s.progress.stats.contractsDone += 1;
       pushNews(s, { category: 'studio', headline: `Contract delivered: ${p.title}`, body: `Paid in full.`, tone: 'good' });
     } else {

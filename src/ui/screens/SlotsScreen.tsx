@@ -149,7 +149,7 @@ export function SlotsScreen() {
       <main className="mx-auto max-w-5xl px-4 pb-16">
         <h1 className="font-display text-3xl font-bold">Your studios</h1>
         <p className="mt-1 text-sm text-ink2">{user.guest ? 'Guest saves live in this browser. Create an account to sync them to the cloud.' : 'Saves sync to the cloud and are kept on this device for offline play.'}</p>
-        <WhatsNew />
+        <WhatsNew newcomer={!!slots && slots.every((x) => !x.local && !x.cloud)} />
         {notice && (
           <div role="status" className="mt-4 rounded-xl bg-good/10 p-3 text-sm text-good">
             {notice}
@@ -377,8 +377,14 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
         className="mt-4 space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!o.companyName.trim()) return setErr('Name your studio.');
-          if (!o.founderName.trim()) return setErr('Who is the founder?');
+          if (!o.companyName.trim()) {
+            document.getElementById('nf-company')?.focus();
+            return setErr('Name your studio.');
+          }
+          if (!o.founderName.trim()) {
+            document.getElementById('nf-founder')?.focus();
+            return setErr('Who is the founder?');
+          }
           if (busy) return;
           setBusy(true);
           rememberFounder(o.founderName.trim().slice(0, 40));
@@ -388,14 +394,14 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Studio name">
             <div className="flex gap-1.5">
-              <input className={inputCls} value={o.companyName} maxLength={40} onChange={(e) => set('companyName', e.target.value)} placeholder="Garage Dreams Interactive" autoFocus />
+              <input id="nf-company" className={`${inputCls} ${err === 'Name your studio.' ? 'border-bad ring-1 ring-bad' : ''}`} aria-invalid={err === 'Name your studio.'} value={o.companyName} maxLength={40} onChange={(e) => set('companyName', e.target.value)} placeholder="Garage Dreams Interactive" autoFocus />
               <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line text-lg hover:bg-bg2" aria-label="Suggest a studio name" title="Suggest a name" onClick={() => set('companyName', studioName())}>
                 🎲
               </button>
             </div>
           </Field>
           <Field label="Founder (you)">
-            <input className={inputCls} value={o.founderName} maxLength={40} onChange={(e) => set('founderName', e.target.value)} placeholder="Your name" />
+            <input id="nf-founder" className={`${inputCls} ${err === 'Who is the founder?' ? 'border-bad ring-1 ring-bad' : ''}`} aria-invalid={err === 'Who is the founder?'} value={o.founderName} maxLength={40} onChange={(e) => set('founderName', e.target.value)} placeholder="Your name" />
           </Field>
         </div>
         <div>

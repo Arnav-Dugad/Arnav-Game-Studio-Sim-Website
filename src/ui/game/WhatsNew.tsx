@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21r';
+export const WHATS_NEW_VERSION = '2026-11-21s';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'play', title: 'Smoother play', body: 'Time picks up again once you’ve answered a popup, and stops when nothing is left in development. Popups never pile onto a phase gate and keep their distance. A design/tech balance gauge on every project (and at each gate) shows where you stand against the genre’s ideal and what to change. New hires join the game you’re making. Reputation now builds over years: contracts and goals help a young studio, but great games make a famous one.' },
   { icon: 'brush', title: 'Design your box art', body: 'Click a game’s cover in Develop → Projects to design it: twelve palettes, seven layouts and over fifty motifs, with a live preview. Your cover goes with the game everywhere — the release screen, your shelf and your Studio Card — and no longer changes on launch day.' },
   { icon: 'letters', title: 'Type-in listings', body: 'In the early ’80s, a hobbyist magazine may ask to print one of your small computer games as code for readers to type in. A small fee, some fans — and the kids who typed it in won’t forget. Plus: couriers bring collector’s edition samples to the team, and the Overview suggests a Collector’s Edition when fans would buy one.' },
   { icon: 'box', title: 'Collector’s Editions', body: 'From 1984, once a game is announced, order a limited run of deluxe boxes (Develop → the game → Collector’s Edition). Superfans pay 2.5× the price — how many buy depends on your fans, the series, the hype and the reviews. You pay for the run up front: sell out and it’s pure profit, overestimate and the boxes pile up.' },
@@ -117,10 +118,19 @@ function seen(): boolean {
   }
 }
 
-export function WhatsNew() {
+/** A brand-new player (no saves yet) isn't shown a changelog — everything is new to them. */
+export function WhatsNew({ newcomer = false }: { newcomer?: boolean }) {
   const [open, setOpen] = useState(() => !seen());
   const [all, setAll] = useState(false);
-  if (!open) return null;
+  useEffect(() => {
+    if (!newcomer || !open) return;
+    try {
+      localStorage.setItem(KEY, WHATS_NEW_VERSION);
+    } catch {
+      /* private mode */
+    }
+  }, [newcomer, open]);
+  if (!open || newcomer) return null;
   const close = () => {
     try {
       localStorage.setItem(KEY, WHATS_NEW_VERSION);

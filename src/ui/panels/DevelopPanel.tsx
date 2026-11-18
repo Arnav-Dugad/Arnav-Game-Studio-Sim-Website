@@ -1002,8 +1002,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
             <select className={inputCls} value={liveDealId} onChange={(e) => setDealId(e.target.value)}>
               <option value="">{selfPub ? 'Self-publish' : 'Self-publish (computers only)'}</option>
               {s.offers.deals.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {COMPANY_BY_ID[d.publisherId]?.name ?? d.publisherId}: {fmtMoney(dealAdvanceFor(d, size, s.day))} advance · {Math.round(d.royalty * 100)}% royalty · min {d.minScore}
+                <option key={d.id} value={d.id} title={`${fmtMoney(dealAdvanceFor(d, size, s.day))} advance · ${Math.round(d.royalty * 100)}% royalty · needs ${d.minScore}+`}>
+                  {COMPANY_BY_ID[d.publisherId]?.name ?? d.publisherId} · {fmtMoney(dealAdvanceFor(d, size, s.day))} · {Math.round(d.royalty * 100)}%
                 </option>
               ))}
             </select>
