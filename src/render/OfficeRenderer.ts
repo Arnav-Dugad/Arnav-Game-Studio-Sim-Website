@@ -104,6 +104,10 @@ interface Agent {
   talk: Talk | null;
   speech: Container | null;
   speechT: number;
+  /** What the current bubble says, its width and how far it's lifted to clear a neighbour's bubble. */
+  speechText?: string;
+  speechW?: number;
+  speechLift?: number;
   thinkT: number;
   medal?: Graphics;
   lanyard?: Graphics;
@@ -1126,7 +1130,7 @@ export class OfficeRenderer {
       a.speechT -= dt;
       if (a.speech) {
         a.speech.visible = a.speechT > 0;
-        a.speech.position.set(0, -58 - (a.mode === 'desk' ? 0 : 4));
+        a.speech.position.set(0, -58 - (a.mode === 'desk' ? 0 : 4) - (a.speechLift ?? 0));
       }
       if ((st.activity === 'chat' && a.bubbleT < -2 && Math.random() < dt * 2) || ((a.mode === 'station' || a.mode === 'meeting') && a.bubbleT < -4 && Math.random() < dt * 1.5)) {
         this.showBubble(a, a.mode === 'station' ? stationGlyph((a as Agent & { station?: string }).station) : a.mode === 'meeting' ? (Math.random() < 0.5 ? '💡' : '📋') : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!);
@@ -1645,6 +1649,17 @@ ${bits.join(' · ')}` : def.name;
   /** A speech bubble with words (sized to the text). */
   private say(a: Agent, text: string, secs: number): void {
     const w = Math.min(170, Math.max(34, 10 + text.length * 5.4));
+    // bubbles never pile up: a neighbour already saying the same thing is enough, and a different line goes above theirs
+    let lift = 0;
+    for (const o of this.agents.values()) {
+      if (o === a || !o.speech || o.speechT <= 0 || o.floor !== a.floor) continue;
+      if (Math.abs(o.x - a.x) > (w + (o.speechW ?? w)) / 2 + 4 || Math.abs(o.y - a.y) > 40) continue;
+      if (o.speechText === text) return;
+      lift = Math.max(lift, (o.speechLift ?? 0) + 22);
+    }
+    a.speechText = text;
+    a.speechW = w;
+    a.speechLift = lift;
     if (!a.speech) {
       const c = new Container();
       c.addChild(new Graphics(), new Text({ text: '', style: { fontFamily: 'Inter, sans-serif', fontSize: 9.5, fontWeight: '600', fill: 0x2a2622 } }));

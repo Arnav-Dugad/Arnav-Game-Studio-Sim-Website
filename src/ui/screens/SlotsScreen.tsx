@@ -14,6 +14,7 @@ import { Button, Field, Modal, Pill, Segmented, cx, inputCls } from '../componen
 import { Icon } from '../icons';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useGame } from '../store';
+import { COLOR_NAMES } from '../game/format';
 import { navigate } from '../router';
 import { useSettings } from '../settings';
 import { sound } from '../sound';
@@ -413,7 +414,8 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
                 type="button"
                 role="radio"
                 aria-checked={o.color === c}
-                aria-label={c}
+                aria-label={COLOR_NAMES[c] ?? c}
+                title={COLOR_NAMES[c]}
                 onClick={() => set('color', c)}
                 className={cx('size-8 rounded-full ring-offset-2 ring-offset-[var(--panel)] transition', o.color === c && 'ring-2 ring-ink')}
                 style={{ background: c }}

@@ -45,8 +45,8 @@ export function CultureTab() {
                   {held && <span className="ml-auto rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-bold text-gold">Current</span>}
                 </div>
                 <div className="mt-0.5 text-xs italic text-ink3">“{c.motto}”</div>
-                <div className="mt-1.5 text-xs text-good">+ {c.pros}</div>
-                <div className="text-xs text-bad">− {c.cons}</div>
+                <div className="mt-1.5 text-xs text-good">✓ {c.pros}</div>
+                <div className="text-xs text-bad">✗ {c.cons}</div>
               </button>
             );
           })}

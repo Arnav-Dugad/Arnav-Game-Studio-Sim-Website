@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { OFFICE_TIERS } from '@/data/facilities';
 import { weatherGlyph } from '@/render/weather';
 import { formatDate, fromDay } from '@/sim/calendar';
+import { CAT_LABEL, fmtSharePrice } from './format';
+import type { LedgerCat } from '@/sim/types';
 import { BD } from '@/sim/breakdown';
 import { fmtMoney, fmtUnits } from '@/sim/util';
 import { monthlyBurn, trailingRevenue } from '@/sim/systems/finance';
@@ -21,10 +23,12 @@ const SPEEDS: { s: Speed; icon: 'pause' | 'play' | 'fast' | 'fastest'; label: st
 
 function lastMonthBreakdown(s: NonNullable<ReturnType<typeof useGame.getState>['s']>) {
   const m = s.finance.ledger[s.finance.ledger.length - 2] ?? s.finance.ledger[s.finance.ledger.length - 1];
-  const bd = new BD('Start of month', 0);
+  // the month's flows, in and out (the result is the net change in cash, not a balance)
+  const bd = new BD('Money in and out', 0);
   if (!m) return bd.done();
-  for (const [k, v] of Object.entries(m.income)) if (v) bd.add(`+ ${k.replace('_', ' ')}`, v);
-  for (const [k, v] of Object.entries(m.expense)) if (v) bd.add(`− ${k.replace('_', ' ')}`, -v);
+  bd.parts = [];
+  for (const [k, v] of Object.entries(m.income)) if (v) bd.add(CAT_LABEL[k as LedgerCat] ?? k, v);
+  for (const [k, v] of Object.entries(m.expense)) if (v) bd.add(CAT_LABEL[k as LedgerCat] ?? k, -v);
   return bd.done();
 }
 
@@ -62,7 +66,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto, onCinema }: {
       </div>
 
       <div className="glass pointer-events-auto flex items-center divide-x divide-line rounded-2xl" data-tutorial="hud-cash">
-        <Tip content={<BreakdownList bd={lastMonthBreakdown(s)} format={(v) => fmtMoney(v)} title="Last month's cash flow" />} side="bottom">
+        <Tip content={<BreakdownList bd={lastMonthBreakdown(s)} format={(v) => fmtMoney(v)} title="Last month's cash flow" result="Net change" />} side="bottom">
           <div className="flex items-center gap-2 px-3 py-1.5">
             <Icon name="cash" size={16} className="text-gold" />
             <div>
@@ -87,7 +91,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto, onCinema }: {
         {stock && (
           <button type="button" onClick={() => openPanel('company', 'stock')} className="flex items-center gap-1.5 px-3 py-2">
             <Icon name="chart" size={16} className="text-tech" />
-            <span className="num text-sm font-semibold">${stock.price.toFixed(2)}</span>
+            <span className="num text-sm font-semibold">{fmtSharePrice(stock.price)}</span>
           </button>
         )}
       </div>

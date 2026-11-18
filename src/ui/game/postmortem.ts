@@ -6,7 +6,7 @@
 import { GENRE_BY_ID } from '@/data/genres';
 import { AUDIENCES, type Audience } from '@/data/types';
 import { comboFit } from '@/sim/systems/dev';
-import { SIZE_LABEL } from './lib';
+import { SIZE_LABEL, audienceWords } from './lib';
 import type { Release } from '@/sim/types';
 
 export interface PMPoint {
@@ -75,7 +75,7 @@ export function postMortem(r: Release): PostMortem {
       // only a mistake if another audience would have suited this genre and topic better
       const fit = (a: Audience) => Math.min(1.08, Math.max(0.7, 0.85 + (comboFit(r.concept.genre, r.concept.topic, a).aud - 1) * 0.6));
       const best = AUDIENCES.reduce((b, a) => (fit(a) > fit(b) ? a : b), r.concept.audience);
-      if (fit(best) > part.value + 0.02) push(false, { text: 'It was pitched at the wrong audience', lesson: `${GENRE_BY_ID[r.concept.genre]?.name ?? 'This genre'} with this topic suits ${best === 'everyone' ? 'everyone' : `${best}s`} better — the planner stars the best audience`, weight: W(part.value / fit(best)) });
+      if (fit(best) > part.value + 0.02) push(false, { text: 'It was pitched at the wrong audience', lesson: `${GENRE_BY_ID[r.concept.genre]?.name ?? 'This genre'} with this topic suits ${audienceWords(best)} better — the planner stars the best audience`, weight: W(part.value / fit(best)) });
       continue;
     }
     if (part.label.startsWith('Production values')) {

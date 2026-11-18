@@ -146,7 +146,14 @@ function progressGame(c: Ctx, p: GameProject): void {
   // Calendar time always advances (deadlines are real), output only on workdays.
   // Production costs (assets, outsourcing, QA vendors) accrue daily.
   const prodTier = PRODUCTION[p.concept.production ?? 'standard'];
-  const dc = sizeDailyCost(p.concept.size, s.day) * prodTier.base + productionExtraDaily(p.concept.size, p.concept.production, s.day);
+  // the outside budget is a fixed sum: delays and extra polish don't keep paying the composer
+  let extra = productionExtraDaily(p.concept.size, p.concept.production, s.day);
+  if (extra > 0) {
+    const cap = productionExtraDaily(p.concept.size, p.concept.production, p.startDay) * (p.phaseDays[0] + p.phaseDays[1] + p.phaseDays[2]);
+    extra = Math.max(0, Math.min(extra, cap - (p.prodSpent ?? 0)));
+    p.prodSpent = (p.prodSpent ?? 0) + extra;
+  }
+  const dc = sizeDailyCost(p.concept.size, s.day) * prodTier.base + extra;
   if (dc > 0) {
     spend(s, 'other_expense', dc);
     p.spent += dc;
@@ -339,7 +346,7 @@ export function gameQuality(s: GameState, p: GameProject, project = false): Brea
   // design/tech ratio
   // the mix so far, moved most of the way toward what the phases still to come will add
   const ratio = total > 0 ? (project ? EST_MIX * projectedDesign(s, p, total) + (1 - EST_MIX) * p.design * scale : p.design * scale) / total : g.designRatio;
-  bd.mul(`Design/tech balance (${Math.round(ratio * 100)}% design, ideal ${Math.round(g.designRatio * 100)}%)`, 1 - Math.min(0.35, Math.abs(ratio - g.designRatio) * 1.2));
+  bd.mul(`Design/tech balance (${project ? '~' : ''}${Math.round(ratio * 100)}% design${project ? ' at launch' : ''}, ideal ${Math.round(g.designRatio * 100)}%)`, 1 - Math.min(0.35, Math.abs(ratio - g.designRatio) * 1.2));
   if (rndQuality(s) > 1) bd.mul('Engine R&D', rndQuality(s));
   // focus alignment
   const al = focusAlignment(p);

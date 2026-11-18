@@ -207,7 +207,7 @@ function World() {
                     <ConfirmButton
                       size="sm"
                       variant="ghost"
-                      ask="Reopening costs the full fee again."
+                      ask={`Close the ${r.name} studio? Reopening costs the full fee again.`}
                       onConfirm={() => useGame.getState().actOrToast({ type: 'closeBranch', region: r.id }, `Closed the ${r.name} studio`)}
                     >
                       Close

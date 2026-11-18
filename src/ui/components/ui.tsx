@@ -54,6 +54,7 @@ export function IconButton({ icon, label, className, active, ...rest }: ButtonHT
     <button
       type="button"
       aria-label={label}
+      aria-pressed={active}
       title={label}
       className={cx(
         'inline-grid place-items-center size-9 rounded-xl transition active:scale-95',
@@ -103,7 +104,7 @@ export function BreakdownList({ bd, format = (v: number) => v.toFixed(2), title,
         {bd.parts.map((p, i) => (
           <li key={i} className="flex items-center justify-between gap-4">
             <span className="text-ink2">{p.label}</span>
-            <span className={cx('num font-semibold', p.kind === 'base' ? 'text-ink' : (p.kind === 'mul' ? p.value >= 1 : p.value >= 0) ? 'text-good' : 'text-bad')}>
+            <span className={cx('num font-semibold', p.kind === 'base' || (p.kind === 'mul' && Math.abs(p.value - 1) < 0.005) ? 'text-ink' : (p.kind === 'mul' ? p.value >= 1 : p.value >= 0) ? 'text-good' : 'text-bad')}>
               {p.kind === 'mul' ? `×${p.value.toFixed(2)}` : p.kind === 'add' ? `${p.value >= 0 ? '+' : ''}${format(p.value)}` : format(p.value)}
             </span>
           </li>

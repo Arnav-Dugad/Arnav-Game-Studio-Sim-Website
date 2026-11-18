@@ -57,7 +57,7 @@ export function BalanceBar({ p, className }: { p: GameProject; className?: strin
     <div className={className}>
       <div className="flex items-center justify-between text-[11px]">
         <span className="text-ink3">
-          Design {Math.round(share * 100)}% · Tech {100 - Math.round(share * 100)}%
+          So far: design {Math.round(share * 100)}% · tech {100 - Math.round(share * 100)}%
         </span>
         <span className="text-ink3">ideal ≈ {Math.round(ideal * 100)}% design</span>
       </div>

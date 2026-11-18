@@ -2,7 +2,7 @@
 import { DESIGN_AREAS, SPEC_AREA_BONUS, areaSkill, benchmarkPoints, teamSynergy } from '@/sim/systems/dev';
 import { clamp } from '@/sim/breakdown';
 import { rndSpeed } from '@/sim/systems/rnd';
-import { productivity } from '@/sim/systems/staff';
+import { isAway, productivity } from '@/sim/systems/staff';
 import { TITLE_NOUN } from '@/data/names';
 import { genrePopularity, topicPopularity } from '@/sim/systems/market';
 import { GENRES, GENRE_BY_ID } from '@/data/genres';
@@ -145,6 +145,18 @@ export function tunedFocus(genre: GenreId, team: Staff[]): [Focus3, Focus3, Focu
   return best;
 }
 
+/** An audience in running text: "for teens", "for mature players", "for everyone". */
+export function audienceWords(a: string): string {
+  return ({ kids: 'kids', everyone: 'everyone', teen: 'teens', mature: 'mature players' } as Record<string, string>)[a] ?? a;
+}
+
+/** People with nothing to do (not away). With nothing underway the founder counts too; otherwise they're running the studio. */
+export function idleCount(s: GameState): number {
+  const all = Object.values(s.staff);
+  const busy = Object.keys(s.projects).length > 0;
+  return all.filter((x) => x.assignment.kind === 'idle' && !isAway(x) && (x.role !== 'founder' || all.length === 1 || !busy)).length;
+}
+
 /** How a genre's popularity moved over the last ~6 months (e.g. +0.12 = 12% more popular). 0 without history. */
 export function genreMomentum(s: GameState, genre: GenreId): number {
   const h = s.market.trendHistory;
@@ -266,6 +278,9 @@ export function suggestConcept(s: GameState, rand: () => number = Math.random, p
           const shipped = Object.values(s.releases).some((r) => r.concept.genre === g.id && r.concept.topic === t.id && r.score >= 70);
           why.push(shipped ? 'you’ve seen this pairing work' : s.progress.researchedCombos?.includes(`${g.id}|${t.id}`) ? 'your research says it fits' : `${t.name} suits ${g.name.toLowerCase()} games`);
         }
+      } else {
+        // not tried yet: the team's instinct steers away from pairings that won't gel (without spoiling the discovery)
+        score *= [0.35, 0.85, 1.1, 1.2][comboFitValue(g.id, t.id)] ?? 1;
       }
       if (recent.some((r) => r.concept.genre === g.id && r.concept.topic === t.id)) score *= 0.5;
       else if (!Object.values(s.releases).some((r) => r.concept.genre === g.id && r.concept.topic === t.id) && s.releaseOrder.length) {

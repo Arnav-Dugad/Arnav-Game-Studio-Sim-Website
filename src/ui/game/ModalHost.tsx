@@ -45,6 +45,7 @@ import { LineChart } from '../charts';
 import { Icon, type IconName } from '../icons';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { useGame } from '../store';
+import { COLOR_NAMES } from './format';
 import { BalanceBar, FocusSliders } from './FocusEditor';
 import { GuideModal } from './Guide';
 import { RivalModal } from './RivalModal';
@@ -287,7 +288,7 @@ function IdentityModal({ onClose }: { onClose: () => void }) {
       <Section title="Colour" className="mt-4">
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Studio colour">
           {BRAND_COLORS.map((c) => (
-            <button key={c} type="button" role="radio" aria-checked={color === c} aria-label={c} onClick={() => setColor(c)} className={cx('size-8 rounded-full ring-offset-2 ring-offset-[var(--panel)] transition', color === c && 'ring-2 ring-ink')} style={{ background: c }} />
+            <button key={c} type="button" role="radio" aria-checked={color === c} aria-label={COLOR_NAMES[c] ?? c} title={COLOR_NAMES[c]} onClick={() => setColor(c)} className={cx('size-8 rounded-full ring-offset-2 ring-offset-[var(--panel)] transition', color === c && 'ring-2 ring-ink')} style={{ background: c }} />
           ))}
         </div>
       </Section>

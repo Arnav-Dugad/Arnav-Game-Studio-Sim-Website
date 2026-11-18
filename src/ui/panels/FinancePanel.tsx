@@ -6,42 +6,8 @@ import type { LedgerCat } from '@/sim/types';
 import { BarChart, LineChart, StackedArea } from '../charts';
 import { Button, Field, Section, Segmented, Stat, inputCls } from '../components/ui';
 import { useGame } from '../store';
+import { CAT_LABEL } from '../game/format';
 
-const CAT_LABEL: Record<LedgerCat, string> = {
-  sales: 'Game sales',
-  contracts: 'Contracts',
-  licensing: 'Engine licensing',
-  live: 'Live service',
-  merch: 'Merchandise',
-  subsidiaries: 'Subsidiaries',
-  advances: 'Publisher advances',
-  interest_income: 'Interest',
-  asset_sales: 'Asset sales',
-  other_income: 'Other income',
-  hardware: 'Hardware sales',
-  platform_fees: 'Platform licence fees',
-  subscriptions: 'Subscription pass',
-  esports: 'Esports leagues',
-  publishing: 'Published indie games',
-  advances_paid: 'Advances to indies',
-  hardware_rd: 'Hardware R&D',
-  manufacturing: 'Manufacturing',
-  salaries: 'Salaries',
-  rent: 'Rent',
-  upkeep: 'Upkeep',
-  servers: 'Servers',
-  devkits: 'Dev kits & licences',
-  marketing: 'Marketing',
-  research: 'Research',
-  training: 'Training',
-  loan_interest: 'Loan interest',
-  taxes: 'Taxes',
-  recruiting: 'Recruiting',
-  office: 'Office',
-  royalties: 'Royalties paid',
-  acquisitions: 'Acquisitions',
-  other_expense: 'Production',
-};
 
 export default function FinancePanel() {
   const s = useGame((g) => g.s)!;

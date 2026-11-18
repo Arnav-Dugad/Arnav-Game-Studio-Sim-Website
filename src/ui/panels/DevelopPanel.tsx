@@ -40,7 +40,7 @@ import { BalanceBar, FocusSliders } from '../game/FocusEditor';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
 import { rndSales } from '@/sim/systems/rnd';
-import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, designShare, idealFocus, knowsCombo, suggestConcept, suggestName, teamEffortEstimate, tunedFocus } from '../game/lib';
+import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, audienceWords, designShare, idealFocus, knowsCombo, suggestConcept, suggestName, teamEffortEstimate, tunedFocus } from '../game/lib';
 import { sound } from '../sound';
 
 export default function DevelopPanel() {
@@ -834,7 +834,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
 
       <Section title="2 · Genre">
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-          {[...genres].sort((a, b) => Number(b.ok) - Number(a.ok)).map(({ g, ok, why }) => (
+          {[...genres].sort((a, b) => Number(b.ok) - Number(a.ok) || (a.ok ? 0 : a.g.year - b.g.year)).map(({ g, ok, why }) => (
             <button
               key={g.id}
               type="button"
@@ -909,7 +909,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
       <Section title="4 · Audience & size">
         {audFit(bestAudience) > audFit(audience) + 0.02 ? (
           <p className="mb-2 text-xs text-ink3">
-            {GENRE_BY_ID[genre].name} × {TOPIC_BY_ID[topic]?.name ?? topic} works best for <b className="text-ink2">{bestAudience === 'everyone' ? 'everyone' : `${bestAudience}s`}</b> ★ — your pick scores {Math.max(1, Math.round((1 - audFit(audience) / audFit(bestAudience)) * 100))}% lower on audience fit.
+            {GENRE_BY_ID[genre].name} × {TOPIC_BY_ID[topic]?.name ?? topic} works best for <b className="text-ink2">{audienceWords(bestAudience)}</b> ★ — your pick scores {Math.max(1, Math.round((1 - audFit(audience) / audFit(bestAudience)) * 100))}% lower on audience fit.
           </p>
         ) : audFit(audience) < 0.845 ? (
           <p className="mb-2 text-xs text-ink3">
@@ -975,7 +975,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
             options={PRODUCTION_TIERS.map((tier) => {
               const extra = productionExtraDaily(size, tier, s.day) * cost.days;
               const saved = tier === 'lean' ? sizeDailyCost(size, s.day) * 0.4 * cost.days : 0;
-              return { value: tier, label: `${PRODUCTION[tier].name}${extra ? ` · +${fmtMoney(extra)}` : saved >= 500 ? ` · −${fmtMoney(saved)}` : ''}` };
+              const nothingToSave = tier === 'lean' && saved < 500;
+              return { value: tier, label: `${PRODUCTION[tier].name}${extra ? ` · +${fmtMoney(extra)}` : saved >= 500 ? ` · −${fmtMoney(saved)}` : ''}`, disabled: nothingToSave, title: nothingToSave ? 'A game this size has no outside costs to cut' : undefined };
             })}
           />
           <span className="text-ink3">
@@ -1078,12 +1079,12 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 <div className="text-right">
                   {launchTitleMul(s, p, s.day + cost.days) > 1.05 && <Pill tone="gold">Launch window</Pill>}
                   {fitG >= 1.1 && (
-                    <span title={`Its players love ${GENRE_BY_ID[genre].name.toLowerCase()} games for ${audience === 'everyone' ? 'everyone' : `${audience}s`}`}>
+                    <span title={`Its players love ${GENRE_BY_ID[genre].name.toLowerCase()} games for ${audienceWords(audience)}`}>
                       <Pill tone="good">Great fit</Pill>
                     </span>
                   )}
                   {fitG < 0.92 && (
-                    <span title={`Its players aren’t into ${GENRE_BY_ID[genre].name.toLowerCase()} games for ${audience === 'everyone' ? 'everyone' : `${audience}s`} — the game scores lower here`}>
+                    <span title={`Its players aren’t into ${GENRE_BY_ID[genre].name.toLowerCase()} games for ${audienceWords(audience)} — the game scores lower here`}>
                       <Pill tone="bad">Weak fit</Pill>
                     </span>
                   )}

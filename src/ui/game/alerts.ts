@@ -22,6 +22,7 @@ import { MEDIA_KINDS, mediaBlocked } from '@/sim/systems/media';
 import { talkBlocked } from '@/sim/systems/talks';
 import { INTERN_YEAR } from '@/sim/systems/interns';
 import { isAway } from '@/sim/systems/staff';
+import { idleCount } from './lib';
 import type { GameProject, GameState, Project } from '@/sim/types';
 import type { IconName } from '../icons';
 import { useGame, type PanelId } from '../store';
@@ -73,7 +74,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   // People
   const risk = staff.filter(atRisk).length;
   if (risk) out.push({ id: 'risk', tone: risk >= 5 ? 'bad' : 'warn', icon: 'heart', text: `${risk} ${risk === 1 ? 'person needs' : 'people need'} attention (burnout, low morale or exhausted).`, action: { label: 'See who', run: () => open('staff', 'risk') } });
-  const idle = staff.filter((x) => x.assignment.kind === 'idle' && !isAway(x) && x.role !== 'founder').length;
+  const idle = idleCount(s);
   if (idle) out.push({ id: 'idle', tone: idle >= 5 ? 'warn' : 'info', icon: 'hourglass', text: `${idle} ${idle === 1 ? 'person is' : 'people are'} idle — paid, but not working.`, action: { label: 'Assign', run: () => open('staff', 'idle') } });
   if (!projects.some((p) => p.kind === 'game' || p.kind === 'contract') && staff.some((x) => x.assignment.kind === 'idle' && !isAway(x)))
     out.push({ id: 'nothing', tone: 'info', icon: 'develop', text: 'Nothing in development — the team is waiting for its next game.', action: { label: 'New game', run: () => open('develop', 'new') } });

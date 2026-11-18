@@ -13,6 +13,7 @@ import { LineChart } from '../charts';
 import { Button, ConfirmButton, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
 import { CompanyBadge } from '../art/CompanyBadge';
 import { useGame } from '../store';
+import { fmtSharePrice } from '../game/format';
 import { Icon } from '../icons';
 import { LABEL_SHARE, LABEL_TIERS, dealAdvance, labelBlocked, signableIndies, talentStars, type DealTier } from '@/sim/systems/publishing';
 import { SHOWCASE_MIN_REP, SHOWCASE_MIN_YEAR, showcaseBlocked, showcaseCost, showcaseHype, showcaseName } from '@/sim/systems/showcase';
@@ -308,12 +309,12 @@ function Stock() {
   return (
     <div>
       <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="Share price" value={`$${st.price.toFixed(2)}`} tone={st.price >= st.ipoPrice ? 'good' : 'bad'} sub={`IPO $${st.ipoPrice.toFixed(2)}`} />
+        <Stat label="Share price" value={fmtSharePrice(st.price)} tone={st.price >= st.ipoPrice ? 'good' : 'bad'} sub={`IPO ${fmtSharePrice(st.ipoPrice)}`} />
         <Stat label="Market cap" value={fmtMoney(st.price * st.shares)} />
         <Stat label="You own" value={`${Math.round(own * 100)}%`} tone={own < 0.5 ? 'bad' : undefined} />
         <Stat label="Board mood" value={`${Math.round(st.boardMood)}%`} tone={st.boardMood < 35 ? 'bad' : undefined} />
       </div>
-      <LineChart ariaLabel="Share price" height={170} area series={[{ name: 'Share price', points: st.history.map((y, i) => ({ x: i, y })) }]} yFormat={(v) => `$${v.toFixed(2)}`} xFormat={(i) => `wk ${i}`} />
+      <LineChart ariaLabel="Share price" height={170} area series={[{ name: 'Share price', points: st.history.map((y, i) => ({ x: i, y })) }]} yFormat={fmtSharePrice} xFormat={(i) => `wk ${i}`} />
       <p className="mt-2 text-xs text-ink3">Quarterly profit expectation: {fmtMoney(st.expectation)}. Beat it to lift the price and keep the board happy.</p>
       <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2 text-xs">
         <span>

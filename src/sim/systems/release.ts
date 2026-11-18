@@ -52,6 +52,7 @@ export function reputationReach(rep: number): number {
 // ── Blurbs ───────────────────────────────────────────────────────────────────
 
 export const PRAISE: Record<string, string[]> = {
+  production: ['Lavishly produced — you can see where the budget went.', 'A glossy, beautifully produced package.', 'Production values to rival anything on the shelf.'],
   effort: ['Brimming with content and craft.', 'You can feel the hours poured into every corner.', 'An astonishing amount of game for the price.', 'Generous, confident and packed with ideas.'],
   focus: ['Every system pulls in the same direction.', 'It knows exactly what kind of game it wants to be.', 'The core loop is tight and endlessly replayable.', 'Smart priorities: the team put effort exactly where it counts.'],
   combo: ['A premise and genre made for each other.', 'The setting and mechanics click instantly.', 'The theme gives every mechanic a reason to exist.'],
@@ -65,6 +66,7 @@ export const PRAISE: Record<string, string[]> = {
   audience: ['Knows exactly who it’s for.', 'Pitched perfectly at its audience.'],
 };
 export const CRITIQUE: Record<string, string[]> = {
+  production: ['The shoestring budget shows.', 'Cheap-looking art and thin sound hold it back.', 'It looks and sounds like it was made on a dime.'],
   effort: ['Feels thin and rushed.', 'There just isn’t much here.', 'Over before it gets going.'],
   focus: ['Pulls in too many directions at once.', 'The priorities feel muddled.', 'Strong parts, wrong emphasis.'],
   combo: ['The theme and the mechanics never gel.', 'An odd pairing that never quite works.'],
@@ -79,6 +81,7 @@ export const CRITIQUE: Record<string, string[]> = {
 };
 
 function partKey(label: string): string {
+  if (label.startsWith('Production values')) return 'production';
   if (label.startsWith('Development')) return 'effort';
   if (label.startsWith('Focus')) return 'focus';
   if (label.startsWith('Audience')) return 'audience';

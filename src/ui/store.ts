@@ -144,7 +144,7 @@ export const useGame = create<GameStore>((set, get) => ({
       for (const e of s.pendingEvents) modals.push({ kind: 'event', uid: e.uid });
       for (const p of Object.values(s.projects)) if (p.kind === 'game' && p.awaitingGate) modals.push({ kind: 'gate', projectId: p.id });
     }
-    set({ s, slotId, uid, v: get().v + 1, speed: 0, autoPaused: false, modals, toasts: [], pops: [], panel: null, build: null, floor: 0, lastSavedDay: s.day });
+    set({ s, slotId, uid, v: get().v + 1, speed: 0, autoPaused: false, modals, toasts: [], pops: [], panel: null, build: null, heat: 'none', floor: 0, lastSavedDay: s.day });
   },
   unload: () => set({ s: null, slotId: null, uid: null, speed: 0, modals: [], toasts: [], pops: [], panel: null, build: null }),
   actOrToast: (a, ok) => {
@@ -199,7 +199,7 @@ export const useGame = create<GameStore>((set, get) => ({
     setTimeout(() => get().dismissToast(id), 5200);
   },
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
-  setBuild: (b) => set({ build: b }),
+  setBuild: (b) => set(b ? { build: b } : { build: null, heat: 'none' }), // overlays belong to build mode: leaving it clears them
   setHeat: (h) => set({ heat: h }),
   setFloor: (f) => set({ floor: f }),
   selectStaff: (id) => set({ selectedStaff: id }),

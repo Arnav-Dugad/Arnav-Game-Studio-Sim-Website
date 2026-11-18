@@ -46,7 +46,7 @@ import { clamp } from './breakdown';
 import { fromDay } from './calendar';
 import type { Ctx, SimEvent } from './ctx';
 import { Rng } from './rng';
-import { benchmarkPoints, engineBuildPoints, engineTechFor, gameQuality, phaseLength, qualityToScore, workShare } from './systems/dev';
+import { benchmarkPoints, engineBuildPoints, engineTechFor, gameQuality, phaseLength, qualityToScore, sizeDailyCost, workShare } from './systems/dev';
 import { resolveEvent } from './systems/events';
 import { hostShowcase, showcaseBlocked } from './systems/showcase';
 import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } from './systems/publishing';
@@ -470,7 +470,8 @@ function apply(c: Ctx, a: Action): string | null {
           ...(feats.length ? { features: feats } : {}),
           ...((g.priceTier === 'budget' || g.priceTier === 'premium') && priceTierAllowed({ monetization: g.monetization, expansionOf: base?.id, deal: g.dealId ? ({} as never) : undefined }) ? { priceTier: g.priceTier } : {}),
           ...(locs.length ? { localized: locs } : {}),
-          ...(validProduction(g.production) && g.production !== 'standard' ? { production: g.production } : {}),
+          // lean only where there's something to save (a small game has no outside costs to cut)
+          ...(validProduction(g.production) && g.production !== 'standard' && (g.production !== 'lean' || sizeDailyCost(g.size, s.day) > 0) ? { production: g.production } : {}),
           ...((s.company.branches ?? []).length ? { branchLocalized: [...(s.company.branches ?? [])] } : {}),
           deal: deal ? { publisherId: deal.publisherId, advance: dealAdvanceFor(deal, g.size, s.day), royalty: deal.royalty, minScore: deal.minScore, deadlineDay: deal.deadlineDay, reach: deal.reach, marketingBudget: deal.marketingBudget } : undefined,
         },

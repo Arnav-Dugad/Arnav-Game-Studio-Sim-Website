@@ -340,6 +340,8 @@ export interface GameProject {
   hype: number;
   campaigns: Campaign[];
   spent: number;
+  /** Outside production budget paid so far (systems/production.ts), capped at the plan. */
+  prodSpent?: number;
   novelty: number; // visionary etc. bonus accumulator
   /** Waiting for player input at a phase gate. */
   awaitingGate: boolean;

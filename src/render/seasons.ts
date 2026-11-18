@@ -233,12 +233,13 @@ export class SeasonDecor {
       // a sagging string along the back wall: bulbs for the holidays, bunting for parties
       const wire = new Graphics();
       const y0 = -1.32 * T + 10;
-      const seg = T * 1.5;
-      for (let x = 0; x < W; x += seg) wire.moveTo(x, y0).quadraticCurveTo(x + seg / 2, y0 + 9, x + seg, y0);
+      // whole sags that end exactly at the far wall
+      const seg = W / Math.max(1, Math.round(W / (T * 1.5)));
+      for (let x = 0; x < W - 0.5; x += seg) wire.moveTo(x, y0).quadraticCurveTo(x + seg / 2, y0 + 9, x + seg, y0);
       wire.stroke({ width: 1.2, color: 0x3a3a3a, alpha: 0.7 });
       this.root.addChild(wire);
       let i = 0;
-      for (let x = 0; x < W; x += seg)
+      for (let x = 0; x < W - 0.5; x += seg)
         for (const u of [0.2, 0.5, 0.8]) {
           const px = x + seg * u;
           const py = y0 + 2 * (1 - u) * u * 9;

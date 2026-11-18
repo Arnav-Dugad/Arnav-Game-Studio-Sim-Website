@@ -163,7 +163,7 @@ function Tree() {
       <RndSection />
       <Segmented ariaLabel="Research branch" value={branch} onChange={setBranch} className="mb-2" options={BRANCHES.map((b) => ({ value: b.id, label: b.label }))} />
       <ol className="space-y-1.5">
-        {RESEARCH.filter((r) => r.branch === branch).map((r) => {
+        {RESEARCH.filter((r) => r.branch === branch).sort((a, b) => a.year - b.year).map((r) => {
           const done = s.research.done.includes(r.id);
           const av = researchAvailable(s, r);
           const isActive = s.research.active === r.id;

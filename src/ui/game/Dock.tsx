@@ -6,7 +6,7 @@ import { qualityToScore, devProgress } from '@/sim/systems/dev';
 import { Icon } from '../icons';
 import { cx } from '../components/ui';
 import { useGame } from '../store';
-import { PHASE_NAMES } from './lib';
+import { PHASE_NAMES, idleCount } from './lib';
 import { tierDef } from '@/sim/systems/office';
 
 export function ProjectDock() {
@@ -18,7 +18,7 @@ export function ProjectDock() {
   if (!s || panel || build) return null;
   const projects = Object.values(s.projects);
   const research = s.research.active;
-  const idle = Object.values(s.staff).filter((x) => x.assignment.kind === 'idle' && x.sickDays <= 0 && !x.vacationDays && (x.role !== 'founder' || Object.keys(s.staff).length === 1 || !projects.length)).length; // with nothing underway, the founder is idle too
+  const idle = idleCount(s); // with nothing underway, the founder is idle too
   const nudge = !projects.length && idle > 0 && s.status === 'running';
   // In a busy studio, point at idle people (they cost salary and do nothing).
   const idleNudge = projects.length > 0 && idle >= 3 && s.status === 'running';

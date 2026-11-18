@@ -201,7 +201,7 @@ export function AuthScreen({ mode }: { mode: Mode }) {
             </div>
           ))}
         </div>
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-10 text-white">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent p-10 pt-28 text-white">
           <p className="font-display text-2xl font-semibold">“Every great studio starts with one desk and a terrible coffee machine.”</p>
           <p className="mt-2 text-sm opacity-70">— Your future staff, probably</p>
         </div>

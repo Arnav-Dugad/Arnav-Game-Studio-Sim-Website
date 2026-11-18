@@ -68,7 +68,7 @@ export function BuildBar() {
                 size="sm"
                 icon="layers"
                 title="Duplicate this floor's layout onto the next floor (items that don't fit are skipped)"
-                ask={`Up to ${fmtMoney(copyFloorCost(s, floor))} (what doesn't fit is skipped, not charged).`}
+                ask={`Copy F${floor + 1} onto F${((floor + 1) % t.floors) + 1} for up to ${fmtMoney(copyFloorCost(s, floor))}?`}
                 onConfirm={() => g.actOrToast({ type: 'copyFloor', from: floor, to: (floor + 1) % t.floors })}
               >
                 Copy floor → F{((floor + 1) % t.floors) + 1}
