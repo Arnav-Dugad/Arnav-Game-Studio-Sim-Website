@@ -264,7 +264,7 @@ export function Modal({
         aria-modal="true"
         aria-label={labelledBy ? undefined : title}
         aria-labelledby={labelledBy}
-        className={cx('glass relative max-h-[90vh] w-full overflow-y-auto rounded-2xl p-5 scroll-thin animate-pop', wide ? 'max-w-3xl' : 'max-w-lg')}
+        className={cx('glass relative max-h-[90vh] w-full overflow-y-auto scroll-pb-20 rounded-2xl p-5 scroll-thin animate-pop', wide ? 'max-w-3xl' : 'max-w-lg')}
       >
         {dismissable && onClose && (
           <button type="button" aria-label="Close" className="absolute right-3 top-3 grid size-8 place-items-center rounded-lg text-ink3 hover:bg-bg2 hover:text-ink" onClick={onClose}>

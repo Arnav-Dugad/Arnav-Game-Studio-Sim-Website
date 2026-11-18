@@ -3,6 +3,7 @@ import { createGame } from '../../src/sim/create';
 import { dispatch } from '../../src/sim/actions';
 import { advance } from '../../src/sim/advance';
 import { toDay } from '../../src/sim/calendar';
+import { RESEARCH } from '../../src/data/research';
 import { valuation } from '../../src/sim/systems/finance';
 import { realRepText, refund, repGain } from '../../src/sim/util';
 import { marketSalary } from '../../src/sim/systems/staff';
@@ -161,5 +162,45 @@ describe('second audit round', () => {
     advance(s, 3);
     expect(s.research.queue).not.toContain('sys_dialogue');
     expect(s.company.cash).toBeGreaterThan(cash);
+  });
+});
+
+describe('regression review fixes', () => {
+  it('a queue whose items share an ancestor keeps every item', () => {
+    const s = studio(1980);
+    s.day = toDay(2000, 1, 1);
+    const chain = ['gfx_3d_1', 'gfx_3d_2', 'sys_physics', 'sys_open_world'];
+    s.research.done = RESEARCH.map((r) => r.id).filter((x) => !chain.includes(x)); // everything else already known
+    s.research.active = null;
+    s.research.queue = ['gfx_3d_1', 'gfx_3d_2', 'sys_physics', 'sys_open_world'];
+    advance(s, 1);
+    expect(s.research.queue).toContain('sys_open_world');
+  });
+
+  it('a perk that was on at the start of the month is billed even if switched off before the next', () => {
+    const s = studio(1995);
+    dispatch(s, { type: 'setPolicy', salaryPolicy: 'generous' });
+    advance(s, toDay(1995, 3, 2) - s.day); // through a month's bill with it on
+    dispatch(s, { type: 'setPolicy', salaryPolicy: 'market' });
+    const before = s.finance.ledger.length;
+    advance(s, toDay(1995, 4, 2) - s.day);
+    const bill = s.finance.ledger[before]!; // the month that started with generous pay
+    expect(bill.expense.salaries ?? 0).toBeGreaterThan(0);
+    // the 8% is there: more than the base payroll alone
+    const base = Object.values(s.staff).reduce((t, x) => t + x.salary / 12, 0);
+    expect(bill.expense.salaries!).toBeGreaterThan(base * 1.05);
+  });
+
+  it('single firings spread over months never add up to a layoff', () => {
+    const s = studio(1995);
+    const f = Object.values(s.staff)[0]!;
+    for (let i = 0; i < 4; i++) {
+      s.staff[`f${i}`] = { ...f, id: `f${i}`, role: 'artist', skills: { ...f.skills }, assignment: { kind: 'idle' } };
+    }
+    for (let i = 0; i < 4; i++) {
+      expect(dispatch(s, { type: 'fire', staffId: `f${i}` }).ok).toBe(true);
+      advance(s, 29);
+    }
+    expect(s.company.lastLayoffDay).toBeUndefined();
   });
 });

@@ -115,7 +115,8 @@ export function financeMonthly(c: Ctx): void {
   const rec = Math.max(s.company.recruiting, owed.recruiting ?? 0);
   if (rec > 0) spend(s, 'recruiting', rec * 1_500 * inflation(s.day));
   if (s.company.policies.salaryPolicy === 'generous' || owed.generous) spend(s, 'salaries', payrollMonthly(s) * 0.08);
-  s.company.perksOwed = undefined;
+  // what's on now is owed next month even if switched off before then
+  s.company.perksOwed = { generous: s.company.policies.salaryPolicy === 'generous', wellness: !!s.company.policies.wellness, recruiting: s.company.recruiting };
   // Loans
   for (const loan of s.finance.loans) {
     const interest = loan.remaining * (loan.rate / 12);

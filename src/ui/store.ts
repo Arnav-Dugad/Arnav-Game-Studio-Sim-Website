@@ -3,6 +3,7 @@
  * `v` is bumped whenever it changes so React re-renders subscribers.
  */
 import { RND_BY_ID } from '@/sim/systems/rnd';
+import { tierDef } from '@/sim/systems/office';
 import { create } from 'zustand';
 import { advance } from '@/sim/advance';
 import { dispatch, type Action, type ActionResult } from '@/sim/actions';
@@ -89,6 +90,8 @@ interface GameStore {
   /** Bumped whenever a preset is set, so an already-open wizard remounts with it. */
   wizardNonce: number;
   onMonth: ((s: GameState) => void) | null;
+  /** After any successful action (the game screen saves shortly after, so nothing done while paused is lost). */
+  onAction: (() => void) | null;
   load: (s: GameState, slotId: string, uid: string) => void;
   /** Run an action and show its error as a toast (returns success). */
   actOrToast: (a: Action, ok?: string) => boolean;
@@ -136,6 +139,7 @@ export const useGame = create<GameStore>((set, get) => ({
   wizardPreset: null,
   wizardNonce: 0,
   onMonth: null,
+  onAction: null,
   load: (s, slotId, uid) => {
     // Re-surface anything that was waiting for the player when the game was saved.
     const modals: Modal[] = [];
@@ -159,7 +163,10 @@ export const useGame = create<GameStore>((set, get) => ({
     const r = dispatch(s, a);
     if (r.ok) {
       handleEvents(r.events);
-      set({ v: get().v + 1 });
+      // a smaller office may have fewer floors than the one you were looking at
+      const floors = tierDef(s.office.tier).floors;
+      set({ v: get().v + 1, ...(get().floor >= floors ? { floor: floors - 1 } : {}) });
+      get().onAction?.();
     } else {
       sound.play('error');
     }

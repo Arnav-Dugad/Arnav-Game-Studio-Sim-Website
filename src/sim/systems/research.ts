@@ -82,11 +82,15 @@ export function updateResearchDaily(c: Ctx): void {
   const active = s.research.active;
   if (!active) {
     // a queued item whose prerequisite can no longer come (it was cancelled) would wait forever: drop it, refunded
-    const reachable = (id: string, seen = new Set<string>()): boolean => {
+    const memo = new Map<string, boolean>();
+    const reachable = (id: string): boolean => {
+      const known = memo.get(id);
+      if (known !== undefined) return known;
       const d = RESEARCH_BY_ID[id];
-      if (!d || seen.has(id)) return false;
-      seen.add(id);
-      return d.requires.every((q) => s.research.done.includes(q) || (s.research.queue.includes(q) && reachable(q, seen)));
+      memo.set(id, false); // guards against cycles while we look
+      const ok = !!d && d.requires.every((q) => s.research.done.includes(q) || (s.research.queue.includes(q) && reachable(q)));
+      memo.set(id, ok);
+      return ok;
     };
     for (const id of [...s.research.queue]) {
       if (reachable(id)) continue;

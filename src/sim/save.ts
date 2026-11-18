@@ -2,6 +2,7 @@
  * Versioned save schema. Saves are plain JSON of GameState. Each migration upgrades a raw object
  * from version n to n+1; they run in order on load.
  */
+import { scheduleIndexFor } from './systems/rivals';
 import type { GameState } from './types';
 
 export const SCHEMA_VERSION = 4;
@@ -50,6 +51,8 @@ export function migrate(raw: unknown): GameState {
   }
   const s = r as unknown as GameState;
   if (!Array.isArray(s.rng) || s.rng.length !== 4 || typeof s.day !== 'number' || !s.company) throw new SaveError('Save data is corrupted');
+  // the real-release schedule is found by date (so a change to the release data never skips one on an old save)
+  if (s.market) s.market.scheduleIndex = scheduleIndexFor(s.day);
   return s;
 }
 

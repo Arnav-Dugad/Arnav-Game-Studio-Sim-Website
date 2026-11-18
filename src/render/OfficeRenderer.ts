@@ -206,6 +206,11 @@ export class OfficeRenderer {
     }
     el.appendChild(this.app.canvas);
     if (!this.cb.passive) this.app.canvas.style.touchAction = 'none';
+    else {
+      // look-only: touches and the wheel go straight to the page (Pixi's own event system would otherwise grab them)
+      this.app.canvas.style.pointerEvents = 'none';
+      this.app.canvas.style.touchAction = 'auto';
+    }
     this.app.canvas.style.display = 'block';
     this.itemLayer.sortableChildren = true;
     this.world.addChild(this.staticLayer, this.dusk, this.heatLayer, this.itemLayer, this.ghost, this.fxLayer);

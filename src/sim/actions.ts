@@ -365,6 +365,16 @@ export function dispatch(s: GameState, a: Action): ActionResult {
 }
 
 const finite = (...xs: unknown[]) => xs.every((x) => typeof x === 'number' && Number.isFinite(x));
+/** People let go in the 30 days since the first of a run of firings (three or more is a layoff). */
+function countFirings(s: GameState, n: number): number {
+  const start = s.eventCooldowns.__fires;
+  if (start === undefined || s.day - start > 30) {
+    s.eventCooldowns.__fires = s.day;
+    s.eventCooldowns.__fireCount = n;
+  } else s.eventCooldowns.__fireCount = (s.eventCooldowns.__fireCount ?? 0) + n;
+  return s.eventCooldowns.__fireCount;
+}
+
 /** What used furniture fetches: 40% of today's price, never more than you paid for it. */
 const resale = (s: GameState, def: { cost: number }, it: { paid?: number }) => Math.min(money(def.cost, s.day) * 0.4, it.paid ?? Infinity);
 /** Three phases of three finite slider values, none all zero. */
@@ -729,10 +739,7 @@ function apply(c: Ctx, a: Action): string | null {
       spend(s, 'salaries', st.salary / 12); // severance: one month
       maybeSpinOff(s, c.rng, st, 0.2);
       removeStaff(s, st.id);
-      const recent = (s.eventCooldowns.__fires ?? 0) > s.day - 30 ? (s.eventCooldowns.__fireCount ?? 0) + 1 : 1;
-      s.eventCooldowns.__fires = s.day;
-      s.eventCooldowns.__fireCount = recent;
-      if (recent >= 3) s.company.lastLayoffDay = s.day;
+      if (countFirings(s, 1) >= 3) s.company.lastLayoffDay = s.day;
       for (const o of Object.values(s.staff)) o.morale = clamp(o.morale - 2, 0, 100);
       assignDesks(s);
       return null;
@@ -753,10 +760,7 @@ function apply(c: Ctx, a: Action): string | null {
         removeStaff(s, st.id);
       }
       // a layoff is three or more people inside a month, however they're let go
-      const recent = ((s.eventCooldowns.__fires ?? 0) > s.day - 30 ? (s.eventCooldowns.__fireCount ?? 0) : 0) + gone.length;
-      s.eventCooldowns.__fires = s.day;
-      s.eventCooldowns.__fireCount = recent;
-      if (recent >= 3) s.company.lastLayoffDay = s.day;
+      if (countFirings(s, gone.length) >= 3) s.company.lastLayoffDay = s.day;
       const hit = layoffMoraleHit(gone.length);
       for (const o of Object.values(s.staff)) o.morale = clamp(o.morale - hit, 0, 100);
       assignDesks(s);

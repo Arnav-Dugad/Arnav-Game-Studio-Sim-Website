@@ -42,6 +42,12 @@ for (const f of FRANCHISES) {
 }
 SCHEDULE.sort((a, b) => a.day - b.day);
 
+/** Where the real-release schedule stands on a given day (the first release still to come). */
+export function scheduleIndexFor(day: number): number {
+  const i = SCHEDULE.findIndex((ev) => ev.day > day);
+  return i < 0 ? SCHEDULE.length : i;
+}
+
 /** A rival's name follows its games: each release pulls its reputation toward what that game earned (a 65 holds
  *  steady around 50, an 85 lifts it toward 90) — so studios rise and fall instead of all drifting up to 100. */
 export function rivalRepAfter(rep: number, score: number): number {

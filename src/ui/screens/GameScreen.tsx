@@ -64,12 +64,24 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
     const mine = () => useGame.getState().slotId === slotId;
     useGame.setState({ onMonth: (st) => void (mine() && saver.save(st)) });
     saver.setSource(() => (mine() ? useGame.getState().s : null)); // closing the tab saves even a brand-new game
+    // and every change is on disk within a moment or two, so even a reload right after can't lose it
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    useGame.setState({
+      onAction: () => {
+        clearTimeout(pending);
+        pending = setTimeout(() => {
+          const st = useGame.getState().s;
+          if (st && mine()) void saver.save(st); // on this device now; the cloud on its usual schedule
+        }, 1_200);
+      },
+    });
     return () => {
       const st = useGame.getState().s;
       if (st && mine()) void saver.save(st, true);
+      clearTimeout(pending);
       unsub();
       saver.dispose();
-      useGame.setState({ onMonth: null });
+      useGame.setState({ onMonth: null, onAction: null });
     };
   }, [owner, slotId]);
 
@@ -151,7 +163,9 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
       else if (k === 'escape' && cinemaRef.current) toggleCinema(false);
       else if (cinemaRef.current) return; // the interface is hidden: no panels
       else if (k === 'escape') {
-        if (g.build) g.setBuild(null);
+        // one step back at a time: drop what's in hand (or the selection), then leave build mode, then close the panel
+        if (g.build && (g.build.item || g.build.moving || g.build.selected)) g.setBuild({ ...g.build, item: undefined, moving: undefined, selected: undefined });
+        else if (g.build) g.setBuild(null);
         else g.openPanel(null);
       } else if (k === '?') g.pushModal({ kind: 'shortcuts' });
       else if (k === 'p' && e.shiftKey) void saveNow();

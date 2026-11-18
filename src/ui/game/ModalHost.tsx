@@ -1277,7 +1277,8 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
           onClick={() => {
             onClose();
             navigate('slots');
-            useGame.getState().unload(); // a finished game doesn't linger behind the slots screen
+            // after the game screen has closed (and saved the ending), so it doesn't linger behind the slots
+            setTimeout(() => useGame.getState().unload(), 0);
           }}
         >
           Back to save slots

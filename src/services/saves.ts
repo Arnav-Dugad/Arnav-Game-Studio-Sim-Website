@@ -423,8 +423,9 @@ export class AutoSaver {
   private latest: GameState | null = null;
   /** Forced saves requested so far (routine saves queued before one don't wait for idle time). */
   private forced = 0;
-  private onHide = () => {
-    if (document.visibilityState === 'hidden') void this.flush();
+  private onHide = (e: Event) => {
+    // a reload fires pagehide while the page still counts as visible: save then too
+    if (e.type === 'pagehide' || document.visibilityState === 'hidden') void this.flush();
   };
   private onOnline = () => void this.flush();
 
@@ -470,7 +471,8 @@ export class AutoSaver {
     }
     this.syncing = (async () => {
       try {
-        const r = await syncSlot(this.uid, this.slotId);
+        // a stalled connection never leaves the sync hanging: after a while it counts as offline (and retries later)
+        const r = await Promise.race([syncSlot(this.uid, this.slotId), new Promise<'offline'>((res) => setTimeout(() => res('offline'), 20_000))]);
         if (r === 'synced') {
           this.lastCloud = Date.now();
           this.emit({ state: 'saved', lastCloud: this.lastCloud });
@@ -504,8 +506,8 @@ export class AutoSaver {
         this.emit({ state: 'saving' });
         await saveLocal(this.uid, this.slotId, s);
         this.emit({ lastLocal: Date.now() });
+        this.emit({ state: 'saved' }); // safe on this device; the cloud catches up on its own track
         if (force || Date.now() - this.lastCloud > 60_000) void this.syncCloud();
-        else this.emit({ state: 'saved' });
       } catch (e) {
         this.emit({ state: navigator.onLine === false ? 'offline' : 'error', error: e instanceof Error ? e.message : String(e) });
       }

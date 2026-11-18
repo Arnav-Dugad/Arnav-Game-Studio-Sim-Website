@@ -94,11 +94,12 @@ export default function OfficePanel() {
                 Confirm downsize (furniture that doesn’t fit is sold at 40%)
               </Button>
             ) : (
-              <Button variant="ghost" onClick={() => setConfirmDown(true)} title="Downsize to save rent">
+              <Button variant="ghost" disabled={Object.keys(s.staff).length > prev.staffCap} onClick={() => setConfirmDown(true)} title="Downsize to save rent">
                 Downsize…
               </Button>
             ))}
         </div>
+        {prev && Object.keys(s.staff).length > prev.staffCap && <p className="mt-1 text-[11px] text-ink3">Downsizing to the {prev.name} needs {Object.keys(s.staff).length - prev.staffCap} fewer people (it holds {prev.staffCap}).</p>}
         {next && s.company.reputation < next.minReputation && <p className="mt-1 text-[11px] text-ink3">The {next.name} needs reputation {next.minReputation} (you have {Math.round(s.company.reputation)}).</p>}
       </Section>
 

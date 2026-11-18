@@ -15,6 +15,8 @@ export function SubscriptionTab() {
   useGame((g) => g.v);
   const sub = s.subscription;
   const ref = subRefPrice(s);
+  /** Typed freely; settled (and rounded to 50¢) when you leave the box — the range players will accept. */
+  const clampPrice = (v: number) => Math.min(Math.floor(ref * 4 * 2) / 2, Math.max(Math.ceil(ref * 0.25 * 2) / 2, Math.round((v || ref) * 2) / 2));
   const [name, setName] = useState(sub?.name ?? `${s.company.name.split(' ')[0]} Pass`);
   const [price, setPrice] = useState(() => Math.round((sub?.active ? sub.price : ref) * 100) / 100);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -42,8 +44,8 @@ export function SubscriptionTab() {
               </span>
             </Tip>
             <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-              <Field label="Monthly price" hint={`At this price: ~${fmtUnits(preview.subsM * 1e6)} subscribers, ~${fmtMoney(monthly)}/mo after store cut and servers`}>
-                <input type="number" min={Math.ceil(ref * 0.25 * 2) / 2} max={Math.floor(ref * 4 * 2) / 2} step={0.5} className={inputCls} value={price} onChange={(e) => setPrice(Math.min(Math.floor(ref * 4 * 2) / 2, Math.max(Math.ceil(ref * 0.25 * 2) / 2, Number(e.target.value) || ref)))} />
+              <Field label={`Monthly price (${fmtPrice(ref * 0.25)}–${fmtPrice(ref * 4)})`} hint={`At this price: ~${fmtUnits(preview.subsM * 1e6)} subscribers, ~${fmtMoney(monthly)}/mo after store cut and servers`}>
+                <input type="number" min={Math.ceil(ref * 0.25 * 2) / 2} max={Math.floor(ref * 4 * 2) / 2} step={0.5} className={inputCls} value={price || ''} onChange={(e) => setPrice(Number(e.target.value) || 0)} onBlur={() => setPrice(clampPrice(price))} />
               </Field>
               <Button size="sm" disabled={price === sub.price} onClick={() => act({ type: 'setSubscriptionPrice', price }, 'Price updated')}>
                 Apply
@@ -91,7 +93,7 @@ export function SubscriptionTab() {
                 <input className={inputCls} value={name} maxLength={32} onChange={(e) => setName(e.target.value)} />
               </Field>
               <Field label={`Monthly price · players expect ~${fmtPrice(ref)} (${fmtPrice(ref * 0.25)}–${fmtPrice(ref * 4)})`}>
-                <input type="number" min={Math.ceil(ref * 0.25 * 2) / 2} max={Math.floor(ref * 4 * 2) / 2} step={0.5} className={inputCls} value={price} onChange={(e) => setPrice(Math.min(Math.floor(ref * 4 * 2) / 2, Math.max(Math.ceil(ref * 0.25 * 2) / 2, Number(e.target.value) || ref)))} />
+                <input type="number" min={Math.ceil(ref * 0.25 * 2) / 2} max={Math.floor(ref * 4 * 2) / 2} step={0.5} className={inputCls} value={price || ''} onChange={(e) => setPrice(Number(e.target.value) || 0)} onBlur={() => setPrice(clampPrice(price))} />
               </Field>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-bg2/60 p-2.5 text-xs">
