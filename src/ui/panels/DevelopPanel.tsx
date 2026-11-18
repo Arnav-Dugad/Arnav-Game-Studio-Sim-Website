@@ -673,7 +673,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
     if (presetFr || baseRel) useGame.setState({ wizardPreset: null });
   }, [presetFr, baseRel]);
   const selfPub = s.research.done.includes('biz_self_publishing');
-  const [dealId, setDealId] = useDraft<string>(bag, 'dealId', selfPub ? '' : (s.offers.deals[0]?.id ?? ''));
+  // by default the most forgiving publisher (missing a deal's score target costs reputation)
+  const [dealId, setDealId] = useDraft<string>(bag, 'dealId', selfPub ? '' : ([...s.offers.deals].sort((x, y) => x.minScore - y.minScore)[0]?.id ?? ''));
   const learned = genreExperience(s, genre) > 0;
   const [focus, setFocus] = useDraft<[Focus3, Focus3, Focus3]>(bag, 'focus', [
     [34, 33, 33],
