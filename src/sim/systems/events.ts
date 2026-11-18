@@ -2786,10 +2786,12 @@ const DEF_BY_ID = Object.fromEntries(EVENT_DEFS.map((d) => [d.id, d]));
 export function fireEvent(c: Ctx, defId: string): boolean {
   const { s } = c;
   const def = DEF_BY_ID[defId];
-  if (!def || s.pendingEvents.some((e) => e.defId === defId) || (s.eventCooldowns[defId] ?? -1) > s.day) return false;
+  const mediating = defId === 'feud' && !!s.company.policies.autoMediate;
+  if (!def || s.pendingEvents.some((e) => e.defId === defId) || (!mediating && (s.eventCooldowns[defId] ?? -1) > s.day)) return false;
   const made = def.make(c);
   if (!made) return false;
-  // policy: feuds go straight to a mediator, no popup
+  // policy: feuds go straight to a mediator, no popup (the cooldown only paces popups)
+  if (mediating && s.company.cash < Number(made.ctx.cost) && (s.eventCooldowns[defId] ?? -1) > s.day) return false;
   if (defId === 'feud' && s.company.policies.autoMediate && s.company.cash >= Number(made.ctx.cost)) {
     s.nextEventUid += 1;
     def.resolve(c, { uid: s.nextEventUid, defId, day: s.day, title: made.title, body: made.body, options: made.options, ctx: made.ctx, expiresDay: s.day, art: def.art }, 'mediate');

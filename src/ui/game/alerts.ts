@@ -1,6 +1,7 @@
 /** Studio alerts: what needs the player's attention right now (shared by the Overview panel and the rail badge). */
 import { pitchText } from '@/sim/systems/pitches';
-import { researchLeft } from '@/sim/systems/research';
+import { researchAvailable, researchCost, researchLeft } from '@/sim/systems/research';
+import { RESEARCH } from '@/data/research';
 import { demoBlocked } from '@/sim/systems/demos';
 import { CE_RUN, ceBlocked, ceCost, ceDemand } from '@/sim/systems/collectors';
 import { launchPrice } from '@/sim/systems/release';
@@ -46,6 +47,11 @@ export function projectName(p: Project): string {
 
 let pulseCache: { key: string; drag?: PulseItem } = { key: '' };
 
+/** Would "Keep research going" find something to start (affordable, not the AI one)? */
+function autoPickable(s: GameState): boolean {
+  return RESEARCH.some((r) => r.id !== 'ai_genai' && researchAvailable(s, r).ok && researchCost(s, r) <= s.company.cash * 0.1);
+}
+
 export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => void, pushGate: (id: string) => void, furnishDesks: () => void = () => undefined, urgentOnly = false): Alert[] {
   const out: Alert[] = [];
   const staff = Object.values(s.staff);
@@ -78,9 +84,11 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   if (crunching) out.push({ id: 'crunch', tone: 'info', icon: 'fire', text: `${crunching} game${crunching > 1 ? 's are' : ' is'} in crunch: faster, but bugs and burnout pile up.`, action: { label: 'Develop', run: () => open('develop') } });
   // Research
   const researching = staff.filter((x) => x.assignment.kind === 'research').length;
-  if (researching && !s.research.active && !s.research.queue.length) {
+  if (researching && !s.research.active) {
     if (!researchLeft(s)) out.push({ id: 'research', tone: 'warn', icon: 'research', text: `Everything you can research is done — ${researching} ${researching === 1 ? 'person is' : 'people are'} researching nothing. New tech arrives over the years.`, action: { label: 'Reassign', run: () => open('staff', 'team') } });
-    else if (!s.company.policies.autoQueue) out.push({ id: 'research', tone: 'warn', icon: 'research', text: 'Your researchers have nothing to research.', action: { label: 'Pick research', run: () => open('research') } });
+    // nothing running and nothing about to start by itself (a queue of blocked items, or auto-pick can't afford anything)
+    else if (s.research.queue.length || !s.company.policies.autoQueue || !autoPickable(s))
+      out.push({ id: 'research', tone: 'warn', icon: 'research', text: s.research.queue.length ? 'Your research queue is stuck — what’s queued needs other research first.' : 'Your researchers have nothing to research.', action: { label: 'Pick research', run: () => open('research') } });
   }
   // Office
   const deskless = staff.filter((x) => !x.deskId).length;

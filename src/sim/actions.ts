@@ -1112,10 +1112,10 @@ function apply(c: Ctx, a: Action): string | null {
         earn(s, 'asset_sales', money(refund, s.day) * 0.4);
         touchOffice(s);
         const f = dispatch(s, { type: 'furnishDesks', extra: 0 });
-        if (!f.ok && f.error !== 'Everyone already has a desk') return undo(f.error === 'Not enough cash' ? 'Not enough cash to re-desk everyone' : 'There isn’t room to spread out — build another floor or move to a bigger office');
+        if (!f.ok && f.error !== 'Everyone already has a desk') return undo(f.error.startsWith('Not enough cash') ? 'Not enough cash to re-desk everyone' : 'There isn’t room to spread out — build another floor or move to a bigger office');
       }
       assignDesks(s);
-      if (Object.values(s.staff).some((st) => !st.deskId)) return undo('There isn’t room for everyone to spread out — build another floor or move to a bigger office');
+      if (Object.values(s.staff).some((st) => !st.deskId)) return undo(s.company.cash < money(2_000, s.day) ? 'Not enough cash to re-desk everyone' : 'There isn’t room for everyone to spread out — build another floor or move to a bigger office');
       if (crampedCount(s) >= before) return undo('Nobody can be given more room — build another floor or move to a bigger office');
       return null;
     }

@@ -18,7 +18,7 @@ export function researchAvailable(s: GameState, r: ResearchDef): { ok: boolean; 
 
 /** Is there anything for researchers to do — something active, queued, or ready to start? */
 export function researchLeft(s: GameState): boolean {
-  return !!s.research.active || s.research.queue.length > 0 || RESEARCH.some((r) => researchAvailable(s, r).ok);
+  return !!s.research.active || RESEARCH.some((r) => researchAvailable(s, r).ok); // (a queued item only matters once it can start — and then it's available)
 }
 
 export function researchCost(s: GameState, r: ResearchDef): number {
