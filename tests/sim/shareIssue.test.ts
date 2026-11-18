@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createGame } from '@/sim/create';
 import { dispatch } from '@/sim/actions';
-import { doIPO, valuation } from '@/sim/systems/finance';
+import { doIPO, ownerValue, valuation } from '@/sim/systems/finance';
 
 describe('issuing shares', () => {
   it('dilutes the founder and never conjures value per share', () => {
@@ -16,6 +16,15 @@ describe('issuing shares', () => {
     expect(st.founderShares / st.shares).toBeLessThan(own0); // diluted
     expect(perShare1).toBeLessThanOrEqual(perShare0 * 1.001); // sold below the price: a little less per share, never more
     expect(s.company.cash).toBeGreaterThan(50_000_000);
+  });
+
+  it('the founder’s stake is never worth more for issuing shares', () => {
+    const s = createGame({ seed: 7, companyName: 'Pub', founderName: 'F', startYear: 2000, endless: true, autopause: false, difficulty: 'standard' });
+    s.company.cash = 50_000_000;
+    doIPO(s, 0.3);
+    const before = ownerValue(s);
+    for (let i = 0; i < 20; i++) dispatch(s, { type: 'secondaryOffering', pct: 0.2 });
+    expect(ownerValue(s)).toBeLessThanOrEqual(before * 1.001);
   });
 
   it('stops before the founder keeps almost nothing', () => {

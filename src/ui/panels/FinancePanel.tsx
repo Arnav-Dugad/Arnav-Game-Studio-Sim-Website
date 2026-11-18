@@ -82,7 +82,7 @@ export default function FinancePanel() {
           ariaLabel="Cash over time"
           area
           height={160}
-          series={[{ name: 'Cash', points: [...s.finance.ledger.slice(-range - 1).filter((m) => m.day < s.day).map((m) => ({ x: m.day, y: m.cashEnd })), { x: s.day, y: s.company.cash }] }]} // …and today
+          series={[{ name: 'Cash', points: [...s.finance.ledger.slice(0, -1).slice(-range).map((m) => ({ x: m.day, y: m.cashEnd })), { x: s.day, y: s.company.cash }] }]} // …and today
           xFormat={(d) => (range <= 12 ? MONTHS[fromDay(d).month - 1]! : String(fromDay(d).year))}
           yFormat={(v) => fmtMoney(v)}
         />

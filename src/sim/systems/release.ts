@@ -90,7 +90,7 @@ function partKey(label: string): string {
 }
 
 function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, gameName: string, idx = 0): string {
-  const muls = quality.parts.filter((p) => p.kind === 'mul');
+  const muls = quality.parts.filter((p) => p.kind === 'mul' && p.label !== 'Engine R&D'); // the studio's R&D isn't something critics see
   // Each outlet notices different things: rotate through the top strengths / weaknesses.
   const bests = [...muls].sort((a, b) => b.value - a.value).slice(0, 3);
   const worsts = [...muls].sort((a, b) => a.value - b.value).slice(0, 3);

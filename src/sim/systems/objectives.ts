@@ -3,6 +3,8 @@
  * game, lift morale, grow the team, build cash, finish research, release something good, win fans…).
  * Meeting one pays a small reward on the spot; whatever's left lapses when the quarter ends.
  */
+import { RESEARCH, RESEARCH_BY_ID } from '../../data/research';
+import { researchAvailable } from './research';
 import { clamp } from '../breakdown';
 import type { Ctx } from '../ctx';
 import type { GameState, Objective, ObjectiveKind } from '../types';
@@ -94,7 +96,8 @@ export function objectivesQuarterly(c: Ctx): void {
   if (staffN < 400) pool.push({ w: 1.5, make: () => { const n = clamp(Math.round(staffN * 0.15), 1, 12); return { kind: 'hire', base: s.progress.stats.staffHired, target: s.progress.stats.staffHired + n, until }; } });
   const net = objectiveValue(s, 'cash');
   if (net > 0) pool.push({ w: 1.5, make: () => ({ kind: 'cash', base: net, target: Math.round(net * 1.25 + money(20_000, s.day)), until }) });
-  if (Object.values(s.staff).some((x) => x.assignment.kind === 'research')) pool.push({ w: 1.5, make: () => ({ kind: 'research', base: s.progress.stats.researchDone, target: s.progress.stats.researchDone + 1, until }) });
+  const treeWork = (!!s.research.active && !!RESEARCH_BY_ID[s.research.active]) || RESEARCH.some((r) => researchAvailable(s, r).ok);
+  if (treeWork && Object.values(s.staff).some((x) => x.assignment.kind === 'research')) pool.push({ w: 1.5, make: () => ({ kind: 'research', base: s.progress.stats.researchDone, target: s.progress.stats.researchDone + 1, until }) });
   if (s.releaseOrder.length >= 2) pool.push({ w: 1, make: () => ({ kind: 'fans', base: s.company.fans, target: s.company.fans + Math.max(5_000, Math.round(s.company.fans * 0.1 / 1000) * 1000), until }) });
   if (s.offers.contracts.length && staffN <= 25) pool.push({ w: 1, make: () => ({ kind: 'contract', base: s.progress.stats.contractsDone, target: s.progress.stats.contractsDone + 1, until }) });
   const picked: Objective[] = [];

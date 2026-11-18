@@ -184,9 +184,10 @@ export function valuation(s: GameState): number {
   return Math.max(0, Math.max(earningsValue, revenueValue) + s.company.cash + ipValue(s) - debt);
 }
 
-/** What the founder's stake is worth: before going public, venture investors own part of the studio. */
+/** What the founder's stake is worth: venture investors own part of a private studio, shareholders part of a public one. */
 export function ownerValue(s: GameState): number {
-  return valuation(s) * (s.finance.stock ? 1 : 1 - (s.company.investorStake ?? 0));
+  const st = s.finance.stock;
+  return valuation(s) * (st ? st.founderShares / Math.max(1, st.shares) : 1 - (s.company.investorStake ?? 0));
 }
 
 export function ipoEligible(s: GameState): { ok: boolean; why: string } {
@@ -275,7 +276,7 @@ export function stockWeekly(c: Ctx): void {
   st.price = Math.max(0.05, st.price + drift + rng.normal(0, st.price * 0.03));
   st.history.push(Math.round(st.price * 100) / 100);
   if (st.history.length > 520) st.history.shift();
-  const mv = st.price * st.shares;
+  const mv = st.price * st.founderShares; // the founder's stake at market price
   if (mv > s.progress.stats.peakValuation) s.progress.stats.peakValuation = mv;
 }
 
