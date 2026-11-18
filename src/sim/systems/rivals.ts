@@ -14,7 +14,7 @@ import { clamp } from '../breakdown';
 import { fromDay, parseYM } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
-import type { GameState, Rival, RivalGame } from '../types';
+import type { GameState, Rival, RivalGame, Franchise } from '../types';
 import { addRep, inflation, money, pushNews } from '../util';
 import { livePlatforms, platformInfo } from './market';
 
@@ -315,6 +315,14 @@ export function adoptableIpValue(s: GameState, companyId: string): number {
     v += franchiseSalePrice(s, adoptedFans(s, f), best);
   }
   return Math.round(v);
+}
+
+/** Why a series can't be sold right now (null: it can). */
+export function sellFranchiseBlocked(s: GameState, f: Franchise): string | null {
+  if (Object.values(s.projects).some((p) => p.kind === 'game' && p.concept.franchiseId === f.id)) return 'A sequel is in development';
+  if ((s.mediaDeals ?? []).some((d) => d.franchiseId === f.id && d.outcome === undefined)) return 'A licensing deal is still in production';
+  if ((s.leagues ?? []).some((l) => l.status === 'live' && (l.franchiseId === f.id || s.releases[l.releaseId]?.concept.franchiseId === f.id))) return 'Its esports league is still running — close the league first';
+  return null;
 }
 
 /** What selling a series' rights brings in. */

@@ -1,3 +1,4 @@
+import { franchiseSalePrice, sellFranchiseBlocked } from '@/sim/systems/rivals';
 import { useState } from 'react';
 import { MOD_BUDGET, communityBlocked, communityCost, communityPledgeMul, communityUserBonus, hubName } from '@/sim/systems/community';
 import { MEDIA, MEDIA_KINDS, mediaBlocked, mediaFee } from '@/sim/systems/media';
@@ -7,7 +8,7 @@ import { GENRE_BY_ID } from '@/data/genres';
 import { TRADE_SHOWS } from '@/data/marketing';
 import type { GenreId } from '@/data/types';
 import { fromDay, formatDate } from '@/sim/calendar';
-import { fmtMoney, fmtRepGain, fmtUnits, inflation, money, plural, repGain } from '@/sim/util';
+import { fmtMoney, fmtRepGain, fmtUnits, money, plural, repGain } from '@/sim/util';
 import { fundingAmount, fundingBlocked, ipoEligible, nextFunding, valuation, controlAfterOffering, offeringBlocked } from '@/sim/systems/finance';
 import { LineChart } from '../charts';
 import { Button, ConfirmButton, Empty, Pill, Section, Segmented, Stat, cx } from '../components/ui';
@@ -447,7 +448,8 @@ function IP() {
     <MediaList />
     <ul className="space-y-1.5">
       {fr.map((f) => {
-        const price = Math.max(money(5_000, s.day), f.fans * 4 * (f.bestScore / 100) * inflation(s.day) * 0.8);
+        const price = franchiseSalePrice(s, f.fans, f.bestScore);
+        const sellWhy = sellFranchiseBlocked(s, f);
         return (
           <li key={f.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line p-2.5 text-xs">
             <div className="min-w-[12rem] flex-1">
@@ -470,6 +472,8 @@ function IP() {
             <ConfirmButton
               size="sm"
               variant="ghost"
+              disabled={!!sellWhy}
+              title={sellWhy ?? undefined}
               ask={`Sell ${f.name} for ${fmtMoney(price)}? No more sequels, remasters or expansions — it’s gone for good.`}
               onConfirm={() => {
                 const r = act({ type: 'sellFranchise', franchiseId: f.id });

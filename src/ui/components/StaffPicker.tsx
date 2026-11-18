@@ -42,6 +42,7 @@ export function StaffPicker({
   const [sort, setSort] = useState<Sort>(ranked ? 'fit' : 'skill');
   // a big studio has hundreds of free people: draw the best few dozen, more on request
   const [limit, setLimit] = useState(50);
+  const shown = Math.max(limit, selected.length); // the whole team is always listed
   const fit = useMemo(() => new Map(pool.map((st) => [st.id, score ? score(st) : genre ? genreFit(st, genre) : topSkill(st)])), [pool, genre, score]);
   const roles = useMemo(() => {
     const m = new Map<Role, number>();
@@ -137,7 +138,7 @@ export function StaffPicker({
         <p className="py-2 text-ink3">{pool.length ? 'Nobody matches.' : 'Everyone is busy. Free someone up in the Staff panel, or hire.'}</p>
       ) : (
         <ul className="max-h-72 space-y-1 overflow-y-auto pr-1 scroll-thin">
-          {list.slice(0, limit).map((st) => {
+          {list.slice(0, shown).map((st) => {
             const on = selected.includes(st.id);
             const f = Math.round(fit.get(st.id) ?? 0);
             const disabled = (!on && full) || (on && minOne && selected.length <= 1);
@@ -171,10 +172,10 @@ export function StaffPicker({
               </li>
             );
           })}
-          {list.length > limit && (
+          {list.length > shown && (
             <li>
               <button type="button" className="w-full rounded-lg py-1.5 text-center font-semibold text-accent hover:bg-bg2" onClick={() => setLimit((l) => l + 100)}>
-                Show {Math.min(100, list.length - limit)} more ({list.length - limit} not shown)
+                Show {Math.min(100, list.length - shown)} more ({list.length - shown} not shown)
               </button>
             </li>
           )}

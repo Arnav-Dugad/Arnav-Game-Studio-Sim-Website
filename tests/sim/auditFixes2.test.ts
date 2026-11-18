@@ -3,6 +3,8 @@ import { createGame } from '../../src/sim/create';
 import { dispatch } from '../../src/sim/actions';
 import { RESEARCH } from '../../src/data/research';
 import { researchAvailable } from '../../src/sim/systems/research';
+import { rereleaseBlocked } from '../../src/sim/systems/release';
+import { takeLoan } from '../../src/sim/systems/finance';
 import type { GameState, Staff } from '../../src/sim/types';
 
 function studio(year = 1990, seed = 7): GameState {
@@ -86,5 +88,35 @@ describe('layoffs', () => {
     dispatch(s, { type: 'fire', staffId: hire(3) });
     dispatch(s, { type: 'fire', staffId: hire(4) });
     expect(s.company.lastLayoffDay).toBe(day0 + 31); // three in two days
+  });
+});
+
+describe('selling a series', () => {
+  it('waits for its esports league to close, and its classics can’t be re-released or ported afterwards', () => {
+    const s = studio(2015);
+    s.franchises.fz = { id: 'fz', name: 'Zed', genre: 'action', topic: 'scifi', fans: 2_000_000, entries: [], fatigue: 0, lastDay: s.day, bestScore: 88 };
+    s.leagues = [{ id: 'lg1', name: 'Zed League', releaseId: 'rz', franchiseId: 'fz', status: 'live' } as never];
+    const r = dispatch(s, { type: 'sellFranchise', franchiseId: 'fz' });
+    expect(!r.ok && r.error).toMatch(/league/);
+    s.leagues = [];
+    expect(dispatch(s, { type: 'sellFranchise', franchiseId: 'fz' }).ok).toBe(true);
+    const rel = { id: 'rz', name: 'Zed', day: s.day - 365 * 13, score: 90, concept: { franchiseId: 'fz', monetization: 'premium', platforms: [] } } as never;
+    expect(rereleaseBlocked(s, rel)).toBe('You sold this IP');
+  });
+});
+
+describe('investors and lenders', () => {
+  it('loans and buybacks move cash through the books without counting as income or costs', () => {
+    const s = studio(2005);
+    const cash0 = s.company.cash;
+    expect(takeLoan(s, 10_000, 12)).not.toBeNull();
+    const led = s.finance.ledger[s.finance.ledger.length - 1]!;
+    expect(s.company.cash - cash0).toBe(10_000);
+    expect(led.financing).toBe(10_000);
+    expect(led.income.other_income ?? 0).toBe(0);
+    s.finance.stock = { ipoDay: s.day, ipoPrice: 10, price: 10, shares: 10_000_000, founderShares: 6_000_000, history: [], boardMood: 60, expectation: 0, dividendsPaid: 0 };
+    expect(dispatch(s, { type: 'buyback', shares: 1000 } as never).ok).toBe(true);
+    expect(led.financing).toBe(10_000 - 10_500);
+    expect(led.expense).toEqual({});
   });
 });

@@ -24,7 +24,7 @@ import { clamp } from '../breakdown';
 import { fromDay, toDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { EventInstance, EventOption, Franchise, GameProject, GameState, Staff } from '../types';
-import { addRep, aOrAn, earn, fmtMoney, hasFlag, money, newId, pushNews, spend } from '../util';
+import { addRep, aOrAn, earn, financing, fmtMoney, hasFlag, money, newId, pushNews, spend } from '../util';
 import { ownerValue } from './finance';
 import { ROLE_NAMES, ROLE_SKILLS, candidateToStaff, generateCandidate, marketSalary, maybeSpinOff, rememberLeaver, removeStaff } from './staff';
 import { assignDesks, freeDesks, tierDef } from './office';
@@ -527,7 +527,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (opt === 'dividend') {
         const d = Number(e.ctx.dividend);
         if (d > 0 && s.company.cash >= d) {
-          s.company.cash -= d;
+          financing(s, -d);
           st.dividendsPaid += d;
           st.boardMood = clamp(st.boardMood + 10, 0, 100);
           st.price *= 1.03;
@@ -1800,7 +1800,7 @@ export const EVENT_DEFS: EventDef[] = [
       const st = s.finance.stock;
       if (!st) return;
       if (opt === 'defend' && s.company.cash >= Number(e.ctx.defend)) {
-        s.company.cash -= Number(e.ctx.defend);
+        financing(s, -Number(e.ctx.defend)); // buying shares back
         st.founderShares = Math.min(st.shares, st.founderShares + Math.max(0, Number(e.ctx.toBuy)));
         st.boardMood = clamp(st.boardMood - 10, 0, 100);
       } else {
@@ -1833,7 +1833,7 @@ export const EVENT_DEFS: EventDef[] = [
       // ~100% APR over 12 months ≈ 1.6× repaid; interest shows up in the ledger as loan interest
       const rate = 1.0;
       const i = rate / 12;
-      s.company.cash += amount;
+      financing(s, amount);
       s.finance.loans.push({ id: newId(s, 'l'), principal: amount, remaining: amount, rate, monthly: (amount * i) / (1 - Math.pow(1 + i, -12)), monthsLeft: 12, takenDay: s.day });
       s.company.creditScore = clamp(s.company.creditScore - 30, 300, 850);
     },

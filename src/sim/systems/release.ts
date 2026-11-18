@@ -1018,6 +1018,7 @@ export function rereleaseBlocked(s: GameState, rel: Release): string | null {
   if (s.day - rel.day < 365 * 12) return 'Only games 12+ years old count as classics';
   if (rel.score < 70) return 'Only well-loved games (70+) are worth re-releasing';
   if (rel.rereleased) return 'Already re-released';
+  if (rel.concept.franchiseId && !s.franchises[rel.concept.franchiseId]) return 'You sold this IP';
   if (rel.concept.expansionOf) return 'Expansions come with their base game';
   if (rel.concept.monetization !== 'premium' && rel.concept.monetization !== 'shareware') return 'Only boxed and shareware classics can be re-released';
   if (!s.research.done.includes('biz_self_publishing')) return 'Research Self-Publishing first';

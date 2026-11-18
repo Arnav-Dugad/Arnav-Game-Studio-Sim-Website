@@ -64,6 +64,15 @@ export function payResearch(s: GameState, id: string, cost: number): void {
 /** What was paid for a started or queued research project (older saves: today's price). */
 export const researchPaid = (s: GameState, id: string, fallback: number): number => s.research.paid?.[id] ?? fallback;
 
+/** Money to (negative) or from (positive) investors and lenders: moves cash and shows in the month's books, but is never revenue or a cost. */
+export function financing(s: GameState, amount: number): void {
+  if (!Number.isFinite(amount) || amount === 0) return;
+  const a = Math.round(amount);
+  s.company.cash += a;
+  const l = currentLedger(s);
+  l.financing = (l.financing ?? 0) + a;
+}
+
 export function spend(s: GameState, cat: LedgerCat, amount: number): void {
   if (!Number.isFinite(amount) || amount <= 0) return;
   const a = Math.round(amount);

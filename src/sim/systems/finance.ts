@@ -12,7 +12,7 @@ import { clamp } from '../breakdown';
 import { fromDay, interp, yearFrac } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState, Loan, MonthLedger } from '../types';
-import { earn, fmtMoney, inflation, money, newId, pushNews, spend, sum } from '../util';
+import { earn, financing, fmtMoney, inflation, money, newId, pushNews, spend, sum } from '../util';
 import { tierDef } from './office';
 import { payrollMonthly } from './staff';
 
@@ -41,20 +41,14 @@ export function takeLoan(s: GameState, amount: number, months: number): Loan | n
   const monthly = r > 0 ? (amount * r) / (1 - Math.pow(1 + r, -months)) : amount / months;
   const loan: Loan = { id: newId(s, 'l'), principal: amount, remaining: amount, rate, monthly, monthsLeft: months, takenDay: s.day };
   s.finance.loans.push(loan);
-  earn(s, 'other_income', amount);
-  // borrowed money is not revenue: move it out of income categories
-  const l = s.finance.ledger[s.finance.ledger.length - 1];
-  if (l) {
-    l.income.other_income = (l.income.other_income ?? 0) - Math.round(amount);
-    if (l.income.other_income === 0) delete l.income.other_income;
-  }
+  financing(s, amount); // borrowed money is not revenue
   return loan;
 }
 
 export function repayLoan(s: GameState, id: string): boolean {
   const loan = s.finance.loans.find((l) => l.id === id);
   if (!loan || s.company.cash < loan.remaining) return false;
-  s.company.cash -= Math.round(loan.remaining);
+  financing(s, -loan.remaining);
   s.finance.loans = s.finance.loans.filter((l) => l.id !== id);
   s.company.creditScore = clamp(s.company.creditScore + 10, 300, 850);
   return true;
@@ -122,7 +116,7 @@ export function financeMonthly(c: Ctx): void {
     const interest = loan.remaining * (loan.rate / 12);
     const principal = Math.min(loan.remaining, loan.monthly - interest);
     spend(s, 'loan_interest', interest);
-    s.company.cash -= Math.round(principal);
+    financing(s, -principal);
     loan.remaining = Math.max(0, loan.remaining - principal);
     loan.monthsLeft -= 1;
   }
@@ -251,7 +245,7 @@ export function raiseFunding(s: GameState): string | null {
   if (why) return why;
   const r = nextFunding(s)!;
   const amount = fundingAmount(s);
-  s.company.cash += amount; // equity: not revenue
+  financing(s, amount); // equity: not revenue
   s.company.investorStake = (s.company.investorStake ?? 0) + r.stake;
   s.company.fundingRounds = (s.company.fundingRounds ?? 0) + 1;
   s.company.lastFundingDay = s.day;
@@ -281,7 +275,7 @@ export function doIPO(s: GameState, sellPct: number): number {
   };
   s.company.publicSince = s.day;
   s.company.investorStake = 0; // they sold out at the IPO
-  s.company.cash += Math.round(raised); // equity raise: not revenue, not taxable
+  financing(s, raised); // equity raise: not revenue, not taxable
   return raised;
 }
 
@@ -357,6 +351,6 @@ export function secondaryOffering(s: GameState, pct: number): number {
   st.price = (st.price * st.shares + raised) / (st.shares + n);
   st.shares += n;
   st.lastOffering = s.day;
-  s.company.cash += Math.round(raised);
+  financing(s, raised);
   return raised;
 }

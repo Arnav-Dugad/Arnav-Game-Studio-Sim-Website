@@ -679,6 +679,8 @@ export interface MonthLedger {
   day: number; // first day of the month
   income: Partial<Record<LedgerCat, number>>;
   expense: Partial<Record<LedgerCat, number>>;
+  /** Net money from (+) or to (−) investors and lenders: share issues, buybacks, dividends, loans. Not income or expense. */
+  financing?: number;
   cashEnd: number;
 }
 

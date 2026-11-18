@@ -101,7 +101,9 @@ export function publishingMonthly(c: Ctx): void {
       const t = LABEL_TIERS[d.tier];
       const quality = rv?.quality ?? 0.4;
       const score = clamp(Math.round(rng.normal(BALANCE.RIVAL_SCORE_BASE + quality * BALANCE.RIVAL_SCORE_QUALITY - 6 + t.bonus + s.company.reputation / 20, BALANCE.RIVAL_SCORE_SD)), 20, 95);
-      const units = Math.round(Math.pow(score / 100, 4) * 180_000 * t.scale * rng.range(0.6, 1.4));
+      // a real gamble: a strong studio returns about a third more than its advance on average, a weak one loses money,
+      // and even a good game can find a small audience
+      const units = Math.round(Math.pow(score / 100, 4) * 110_000 * t.scale * rng.range(0.3, 1.55));
       const net = units * 20 * inflation(s.day) * 0.6;
       const topics = TOPICS.filter((x) => x.year <= yr);
       const topic = topics.length ? rng.pick(topics).id : 'fantasy';

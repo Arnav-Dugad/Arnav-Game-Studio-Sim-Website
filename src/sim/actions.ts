@@ -58,14 +58,14 @@ import { isPlatformAvailable, platformInfo } from './systems/market';
 import { CROWD_OK, assignDesks, canPlace, crampedCount, freeDesks, itemRequirement, layout, spreadOut, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost, activeResearch } from './systems/research';
 import { HIREABLE_ROLES, ROLE_SEARCH_COST, ROLE_SEARCH_SIZE, SABBATICAL, candidateQuality, candidateToStaff, generateCandidate, invalidateMentees, isAway, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
-import { adoptableFranchises, adoptedFans, franchiseSalePrice } from './systems/rivals';
+import { adoptableFranchises, adoptedFans, franchiseSalePrice, sellFranchiseBlocked } from './systems/rivals';
 import { MAX_SUBSIDIARIES, ownedStudios } from './systems/offers';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
 import { applyCheat, markCheated, type CheatOp } from './cheats';
 import { academyBlocked, closeAcademy, foundAcademy, validTrack, type AcademyFunding } from './systems/academy';
 import { canFoundLeague, closeLeague, foundLeague, LEAGUE_TIERS, leagueSetupCost } from './systems/esports';
-import { addRep, aOrAn, earn, refund, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend, payResearch, researchPaid } from './util';
+import { addRep, aOrAn, earn, refund, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend, payResearch, researchPaid, financing } from './util';
 
 export interface StartGamePayload {
   name: string;
@@ -1264,7 +1264,7 @@ function apply(c: Ctx, a: Action): string | null {
       const n = Math.min(Math.round(a.shares), st.shares - st.founderShares);
       const cost = n * st.price * 1.05;
       if (n <= 0 || s.company.cash < cost) return 'Not enough cash';
-      s.company.cash -= Math.round(cost);
+      financing(s, -cost);
       // bought-back shares are retired: your stake grows because there are fewer shares, and the company is worth
       // what it was minus the cash it spent
       st.price = Math.max(0.05, (st.price * st.shares - cost) / Math.max(1, st.shares - n));
@@ -1311,8 +1311,8 @@ function apply(c: Ctx, a: Action): string | null {
     case 'sellFranchise': {
       const f = s.franchises[a.franchiseId];
       if (!f) return 'No such franchise';
-      if (Object.values(s.projects).some((p) => p.kind === 'game' && p.concept.franchiseId === f.id)) return 'A sequel is in development';
-      if ((s.mediaDeals ?? []).some((d) => d.franchiseId === f.id && d.outcome === undefined)) return 'A licensing deal is still in production';
+      const blocked = sellFranchiseBlocked(s, f);
+      if (blocked) return blocked;
       const price = franchiseSalePrice(s, f.fans, f.bestScore);
       earn(s, 'asset_sales', price);
       delete s.franchises[f.id];
@@ -1593,6 +1593,7 @@ function apply(c: Ctx, a: Action): string | null {
       const pl = platformInfo(s, a.platform);
       if (!pl || !isPlatformAvailable(s, pl)) return 'Platform not available';
       if (s.day - rel.day > 365 * 4) return 'Too old to port profitably';
+      if (rel.concept.franchiseId && !s.franchises[rel.concept.franchiseId]) return 'You sold this IP';
       if (rel.concept.monetization === 'subscription') return 'Subscription games can’t be ported';
       if (!rel.concept.deal && pl.kind !== 'computer' && !s.research.done.includes('biz_self_publishing')) return 'Research Self-Publishing to put your games on consoles yourself';
       const kit = s.devkits.includes(a.platform) ? 0 : devkitCost(s, a.platform);

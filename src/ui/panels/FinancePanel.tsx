@@ -151,6 +151,15 @@ function LastMonth() {
           </div>
         ))}
       </div>
+      {!!m.financing && (
+        <div className="flex justify-between border-t border-line pt-1.5 sm:col-span-2" title="Share issues, buybacks, dividends and loans: they move cash but aren’t income or costs">
+          <span className="text-ink2">Investors &amp; lenders (shares, dividends, loans)</span>
+          <span className={`num font-semibold ${m.financing > 0 ? 'text-good' : 'text-bad'}`}>
+            {m.financing > 0 ? '+' : '−'}
+            {fmtMoney(Math.abs(m.financing))}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -581,7 +581,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
     const p = useGame.getState().wizardPreset;
     const fid = p?.franchiseId ?? (baseRel?.concept.franchiseId && s.franchises[baseRel.concept.franchiseId] ? baseRel.concept.franchiseId : undefined);
     return fid ? s.franchises[fid] : undefined;
-  });
+  }, (f) => !f || !!s.franchises[f.id]);
   const [genre, setGenre] = useDraft<GenreId>(bag, 'genre', baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre);
   // A first-timer's default topic quietly suits the default genre, so the tutorial game starts on a good footing.
   const starterTopic = () => {
@@ -724,7 +724,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const start = () => {
     const r = act({
       type: 'startGame',
-      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs, priceTier, production: prod },
+      game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId && s.franchises[franchiseId] ? franchiseId : undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs, priceTier, production: prod },
     });
     if (r.ok) {
       clearDraft(); // planned and started: the next game starts from a clean sheet
@@ -1160,9 +1160,9 @@ function NewGame({ onDone }: { onDone: () => void }) {
         )}
       </Section>
 
-      <Section title={`7 · Team (${Math.min(team.length, cap)}/${cap})`}>
+      <Section title={`7 · Team (${Math.min(liveTeam.length, cap)}/${cap})`}>
         <StaffPicker pool={idle} selected={team.filter((id) => idle.some((x) => x.id === id))} onChange={setTeam} cap={cap} genre={genre} />
-        {team.length > cap && <p className="mt-1 text-xs text-warn">Only the first {cap} will join a {SIZE_LABEL[size]} game.</p>}
+        {liveTeam.length > cap && <p className="mt-1 text-xs text-warn">Only the first {cap} will join a {SIZE_LABEL[size]} game.</p>}
       </Section>
 
       <Section title="8 · Focus" right={ideal ? <Pill tone="gold">Gold marks = your notes on {GENRE_BY_ID[genre].name}</Pill> : <Pill>Ship {aOrAn(GENRE_BY_ID[genre].name)} game to learn what works</Pill>}>
