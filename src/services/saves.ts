@@ -101,9 +101,9 @@ export async function saveLocal(uid: string, slotId: SlotId, s: GameState): Prom
   const tomb = tombstones();
   if (tomb.includes(`${uid}/${slotId}`)) setTombstones(tomb.filter((t) => t !== `${uid}/${slotId}`));
   const json = serialize(s);
-  const checksum = hashJson(json);
+  const meta0 = metaFor(s, undefined, hashJson(json)); // before the await: the sim keeps running
   const data = await gzipBase64(json);
-  const meta = { ...metaFor(s, undefined, checksum), bytes: data.length };
+  const meta = { ...meta0, bytes: data.length };
   const rec: LocalRecord = { key: `${uid}/${slotId}`, meta, data, synced: false };
   const db = await idb();
   await db.put('saves', rec);
@@ -421,6 +421,8 @@ export class AutoSaver {
   private lastCloud = 0;
   private pending: Promise<unknown> = Promise.resolve();
   private latest: GameState | null = null;
+  /** Forced saves requested so far (routine saves queued before one don't wait for idle time). */
+  private forced = 0;
   private onHide = () => {
     if (document.visibilityState === 'hidden') void this.flush();
   };
@@ -455,11 +457,15 @@ export class AutoSaver {
   /** Save locally now; sync to the cloud if the throttle window has passed (or force). */
   save(s: GameState, force = false): Promise<unknown> {
     this.latest = s;
-    if (force) hurry();
+    if (force) {
+      this.forced += 1;
+      hurry();
+    }
+    const ticket = this.forced;
     this.pending = this.pending.then(async () => {
       try {
         // routine autosaves wait for a quiet moment so they never land mid-frame
-        if (!force) await idle();
+        if (!force && ticket === this.forced) await idle(); // skip the wait once a forced save is behind us
         this.emit({ state: 'saving' });
         await saveLocal(this.uid, this.slotId, s);
         this.emit({ lastLocal: Date.now() });

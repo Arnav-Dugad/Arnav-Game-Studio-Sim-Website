@@ -634,7 +634,6 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const locs = useMemo(() => (yr >= LOC_YEAR ? localized.filter((r) => r !== home && !(s.company.branches ?? []).includes(r)) : []), [yr, localized, home, s.company.branches]);
   const work = workShare({ remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs });
   const cost = estimateCost(s, size, teamStaff, work);
-  const effortEst = teamEffortEstimate(s, size, teamStaff, work);
   const featCost = features.reduce((tt, id) => tt + money(FEATURE_BY_ID[id]?.cost ?? 0, s.day), 0) + locs.length * money(LOC_COST[size], s.day);
   const kitCost = platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
   const deal = s.offers.deals.find((d) => d.id === dealId);
@@ -651,13 +650,18 @@ function NewGame({ onDone }: { onDone: () => void }) {
     // what reaches you: net per copy on each platform, a publisher's royalty share, plus their advance
     const d = conceptPreview.deal;
     let toYou = 0;
-    for (const pp of pot.platforms) toYou += pp.potential * netPerUnit(s, pp.pl, launchPrice(s, pp.pl, conceptPreview), !d) * (d ? d.royalty : 1);
+    const p0 = pot.platforms[0]?.pl;
+    const price = p0 ? launchPrice(s, p0, conceptPreview) : 0; // every version launches at the same price
+    for (const pp of pot.platforms) toYou += pp.potential * netPerUnit(s, pp.pl, price, !d) * (d ? d.royalty : 1);
+    toYou *= 1 - (s.engines[conceptPreview.engineId]?.royalty ?? 0); // a licensed engine takes its cut
     if (d) toYou += dealAdvanceFor(d, size, s.day);
     return { units: pot.platforms.reduce((t, p) => t + p.potential, 0), why: pot.salesWhy, toYou };
   }, [s, conceptPreview, platforms.length, size]);
   const fit = comboFitValue(genre, topic);
   const known = knowsCombo(s, genre, topic);
   const cap = BALANCE.SIZE[size].teamCap;
+  const joining = liveTeam.slice(0, cap).map((id) => s.staff[id]!).filter(Boolean); // who'll actually join
+  const effortEst = teamEffortEstimate(s, size, joining, work);
 
   const start = () => {
     const r = act({
@@ -693,6 +697,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             onClick={() => {
               setBased(undefined);
               setName(freshName(topic, s.day));
+              setNameTyped(false);
             }}
           >
             Make a new game instead
@@ -728,6 +733,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               setGenre(idea.genre);
               setTopic(idea.topic);
               setName(freshName(idea.topic, Math.random() * 1e6));
+              setNameTyped(false);
             }}>
             Inspire me
           </Button>
@@ -751,7 +757,10 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 setName(e.target.value);
                 setNameTyped(true);
               }} />
-              <Button icon="refresh" aria-label="Suggest a name" onClick={() => setName(freshName(topic, Math.random() * 1e6))} />
+              <Button icon="refresh" aria-label="Suggest a name" onClick={() => {
+                setName(freshName(topic, Math.random() * 1e6));
+                setNameTyped(false);
+              }} />
             </div>
             {takenNames.has(name.trim().toLowerCase()) && <p className="mt-1 text-[11px] text-warn">You already have a game called “{name.trim()}” — players (and your own lists) will mix them up.</p>}
           </Field>
@@ -768,6 +777,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
                     setGenre(f.genre);
                     setTopic(f.topic);
                     setName(`${f.name} ${f.entries.length + 1 + (f.origin ? 1 : 0)}`);
+                    setNameTyped(false);
                   }
                 }}
               >
@@ -1060,7 +1070,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
             // what this team, with this focus, would produce: design share vs the genre's ideal
             let d = 0;
             let all = 0;
-            for (const st of teamStaff)
+            for (const st of joining)
               for (const ph of [0, 1, 2] as const) {
                 const f = focus[ph];
                 const fs = f[0] + f[1] + f[2] || 1;
@@ -1125,7 +1135,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
               <div className="w-full cursor-help rounded-xl bg-bg2/70 p-2 text-left">
                 <div className="text-ink3">Sales if reviews ≈ 72</div>
                 <div className="num font-semibold">{fmtUnits(forecast.units)} units</div>
-                <div className="num text-[11px] text-ink3">≈ {fmtMoney(forecast.toYou)} to you{conceptPreview.deal ? ' (incl. advance)' : ''}</div>
+                <div className="num text-[11px] text-ink3">≈ {fmtMoney(forecast.toYou)} to you from sales{conceptPreview.deal ? ' (incl. advance)' : ''}{monet !== 'premium' && monet !== 'shareware' ? ' + live income' : ''}</div>
               </div>
             </Tip>
           )}

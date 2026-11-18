@@ -85,7 +85,7 @@ export function Landing() {
             Hire legends, design your office, chase trends, outmanoeuvre real rivals and survive four decades of industry upheaval. Every number tells you why it changed.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button variant="primary" size="lg" icon="play" onClick={play}>
+            <Button variant="primary" size="lg" icon="play" onClick={play} disabled={!ready}>
               Play free
             </Button>
             {ready && !user && (
