@@ -139,7 +139,7 @@ function Hire() {
               Add desks
             </Button>
           )}
-          <Button size="sm" icon="refresh" onClick={() => useGame.getState().actOrToast({ type: 'refreshCandidates' }, 'Fresh candidates found')} title="Pay a recruiter for a fresh pool">
+          <Button size="sm" icon="refresh" disabled={full} onClick={() => useGame.getState().actOrToast({ type: 'refreshCandidates' }, 'Fresh candidates found')} title={full ? 'Your office is full — move to a bigger one before hiring' : 'Pay a recruiter for a fresh pool'}>
             New candidates ({fmtMoney(money(1_200, s.day))})
           </Button>
         </span>

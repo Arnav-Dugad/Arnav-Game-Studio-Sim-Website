@@ -94,7 +94,7 @@ export function dealTerms(_s: GameState, d: DealOffer): string {
   return `${Math.round(d.royalty * 100)}% royalty · ${d.minScore}+ score · ${Math.round(d.reach * 100)}% reach`;
 }
 
-/** Estimated calendar days for a team to finish a contract (assumes ~85% productivity). */
+/** Estimated calendar days for a team to finish a contract (cautious: assumes ~72% productivity, for sick days and slow starts). */
 export function estimateContractDays(s: GameState, o: { needDesign: number; needTech: number }, team: string[]): number {
   let rate = 0;
   const dShare = o.needDesign / Math.max(1, o.needDesign + o.needTech);
@@ -102,7 +102,7 @@ export function estimateContractDays(s: GameState, o: { needDesign: number; need
     const st = s.staff[id];
     if (!st) continue;
     const best = Math.max(st.skills.design, st.skills.programming, st.skills.art, st.skills.writing, st.skills.qa) / 100;
-    rate += (dShare * Math.max(st.skills.design / 100, best * 0.75) + (1 - dShare) * Math.max(st.skills.programming / 100, best * 0.75)) * 0.85;
+    rate += (dShare * Math.max(st.skills.design / 100, best * 0.75) + (1 - dShare) * Math.max(st.skills.programming / 100, best * 0.75)) * 0.72;
   }
   if (rate <= 0) return Infinity;
   return Math.ceil(((o.needDesign + o.needTech) / rate) * 7 / 5);

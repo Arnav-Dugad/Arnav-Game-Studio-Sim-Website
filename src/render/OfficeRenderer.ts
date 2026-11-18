@@ -161,6 +161,7 @@ export class OfficeRenderer {
   private fitted = '';
   private inset = 0;
   private insetTarget = 0;
+  private lastInsetTarget = 0;
   private particles: { g: Graphics; vx: number; vy: number; life: number }[] = [];
   private pets = new PetSystem(this.itemLayer);
   private seasonDecor = new SeasonDecor(this.itemLayer);
@@ -508,6 +509,15 @@ export class OfficeRenderer {
     }
     // keep the office clear of side panels (smoothly slide the camera)
     this.insetTarget = this.el.clientWidth > 900 ? (ui.leftInset ?? 0) : 0;
+    // a panel opened or closed: if the office won't fit beside it at this zoom, fit it to the space that's left
+    if (this.insetTarget !== this.lastInsetTarget) {
+      this.lastInsetTarget = this.insetTarget;
+      const officeW = t.w * T * this.zoom;
+      if (officeW > this.el.clientWidth - this.insetTarget - 24) {
+        this.inset = this.insetTarget;
+        this.fit();
+      }
+    }
     if (Math.abs(this.insetTarget - this.inset) > 0.5) {
       const step = (this.insetTarget - this.inset) * Math.min(1, dt * 10);
       this.inset += step;

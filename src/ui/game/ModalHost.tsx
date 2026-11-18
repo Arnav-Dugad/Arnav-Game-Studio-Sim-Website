@@ -1068,7 +1068,7 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
                   <Icon name="star" size={15} className="mt-0.5 shrink-0 text-gold" />
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold">{ambitionText(st, st.ambition)}</div>
-                    <div className="text-ink2">{ambitionHint(st.ambition)}</div>
+                    <div className="text-ink2">{ambitionHint(st.ambition, s.research.done.includes('biz_training'))}</div>
                     <div className={cx('num mt-0.5', st.ambition.until - s.day < 30 ? 'font-semibold text-bad' : 'text-ink3')}>
                       {Math.max(0, st.ambition.until - s.day)} days left · fulfilled: loyalty +{AMBITION_REWARD.loyalty}, morale +{AMBITION_REWARD.morale} · ignored: loyalty {AMBITION_PENALTY.loyalty}
                     </div>

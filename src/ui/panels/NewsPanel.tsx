@@ -149,7 +149,7 @@ function FanMailBox() {
     <div>
       <p className="mb-2 text-xs text-ink3">
         {s.progress.stats.fanMail ?? mail.length} letters and drawings so far. Each one lifts the morale of the people who made that game.{' '}
-        {hasWall ? `Pin drawings to your Fan Art Wall (${pinned}/${MAX_PINNED}): each adds a little morale.` : 'Build a Fan Art Wall (Build → Decor) to pin the drawings up.'}
+        {hasWall ? `Pin drawings to your Fan Art Wall (${pinned}/${MAX_PINNED}): each adds a little morale.` : 'Build a Fan Art Wall (Office → Edit layout → Decor) to pin the drawings up.'}
       </p>
       <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-2">
         {mail.map((m) => (

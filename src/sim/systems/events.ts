@@ -1481,7 +1481,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'staff_conflict',
     art: 'conflict',
-    cooldown: 120,
+    cooldown: 300,
     weight: (s) => (staffList(s).length >= 3 ? 0.4 + (staffList(s).some((x) => x.traits.includes('hothead')) ? 0.8 : 0) + (anyCrunch(s) ? 0.5 : 0) : 0),
     make: ({ s, rng }) => {
       const l = staffList(s);

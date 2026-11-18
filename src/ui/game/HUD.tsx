@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { OFFICE_TIERS } from '@/data/facilities';
 import { weatherGlyph } from '@/render/weather';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { BD } from '@/sim/breakdown';
@@ -162,6 +163,15 @@ function RepWhy() {
     <div className="min-w-60 text-xs">
       <div className="font-semibold">Reputation {Math.round(s.company.reputation)}/100</div>
       <p className="mt-0.5 text-ink3">Affects hiring quality, sales reach, publisher terms and office moves.</p>
+      <p className="mt-1 text-ink2">Earn it with well-reviewed games (70+), awards and shipping regularly; flops, missed deadlines and scandals cost it.</p>
+      {(() => {
+        const next = OFFICE_TIERS.find((o) => o.tier === s.office.tier + 1);
+        return next && next.minReputation > s.company.reputation ? (
+          <p className="mt-1 font-semibold text-accent">
+            The {next.name} needs {next.minReputation} — {Math.ceil(next.minReputation - s.company.reputation)} to go.
+          </p>
+        ) : null;
+      })()}
       {log.length > 0 && (
         <ul className="mt-2 space-y-1 border-t border-line pt-2">
           {log.map((e, i) => (

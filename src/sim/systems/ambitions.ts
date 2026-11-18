@@ -65,7 +65,7 @@ export function ambitionGoal(a: Ambition): string {
 }
 
 /** How the player can help, for the UI. */
-export function ambitionHint(a: Ambition): string {
+export function ambitionHint(a: Ambition, canTrain = true): string {
   switch (a.kind) {
     case 'genre':
       return `Put them on a ${GENRE_BY_ID[a.genre!]?.name ?? ''} game that ships before the deadline.`;
@@ -78,7 +78,7 @@ export function ambitionHint(a: Ambition): string {
     case 'research':
       return 'Assign them to research.';
     case 'skill':
-      return 'Send them on training, or keep them working in their craft.';
+      return canTrain ? 'Send them on training, or keep them working in their craft.' : 'Keep them working in their craft (training courses come with the Training Programme research).';
     case 'desk':
       return 'No longer needed.';
     case 'holiday':
@@ -135,7 +135,7 @@ function newAmbition(c: Ctx, st: Staff): Ambition | null {
   if (st.salary < market * 1.1) opts.push({ w: hasTrait(st, 'ambitious') ? 4 : 1.5, make: () => ({ kind: 'raise', since: s.day, until: s.day + rng.int(90, 160), target: Math.round(Math.max(st.salary * 1.08, market * 1.02) / 1000) * 1000 }) });
   if (st.assignment.kind !== 'research') opts.push({ w: hasTrait(st, 'visionary') ? 2 : 1, make: () => ({ kind: 'research', since: s.day, until, progress: 0 }) });
   const [primary] = ROLE_SKILLS[st.role] ?? [];
-  if (primary && st.skills[primary] < Math.min(98, st.potential - 3)) opts.push({ w: 2, make: () => ({ kind: 'skill', since: s.day, until, skill: primary, target: Math.min(100, Math.round(st.skills[primary] + 6)) }) });
+  if (primary && st.skills[primary] < Math.min(98, st.potential - 3)) opts.push({ w: 2, make: () => ({ kind: 'skill', since: s.day, until, skill: primary, target: Math.min(100, Math.round(st.skills[primary] + (s.research.done.includes('biz_training') ? 6 : 3))) }) });
   if (st.burnout > 35 && (st.lastVacationDay === undefined || s.day - st.lastVacationDay > 200)) opts.push({ w: 3, make: () => ({ kind: 'holiday', since: s.day, until: s.day + rng.int(60, 120) }) });
   const total = opts.reduce((t, o) => t + o.w, 0);
   let r = rng.next() * total;

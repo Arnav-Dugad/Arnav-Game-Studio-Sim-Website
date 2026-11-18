@@ -109,7 +109,7 @@ export function pinFanArt(s: GameState, id: string, on: boolean): string | null 
   if (!m) return 'No such letter';
   if (m.kind !== 'art') return 'Only drawings go on the wall';
   if (on && !m.pinned && pinnedArt(s).length >= MAX_PINNED) return `The wall holds ${MAX_PINNED} drawings — unpin one first`;
-  if (on && !s.office.items.some((i) => i.item === 'fan_wall')) return 'Build a Fan Art Wall first (Build → Decor)';
+  if (on && !s.office.items.some((i) => i.item === 'fan_wall')) return 'Build a Fan Art Wall first (Office → Edit layout → Decor)';
   m.pinned = on || undefined;
   return null;
 }

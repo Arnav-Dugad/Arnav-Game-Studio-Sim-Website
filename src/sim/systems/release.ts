@@ -53,7 +53,7 @@ export const PRAISE: Record<string, string[]> = {
   tech: ['A technical showcase that pushes the hardware.', 'Looks and runs like a generation ahead.', 'Silky smooth on the hardware it targets.'],
   platform: ['Feels right at home on this system.', 'Plays to the strengths of its platform.', 'A perfect match for the hardware.'],
   bugs: ['Rock solid. Not a crash in sight.', 'Polished to a mirror shine.', 'Remarkably stable for a launch build.'],
-  trend: ['Lands right in the middle of what players crave.', 'Perfectly in tune with the moment.', 'Exactly the game everyone is talking about this season.'],
+  trend: ['Lands right in the middle of what players crave.', 'Perfectly in tune with the moment.', 'Right on trend.'],
   fresh: ['Something genuinely new.', 'A breath of fresh air.', 'Bold, original and a little bit strange — in a good way.'],
   balance: ['Design and technology in perfect balance.', 'Feels as good as it looks.'],
   repeat: ['Comfort food done right.'],
@@ -504,6 +504,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   }
   // Reputation
   const rd = ((score - 60) / 7) * SIZE_REP[p.concept.size] * (baseRel ? 0.5 : 1);
+  // a young studio builds a name by shipping decent games at all (fades as the name grows)
+  if (score >= 55 && !baseRel) addRep(s, 0.6 * Math.max(0, 1 - s.company.reputation / 30), 'A growing catalogue');
   addRep(s, (rd > 0 ? rd * (1 - s.company.reputation / 115) : rd), `Reviews of ${rel.name}`);
   // Stats
   const st = s.progress.stats;
@@ -531,7 +533,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     (s.publisherTrust ??= {})[deal.publisherId] = Math.round(clamp((s.publisherTrust[deal.publisherId] ?? 0) + d, -5, 6) * 10) / 10;
   }
   if (deal && score < deal.minScore) {
-    addRep(s, -(2), 'Publisher disappointed');
+    addRep(s, -Math.min(2, 0.75 + (deal.minScore - score) / 8), 'Publisher disappointed');
     pushNews(s, { category: 'studio', headline: `Publisher disappointed with ${rel.name}`, body: `The contract wanted ${deal.minScore}+.`, tone: 'bad' });
   }
   pushNews(s, {

@@ -156,7 +156,7 @@ export interface OfficeTierDef {
 
 export const OFFICE_TIERS: readonly OfficeTierDef[] = [
   { tier: 1, name: 'Garage', floors: 1, w: 8, h: 6, staffCap: 4, rent: 250, moveCost: 0, minReputation: 0, desc: 'Where legends start. Cold in winter.' },
-  { tier: 2, name: 'Small Office', floors: 1, w: 14, h: 10, staffCap: 12, rent: 2_200, moveCost: 18_000, minReputation: 10, desc: 'A real door with your name on it.' },
+  { tier: 2, name: 'Small Office', floors: 1, w: 14, h: 10, staffCap: 12, rent: 2_200, moveCost: 18_000, minReputation: 6, desc: 'A real door with your name on it.' },
   { tier: 3, name: 'Studio Floor', floors: 1, w: 22, h: 14, staffCap: 30, rent: 7_500, moveCost: 90_000, minReputation: 25, desc: 'Open-plan floor in a creative district.' },
   { tier: 4, name: 'Studio Building', floors: 2, w: 24, h: 16, staffCap: 80, rent: 24_000, moveCost: 420_000, minReputation: 45, desc: 'Two floors. Your logo on the lobby wall.' },
   { tier: 5, name: 'Campus HQ', floors: 3, w: 28, h: 18, staffCap: 200, rent: 70_000, moveCost: 2_000_000, minReputation: 65, desc: 'A campus with a courtyard and a café.' },

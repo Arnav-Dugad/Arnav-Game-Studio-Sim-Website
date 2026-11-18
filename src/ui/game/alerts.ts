@@ -151,7 +151,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
     if (pitch && pitcher && !isAway(pitcher)) out.push({ id: 'pitch', tone: 'info', icon: 'lightbulb', text: `${pitcher.name.split(' ')[0]}’s pitch is waiting: ${pitchText(pitch, true)} (until ${formatDate(pitch.until)}).`, action: { label: 'New game', run: () => open('develop', 'new') } });
     // a recent launch, and the money to thank the team
     const thank = s.releaseOrder.slice(-3).map((id) => s.releases[id]!).find((r) => r && !bonusBlocked(s, r) && s.company.cash > bonusCost(s, r) * 6);
-    if (thank) out.push({ id: 'bonus', tone: 'info', icon: 'coin', text: `${thank.name} is out — a launch bonus would thank the ${bonusTeam(s, thank).length} people who made it.`, action: { label: 'See it', run: () => useGame.getState().openModalNow({ kind: 'release', releaseId: thank.id }) } });
+    if (thank) out.push({ id: 'bonus', tone: 'info', icon: 'coin', text: `${thank.name} is out — a launch bonus would thank the ${bonusTeam(s, thank).length} ${bonusTeam(s, thank).length === 1 ? 'person' : 'people'} who made it${(thank.credits ?? []).some((c) => c.role === 'founder') ? ' (the founder doesn’t take one)' : ''}.`, action: { label: 'See it', run: () => useGame.getState().openModalNow({ kind: 'release', releaseId: thank.id }) } });
   }
   // awards season: a contender without a campaign behind it
   {
