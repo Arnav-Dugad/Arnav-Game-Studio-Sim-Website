@@ -14,6 +14,7 @@ import { Button, Empty, Pill, Section, Segmented, cx, inputCls } from '../compon
 import { useGame } from '../store';
 import { Face, SkillBars, Traits } from './staffBits';
 import { TeamTab } from './TeamTab';
+import { AcademySection } from './AcademySection';
 
 export { Face, SkillBars, Traits };
 
@@ -204,6 +205,11 @@ function CandidateCard({ c, onHire, disabled, picked, onPick }: { c: Candidate; 
               </span>
             )}
             {c.formerly && <Pill tone="neutral">ex-{c.formerly}</Pill>}
+            {c.academy && (
+              <span title="Trained at your academy: high potential, asks under market rate, loyal to the studio">
+                <Pill tone="accent">Academy class of {c.academy}</Pill>
+              </span>
+            )}
           </div>
           <div className="text-xs text-ink3">
             {c.level} {ROLE_NAMES[c.role]} · potential {c.potential}
@@ -336,6 +342,7 @@ function Policies() {
           <input type="checkbox" disabled={fromDay(s.day).year < INTERN_YEAR} checked={!!p.interns} onChange={(e) => act({ type: 'setPolicy', interns: e.target.checked })} className="size-5 accent-[var(--accent)]" />
         </label>
       </Section>
+      <AcademySection />
       <Section title="No-crunch pledge">
         <div className="flex items-center justify-between gap-3 rounded-xl bg-bg2/60 p-2.5">
           <span className="min-w-0">

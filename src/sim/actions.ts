@@ -61,6 +61,7 @@ import { FRANCHISES } from '../data/franchises';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
 import { applyCheat, markCheated, type CheatOp } from './cheats';
+import { academyBlocked, closeAcademy, foundAcademy, validTrack, type AcademyFunding } from './systems/academy';
 import { canFoundLeague, closeLeague, foundLeague, LEAGUE_TIERS, leagueSetupCost } from './systems/esports';
 import { addRep, aOrAn, earn, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
 
@@ -232,6 +233,9 @@ export type Action =
   | { type: 'setSubscriptionPrice'; price: number }
   | { type: 'closeSubscription' }
   | { type: 'hostShowcase' }
+  | { type: 'foundAcademy'; track: string; funding: number }
+  | { type: 'setAcademy'; track?: string; funding?: number }
+  | { type: 'closeAcademy' }
   | { type: 'signIndie'; rivalId: string; tier: 'small' | 'medium' | 'large' }
   | { type: 'cancelConsole'; id: string };
 
@@ -675,6 +679,10 @@ function apply(c: Ctx, a: Action): string | null {
         pushNews(s, { category: 'staff', headline: `${cand.name} defects from ${rv?.name ?? 'a rival'} to ${s.company.name}`, tone: 'neutral' });
       }
       s.progress.stats.staffHired += 1;
+      if (cand.academy) {
+        s.progress.stats.academyHired = (s.progress.stats.academyHired ?? 0) + 1;
+        if (s.company.academy) s.company.academy.hired += 1;
+      }
       assignDesks(s);
       c.out.push({ type: 'hired', staffId: id });
       return null;
@@ -1665,6 +1673,28 @@ function apply(c: Ctx, a: Action): string | null {
       if (!s.subscription?.active) return 'No pass is running';
       if (a.price < subRefPrice(s) * 0.25 || a.price > subRefPrice(s) * 4) return 'That price is unrealistic';
       s.subscription.price = Math.round(a.price * 100) / 100;
+      return null;
+    }
+    case 'foundAcademy': {
+      const why = academyBlocked(s);
+      if (why) return why;
+      if (!validTrack(a.track)) return 'Pick what the academy teaches';
+      if (a.funding !== 1 && a.funding !== 2 && a.funding !== 3) return 'Invalid budget';
+      foundAcademy(c, a.track, a.funding as AcademyFunding);
+      return null;
+    }
+    case 'setAcademy': {
+      const ac = s.company.academy;
+      if (!ac) return 'You don’t run an academy';
+      if (a.track !== undefined && !validTrack(a.track)) return 'Pick what the academy teaches';
+      if (a.funding !== undefined && a.funding !== 1 && a.funding !== 2 && a.funding !== 3) return 'Invalid budget';
+      if (a.track !== undefined && validTrack(a.track)) ac.track = a.track;
+      if (a.funding !== undefined) ac.funding = a.funding as AcademyFunding;
+      return null;
+    }
+    case 'closeAcademy': {
+      if (!s.company.academy) return 'You don’t run an academy';
+      closeAcademy(s);
       return null;
     }
     case 'closeSubscription': {

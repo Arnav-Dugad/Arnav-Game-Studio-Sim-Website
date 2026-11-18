@@ -64,6 +64,9 @@ export function StaffPicker({
     } else if (!full) onChange([...selected, id]);
   };
   const best = genre ? autoPickTeam(pool, genre, cap) : score ? [...pool].sort((a, b) => (fit.get(b.id) ?? 0) - (fit.get(a.id) ?? 0)).slice(0, cap).map((x) => x.id) : null;
+  // people taken off research by this team (and whether that leaves nobody researching)
+  const pulled = pool.filter((st) => selected.includes(st.id) && st.assignment.kind === 'research');
+  const researchersLeft = pool.filter((st) => st.assignment.kind === 'research' && !selected.includes(st.id)).length;
   const avgFit = selected.length ? selected.reduce((t, id) => t + (fit.get(id) ?? 0), 0) / selected.length : 0;
 
   return (
@@ -85,6 +88,12 @@ export function StaffPicker({
           </Button>
         )}
       </div>
+      {pulled.length > 0 && (
+        <p className="text-[11px] text-warn">
+          {pulled.length === 1 ? `${pulled[0]!.name} is` : `${pulled.length} of them are`} researching now — joining moves {pulled.length === 1 ? 'them' : 'them all'} off it
+          {researchersLeft === 0 ? ', and research pauses until someone is free.' : '.'}
+        </p>
+      )}
       {pool.length > 6 && (
         <div className="flex gap-2">
           <label className="relative min-w-0 flex-1">

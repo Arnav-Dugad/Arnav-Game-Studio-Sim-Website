@@ -470,6 +470,8 @@ const ALL_ACTION_BUILDERS: ((s: GameState, rng: Rng) => Action | null)[] = [
   () => ({ type: 'spreadOut' }),
   (_s, rng) => ({ type: 'startRnd', id: rng.pick(['rd_pipeline', 'rd_engine', 'rd_qa', 'rd_liveops', 'rd_market', 'rd_bogus']) }),
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'releaseDemo', projectId: rng.chance(0.9) ? rng.pick(p) : 'nope' } : null; },
+  (_s, rng) => ({ type: 'foundAcademy', track: rng.pick(['programmer', 'artist', 'mixed', 'founder', 'BAD']), funding: rng.pick([1, 2, 3, 0, 7]) }),
+  (_s, rng) => (rng.chance(0.85) ? { type: 'setAcademy', track: rng.pick([undefined, 'writer', 'mixed', 'nope']), funding: rng.pick([undefined, 1, 3, 9]) } : { type: 'closeAcademy' }),
   (s, rng) => { const p = Object.keys(s.projects); return p.length ? { type: 'orderCollectors', projectId: rng.chance(0.9) ? rng.pick(p) : 'nope', run: rng.pick(['small', 'medium', 'large', 'huge'] as never[]) } : null; },
   (s, rng) => { const r = s.releaseOrder.slice(-3); return r.length ? { type: 'launchBonus', releaseId: rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },
   (s, rng) => { const r = Object.keys(s.releases); return r.length ? { type: 'awardsCampaign', releaseId: rng.chance(0.9) ? rng.pick(r) : 'nope' } : null; },

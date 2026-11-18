@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Icon, type IconName } from '../icons';
 
 /** Bump when adding entries so returning players see the card once. */
-export const WHATS_NEW_VERSION = '2026-11-21v';
+export const WHATS_NEW_VERSION = '2026-11-22a';
 const KEY = 'ase:whatsNew';
 
 const ITEMS: { icon: IconName; title: string; body: string }[] = [
+  { icon: 'people', title: 'Studio academy', body: 'From 1990, a famous studio (reputation 60+) can found its own games school (Staff → Policies). Pick the craft it teaches and its budget; every June the graduating class joins your hiring pool — high potential, asking under market rate, loyal for life. Bigger budgets and older schools turn out bigger, better classes. Also: sequels start on the platforms their fans own, team pickers warn before pulling people off research, and sales forecasts count market-research R&D.' },
   { icon: 'reputation', title: 'Out of the garage', body: 'A young studio now builds its name just by shipping decent games, the Small Office opens at reputation 6, and a game that just misses a publisher’s target costs less. Hover your reputation to see what earns it and how far the next office is. Contract estimates are more cautious, quarterly goals and staff ambitions only ask for what you can actually do, office squabbles come round less often, and the office re-fits beside an open panel.' },
   { icon: 'flask', title: 'R&D programmes', body: 'After 25 research projects, the Research panel opens five long-running programmes — Production pipeline, Engine R&D, Test automation, Player analytics and Market research. Ten levels each, every one dearer than the last, each a small permanent edge (faster teams, better games, fewer bugs, more live income, bigger launches). “Keep research going” moves on to them when the tree runs dry. Also: share issues now dilute your stake (they no longer create money out of thin air).' },
   { icon: 'people', title: 'Running a big studio', body: 'Staff → Spread out gives a cramped team room across every floor in one click. Team tab: Pay market rate for everyone selected, and Train… each person in their own role’s skill. Policies: Always mediate feuds (no popups). New games show the team’s effort against what the size needs — and warn before a thin team takes on a big game. Every new game gets its own title, when the tech tree runs dry nobody is parked in research, big acquisitions ask first, and several launches on one day no longer stack up popups. Rival studios now rise and fall with their games.' },

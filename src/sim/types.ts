@@ -115,6 +115,8 @@ export interface Staff {
   /** A summer intern (until September 1), or a former intern now on staff. */
   intern?: { until: number };
   wasIntern?: boolean;
+  /** Graduated from your studio academy (the class year). */
+  academy?: number;
   /** After a standing ovation, rival recruiters are watching until this day. */
   spotlightUntil?: number;
   /** A former colleague who came back (the day they rejoined). */
@@ -894,6 +896,8 @@ export interface LifetimeStats {
   mediaHits?: number;
   interns?: number;
   internsHired?: number;
+  academyGrads?: number;
+  academyHired?: number;
   donated?: number;
   perfectTrailers?: number;
   /** One-on-ones held. */
@@ -976,6 +980,8 @@ export interface Company {
   crunchPledge?: { since?: number; ever?: boolean; brokenDay?: number; withdrawnDay?: number };
   /** A magazine printed one of your games as a type-in listing (1980s); years later, someone who typed it in may apply. */
   typeIn?: { day: number; game: string; magazine: string; grown?: boolean };
+  /** Your games school (systems/academy.ts): opened, its craft, budget level, graduates so far and how many you hired. */
+  academy?: { since: number; track: Role | 'mixed'; funding: 1 | 2 | 3; grads: number; hired: number };
   /** A greenlit staff pitch waiting to be made (systems/pitches.ts). */
   pitch?: { staffId: string; genre: GenreId; topic: string; until: number };
   /** The year's awards campaign (systems/awardsCampaign.ts). */

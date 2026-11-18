@@ -7,6 +7,7 @@ import { licencesMonthly } from './systems/licences';
 import { documentaryMonthly } from './systems/documentary';
 import { communityMonthly, communityWeekly } from './systems/community';
 import { charityMonthly } from './systems/giving';
+import { academyMonthly } from './systems/academy';
 import { partnersMonthly } from './systems/partners';
 import { internsArrive, internsLeave } from './systems/interns';
 import { hallOfClassics } from './systems/classics';
@@ -134,6 +135,7 @@ export function tick(c: Ctx): void {
     mediaMonthly(c);
     partnersMonthly(s);
     charityMonthly(c);
+    academyMonthly(c);
     communityMonthly(s);
     if (d.month === 6) internsArrive(c);
     if (d.month === 9) internsLeave(c, () => fireEvent(c, 'intern_offer'));

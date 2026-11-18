@@ -231,7 +231,7 @@ export function candidateToStaff(s: GameState, cand: Candidate, id: string, sala
     morale: clamp(65 + (salary / Math.max(1, cand.askSalary) - 1) * 60, 35, 95),
     energy: 100,
     burnout: 0,
-    loyalty: (cand.returning ? 70 : 50) + (hasTrait(cand, 'loyal') ? 15 : 0), // a returning colleague knows what they're coming back to
+    loyalty: (cand.returning ? 70 : cand.academy ? 65 : 50) + (hasTrait(cand, 'loyal') ? 15 : 0), // a returning colleague knows what they're coming back to; graduates owe you their start
     personId: cand.personId,
     assignment: { kind: 'idle' },
     activity: 'idle',
@@ -240,6 +240,7 @@ export function candidateToStaff(s: GameState, cand: Candidate, id: string, sala
     gamesShipped: 0,
     poachCooldown: 120,
     ...(cand.returning ? { rejoined: s.day } : {}),
+    ...(cand.academy ? { academy: cand.academy } : {}),
   };
 }
 

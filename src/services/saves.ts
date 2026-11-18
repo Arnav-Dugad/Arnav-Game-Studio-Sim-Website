@@ -465,7 +465,8 @@ export class AutoSaver {
     this.pending = this.pending.then(async () => {
       try {
         // routine autosaves wait for a quiet moment so they never land mid-frame
-        if (!force && ticket === this.forced) await idle(); // skip the wait once a forced save is behind us
+        if (!force && ticket !== this.forced) return; // a forced save queued behind us writes newer state
+        if (!force) await idle();
         this.emit({ state: 'saving' });
         await saveLocal(this.uid, this.slotId, s);
         this.emit({ lastLocal: Date.now() });

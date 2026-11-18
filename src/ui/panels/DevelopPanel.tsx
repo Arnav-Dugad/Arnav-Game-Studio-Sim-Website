@@ -25,7 +25,7 @@ import { qualityToScore, workShare } from '@/sim/systems/dev';
 import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
-import type { ContractProject, EngineProject, Focus3, GameProject, GameState, Release, Size, Staff } from '@/sim/types';
+import type { ContractProject, EngineProject, Focus3, Franchise, GameProject, GameState, Release, Size, Staff } from '@/sim/types';
 import type { Action } from '@/sim/actions';
 import { Button, BreakdownList, Empty, Field, Meter, Pill, Section, Segmented, Tip, cx, inputCls } from '../components/ui';
 import { Cover } from '../art/Cover';
@@ -39,6 +39,7 @@ import { DESIGN_AREAS, SPEC_AREA_BONUS, areaSkill } from '@/sim/systems/dev';
 import { PHASE_AREAS } from '@/data/types';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
+import { rndSales } from '@/sim/systems/rnd';
 import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, idealFocus, knowsCombo, suggestConcept, suggestName, teamEffortEstimate } from '../game/lib';
 import { sound } from '../sound';
 
@@ -544,6 +545,15 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const baseRel = based?.rel;
   const remasterRel = based?.mode === 'remaster' ? based.rel : undefined;
   const expansionRel = based?.mode === 'expansion' ? based.rel : undefined;
+  /** The series' most recent game (sequels default to its audience and the platforms its fans own). */
+  const lastEntry = (f?: Franchise) => {
+    const ids = f?.entries ?? [];
+    for (let i = ids.length - 1; i >= 0; i--) {
+      const r = s.releases[ids[i]!];
+      if (r && !r.concept.expansionOf) return r;
+    }
+    return undefined;
+  };
   const [presetFr] = useState(() => {
     const p = useGame.getState().wizardPreset;
     const fid = p?.franchiseId ?? (baseRel?.concept.franchiseId && s.franchises[baseRel.concept.franchiseId] ? baseRel.concept.franchiseId : undefined);
@@ -577,7 +587,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           : freshName(topic, s.day),
   );
   const [nameTyped, setNameTyped] = useState(false);
-  const [audience, setAudience] = useState<Audience>(baseRel?.concept.audience ?? 'everyone');
+  const [audience, setAudience] = useState<Audience>(baseRel?.concept.audience ?? lastEntry(presetFr)?.concept.audience ?? 'everyone');
   const locked = !!baseRel;
   const [size, setSize] = useState<Size>('small');
   const [monet, setMonet] = useState<Monetization>('premium');
@@ -589,7 +599,14 @@ function NewGame({ onDone }: { onDone: () => void }) {
   const plats = availablePlatforms(s)
     .filter((p) => !expPlats || expPlats.includes(p.id))
     .sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0));
-  const [platforms, setPlatforms] = useState<string[]>(() => (expPlats ? expPlats.slice(0, 6) : plats[0] ? [plats[0].id] : []));
+  /** The platforms a series' fans played it on that you can still ship to. */
+  const fanPlatforms = (f?: Franchise) => (lastEntry(f)?.concept.platforms ?? []).filter((pid) => plats.some((p) => p.id === pid)).slice(0, 6);
+  const [platforms, setPlatforms] = useState<string[]>(() => {
+    if (expPlats) return expPlats.slice(0, 6);
+    const fp = fanPlatforms(presetFr);
+    if (!baseRel && fp.length) return fp;
+    return plats[0] ? [plats[0].id] : [];
+  });
   const engines = Object.values(s.engines).sort((a, b) => b.tech - a.tech);
   const [engineId, setEngineId] = useState(engines[0]?.id ?? 'e0');
   const lastGame = [...s.releaseOrder].reverse().map((id) => s.releases[id]!).find((r) => r && !r.concept.expansionOf && !r.concept.remasterOf);
@@ -630,38 +647,41 @@ function NewGame({ onDone }: { onDone: () => void }) {
   ]);
   const ideal = learned ? idealFocus(genre) : undefined;
   const franchises = Object.values(s.franchises).filter((f) => f.bestScore > 0 || f.origin).sort((a, b) => b.fans - a.fans); // most-loved series first
-  const teamStaff = team.map((id) => s.staff[id]!).filter(Boolean);
   const locs = useMemo(() => (yr >= LOC_YEAR ? localized.filter((r) => r !== home && !(s.company.branches ?? []).includes(r)) : []), [yr, localized, home, s.company.branches]);
   const work = workShare({ remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs });
-  const cost = estimateCost(s, size, teamStaff, work);
   const featCost = features.reduce((tt, id) => tt + money(FEATURE_BY_ID[id]?.cost ?? 0, s.day), 0) + locs.length * money(LOC_COST[size], s.day);
   const kitCost = platforms.filter((p) => !s.devkits.includes(p)).reduce((t, p) => t + devkitCost(s, p), 0);
   const deal = s.offers.deals.find((d) => d.id === dealId);
   const liveDealId = deal ? dealId : ''; // the offer may have expired since it was picked
   const liveFeatures = features.filter((id) => !featuresBlocked(s, [id], monet));
   const liveTeam = team.filter((id) => idle.some((x) => x.id === id)); // people may have quit or been reassigned
+  const cap = BALANCE.SIZE[size].teamCap;
+  const joining = liveTeam.slice(0, cap).map((id) => s.staff[id]!).filter(Boolean); // who'll actually join
+  const cost = estimateCost(s, size, joining, work);
   const conceptPreview = useMemo(
     () => ({ name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, deal: deal ? { ...deal } : undefined, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features, localized: locs, priceTier }),
     [name, genre, topic, platforms, audience, size, monet, engineId, franchiseId, deal, remasterRel, expansionRel, features, locs, priceTier],
   );
+  const week = Math.floor(s.day / 7);
   const forecast = useMemo(() => {
     if (!platforms.length) return null;
     const pot = salesPotential(s, conceptPreview, 72, 0.2);
+    const mr = rndSales(s); // market research R&D lifts every launch
     // what reaches you: net per copy on each platform, a publisher's royalty share, plus their advance
     const d = conceptPreview.deal;
     let toYou = 0;
     const p0 = pot.platforms[0]?.pl;
     const price = p0 ? launchPrice(s, p0, conceptPreview) : 0; // every version launches at the same price
-    for (const pp of pot.platforms) toYou += pp.potential * netPerUnit(s, pp.pl, price, !d) * (d ? d.royalty : 1);
+    for (const pp of pot.platforms) toYou += pp.potential * mr * netPerUnit(s, pp.pl, price, !d) * (d ? d.royalty : 1);
     toYou *= 1 - (s.engines[conceptPreview.engineId]?.royalty ?? 0); // a licensed engine takes its cut
     if (d) toYou += dealAdvanceFor(d, size, s.day);
-    const unitsAt = (score: number) => salesPotential(s, conceptPreview, score, 0.2).platforms.reduce((t, p) => t + p.potential, 0);
-    return { units: pot.platforms.reduce((t, p) => t + p.potential, 0), why: pot.salesWhy, toYou, low: unitsAt(60), high: unitsAt(85) };
-  }, [s, conceptPreview, platforms.length, size]);
+    const unitsAt = (score: number) => salesPotential(s, conceptPreview, score, 0.2).platforms.reduce((t, p) => t + p.potential, 0) * mr;
+    return { units: pot.platforms.reduce((t, p) => t + p.potential, 0) * mr, why: pot.salesWhy, toYou, low: unitsAt(60), high: unitsAt(85) };
+    // the market moves slowly: recompute weekly (state is mutated in place) or when the concept changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [week, conceptPreview, platforms.length, size, s.releaseOrder.length]);
   const fit = comboFitValue(genre, topic);
   const known = knowsCombo(s, genre, topic);
-  const cap = BALANCE.SIZE[size].teamCap;
-  const joining = liveTeam.slice(0, cap).map((id) => s.staff[id]!).filter(Boolean); // who'll actually join
   const effortEst = teamEffortEstimate(s, size, joining, work);
 
   const start = () => {
@@ -779,6 +799,10 @@ function NewGame({ onDone }: { onDone: () => void }) {
                     setTopic(f.topic);
                     setName(`${f.name} ${f.entries.length + 1 + (f.origin ? 1 : 0)}`);
                     setNameTyped(false);
+                    const prev = lastEntry(f);
+                    if (prev) setAudience(prev.concept.audience);
+                    const fp = fanPlatforms(f);
+                    if (fp.length) setPlatforms(fp);
                   }
                 }}
               >
@@ -789,6 +813,11 @@ function NewGame({ onDone }: { onDone: () => void }) {
                   </option>
                 ))}
               </select>
+              {franchiseId && !baseRel && lastEntry(s.franchises[franchiseId]) && (
+                <p className="mt-1 text-[11px] text-ink3">
+                  Starts from {lastEntry(s.franchises[franchiseId])!.name}: its audience and the platforms its fans own (change them below).
+                </p>
+              )}
               {franchiseId && !baseRel && cliffhangerPending(s, franchiseId) && <p className="mt-1 text-xs text-good">Fans are waiting to see how the last game’s cliffhanger resolves: this sequel starts with extra hype, and paying it off delights players.</p>}
             </Field>
           )}
