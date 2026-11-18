@@ -35,6 +35,8 @@ import { Icon } from '../icons';
 import { useGame } from '../store';
 import { isAway } from '@/sim/systems/staff';
 import { BalanceBar, FocusSliders } from '../game/FocusEditor';
+import { DESIGN_AREAS, areaSkill } from '@/sim/systems/dev';
+import { PHASE_AREAS } from '@/data/types';
 import { StaffPicker } from '../components/StaffPicker';
 import { autoPickTeam, freeStaff } from './staffTools';
 import { AREA_LABEL, PHASE_NAMES, SIZE_LABEL, availableGenres, availableTopics, comboFitValue, estimateCost, expansionSubtitle, fitLabel, genreExperience, genreMomentum, idealFocus, knowsCombo, suggestConcept, suggestName, teamEffortEstimate } from '../game/lib';
@@ -1041,6 +1043,37 @@ function NewGame({ onDone }: { onDone: () => void }) {
           {([0, 1, 2] as const).map((ph) => (
             <FocusSliders key={ph} phase={ph} value={focus[ph]} ideal={ideal?.[ph]} onChange={(f) => setFocus((x) => x.map((y, i) => (i === ph ? f : y)) as [Focus3, Focus3, Focus3])} />
           ))}
+          {(() => {
+            // what this team, with this focus, would produce: design share vs the genre's ideal
+            let d = 0;
+            let all = 0;
+            for (const st of teamStaff)
+              for (const ph of [0, 1, 2] as const) {
+                const f = focus[ph];
+                const fs = f[0] + f[1] + f[2] || 1;
+                PHASE_AREAS[ph]!.forEach((ar, i) => {
+                  const pts = (f[i]! / fs) * areaSkill(st, ar);
+                  all += pts;
+                  if (DESIGN_AREAS.has(ar)) d += pts;
+                });
+              }
+            if (!all) return null;
+            const share = d / all;
+            const want = GENRE_BY_ID[genre].designRatio;
+            const ok = Math.abs(share - want) <= 0.08;
+            return (
+              <div className={cx('flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs', ok ? 'bg-good/10 text-good' : 'bg-warn/10 text-warn')}>
+                <span>
+                  This team and focus: about <b className="num">{Math.round(share * 100)}% design</b> · {GENRE_BY_ID[genre].name} games want ≈ {Math.round(want * 100)}%{ok ? ' — on target' : share > want ? ' — favour Engine, AI and Graphics' : ' — favour Gameplay, Story, Levels and World'}
+                </span>
+                {ideal && (
+                  <Button size="sm" variant="ghost" onClick={() => setFocus(ideal)}>
+                    Use my notes
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
           <p className="text-[11px] text-ink3">
             Areas: {Object.values(AREA_LABEL).join(' · ')}. You can adjust the focus at each phase gate during development.
           </p>
