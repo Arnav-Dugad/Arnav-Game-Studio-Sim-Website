@@ -55,6 +55,15 @@ export function earn(s: GameState, cat: LedgerCat, amount: number): void {
   l.income[cat] = (l.income[cat] ?? 0) + a;
 }
 
+/** Pay for a research project and remember the price: a refund gives back what was paid, never today's inflated price. */
+export function payResearch(s: GameState, id: string, cost: number): void {
+  spend(s, 'research', cost);
+  (s.research.paid ??= {})[id] = cost;
+}
+
+/** What was paid for a started or queued research project (older saves: today's price). */
+export const researchPaid = (s: GameState, id: string, fallback: number): number => s.research.paid?.[id] ?? fallback;
+
 export function spend(s: GameState, cat: LedgerCat, amount: number): void {
   if (!Number.isFinite(amount) || amount <= 0) return;
   const a = Math.round(amount);

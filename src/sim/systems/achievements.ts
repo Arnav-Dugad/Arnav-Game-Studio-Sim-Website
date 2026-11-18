@@ -140,7 +140,7 @@ export const MILESTONES: { id: string; text: string; check: (s: GameState) => bo
   { id: 'm_office', text: 'Move into a Small Office', check: (s) => s.office.tier >= 2 },
   { id: 'm_engine', text: 'Build your own engine', check: (s) => Object.values(s.engines).some((e) => !e.licensedFrom && e.builtDay > 0) },
   { id: 'm_medium', text: 'Release a Medium game', check: (s) => rels(s).some((r) => r.concept.size !== 'small') },
-  { id: 'm_selfpub', text: 'Self-publish a game', check: (s) => rels(s).some((r) => !r.concept.deal) && s.research.done.includes('biz_self_publishing') },
+  { id: 'm_selfpub', text: 'Research Self-Publishing and release a game without a publisher', check: (s) => rels(s).some((r) => !r.concept.deal) && s.research.done.includes('biz_self_publishing') },
   { id: 'm_staff10', text: 'Grow to 10 staff', check: (s) => staffN(s) >= 10 },
   { id: 'm_hit', text: 'Score 85 or higher', check: (s) => s.progress.stats.bestScore >= 85 },
   { id: 'm_showdown', text: 'Win a head-to-head showdown with a rival (launch near their game in the same genre)', check: (s) => Object.values(s.rivalry ?? {}).some((r) => r.wins > 0) },

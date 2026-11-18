@@ -2,6 +2,7 @@ import { ACHIEVEMENTS, MILESTONES, nextMilestone, runScore } from '@/sim/systems
 import { objectiveProgress, objectiveReward, objectiveText, objectiveValue } from '@/sim/systems/objectives';
 import { SCENARIO_BY_ID, goalProgress, yearsLeft } from '@/sim/systems/scenarios';
 import { formatDate } from '@/sim/calendar';
+import { ownerValue } from '@/sim/systems/finance';
 import { fmtMoney, fmtRepGain, fmtUnits, repGain } from '@/sim/util';
 import { useState } from 'react';
 import { Button, Pill, Section, Stat, cx } from '../components/ui';
@@ -108,7 +109,7 @@ export default function GoalsPanel() {
           <Stat label="Best review" value={st.bestScore || '—'} sub={st.bestGame} />
           <Stat label="Copies sold" value={fmtUnits(st.totalUnits)} />
           <Stat label="Lifetime revenue" value={fmtMoney(st.totalRevenue)} />
-          <Stat label="Peak valuation" value={fmtMoney(st.peakValuation)} />
+          <Stat label="Peak valuation" value={fmtMoney(Math.max(st.peakValuation, ownerValue(s)))} />
           <Stat label="Hits (85+)" value={st.hits} />
           <Stat label="Awards" value={st.awardsWon} />
           <Stat label="Crunch days" value={st.crunchDays} tone={st.crunchDays > 120 ? 'bad' : undefined} />

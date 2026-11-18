@@ -122,11 +122,12 @@ export function objectivesDaily(c: Ctx): void {
     if (objectiveProgress(s, o) >= 1) {
       o.done = s.day;
       const r = objectiveReward(s);
+      const repText = fmtRepGain(Math.min(repGain(s, r.rep), 100 - s.company.reputation)); // before it's added (the taper depends on where you were)
       addRep(s, r.rep, 'Quarterly objective');
       s.company.cash += r.cash;
       s.company.moraleMods.push({ v: r.morale, until: s.day + 30, label: 'Hit a goal' });
       s.progress.stats.objectivesDone = (s.progress.stats.objectivesDone ?? 0) + 1;
-      pushNews(s, { category: 'studio', headline: `Objective complete: ${objectiveText(o)}`, body: `+${fmtMoney(r.cash)}, reputation ${fmtRepGain(repGain(s, r.rep))}, a morale lift.`, tone: 'good' });
+      pushNews(s, { category: 'studio', headline: `Objective complete: ${objectiveText(o)}`, body: `+${fmtMoney(r.cash)}, reputation ${repText}, a morale lift.`, tone: 'good' });
     }
   }
 }

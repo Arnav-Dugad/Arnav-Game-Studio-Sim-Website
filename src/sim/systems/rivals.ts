@@ -204,7 +204,9 @@ export function rivalsMonthly(c: Ctx): void {
       const pool = own.length ? own : pref && pref.length ? pref : live.map((l) => l.id);
       const plats = rng.shuffle([...pool]).slice(0, rng.int(1, Math.min(3, pool.length)));
       const score = clamp(Math.round(rng.normal(BALANCE.RIVAL_SCORE_BASE + r.quality * BALANCE.RIVAL_SCORE_QUALITY - 8 + r.reputation / 12, BALANCE.RIVAL_SCORE_SD)), 15, 93);
-      const units = Math.round(Math.pow(score / 100, 4) * sizeF * 400_000 * rng.range(0.4, 1.6) * Math.pow(1.04, yr - 1980));
+      // a hit sells to a fifth of the people who own the machines it's on, never more (early markets are small)
+      const reach = plats.reduce((t, pid) => t + (s.market.users[pid] ?? 0), 0) * 1e6;
+      const units = Math.round(Math.min(Math.pow(score / 100, 4) * sizeF * 400_000 * rng.range(0.4, 1.6) * Math.pow(1.04, yr - 1980), reach * 0.2));
       addRivalGame(s, { name: genTitle(rng, topic, genre), company: r.id, genre, topic, platforms: plats, day: s.day, score, units });
       r.lastRelease = s.day;
       const revenue = units * 20 * inflation(s.day) * 0.35;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { DEMO_YEAR, demoBlocked, demoCost } from '@/sim/systems/demos';
 import { CE_PRICE_MUL, CE_RUN, CE_RUNS, CE_YEAR, ceAllowed, ceBlocked, ceCost, ceDemand } from '@/sim/systems/collectors';
 import { pitchText } from '@/sim/systems/pitches';
@@ -505,8 +505,31 @@ function EngineCard({ p }: { p: EngineProject }) {
 
 // ── New game wizard ─────────────────────────────────────────────────────────
 
+/**
+ * The game being planned, kept while you look around (another tab or panel, hiring someone the wizard suggested):
+ * cleared when it goes into development, when a new game is loaded, or when a sequel/remaster/expansion plan starts.
+ */
+let draft: { s: GameState; nonce: number; v: Record<string, unknown> } | null = null;
+function draftBag(s: GameState, nonce: number): Record<string, unknown> {
+  if (!draft || draft.s !== s || draft.nonce !== nonce) draft = { s, nonce, v: {} };
+  return draft.v;
+}
+function rememberDraft(bag: Record<string, unknown>, key: string, v: unknown): void {
+  bag[key] = v;
+}
+function clearDraft(): void {
+  draft = null;
+}
+/** useState that remembers its value in the draft (a remembered value that no longer fits is dropped). */
+function useDraft<T>(bag: Record<string, unknown>, key: string, init: T | (() => T), keep?: (v: T) => boolean): [T, Dispatch<SetStateAction<T>>] {
+  const [v, set] = useState<T>(() => (key in bag && (!keep || keep(bag[key] as T)) ? (bag[key] as T) : typeof init === 'function' ? (init as () => T)() : init));
+  useEffect(() => rememberDraft(bag, key, v), [bag, key, v]);
+  return [v, set];
+}
+
 function NewGame({ onDone }: { onDone: () => void }) {
   const s = useGame((g) => g.s)!;
+  const bag = draftBag(s, useGame.getState().wizardNonce);
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const yr = fromDay(s.day).year;
@@ -536,7 +559,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
   // Planning a sequel pre-fills the wizard from the franchise
   // …and remastering pre-fills it from the original release.
   // …remastering or expanding pre-fills it from an earlier release.
-  const [based, setBased] = useState<{ mode: 'remaster' | 'expansion'; rel: Release } | undefined>(() => {
+  const [based, setBased] = useDraft<{ mode: 'remaster' | 'expansion'; rel: Release } | undefined>(bag, 'based', () => {
     const p = useGame.getState().wizardPreset;
     const id = p?.remasterOf ?? p?.expansionOf;
     const rel = id ? s.releases[id] : undefined;
@@ -554,19 +577,19 @@ function NewGame({ onDone }: { onDone: () => void }) {
     }
     return undefined;
   };
-  const [presetFr] = useState(() => {
+  const [presetFr] = useDraft<Franchise | undefined>(bag, 'presetFr', () => {
     const p = useGame.getState().wizardPreset;
     const fid = p?.franchiseId ?? (baseRel?.concept.franchiseId && s.franchises[baseRel.concept.franchiseId] ? baseRel.concept.franchiseId : undefined);
     return fid ? s.franchises[fid] : undefined;
   });
-  const [genre, setGenre] = useState<GenreId>(baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre);
+  const [genre, setGenre] = useDraft<GenreId>(bag, 'genre', baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre);
   // A first-timer's default topic quietly suits the default genre, so the tutorial game starts on a good footing.
   const starterTopic = () => {
     const ok = topics.filter((t) => t.ok).map((t) => t.t.id);
     if (s.releaseOrder.length > 0 || !ok.length) return ok[0];
     return ok.reduce((best, id) => (comboFitValue(firstGenre, id) > comboFitValue(firstGenre, best) ? id : best), ok[0]!);
   };
-  const [topic, setTopic] = useState<string>(() => baseRel?.concept.topic ?? presetFr?.topic ?? starterTopic() ?? 'fantasy');
+  const [topic, setTopic] = useDraft<string>(bag, 'topic', () => baseRel?.concept.topic ?? presetFr?.topic ?? starterTopic() ?? 'fantasy');
   // titles already used by your games (in development or released)
   const takenNames = new Set<string>([...Object.values(s.projects).flatMap((p) => (p.kind === 'game' ? [p.concept.name.toLowerCase()] : [])), ...Object.values(s.releases).map((r) => r.name.toLowerCase())]);
   /** A suggested title nobody at the studio has used yet. */
@@ -577,7 +600,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
     }
     return suggestName(seed, t);
   };
-  const [name, setName] = useState(() =>
+  const [name, setName] = useDraft(bag, 'name', () =>
     remasterRel
       ? `${remasterRel.name} Remastered`
       : expansionRel
@@ -586,35 +609,40 @@ function NewGame({ onDone }: { onDone: () => void }) {
           ? `${presetFr.name} ${presetFr.entries.length + 1 + (presetFr.origin ? 1 : 0)}`
           : freshName(topic, s.day),
   );
-  const [nameTyped, setNameTyped] = useState(false);
-  const [audience, setAudience] = useState<Audience>(baseRel?.concept.audience ?? lastEntry(presetFr)?.concept.audience ?? 'everyone');
+  const [nameTyped, setNameTyped] = useDraft(bag, 'nameTyped', false);
+  const [audience, setAudience] = useDraft<Audience>(bag, 'audience', baseRel?.concept.audience ?? lastEntry(presetFr)?.concept.audience ?? 'everyone');
   const locked = !!baseRel;
   /** The quality model's audience multiplier for this genre × topic. */
   const audFitFor = (g: GenreId, tp: string, a: Audience) => clamp(0.85 + (comboFit(g, tp, a).aud - 1) * 0.6, 0.7, 1.08);
   const bestAudienceFor = (g: GenreId, tp: string) => AUDIENCES.reduce((b, a) => (audFitFor(g, tp, a) > audFitFor(g, tp, b) + 1e-9 ? a : b), 'everyone' as Audience);
   const audFit = (a: Audience) => audFitFor(genre, topic, a);
   const bestAudience = bestAudienceFor(genre, topic);
-  const [size, setSize] = useState<Size>('small');
-  const [monet, setMonet] = useState<Monetization>('premium');
-  const [priceTier, setPriceTier] = useState<PriceTier>('standard');
-  const [production, setProduction] = useState<ProductionTier>('standard');
-  const [features, setFeatures] = useState<string[]>([]);
+  const [size, setSize] = useDraft<Size>(bag, 'size', 'small');
+  const [monet, setMonet] = useDraft<Monetization>(bag, 'monet', 'premium');
+  const [priceTier, setPriceTier] = useDraft<PriceTier>(bag, 'priceTier', 'standard');
+  const [production, setProduction] = useDraft<ProductionTier>(bag, 'production', 'standard');
+  const [features, setFeatures] = useDraft<string[]>(bag, 'features', []);
   const home = s.company.homeRegion ?? 'na';
-  const [localized, setLocalized] = useState<RegionId[]>([]);
+  const [localized, setLocalized] = useDraft<RegionId[]>(bag, 'localized', []);
   const expPlats = expansionRel ? expansionPlatforms(s, expansionRel) : null;
   const plats = availablePlatforms(s)
     .filter((p) => !expPlats || expPlats.includes(p.id))
     .sort((a, b) => (s.market.users[b.id] ?? 0) - (s.market.users[a.id] ?? 0));
   /** The platforms a series' fans played it on that you can still ship to. */
   const fanPlatforms = (f?: Franchise) => (lastEntry(f)?.concept.platforms ?? []).filter((pid) => plats.some((p) => p.id === pid)).slice(0, 6);
-  const [platforms, setPlatforms] = useState<string[]>(() => {
-    if (expPlats) return expPlats.slice(0, 6);
-    const fp = fanPlatforms(presetFr);
-    if (!baseRel && fp.length) return fp;
-    return plats[0] ? [plats[0].id] : [];
-  });
+  const [platforms, setPlatforms] = useDraft<string[]>(
+    bag,
+    'platforms',
+    () => {
+      if (expPlats) return expPlats.slice(0, 6);
+      const fp = fanPlatforms(presetFr);
+      if (!baseRel && fp.length) return fp;
+      return plats[0] ? [plats[0].id] : [];
+    },
+    (v) => v.length > 0 && v.every((pid) => plats.some((p) => p.id === pid)), // a machine taken off sale meanwhile: start over
+  );
   const engines = Object.values(s.engines).sort((a, b) => b.tech - a.tech);
-  const [engineId, setEngineId] = useState(engines[0]?.id ?? 'e0');
+  const [engineId, setEngineId] = useDraft(bag, 'engineId', engines[0]?.id ?? 'e0', (v) => !!s.engines[v]);
   const lastGame = [...s.releaseOrder].reverse().map((id) => s.releases[id]!).find((r) => r && !r.concept.expansionOf && !r.concept.remasterOf);
   const copyLast = () => {
     if (!lastGame) return;
@@ -638,16 +666,16 @@ function NewGame({ onDone }: { onDone: () => void }) {
     sound.play('click');
   };
   const idle = Object.values(s.staff).filter((x) => (x.assignment.kind === 'idle' || x.assignment.kind === 'research') && !isAway(x));
-  const [team, setTeam] = useState<string[]>(() => autoPickTeam(idle, baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre, BALANCE.SIZE.small.teamCap));
-  const [franchiseId, setFranchiseId] = useState<string>(presetFr?.id ?? '');
+  const [team, setTeam] = useDraft<string[]>(bag, 'team', () => autoPickTeam(idle, baseRel?.concept.genre ?? presetFr?.genre ?? firstGenre, BALANCE.SIZE.small.teamCap));
+  const [franchiseId, setFranchiseId] = useDraft<string>(bag, 'franchiseId', presetFr?.id ?? '', (v) => !v || !!s.franchises[v]);
   const [inspiration, setInspiration] = useState<{ genre: GenreId; topic: string; why: string } | null>(null);
   useEffect(() => {
     if (presetFr || baseRel) useGame.setState({ wizardPreset: null });
   }, [presetFr, baseRel]);
   const selfPub = s.research.done.includes('biz_self_publishing');
-  const [dealId, setDealId] = useState<string>(selfPub ? '' : (s.offers.deals[0]?.id ?? ''));
+  const [dealId, setDealId] = useDraft<string>(bag, 'dealId', selfPub ? '' : (s.offers.deals[0]?.id ?? ''));
   const learned = genreExperience(s, genre) > 0;
-  const [focus, setFocus] = useState<[Focus3, Focus3, Focus3]>([
+  const [focus, setFocus] = useDraft<[Focus3, Focus3, Focus3]>(bag, 'focus', [
     [34, 33, 33],
     [34, 33, 33],
     [34, 33, 33],
@@ -699,6 +727,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
       game: { name, genre, topic, platforms, audience, size, monetization: monet, engineId, franchiseId: franchiseId || undefined, dealId: liveDealId || undefined, team: liveTeam.slice(0, cap), focus, remasterOf: remasterRel?.id, expansionOf: expansionRel?.id, features: liveFeatures, localized: locs, priceTier, production: prod },
     });
     if (r.ok) {
+      clearDraft(); // planned and started: the next game starts from a clean sheet
       sound.play('success');
       toast({ text: `${name} is in development!`, tone: 'good', icon: 'rocket' });
       if (s.progress.tutorialStep <= 2) act({ type: 'tutorial', step: 3 });

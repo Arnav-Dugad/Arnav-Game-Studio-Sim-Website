@@ -4,7 +4,7 @@
  * something worth doing for decades, and give a rich studio something worth spending on. Ten levels each.
  */
 import type { GameState } from '../types';
-import { money, spend } from '../util';
+import { money, payResearch } from '../util';
 
 export interface RndDef {
   id: string;
@@ -58,7 +58,7 @@ export function rndBlocked(s: GameState, id: string): string | null {
 export function startRnd(s: GameState, id: string): string | null {
   const why = rndBlocked(s, id);
   if (why) return why;
-  spend(s, 'research', rndCost(s, id));
+  payResearch(s, id, rndCost(s, id));
   s.research.active = id;
   s.research.progress = 0;
   return null;

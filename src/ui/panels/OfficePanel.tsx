@@ -19,8 +19,8 @@ const CATS: { id: ItemCategory | 'all'; label: string }[] = [
   { id: 'tech', label: 'Tech' },
 ];
 
-/** A phone-sized screen, where the panel sheet covers the office. */
-const narrow = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches;
+/** A phone-sized screen (either way up), where the panel sheet covers the office. */
+const narrow = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px), (max-height: 560px)').matches;
 
 export default function OfficePanel() {
   const s = useGame((g) => g.s)!;

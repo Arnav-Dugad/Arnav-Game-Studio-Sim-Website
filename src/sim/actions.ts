@@ -65,7 +65,7 @@ import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier
 import { applyCheat, markCheated, type CheatOp } from './cheats';
 import { academyBlocked, closeAcademy, foundAcademy, validTrack, type AcademyFunding } from './systems/academy';
 import { canFoundLeague, closeLeague, foundLeague, LEAGUE_TIERS, leagueSetupCost } from './systems/esports';
-import { addRep, aOrAn, earn, refund, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
+import { addRep, aOrAn, earn, refund, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend, payResearch, researchPaid } from './util';
 
 export interface StartGamePayload {
   name: string;
@@ -365,14 +365,11 @@ export function dispatch(s: GameState, a: Action): ActionResult {
 }
 
 const finite = (...xs: unknown[]) => xs.every((x) => typeof x === 'number' && Number.isFinite(x));
-/** People let go in the 30 days since the first of a run of firings (three or more is a layoff). */
+/** People let go in the last 30 days, counting these n (three or more is a layoff). Only the last three firings matter. */
 function countFirings(s: GameState, n: number): number {
-  const start = s.eventCooldowns.__fires;
-  if (start === undefined || s.day - start > 30) {
-    s.eventCooldowns.__fires = s.day;
-    s.eventCooldowns.__fireCount = n;
-  } else s.eventCooldowns.__fireCount = (s.eventCooldowns.__fireCount ?? 0) + n;
-  return s.eventCooldowns.__fireCount;
+  const days = [...(s.company.firedDays ?? []), ...Array<number>(Math.min(n, 3)).fill(s.day)].slice(-3);
+  s.company.firedDays = days;
+  return days.filter((d) => s.day - d <= 30).length;
 }
 
 /** What used furniture fetches: 40% of today's price, never more than you paid for it. */
@@ -927,7 +924,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (s.research.active === def.id || s.research.queue.includes(def.id)) return 'Already queued';
       const cost = researchCost(s, def);
       if (s.company.cash < cost) return 'Not enough cash';
-      spend(s, 'research', cost);
+      payResearch(s, def.id, cost);
       if (a.type === 'research' && !s.research.active) {
         s.research.active = def.id;
         s.research.progress = 0;
@@ -941,7 +938,8 @@ function apply(c: Ctx, a: Action): string | null {
       const def = activeResearch(s);
       if (!def) return 'Nothing to stop';
       // half the budget comes back (booked as reduced research spending, not as revenue)
-      const refund = Math.round(def.cost * 0.5);
+      const refund = Math.round(researchPaid(s, def.id, def.cost) * 0.5);
+      delete s.research.paid?.[def.id];
       s.company.cash += refund;
       const led = s.finance.ledger[s.finance.ledger.length - 1];
       if (led) led.expense.research = Math.max(0, (led.expense.research ?? 0) - refund);

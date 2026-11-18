@@ -5,7 +5,7 @@ import { hasValue } from './culture';
 import { fromDay, weekday } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { GameState } from '../types';
-import { money, pushNews, spend } from '../util';
+import { money, payResearch, pushNews, researchPaid } from '../util';
 import { layout } from './office';
 import { growSkill, productivity } from './staff';
 
@@ -52,13 +52,13 @@ export function autoQueueResearch(s: GameState): void {
     // the tree is done for now: keep going with the cheapest R&D programme level
     const rd = RND.filter((r) => rndUnlocked(s) && rndLevel(s, r.id) < RND_MAX && rndCost(s, r.id) <= s.company.cash * 0.1).sort((a, b) => rndCost(s, a.id) - rndCost(s, b.id))[0];
     if (!rd) return;
-    spend(s, 'research', rndCost(s, rd.id));
+    payResearch(s, rd.id, rndCost(s, rd.id));
     s.research.active = rd.id;
     s.research.progress = 0;
     pushNews(s, { category: 'tech', headline: `R&D team starts on ${rd.name}`, body: 'Picked automatically (Staff → Policies → Keep research going).', tone: 'neutral' });
     return;
   }
-  spend(s, 'research', pick.cost);
+  payResearch(s, pick.r.id, pick.cost);
   s.research.active = pick.r.id;
   s.research.progress = 0;
   pushNews(s, { category: 'tech', headline: `Research team starts on ${pick.r.name}`, body: 'Picked automatically (Staff → Policies → Keep research going).', tone: 'neutral' });
@@ -97,7 +97,8 @@ export function updateResearchDaily(c: Ctx): void {
       s.research.queue = s.research.queue.filter((x) => x !== id);
       const d = RESEARCH_BY_ID[id];
       if (d) {
-        const back = researchCost(s, d);
+        const back = researchPaid(s, id, researchCost(s, d));
+        delete s.research.paid?.[id];
         s.company.cash += back;
         const led = s.finance.ledger[s.finance.ledger.length - 1];
         if (led) led.expense.research = Math.max(0, (led.expense.research ?? 0) - back);
@@ -136,6 +137,7 @@ export function updateResearchDaily(c: Ctx): void {
       s.progress.stats.researchDone += 1;
       pushNews(s, { category: 'tech', headline: `Research complete: ${def.name}`, body: def.desc, tone: 'good' });
     }
+    delete s.research.paid?.[def.id];
     s.research.active = null;
     s.research.progress = 0;
     c.out.push({ type: 'researchDone', id: def.id });

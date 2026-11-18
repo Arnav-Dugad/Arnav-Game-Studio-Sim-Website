@@ -1491,9 +1491,13 @@ export const EVENT_DEFS: EventDef[] = [
       if (l.length < 2) return null;
       const a = l.find((x) => x.traits.includes('hothead')) ?? rng.pick(l);
       const b = rng.pick(l.filter((x) => x !== a));
+      // what they argued about: the game they're both making, or (on different things) how the studio is run
+      const pa = a.assignment.kind === 'project' ? s.projects[a.assignment.id] : undefined;
+      const same = pa && b.assignment.kind === 'project' && b.assignment.id === pa.id;
+      const about = same ? `the direction of ${pa.kind === 'game' ? pa.concept.name : pa.kind === 'contract' ? pa.title : pa.name}` : 'how the studio should be run';
       return {
         title: 'Office argument',
-        body: `${a.name} and ${b.name} had a loud disagreement about the direction of the project. The team is unsettled.`,
+        body: `${a.name} and ${b.name} had a loud disagreement about ${about}. The team is unsettled.`,
         options: [
           { id: 'mediate', label: `Bring in a mediator (${fmtMoney(money(1500, s.day))})`, preview: 'Both morale +5', cost: money(1500, s.day) },
           { id: 'talk', label: 'Talk to them yourself', preview: '70%: resolved. 30%: both morale −6' },
@@ -1797,7 +1801,7 @@ export const EVENT_DEFS: EventDef[] = [
       if (!st) return;
       if (opt === 'defend' && s.company.cash >= Number(e.ctx.defend)) {
         s.company.cash -= Number(e.ctx.defend);
-        st.founderShares += Math.max(0, Number(e.ctx.toBuy));
+        st.founderShares = Math.min(st.shares, st.founderShares + Math.max(0, Number(e.ctx.toBuy)));
         st.boardMood = clamp(st.boardMood - 10, 0, 100);
       } else {
         s.status = 'acquired';

@@ -100,7 +100,7 @@ export function BuildBar() {
               <Button
                 size="sm"
                 icon="build"
-                className="sm:hidden"
+                className="sm:hidden [@media(max-height:560px)]:inline-flex"
                 onClick={() => {
                   useGame.setState({ panel: 'office' });
                   setTimeout(() => document.getElementById('office-catalogue')?.scrollIntoView({ block: 'start' }), 50); // straight to the furniture

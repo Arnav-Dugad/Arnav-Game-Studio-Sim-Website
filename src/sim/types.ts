@@ -995,6 +995,8 @@ export interface Company {
   };
   /** Day of the last major layoff (morale shock). */
   lastLayoffDay?: number;
+  /** Days of the most recent firings (the last three), to spot a layoff. */
+  firedDays?: number[];
   /** The no-crunch pledge (systems/crunchPledge.ts): active since, ever taken, last broken. */
   crunchPledge?: { since?: number; ever?: boolean; brokenDay?: number; withdrawnDay?: number };
   /** A magazine printed one of your games as a type-in listing (1980s); years later, someone who typed it in may apply. */
@@ -1061,7 +1063,14 @@ export interface GameState {
   releases: Record<Id, Release>;
   releaseOrder: Id[];
   franchises: Record<Id, Franchise>;
-  research: { done: string[]; active: string | null; progress: number; queue: string[]; /** R&D programme levels (systems/rnd.ts). */ levels?: Record<string, number> };
+  research: {
+    done: string[];
+    active: string | null;
+    progress: number;
+    queue: string[];
+    /** R&D programme levels (systems/rnd.ts). */ levels?: Record<string, number>;
+    /** What was paid for each started or queued project (refunds give back that, not today's price). */ paid?: Record<string, number>;
+  };
   engines: Record<Id, Engine>;
   market: MarketState;
   rivals: Record<Id, Rival>;

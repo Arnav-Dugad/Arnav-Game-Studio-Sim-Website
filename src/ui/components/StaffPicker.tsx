@@ -42,10 +42,7 @@ export function StaffPicker({
   const [sort, setSort] = useState<Sort>(ranked ? 'fit' : 'skill');
   // a big studio has hundreds of free people: draw the best few dozen, more on request
   const [limit, setLimit] = useState(50);
-  const fit = useMemo(
-    () => new Map(pool.map((st) => [st.id, score ? score(st) : genre ? genreFit(st, genre) : topSkill(st)])),
-    [pool, genre, score],
-  );
+  const fit = useMemo(() => new Map(pool.map((st) => [st.id, score ? score(st) : genre ? genreFit(st, genre) : topSkill(st)])), [pool, genre, score]);
   const roles = useMemo(() => {
     const m = new Map<Role, number>();
     for (const st of pool) m.set(st.role, (m.get(st.role) ?? 0) + 1);
@@ -70,55 +67,27 @@ export function StaffPicker({
     } else if (!full) onChange([...selected, id]);
   };
   // the best team is only worked out when asked for (it scores everyone, which is slow in a big studio)
-  const best = genre
-    ? () => autoPickTeam(pool, genre, cap)
-    : score
-      ? () =>
-          [...pool]
-            .sort((a, b) => (fit.get(b.id) ?? 0) - (fit.get(a.id) ?? 0))
-            .slice(0, cap)
-            .map((x) => x.id)
-      : null;
+  const best = genre ? () => autoPickTeam(pool, genre, cap) : score ? () => [...pool].sort((a, b) => (fit.get(b.id) ?? 0) - (fit.get(a.id) ?? 0)).slice(0, cap).map((x) => x.id) : null;
   // people taken off research by this team (and whether that leaves nobody researching)
   const researching = !!useGame((g) => g.s?.research.active); // people 'on research' with nothing running are really free
-  const pulled = researching
-    ? pool.filter((st) => selected.includes(st.id) && st.assignment.kind === 'research')
-    : [];
-  const researchersLeft = pool.filter(
-    (st) => st.assignment.kind === 'research' && !selected.includes(st.id),
-  ).length;
-  const avgFit = selected.length
-    ? selected.reduce((t, id) => t + (fit.get(id) ?? 0), 0) / selected.length
-    : 0;
+  const pulled = researching ? pool.filter((st) => selected.includes(st.id) && st.assignment.kind === 'research') : [];
+  const researchersLeft = pool.filter((st) => st.assignment.kind === 'research' && !selected.includes(st.id)).length;
+  const avgFit = selected.length ? selected.reduce((t, id) => t + (fit.get(id) ?? 0), 0) / selected.length : 0;
 
   return (
     <div className="space-y-2 text-xs">
       <div className="flex flex-wrap items-center gap-2">
-        <span
-          className={cx(
-            'num rounded-lg px-2 py-1 font-semibold',
-            full ? 'bg-accent/15 text-accent' : 'bg-bg2',
-          )}
-        >
+        <span className={cx('num rounded-lg px-2 py-1 font-semibold', full ? 'bg-accent/15 text-accent' : 'bg-bg2')}>
           {selected.length}/{cap} picked
         </span>
-        {ranked && selected.length > 0 && (
-          <span className="text-ink3">
-            avg {scoreLabel} {Math.round(avgFit)}
-          </span>
-        )}
+        {ranked && selected.length > 0 && <span className="text-ink3">avg {scoreLabel} {Math.round(avgFit)}</span>}
         <span className="flex-1" />
         {best && (
-          <Button
-            size="sm"
-            icon="sparkle"
-            disabled={!pool.length}
+          <Button size="sm" icon="sparkle" disabled={!pool.length}
             onClick={() => {
               const b = best();
               if (b.length) onChange(b); // nobody available: keep the team as it is
-            }}
-            title="Pick the best available people for this genre (skills in the areas it needs, adjusted for morale and energy)"
-          >
+            }} title="Pick the best available people for this genre (skills in the areas it needs, adjusted for morale and energy)">
             Best team
           </Button>
         )}
@@ -130,33 +99,17 @@ export function StaffPicker({
       </div>
       {pulled.length > 0 && (
         <p className="text-[11px] text-warn">
-          {pulled.length === 1 ? `${pulled[0]!.name} is` : `${pulled.length} of them are`} researching now —
-          joining moves {pulled.length === 1 ? 'them' : 'them all'} off it
+          {pulled.length === 1 ? `${pulled[0]!.name} is` : `${pulled.length} of them are`} researching now — joining moves {pulled.length === 1 ? 'them' : 'them all'} off it
           {researchersLeft === 0 ? ', and research pauses until someone is free.' : '.'}
         </p>
       )}
       {pool.length > 6 && (
         <div className="flex gap-2">
           <label className="relative min-w-0 flex-1">
-            <Icon
-              name="search"
-              size={14}
-              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink3"
-            />
-            <input
-              className={cx(inputCls, 'h-8 pl-8 text-xs')}
-              placeholder="Search name, role, trait…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              aria-label="Search staff"
-            />
+            <Icon name="search" size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink3" />
+            <input className={cx(inputCls, 'h-8 pl-8 text-xs')} placeholder="Search name, role, trait…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search staff" />
           </label>
-          <select
-            className={cx(inputCls, 'h-8 !w-32 text-xs')}
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-            aria-label="Sort"
-          >
+          <select className={cx(inputCls, 'h-8 !w-32 text-xs')} value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort">
             {ranked && <option value="fit">Best {scoreLabel}</option>}
             <option value="skill">Top skill</option>
             <option value="morale">Morale</option>
@@ -173,10 +126,7 @@ export function StaffPicker({
               role="radio"
               aria-checked={role === r}
               onClick={() => setRole(r)}
-              className={cx(
-                'rounded-full border px-2 py-0.5 font-medium',
-                role === r ? 'border-accent bg-accent text-accent-ink' : 'border-line hover:bg-bg2',
-              )}
+              className={cx('rounded-full border px-2 py-0.5 font-medium', role === r ? 'border-accent bg-accent text-accent-ink' : 'border-line hover:bg-bg2')}
             >
               {r === 'all' ? 'All' : roleName(r)} <span className="opacity-70">{n}</span>
             </button>
@@ -184,9 +134,7 @@ export function StaffPicker({
         </div>
       )}
       {list.length === 0 ? (
-        <p className="py-2 text-ink3">
-          {pool.length ? 'Nobody matches.' : 'Everyone is busy. Free someone up in the Staff panel, or hire.'}
-        </p>
+        <p className="py-2 text-ink3">{pool.length ? 'Nobody matches.' : 'Everyone is busy. Free someone up in the Staff panel, or hire.'}</p>
       ) : (
         <ul className="max-h-72 space-y-1 overflow-y-auto pr-1 scroll-thin">
           {list.slice(0, limit).map((st) => {
@@ -195,37 +143,17 @@ export function StaffPicker({
             const disabled = (!on && full) || (on && minOne && selected.length <= 1);
             return (
               <li key={st.id}>
-                <label
-                  className={cx(
-                    'flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1',
-                    on ? 'border-accent bg-accent/10' : 'border-line hover:bg-bg2',
-                    disabled && !on && 'opacity-45',
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    checked={on}
-                    disabled={disabled}
-                    onChange={() => toggle(st.id)}
-                    className="accent-[var(--accent)]"
-                  />
+                <label className={cx('flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1', on ? 'border-accent bg-accent/10' : 'border-line hover:bg-bg2', disabled && !on && 'opacity-45')}>
+                  <input type="checkbox" checked={on} disabled={disabled} onChange={() => toggle(st.id)} className="accent-[var(--accent)]" />
                   <Face p={st} size={24} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">
                       {st.name}
-                      {genre && favouriteGenre(st.id) === genre && (
-                        <span title="Loves this genre: +5% output, +3 morale on it" className="ml-1 text-bad">
-                          ♥
-                        </span>
-                      )}
+                      {genre && favouriteGenre(st.id) === genre && <span title="Loves this genre: +5% output, +3 morale on it" className="ml-1 text-bad">♥</span>}
                     </span>
                     <span className="block truncate text-[11px] text-ink3">
                       {st.level} {roleName(st.role)}
-                      {st.assignment.kind === 'research'
-                        ? researching
-                          ? ' · researching'
-                          : ' · free (no research running)'
-                        : ''}
+                      {st.assignment.kind === 'research' ? (researching ? ' · researching' : ' · free (no research running)') : ''}
                       {st.burnout >= 60 ? ' · burning out' : ''}
                     </span>
                   </span>
@@ -235,33 +163,17 @@ export function StaffPicker({
                       <span className="num font-semibold text-ink">{f}</span>
                     </span>
                     <span className="block h-1 overflow-hidden rounded-full bg-bg2">
-                      <span
-                        className={cx(
-                          'block h-full rounded-full',
-                          f >= 60 ? 'bg-good' : f >= 35 ? 'bg-accent' : 'bg-ink3',
-                        )}
-                        style={{ width: `${Math.min(100, f)}%` }}
-                      />
+                      <span className={cx('block h-full rounded-full', f >= 60 ? 'bg-good' : f >= 35 ? 'bg-accent' : 'bg-ink3')} style={{ width: `${Math.min(100, f)}%` }} />
                     </span>
                   </span>
-                  <span
-                    className={cx(
-                      'size-2 shrink-0 rounded-full',
-                      st.morale >= 65 ? 'bg-good' : st.morale >= 40 ? 'bg-warn' : 'bg-bad',
-                    )}
-                    title={`Morale ${Math.round(st.morale)}`}
-                  />
+                  <span className={cx('size-2 shrink-0 rounded-full', st.morale >= 65 ? 'bg-good' : st.morale >= 40 ? 'bg-warn' : 'bg-bad')} title={`Morale ${Math.round(st.morale)}`} />
                 </label>
               </li>
             );
           })}
           {list.length > limit && (
             <li>
-              <button
-                type="button"
-                className="w-full rounded-lg py-1.5 text-center font-semibold text-accent hover:bg-bg2"
-                onClick={() => setLimit((l) => l + 100)}
-              >
+              <button type="button" className="w-full rounded-lg py-1.5 text-center font-semibold text-accent hover:bg-bg2" onClick={() => setLimit((l) => l + 100)}>
                 Show {Math.min(100, list.length - limit)} more ({list.length - limit} not shown)
               </button>
             </li>

@@ -68,7 +68,7 @@ export const RESEARCH: readonly ResearchDef[] = [
   { id: 'platform_touch', name: 'Touch Interfaces', branch: 'platforms', year: 2007, points: 120, cost: 30_000, requires: [], engineTech: 0.3, genreBonus: { puzzle: 0.06, casual: 0.06 }, desc: 'Unlocks iOS and Android development.' },
   { id: 'platform_vr', name: 'Virtual Reality', branch: 'platforms', year: 2014, points: 320, cost: 130_000, requires: ['gfx_hd'], engineTech: 0.5, desc: 'Unlocks VR platforms.' },
   // Business
-  { id: 'biz_self_publishing', name: 'Self-Publishing', branch: 'business', year: 1981, points: 25, cost: 10_000, requires: [], desc: 'Publish your own games. Keep the revenue, carry the risk.' },
+  { id: 'biz_self_publishing', name: 'Self-Publishing', branch: 'business', year: 1980, points: 25, cost: 10_000, requires: [], desc: 'Publish your own games anywhere, consoles included (computer games can always go out without a publisher), and reach more players doing it. Keep the revenue, carry the risk.' },
   { id: 'biz_qa_lab', name: 'QA Lab', branch: 'business', year: 1984, points: 30, cost: 8_000, requires: [], desc: 'Unlocks QA Lab stations.' },
   { id: 'biz_rnd_lab', name: 'R&D Lab', branch: 'business', year: 1985, points: 40, cost: 12_000, requires: [], desc: 'Unlocks R&D benches for faster research.' },
   { id: 'biz_training', name: 'Training Programme', branch: 'business', year: 1985, points: 30, cost: 9_000, requires: [], desc: 'Unlocks staff training courses.' },
