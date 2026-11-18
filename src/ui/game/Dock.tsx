@@ -7,6 +7,7 @@ import { Icon } from '../icons';
 import { cx } from '../components/ui';
 import { useGame } from '../store';
 import { PHASE_NAMES } from './lib';
+import { tierDef } from '@/sim/systems/office';
 
 export function ProjectDock() {
   const s = useGame((g) => g.s);
@@ -23,7 +24,7 @@ export function ProjectDock() {
   const idleNudge = projects.length > 0 && idle >= 3 && s.status === 'running';
   if (!projects.length && !research && !nudge) return null;
   return (
-    <div className="pointer-events-none absolute bottom-16 left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap justify-center gap-2 sm:bottom-4">
+    <div className={cx('pointer-events-none absolute left-1/2 z-20 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-wrap justify-center gap-2', tierDef(s.office.tier).floors > 1 ? 'bottom-28 sm:bottom-[4.5rem]' : 'bottom-16 sm:bottom-4')}>
       {nudge && (
         <div className="glass pointer-events-auto flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-xs">
           <Icon name="hourglass" size={14} className="shrink-0 text-warn" />
