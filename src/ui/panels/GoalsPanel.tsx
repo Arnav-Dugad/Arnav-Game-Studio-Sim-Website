@@ -2,7 +2,7 @@ import { ACHIEVEMENTS, MILESTONES, nextMilestone, runScore } from '@/sim/systems
 import { objectiveProgress, objectiveReward, objectiveText, objectiveValue } from '@/sim/systems/objectives';
 import { SCENARIO_BY_ID, goalProgress, yearsLeft } from '@/sim/systems/scenarios';
 import { formatDate } from '@/sim/calendar';
-import { fmtMoney, fmtUnits } from '@/sim/util';
+import { fmtMoney, fmtUnits, repGain } from '@/sim/util';
 import { useState } from 'react';
 import { Button, Pill, Section, Stat, cx } from '../components/ui';
 import { Icon, type IconName } from '../icons';
@@ -55,7 +55,7 @@ export default function GoalsPanel() {
         <section className="mb-4 rounded-2xl border border-line p-3">
           <div className="flex items-baseline justify-between">
             <div className="text-xs font-semibold uppercase tracking-wide text-accent">This quarter</div>
-            <div className="text-[11px] text-ink3">Each: +{fmtMoney(objectiveReward(s).cash)}, rep +{objectiveReward(s).rep}, morale lift</div>
+            <div className="text-[11px] text-ink3">Each: +{fmtMoney(objectiveReward(s).cash)}, rep +{repGain(s, objectiveReward(s).rep).toFixed(1)}, morale lift</div>
           </div>
           <ul className="mt-1.5 space-y-1.5">
             {(s.objectives ?? []).map((o, i) => {

@@ -11,7 +11,7 @@ import type { Ctx } from '../ctx';
 import type { GameState, Objective, ObjectiveKind } from '../types';
 
 export type { Objective, ObjectiveKind } from '../types';
-import { addRep, fmtMoney, money, pushNews } from '../util';
+import { addRep, fmtMoney, money, pushNews, repGain } from '../util';
 
 export interface ObjectiveReward {
   rep: number;
@@ -126,7 +126,7 @@ export function objectivesDaily(c: Ctx): void {
       s.company.cash += r.cash;
       s.company.moraleMods.push({ v: r.morale, until: s.day + 30, label: 'Hit a goal' });
       s.progress.stats.objectivesDone = (s.progress.stats.objectivesDone ?? 0) + 1;
-      pushNews(s, { category: 'studio', headline: `Objective complete: ${objectiveText(o)}`, body: `+${fmtMoney(r.cash)}, reputation +${r.rep}, a morale lift.`, tone: 'good' });
+      pushNews(s, { category: 'studio', headline: `Objective complete: ${objectiveText(o)}`, body: `+${fmtMoney(r.cash)}, reputation +${repGain(s, r.rep).toFixed(1)}, a morale lift.`, tone: 'good' });
     }
   }
 }

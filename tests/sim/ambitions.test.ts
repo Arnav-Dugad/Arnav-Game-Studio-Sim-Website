@@ -15,6 +15,8 @@ describe('staff ambitions', () => {
   it('appear over time, never for the founder, and stay under the cap', () => {
     const s = game();
     s.company.cash = 1e9; // stay solvent: this is about ambitions, not payroll
+    s.company.reputation = 50;
+    for (const tier of [2, 3]) expect(dispatch(s, { type: 'moveOffice', tier }).ok).toBe(true); // room for the 25 people this test is about
     for (let i = 0; i < 25; i++) dispatch(s, { type: 'cheat', cheat: { op: 'spawnStaff', role: i % 2 ? 'programmer' : 'artist', skill: 40, salary: 30_000 } });
     advance(s, 365 * 2);
     expect(s.status).toBe('running');

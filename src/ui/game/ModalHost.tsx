@@ -927,8 +927,7 @@ function GateModal({ projectId, onClose }: { projectId: string; onClose: () => v
     act({ type: 'setFocus', projectId, phase, focus });
     act({ type: 'continueGate', projectId });
     if (s.progress.tutorialStep === 3) act({ type: 'tutorial', step: 4 });
-    onClose();
-    useGame.getState().setSpeed(useGame.getState().lastSpeed);
+    onClose(); // closing the last popup resumes time if the gate paused it (never overrides a manual pause)
   };
   return (
     <Modal open onClose={go} title="Phase gate">

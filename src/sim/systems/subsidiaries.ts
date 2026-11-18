@@ -35,7 +35,7 @@ export function subsidiariesMonthly(c: Ctx): void {
     sub.quality = clamp(sub.quality + (score - 70) / 500, 0.2, 0.95);
     const plats = livePlatforms(s).slice(0, 3).map((p) => p.id);
     addRivalGame(s, { name: genTitle(rng, topic), company: sub.origin, genre, topic, platforms: plats, day: s.day, score, units: Math.round(revenue / 20) });
-    addRep(s, (score - 70) / 25, `${sub.name} release`);
+    addRep(s, ((score - 70) / 25) * (score > 70 ? 0.5 : 1), `${sub.name} release`); // you didn't make it: half the credit (all of the blame)
     pushNews(s, {
       category: 'studio',
       headline: `${sub.name} ships a new ${GENRE_BY_ID[genre].name} game (${score})`,

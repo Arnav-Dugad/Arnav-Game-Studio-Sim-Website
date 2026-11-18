@@ -8,7 +8,7 @@ import type { Ctx } from '../ctx';
 import type { GameProject, GameState } from '../types';
 import { addRep, money, pushNews, spend } from '../util';
 
-export const SHOWCASE_MIN_REP = 70;
+export const SHOWCASE_MIN_REP = 60;
 export const SHOWCASE_MIN_YEAR = 1990;
 export const SHOWCASE_COOLDOWN = 365;
 

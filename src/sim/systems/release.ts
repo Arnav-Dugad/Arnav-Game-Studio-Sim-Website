@@ -520,7 +520,8 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   const rd = ((score - 60) / 7) * SIZE_REP[p.concept.size] * (baseRel ? 0.5 : 1);
   // a young studio builds a name by shipping decent games at all (fades as the name grows)
   if (score >= 55 && !baseRel) addRep(s, 0.6 * Math.max(0, 1 - s.company.reputation / 30), 'A growing catalogue');
-  addRep(s, (rd > 0 ? rd * (1 - s.company.reputation / 115) : rd), `Reviews of ${rel.name}`);
+  // a name grows fast at first and slowly near the top: legends are made over decades, not a few hits
+  addRep(s, (rd > 0 ? rd * Math.pow(1 - s.company.reputation / 115, 1.5) : rd), `Reviews of ${rel.name}`);
   // Stats
   const st = s.progress.stats;
   st.gamesReleased += 1;
@@ -819,10 +820,12 @@ export function yearlyAwards(c: Ctx, yr = fromDay(c.s.day).year): void {
     awards.push(w.category);
     c.out.push({ type: 'award', releaseId: rel.id, award: w.category });
   }
-  if (awards.includes('Game of the Year')) addRep(s, 4, 'Game of the Year');
+  // fame compounds less once you have it (like reviews)
+  const awardRep = Math.pow(1 - s.company.reputation / 115, 1.5);
+  if (awards.includes('Game of the Year')) addRep(s, 4 * awardRep, 'Game of the Year');
   if (awards.length) {
     s.progress.stats.awardsWon += awards.length;
-    addRep(s, awards.length, 'Award wins');
+    addRep(s, awards.length * awardRep, 'Award wins');
     s.company.moraleMods.push({ v: 6, until: s.day + 120, label: 'Award win' });
     pushNews(s, { category: 'studio', headline: `${s.company.name} wins ${awards.length} award${awards.length > 1 ? 's' : ''} at the Golden Pixel Gala`, body: awards.join(', '), tone: 'good' });
   } else if (gotyW) {

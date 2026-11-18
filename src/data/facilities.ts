@@ -160,5 +160,5 @@ export const OFFICE_TIERS: readonly OfficeTierDef[] = [
   { tier: 3, name: 'Studio Floor', floors: 1, w: 22, h: 14, staffCap: 30, rent: 7_500, moveCost: 90_000, minReputation: 25, desc: 'Open-plan floor in a creative district.' },
   { tier: 4, name: 'Studio Building', floors: 2, w: 24, h: 16, staffCap: 80, rent: 24_000, moveCost: 420_000, minReputation: 45, desc: 'Two floors. Your logo on the lobby wall.' },
   { tier: 5, name: 'Campus HQ', floors: 3, w: 28, h: 18, staffCap: 200, rent: 70_000, moveCost: 2_000_000, minReputation: 65, desc: 'A campus with a courtyard and a café.' },
-  { tier: 6, name: 'Global HQ', floors: 4, w: 28, h: 18, staffCap: 400, rent: 160_000, moveCost: 7_500_000, minReputation: 80, desc: 'A landmark tower. The industry visits you.' },
+  { tier: 6, name: 'Global HQ', floors: 4, w: 28, h: 18, staffCap: 400, rent: 160_000, moveCost: 7_500_000, minReputation: 75, desc: 'A landmark tower. The industry visits you.' },
 ];

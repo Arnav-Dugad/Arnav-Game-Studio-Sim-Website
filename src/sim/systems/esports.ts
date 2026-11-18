@@ -30,7 +30,7 @@ export const LEAGUE_TIERS: Record<LeagueTier, { label: string; setup: number; mo
 
 /** Sponsorship + broadcast income per monthly viewer (nominal). */
 export function revenuePerViewer(s: GameState): number {
-  return 0.3 * inflation(s.day);
+  return 0.18 * inflation(s.day);
 }
 
 export function leagueSetupCost(s: GameState, tier: LeagueTier): number {

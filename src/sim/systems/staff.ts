@@ -23,7 +23,7 @@ import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
 import type { Candidate, GameState, Level, Role, Staff } from '../types';
 import { avg, inflation, money, pushNews, year } from '../util';
-import { layout } from './office';
+import { assignDesks, layout } from './office';
 import { talentMultiplier } from './market';
 
 export const ROLE_SKILLS: Record<Role, [Skill, Skill]> = {
@@ -492,10 +492,13 @@ export function staffAutomationWeekly(s: GameState): void {
       if (st.role === 'founder' || st.intern) continue;
       const market = Math.round(marketSalary(s, st.skills));
       if (st.salary >= market * 0.97) continue;
-      const gain = (market - st.salary) / Math.max(1, st.salary);
+      // the goodwill is only for money they've never had before (as with any raise)
+      const best = Math.max(st.salary, st.peakSalary ?? st.salary);
+      const gain = Math.max(0, (market - best) / Math.max(1, best));
       st.morale = clamp(st.morale + Math.min(15, gain * 60), 0, 100);
       st.loyalty = clamp(st.loyalty + Math.min(15, gain * 50), 0, 100);
       st.salary = market;
+      st.peakSalary = Math.max(best, market);
       st.moraleWhy = undefined;
     }
   }
@@ -615,6 +618,21 @@ export function updateStaffDaily(c: Ctx): void {
 
 export function updateStaffMonthly(c: Ctx): void {
   const { s, rng } = c;
+  // promises come due: a lead role delivered is remembered fondly, a broken one bitterly
+  for (const st of Object.values(s.staff)) {
+    if (st.leadPromise === undefined || s.day < st.leadPromise) continue;
+    delete st.leadPromise;
+    if (st.level === 'lead') {
+      st.loyalty = clamp(st.loyalty + 8, 0, 100);
+    } else {
+      st.loyalty = clamp(st.loyalty - 20, 0, 100);
+      st.mood = { v: -8, until: s.day + 90, label: 'A broken promise' };
+      st.moraleWhy = undefined;
+      pushNews(s, { category: 'staff', headline: `${st.name} feels let down`, body: 'You promised them a lead role a year ago. Rivals will find them easier to tempt now.', tone: 'bad' });
+    }
+  }
+  // desks freed by people leaving go to anyone who's been working without one
+  if (Object.values(s.staff).some((x) => !x.deskId)) assignDesks(s);
   for (const st of Object.values(s.staff)) {
     if (st.role === 'founder') {
       st.loyalty = 100;

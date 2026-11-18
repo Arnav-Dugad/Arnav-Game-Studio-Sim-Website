@@ -118,6 +118,10 @@ export interface Staff {
   /** A summer intern (until September 1), or a former intern now on staff. */
   intern?: { until: number };
   wasIntern?: boolean;
+  /** You promised them a lead role by this day (to keep them from a rival). */
+  leadPromise?: number;
+  /** The most they've ever been paid (raises only count above it). */
+  peakSalary?: number;
   /** Graduated from your studio academy (the class year). */
   academy?: number;
   /** After a standing ovation, rival recruiters are watching until this day. */
@@ -687,6 +691,8 @@ export interface StockState {
   ipoPrice: number;
   expectation: number; // next quarter profit expectation
   boardMood: number; // 0..100
+  /** Day of the last follow-on share sale (the market takes one every six months). */
+  lastOffering?: number;
   dividendsPaid: number;
 }
 
@@ -937,6 +943,8 @@ export interface Company {
   lastTalkDay?: number;
   /** Highest charity pledge held during the current month (what gets paid). */
   charityOwed?: 0 | 1 | 5;
+  /** Paid perks used at any point this month (billed even if switched off before the 1st). */
+  perksOwed?: { generous?: boolean; wellness?: boolean; recruiting?: number };
   /** When the current (unbroken) charity pledge began. */
   charitySince?: number;
   talkBuzzUntil?: number;

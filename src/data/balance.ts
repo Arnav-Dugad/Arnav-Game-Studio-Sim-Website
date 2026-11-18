@@ -68,7 +68,7 @@ export const BALANCE = {
   ATTACH_PEAK: 0.42,
   /** Discoverability: early markets were uncrowded. attach × ERA_BOOST/(1+CROWDING×years). */
   ERA_BOOST: 3.2,
-  CROWDING: 0.1, // share of interested users who buy a perfect game
+  CROWDING: 0.14, // how fast the market fills with competing games (each year makes a release a little harder to notice)
   ATTACH_EXP: 8, // steepness of score→attach curve
   GENRE_INTEREST: 0.22, // share of a platform's users interested in an average genre
   LIFECYCLE_DECAY_RETAIL: 0.86, // weekly decay of sales (retail era)

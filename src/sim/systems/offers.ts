@@ -23,6 +23,10 @@ const CONTRACT_TEMPLATES = [
 
 const GENRE_WORDS = ['a racing', 'a puzzle', 'an arcade', 'a sports', 'a strategy', 'a platform'];
 
+/** How many studios a group can run before management can't absorb another. */
+export const MAX_SUBSIDIARIES = 12;
+export const ownedStudios = (s: GameState) => Object.values(s.rivals).filter((r) => r.ownedByPlayer && r.alive).length;
+
 export function refreshOffers(c: Ctx): void {
   const { s, rng } = c;
   s.offers.contracts = s.offers.contracts.filter((o) => o.expiresDay > s.day);
@@ -79,7 +83,7 @@ export function refreshOffers(c: Ctx): void {
     if (s.offers.deals.length >= 3) break;
   }
   // Acquisition targets (once the company has some heft)
-  if (s.company.reputation >= 35 && s.offers.acquisitions.length < 3) {
+  if (s.company.reputation >= 35 && s.offers.acquisitions.length < 3 && ownedStudios(s) < MAX_SUBSIDIARIES) {
     // Studios mid-way through a game for your label aren't for sale (you'd be buying your own advance back).
     const funded = new Set((s.publishingDeals ?? []).filter((d) => d.status === 'dev').map((d) => d.rivalId));
     const cands = alive.filter((r) => (r.procedural || r.staff < 120) && r.reputation < s.company.reputation + 10 && !funded.has(r.id) && !s.offers.acquisitions.some((a) => a.id === r.id));

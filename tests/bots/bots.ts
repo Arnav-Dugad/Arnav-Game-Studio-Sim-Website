@@ -1,3 +1,7 @@
+import { tunedFocus } from '../../src/ui/game/lib';
+import { comboFit } from '../../src/sim/systems/dev';
+import { platformGenreFit } from '../../src/sim/systems/market';
+import { AUDIENCES, type Audience } from '../../src/data/types';
 /**
  * Headless bot players. They interact ONLY through dispatch(), exactly like the UI.
  */
@@ -29,7 +33,7 @@ import { MARKETING, canDesignConsole, consoleSpec, liveConsoles, refPrice } from
 import type { Focus3, GameState, Size } from '../../src/sim/types';
 import { money } from '../../src/sim/util';
 
-export type BotName = 'idle' | 'steady' | 'aggressive' | 'trend' | 'random' | 'tycoon';
+export type BotName = 'idle' | 'steady' | 'aggressive' | 'trend' | 'random' | 'tycoon' | 'skilled';
 
 export interface Bot {
   name: BotName;
@@ -71,6 +75,21 @@ function bestCombo(s: GameState, rng: Rng, mode: 'fit' | 'trend' | 'random'): { 
       if (sc > best.score) best = { genre: g.id, topic: t.id, score: sc };
     }
   return best;
+}
+
+/** The audience the quality model rewards most for this genre × topic. */
+function bestAudience(genre: GenreId, topic: string): Audience {
+  const fit = (a: Audience) => comboFit(genre, topic, a).aud;
+  return AUDIENCES.reduce((b, a) => (fit(a) > fit(b) ? a : b), 'everyone' as Audience);
+}
+
+/** Platforms by players × how much they like this genre (what a careful player weighs). */
+function skilledPlatforms(s: GameState, genre: GenreId, n: number): string[] {
+  return availablePlatforms(s)
+    .map((p) => ({ id: p.id, sc: (s.market.users[p.id] ?? 0) * platformGenreFit(p, genre) }))
+    .sort((a, b) => b.sc - a.sc)
+    .slice(0, n)
+    .map((x) => x.id);
 }
 
 function bestPlatforms(s: GameState, genre: GenreId, n: number): string[] {
@@ -125,7 +144,7 @@ function bestDesk(s: GameState): (typeof ITEMS)[number]['id'] {
   return desks[desks.length - 1]!.id;
 }
 
-function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' | 'random'; aggressive: boolean; maxPlatforms: number }): void {
+function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' | 'random'; aggressive: boolean; maxPlatforms: number; skilled?: boolean }): void {
   const hasGame = Object.values(s.projects).some((p) => p.kind === 'game');
   if (hasGame) return;
   const team = idleStaff(s);
@@ -144,7 +163,7 @@ function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' |
   }
   const { genre, topic } = bestCombo(s, rng, opts.mode);
   const cap = BALANCE.SIZE[size].teamCap;
-  const plats = bestPlatforms(s, genre, opts.maxPlatforms);
+  const plats = opts.skilled ? skilledPlatforms(s, genre, opts.maxPlatforms) : bestPlatforms(s, genre, opts.maxPlatforms);
   if (!plats.length) return;
   const engine = Object.values(s.engines).reduce((a, b) => (b.tech > a.tech ? b : a));
   const selfPub = s.research.done.includes('biz_self_publishing');
@@ -163,7 +182,7 @@ function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' |
       genre,
       topic: fr?.topic ?? topic,
       platforms: plats,
-      audience: GENRE_BY_ID[genre].audience.teen >= GENRE_BY_ID[genre].audience.everyone ? 'teen' : 'everyone',
+      audience: opts.skilled ? bestAudience(genre, fr?.topic ?? topic) : GENRE_BY_ID[genre].audience.teen >= GENRE_BY_ID[genre].audience.everyone ? 'teen' : 'everyone',
       size,
       monetization: monet,
       engineId: engine.id,
@@ -171,7 +190,7 @@ function startGameIfIdle(s: GameState, rng: Rng, opts: { mode: 'fit' | 'trend' |
       dealId: deal?.id,
       localized,
       team: team.slice(0, cap),
-      focus: idealFocus(genre),
+      focus: opts.skilled ? tunedFocus(genre, team.slice(0, cap).map((id) => s.staff[id]!).filter(Boolean)) : idealFocus(genre),
       features: opts.mode === 'random' ? undefined : GAME_FEATURES.filter((f) => f.fits[genre] && !featuresBlocked(s, [f.id], monet)).slice(0, 2).map((f) => f.id),
     },
   });
@@ -317,11 +336,11 @@ function tradeShows(s: GameState, big: boolean): void {
   if (money(show.booths[booth], s.day) < s.company.cash * 0.1) dispatch(s, { type: 'tradeShow', show: show.id, booth });
 }
 
-function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; aggressive: boolean; tycoon?: boolean }) {
+function common(s: GameState, rng: Rng, o: { mode: 'fit' | 'trend' | 'random'; aggressive: boolean; tycoon?: boolean; skilled?: boolean }) {
   events(s, rng, true);
   if (!o.aggressive) for (const st of Object.values(s.staff)) if (st.burnout > 60) dispatch(s, { type: 'vacation', staffId: st.id, days: 14 });
   manageGames(s, o.aggressive);
-  startGameIfIdle(s, rng, { mode: o.mode, aggressive: o.aggressive, maxPlatforms: o.aggressive ? 3 : 2 });
+  startGameIfIdle(s, rng, { mode: o.mode, aggressive: o.aggressive, maxPlatforms: o.aggressive ? 3 : 2, skilled: o.skilled });
   research(s);
   engines(s);
   hireIfAffordable(s, rng, o.aggressive ? 2 : 6);
@@ -519,6 +538,8 @@ export function makeBot(name: BotName): Bot {
           return common(s, rng, { mode: 'trend', aggressive: false });
         case 'tycoon':
           return common(s, rng, { mode: 'fit', aggressive: false, tycoon: true });
+        case 'skilled':
+          return common(s, rng, { mode: 'fit', aggressive: false, tycoon: true, skilled: true });
         case 'random': {
           common(s, rng, { mode: 'random', aggressive: rng.chance(0.3) });
           for (let i = 0; i < 3; i++) {

@@ -274,7 +274,39 @@ export function spawnIndie(c: Ctx): Rival {
 export function acquisitionPrice(s: GameState, r: Rival): number {
   const base = Math.max(r.revenue12m * 2.5, r.staff * 60_000 * inflation(s.day)) + Math.max(0, r.cash);
   const rep = 1 + r.reputation / 60;
-  return Math.round(base * rep * (r.procedural ? 1 : 2.2));
+  // a famous studio's series come with it, so the price includes what they're worth
+  return Math.round(base * rep * (r.procedural ? 1 : 2.2) + adoptableIpValue(s, r.id));
+}
+
+/** The real-world series a studio would bring with it today (owned by it now, with games already out). */
+export function adoptableFranchises(s: GameState, companyId: string) {
+  const yr = fromDay(s.day).year;
+  const owned = new Set(Object.values(s.franchises).map((f) => f.origin).filter(Boolean));
+  return FRANCHISES.filter((f) => {
+    let owner = f.company;
+    for (const [cid, y] of f.transfers ?? []) if (yr >= y) owner = cid;
+    return owner === companyId && !owned.has(f.id) && f.releases.some((x) => parseYM(x.date) <= s.day);
+  });
+}
+
+/** Fans a series brings: 12% of everyone who bought its games so far. */
+export function adoptedFans(s: GameState, f: (typeof FRANCHISES)[number]): number {
+  return Math.round(f.releases.filter((x) => parseYM(x.date) <= s.day).reduce((t, x) => t + x.unitsM * 1e6, 0) * 0.12);
+}
+
+/** What those series would sell for (the same formula as selling a franchise). */
+export function adoptableIpValue(s: GameState, companyId: string): number {
+  let v = 0;
+  for (const f of adoptableFranchises(s, companyId)) {
+    const best = Math.max(...f.releases.filter((x) => parseYM(x.date) <= s.day).map((x) => x.score));
+    v += franchiseSalePrice(s, adoptedFans(s, f), best);
+  }
+  return Math.round(v);
+}
+
+/** What selling a series' rights brings in. */
+export function franchiseSalePrice(s: GameState, fans: number, bestScore: number): number {
+  return Math.max(money(5_000, s.day), fans * 4 * (bestScore / 100) * inflation(s.day) * 0.8);
 }
 
 export function rivalSummary(s: GameState) {

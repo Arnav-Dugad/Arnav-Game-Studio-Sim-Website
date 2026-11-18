@@ -26,7 +26,7 @@ import { pinFanArt } from './systems/fanMail';
 import type { CampaignTier } from './systems/crowdfunding';
 import { startCrowdfund } from './systems/crowdfunding';
 import { startEarlyAccess } from './systems/earlyAccess';
-import { PHASE_AREAS } from '../data/types';
+import { AUDIENCES, PHASE_AREAS } from '../data/types';
 import { COMPANY_BY_ID } from '../data/companies';
 import { runLiveEvent } from './systems/liveEvents';
 import { teamRetreat } from './systems/studioLife';
@@ -53,18 +53,19 @@ import { LABEL_TIERS, dealAdvance, labelBlocked, signIndie, signableIndies } fro
 import { canLaunchSub, launchSub, subLaunchCost, subRefPrice } from './systems/subscription';
 import { MARKETING, canDesignConsole, consoleSpec, mediaFor, priceBounds, projectsTargeting, retireConsole, type ConsoleKind, type ConsoleMarketing, type ConsoleTier } from './systems/hardware';
 import { SALE_DISCOUNTS, applyPatch, applyPort, applyRerelease, applySale, canExpand, canPatch, canRemaster, canRunSale, expansionPlatforms, expansionSizeOk, patchCost, portCost, rereleaseBlocked, rereleaseCost, type SaleDiscount, bundleCost, MAX_BUNDLE, launchPrice } from './systems/release';
-import { creditLimit, doIPO, ipValue, ipoEligible, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
+import { creditLimit, doIPO, ipValue, ipoEligible, offeringBlocked, raiseFunding, repayLoan, secondaryOffering, takeLoan } from './systems/finance';
 import { isPlatformAvailable, platformInfo } from './systems/market';
 import { CROWD_OK, assignDesks, canPlace, crampedCount, freeDesks, itemRequirement, layout, spreadOut, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost, activeResearch } from './systems/research';
 import { HIREABLE_ROLES, ROLE_SEARCH_COST, ROLE_SEARCH_SIZE, SABBATICAL, candidateQuality, candidateToStaff, generateCandidate, invalidateMentees, isAway, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
-import { FRANCHISES } from '../data/franchises';
+import { adoptableFranchises, adoptedFans, franchiseSalePrice } from './systems/rivals';
+import { MAX_SUBSIDIARIES, ownedStudios } from './systems/offers';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
 import { applyCheat, markCheated, type CheatOp } from './cheats';
 import { academyBlocked, closeAcademy, foundAcademy, validTrack, type AcademyFunding } from './systems/academy';
 import { canFoundLeague, closeLeague, foundLeague, LEAGUE_TIERS, leagueSetupCost } from './systems/esports';
-import { addRep, aOrAn, earn, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
+import { addRep, aOrAn, earn, refund, fmtMoney, fmtUnits, hasFlag, inflation, money, newId, pushNews, spend } from './util';
 
 export interface StartGamePayload {
   name: string;
@@ -364,6 +365,11 @@ export function dispatch(s: GameState, a: Action): ActionResult {
 }
 
 const finite = (...xs: unknown[]) => xs.every((x) => typeof x === 'number' && Number.isFinite(x));
+/** What used furniture fetches: 40% of today's price, never more than you paid for it. */
+const resale = (s: GameState, def: { cost: number }, it: { paid?: number }) => Math.min(money(def.cost, s.day) * 0.4, it.paid ?? Infinity);
+/** Three phases of three finite slider values, none all zero. */
+const focusValid = (f: unknown): boolean =>
+  Array.isArray(f) && f.length === 3 && f.every((ph) => Array.isArray(ph) && ph.length === 3 && finite(...ph) && ph.reduce((t: number, v: number) => t + Math.max(0, Math.round(v)), 0) > 0);
 
 function apply(c: Ctx, a: Action): string | null {
   const { s } = c;
@@ -393,6 +399,8 @@ function apply(c: Ctx, a: Action): string | null {
         const pl = platformInfo(s, pid);
         if (!pl || !isPlatformAvailable(s, pl)) return `${pl?.name ?? pid} is not available`;
       }
+      if (!BALANCE.SIZE[g.size] || !BALANCE.MONETIZATION[g.monetization] || !GENRE_BY_ID[g.genre] || !AUDIENCES.includes(g.audience)) return 'Invalid game concept';
+      if (g.focus !== undefined && !focusValid(g.focus)) return 'Invalid focus';
       const sizeErr = sizeAllowed(s, g.size);
       if (sizeErr) return sizeErr;
       const mErr = monetizationAllowed(s, g.monetization, g.genre);
@@ -478,7 +486,7 @@ function apply(c: Ctx, a: Action): string | null {
         phase: 0,
         phaseDay: 0,
         phaseDays: [0, 1, 2].map((ph) => Math.max(4, Math.round(phaseLength(g.size, ph) * workShare({ remasterOf: orig?.id, expansionOf: base?.id, features: feats, localized: locs })))) as [number, number, number],
-        focus: g.focus ?? defaultFocus(g.genre),
+        focus: g.focus ? (g.focus.map((f) => f.map((x) => clamp(Math.round(x), 0, 100))) as [Focus3, Focus3, Focus3]) : defaultFocus(g.genre), // a copy: never the caller's arrays
         points: { engine: 0, gameplay: 0, story: 0, level: 0, dialogue: 0, ai: 0, world: 0, graphics: 0, sound: 0 },
         design: 0,
         tech: 0,
@@ -518,6 +526,8 @@ function apply(c: Ctx, a: Action): string | null {
     case 'setFocus': {
       const p = s.projects[a.projectId];
       if (!p || p.kind !== 'game') return 'No such game';
+      if (a.phase !== 0 && a.phase !== 1 && a.phase !== 2) return 'No such phase';
+      if (!Array.isArray(a.focus) || a.focus.length !== 3 || !finite(...a.focus)) return 'Invalid focus';
       if (a.phase < Math.min(2, p.phase)) return 'That phase is finished';
       const f = a.focus.map((x) => clamp(Math.round(x), 0, 100)) as Focus3;
       if (f[0] + f[1] + f[2] <= 0) return 'Focus cannot be all zero';
@@ -533,6 +543,7 @@ function apply(c: Ctx, a: Action): string | null {
     case 'setTeam': {
       const p = s.projects[a.projectId];
       if (!p) return 'No such project';
+      if (!a.team.length) return 'Keep at least one person on it (or cancel the project)';
       if (p.kind === 'game' && a.team.length > BALANCE.SIZE[p.concept.size].teamCap) return 'Team too large for this size';
       const te = teamValid(s, a.team, p.id);
       if (te) return te;
@@ -604,7 +615,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (p.kind === 'game' && p.announcedDay !== undefined) addRep(s, -(2), 'Cancelled an announced game');
       if (p.kind === 'game' && p.crowdfund?.success) {
         addRep(s, -8, 'Cancelled a crowdfunded game');
-        spend(s, 'other_expense', p.crowdfund.raised * 0.9); // the platform forces refunds
+        refund(s, 'other_income', p.crowdfund.raised * 0.9, p.crowdfund.end ?? p.startDay); // the platform forces refunds
         s.company.fans = Math.round(s.company.fans * 0.95);
         pushNews(s, { category: 'studio', headline: `${p.concept.name} cancelled after raising ${fmtMoney(p.crowdfund.raised)}`, body: `${p.crowdfund.backers.toLocaleString('en-US')} backers are furious. “Where did our money go?”`, tone: 'bad' });
       } else if (p.kind === 'game' && p.crowdfund && p.crowdfund.end === undefined) addRep(s, -1, 'Pulled a crowdfunding campaign');
@@ -617,7 +628,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (p.kind === 'game' && p.concept.deal) {
         // the publisher wants its advance back — and won't forget
         (s.publisherTrust ??= {})[p.concept.deal.publisherId] = Math.max(-5, (s.publisherTrust[p.concept.deal.publisherId] ?? 0) - 3);
-        spend(s, 'other_expense', p.concept.deal.advance);
+        refund(s, 'advances', p.concept.deal.advance, p.startDay);
         addRep(s, -2, 'Cancelled a published game');
       }
       if (p.kind === 'contract') {
@@ -729,7 +740,11 @@ function apply(c: Ctx, a: Action): string | null {
         maybeSpinOff(s, c.rng, st, 0.2);
         removeStaff(s, st.id);
       }
-      s.company.lastLayoffDay = s.day;
+      // a layoff is three or more people inside a month, however they're let go
+      const recent = ((s.eventCooldowns.__fires ?? 0) > s.day - 30 ? (s.eventCooldowns.__fireCount ?? 0) : 0) + gone.length;
+      s.eventCooldowns.__fires = s.day;
+      s.eventCooldowns.__fireCount = recent;
+      if (recent >= 3) s.company.lastLayoffDay = s.day;
       const hit = layoffMoraleHit(gone.length);
       for (const o of Object.values(s.staff)) o.morale = clamp(o.morale - hit, 0, 100);
       assignDesks(s);
@@ -739,10 +754,17 @@ function apply(c: Ctx, a: Action): string | null {
       const st = s.staff[a.staffId];
       if (!st || st.role === 'founder') return 'No such staff';
       const sal = Math.max(1000, Math.round(a.salary));
-      if (sal > st.salary) {
-        st.morale = clamp(st.morale + Math.min(15, ((sal - st.salary) / st.salary) * 60), 0, 100);
-        st.loyalty = clamp(st.loyalty + Math.min(15, ((sal - st.salary) / st.salary) * 50), 0, 100);
+      if (sal < st.salary && sal < marketSalary(s, st.skills) * 0.5) return `${st.name} would walk out on the spot — that's under half the going rate`;
+      // a raise only delights on money they've never had: cutting pay and restoring it buys nothing
+      const best = Math.max(st.salary, st.peakSalary ?? st.salary);
+      if (sal > best) {
+        st.morale = clamp(st.morale + Math.min(15, ((sal - best) / best) * 60), 0, 100);
+        st.loyalty = clamp(st.loyalty + Math.min(15, ((sal - best) / best) * 50), 0, 100);
+        st.peakSalary = sal;
+      } else if (sal > st.salary) {
+        st.peakSalary = best; // getting back to where they were: no bonus, no penalty
       } else if (sal < st.salary) {
+        st.peakSalary = best;
         st.morale = clamp(st.morale - Math.min(30, ((st.salary - sal) / st.salary) * 120), 0, 100);
         st.loyalty = clamp(st.loyalty - 15, 0, 100);
       }
@@ -787,6 +809,7 @@ function apply(c: Ctx, a: Action): string | null {
     case 'placeItem': {
       const def = ITEM_BY_ID[a.item];
       if (!def) return 'Unknown item';
+      if (![a.floor, a.x, a.y].every(Number.isInteger) || (a.rot !== 0 && a.rot !== 1) || a.floor < 0 || a.floor >= tierDef(s.office.tier).floors) return 'Invalid position';
       if (fromDay(s.day).year < def.year) return `Available from ${def.year}`;
       if (def.research && !s.research.done.includes(def.research)) return `Research ${RESEARCH_BY_ID[def.research]?.name} first`;
       const req = itemRequirement(s, def);
@@ -804,6 +827,7 @@ function apply(c: Ctx, a: Action): string | null {
     case 'moveItem': {
       const it = s.office.items.find((i) => i.id === a.id);
       if (!it) return 'No such item';
+      if (![a.floor, a.x, a.y].every(Number.isInteger) || (a.rot !== 0 && a.rot !== 1) || a.floor < 0 || a.floor >= tierDef(s.office.tier).floors) return 'Invalid position';
       const ok = canPlace(s, ITEM_BY_ID[it.item], a.floor, a.x, a.y, a.rot, it.id);
       if (!ok.ok) return ok.reason ?? 'Can’t place there';
       it.floor = a.floor;
@@ -832,7 +856,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!it) return 'No such item';
       const def = ITEM_BY_ID[it.item];
       s.office.items = s.office.items.filter((i) => i.id !== it.id);
-      earn(s, 'asset_sales', money(def.cost, s.day) * 0.4);
+      earn(s, 'asset_sales', resale(s, def, it));
       touchOffice(s);
       assignDesks(s);
       return null;
@@ -869,7 +893,7 @@ function apply(c: Ctx, a: Action): string | null {
                 }
         }
         if (placed) kept.push(it.id);
-        else earn(s, 'asset_sales', money(def.cost, s.day) * 0.4);
+        else earn(s, 'asset_sales', resale(s, def, it));
       }
       touchOffice(s);
       assignDesks(s);
@@ -1225,14 +1249,17 @@ function apply(c: Ctx, a: Action): string | null {
       const cost = n * st.price * 1.05;
       if (n <= 0 || s.company.cash < cost) return 'Not enough cash';
       s.company.cash -= Math.round(cost);
-      st.founderShares += n;
-      st.price *= 1 + 0.15 * (n / st.shares);
+      // bought-back shares are retired: your stake grows because there are fewer shares, and the company is worth
+      // what it was minus the cash it spent
+      st.price = Math.max(0.05, (st.price * st.shares - cost) / Math.max(1, st.shares - n));
+      st.shares -= n;
       return null;
     }
     case 'acquire': {
       const t = s.offers.acquisitions.find((x) => x.id === a.targetId);
       const r = s.rivals[a.targetId];
       if (!t || !r || !r.alive) return 'Target no longer available';
+      if (ownedStudios(s) >= MAX_SUBSIDIARIES) return `Your group already runs ${MAX_SUBSIDIARIES} studios — management can’t absorb another`;
       if (s.company.cash < t.price) return 'Not enough cash';
       spend(s, 'acquisitions', t.price);
       r.ownedByPlayer = true;
@@ -1270,7 +1297,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (!f) return 'No such franchise';
       if (Object.values(s.projects).some((p) => p.kind === 'game' && p.concept.franchiseId === f.id)) return 'A sequel is in development';
       if ((s.mediaDeals ?? []).some((d) => d.franchiseId === f.id && d.outcome === undefined)) return 'A licensing deal is still in production';
-      const price = Math.max(money(5_000, s.day), (f.fans * 4 * (f.bestScore / 100) * inflation(s.day)) * 0.8);
+      const price = franchiseSalePrice(s, f.fans, f.bestScore);
       earn(s, 'asset_sales', price);
       delete s.franchises[f.id];
       pushNews(s, { category: 'studio', headline: `${s.company.name} sells the ${f.name} IP`, tone: 'neutral' });
@@ -1285,9 +1312,11 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'setPolicy': {
       if (a.salaryPolicy) s.company.policies.salaryPolicy = a.salaryPolicy;
+      if (a.salaryPolicy === 'generous') (s.company.perksOwed ??= {}).generous = true;
       if (a.remote !== undefined) s.company.policies.remote = a.remote;
       if (a.fourDayWeek !== undefined) s.company.policies.fourDayWeek = a.fourDayWeek;
       if (a.wellness !== undefined) s.company.policies.wellness = !!a.wellness;
+      if (a.wellness) (s.company.perksOwed ??= {}).wellness = true;
       if (a.interns !== undefined) s.company.policies.interns = !!a.interns;
       if (a.charity !== undefined) {
         if (![0, 1, 5].includes(a.charity)) return 'Pick 0%, 1% or 5%';
@@ -1311,6 +1340,7 @@ function apply(c: Ctx, a: Action): string | null {
     }
     case 'setRecruiting':
       s.company.recruiting = clamp(Math.round(a.level), 0, 3);
+      (s.company.perksOwed ??= {}).recruiting = Math.max(s.company.perksOwed.recruiting ?? 0, s.company.recruiting);
       return null;
     case 'buyDevkit': {
       if (s.devkits.includes(a.platform)) return 'Already owned';
@@ -1353,6 +1383,9 @@ function apply(c: Ctx, a: Action): string | null {
     case 'secondaryOffering': {
       const st = s.finance.stock;
       if (!st) return 'Not public';
+      const blocked = offeringBlocked(s);
+      if (blocked) return blocked;
+      if (!finite(a.pct)) return 'Invalid amount';
       const raised = secondaryOffering(s, Math.min(0.2, Math.max(0.02, a.pct)));
       if (raised <= 0) return 'You’d keep too little of your own studio';
       pushNews(s, { category: 'studio', headline: `${s.company.name} raises ${fmtMoney(raised)} in a share sale`, tone: 'neutral' });
@@ -1782,20 +1815,16 @@ export { marketSalary };
 
 /** Acquiring a real company transfers its real franchises (released so far) to the player. */
 function adoptFranchises(s: GameState, companyId: string): void {
-  const yr = fromDay(s.day).year;
-  for (const f of FRANCHISES) {
-    let owner = f.company;
-    for (const [cid, y] of f.transfers ?? []) if (yr >= y) owner = cid;
-    if (owner !== companyId) continue;
+  // only series this studio owns today, and never one you already have (series change hands over the years)
+  for (const f of adoptableFranchises(s, companyId)) {
     const past = f.releases.filter((r) => parseYM(r.date) <= s.day);
-    if (!past.length) continue;
     const id = newId(s, 'f');
     s.franchises[id] = {
       id,
       name: f.name,
       genre: f.genre,
       topic: f.topic,
-      fans: Math.round(past.reduce((t, r) => t + r.unitsM * 1e6, 0) * 0.12),
+      fans: adoptedFans(s, f),
       entries: [],
       fatigue: 0,
       lastDay: parseYM(past[past.length - 1]!.date),

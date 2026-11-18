@@ -2,7 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
-import { possessive } from '../util';
+import { possessive, realRepText } from '../util';
 import { ITEM_BY_ID } from '../../data/facilities';
 import { MOD_BUY, MOD_FEATURE, MOD_HIRE, breakoutCandidate, modBuyScore, modRevival, modTopic, pcAlive, rollMod } from './mods';
 import { TOPIC_BY_ID } from '../../data/topics';
@@ -575,7 +575,7 @@ export const EVENT_DEFS: EventDef[] = [
         body: `${rival.name} has offered ${st.name} a big raise to join them. ${st.name} is tempted (loyalty ${Math.round(st.loyalty)}%).`,
         options: [
           { id: 'counter', label: `Counter-offer (+${fmtMoney(raise)}/yr)`, preview: 'Salary up, loyalty +25, morale +8' },
-          { id: 'promise', label: 'Promise a lead role', preview: 'Loyalty +12; if not promoted within a year they may leave' },
+          { id: 'promise', label: 'Promise a lead role', preview: 'Loyalty +12 — but if they’re not a lead within a year (train them up), it backfires' },
           { id: 'let_go', label: 'Wish them well', preview: `${st.name} leaves for ${rival.name}` },
         ],
         ctx: { staff: st.id, rival: rival.id, raise },
@@ -591,6 +591,7 @@ export const EVENT_DEFS: EventDef[] = [
         st.morale = clamp(st.morale + 8, 0, 100);
       } else if (opt === 'promise') {
         st.loyalty = clamp(st.loyalty + 12, 0, 100);
+        st.leadPromise = s.day + 365;
       } else {
         rememberLeaver(s, st, 'a rival made them an offer');
         removeStaff(s, st.id);
@@ -1696,7 +1697,7 @@ export const EVENT_DEFS: EventDef[] = [
     id: 'intern',
     art: 'student',
     cooldown: 365,
-    weight: (s) => (freeDesks(s) > 0 && yr(s) >= 1984 ? 0.5 : 0),
+    weight: (s) => (freeDesks(s) > 0 && Object.keys(s.staff).length < tierDef(s.office.tier).staffCap && yr(s) >= 1984 ? 0.5 : 0),
     make: ({ s, rng }) => {
       const cand = generateCandidate(s, rng, { quality: -20 });
       cand.potential = clamp(cand.potential + 25, 0, 100);
@@ -1713,6 +1714,11 @@ export const EVENT_DEFS: EventDef[] = [
     },
     resolve: ({ s }, e, opt) => {
       if (opt !== 'hire') return;
+      // the office may have filled up while you were deciding
+      if (freeDesks(s) <= 0 || Object.keys(s.staff).length >= tierDef(s.office.tier).staffCap) {
+        pushNews(s, { category: 'staff', headline: 'No room for the eager intern', body: 'Every desk was taken by the time you said yes. Maybe next year.', tone: 'neutral' });
+        return;
+      }
       const cand = JSON.parse(String(e.ctx.cand));
       const id = newId(s, 's');
       s.staff[id] = candidateToStaff(s, cand, id, Number(e.ctx.salary));
@@ -1781,7 +1787,7 @@ export const EVENT_DEFS: EventDef[] = [
         body: `${r.name} is buying up your shares. Buy back enough stock to keep control, or lose the company.`,
         options: [
           { id: 'defend', label: `Buy back shares (${fmtMoney(defend)})`, preview: 'Requires the cash; keeps control', cost: defend },
-          { id: 'lose', label: 'Let it happen', preview: 'Game over — acquired' },
+          { id: 'lose', label: 'Let it happen', preview: 'Game over — acquired', confirm: `Let ${r.name} take over ${s.company.name} and end this run?` },
         ],
         ctx: { rival: r.id, defend, toBuy },
       };
@@ -2796,6 +2802,7 @@ export function fireEvent(c: Ctx, defId: string): boolean {
   if (!def || s.pendingEvents.some((e) => e.defId === defId) || (!mediating && (s.eventCooldowns[defId] ?? -1) > s.day)) return false;
   const made = def.make(c);
   if (!made) return false;
+  for (const o of made.options) o.preview = realRepText(s, o.preview); // the gains this studio would really see
   // policy: feuds go straight to a mediator, no popup (the cooldown only paces popups)
   if (mediating && s.company.cash < Number(made.ctx.cost) && (s.eventCooldowns[defId] ?? -1) > s.day) return false;
   if (defId === 'feud' && s.company.policies.autoMediate && s.company.cash >= Number(made.ctx.cost)) {
@@ -2827,6 +2834,7 @@ export function rollRandomEvent(c: Ctx): void {
   const def = rng.weighted(eligible, (d) => d.weight(s));
   const made = def.make(c);
   if (!made) return;
+  for (const o of made.options) o.preview = realRepText(s, o.preview);
   s.nextEventUid += 1;
   const inst: EventInstance = {
     uid: s.nextEventUid,

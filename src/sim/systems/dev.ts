@@ -67,7 +67,8 @@ export function benchmarkPoints(size: Size, day: number): number {
 export function sizeDailyCost(size: Size, day: number): number {
   const base = { small: 0, medium: 90, large: 420, aaa: 1_900 }[size];
   const yrs = fromDay(day).year - 1980;
-  return base * inflation(day) * Math.pow(1.065, yrs);
+  // budgets climb steadily, then faster once 3D and cinematic production arrive (mid-'90s on)
+  return base * inflation(day) * Math.pow(1.065, Math.min(yrs, 15)) * Math.pow(1.085, Math.max(0, yrs - 15));
 }
 
 /** Team coordination overhead and synergy multiplier. */

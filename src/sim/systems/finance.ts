@@ -82,7 +82,8 @@ export function financeMonthly(c: Ctx): void {
   if (prev) {
     prev.cashEnd = s.company.cash;
     const rev = sum(Object.values(prev.income).map((v) => v ?? 0));
-    s.finance.revenue12m.push(rev);
+    // selling assets (IP, furniture) is cash, not trading revenue: it doesn't make the studio look bigger
+    s.finance.revenue12m.push(rev - (prev.income.asset_sales ?? 0));
     if (s.finance.revenue12m.length > 12) s.finance.revenue12m.shift();
     const exp = sum(Object.values(prev.expense).map((v) => v ?? 0));
     s.finance.profitYTD += rev - (exp - (prev.expense.taxes ?? 0));
@@ -95,9 +96,13 @@ export function financeMonthly(c: Ctx): void {
   spend(s, 'salaries', payrollMonthly(s));
   spend(s, 'rent', monthlyRent(s));
   spend(s, 'upkeep', monthlyUpkeep(s));
-  if (s.company.policies.wellness) spend(s, 'other_expense', WELLNESS_COST * inflation(s.day) * Object.keys(s.staff).length);
-  if (s.company.recruiting > 0) spend(s, 'recruiting', s.company.recruiting * 1_500 * inflation(s.day));
-  if (s.company.policies.salaryPolicy === 'generous') spend(s, 'salaries', payrollMonthly(s) * 0.08);
+  // perks used at any point last month are paid for (no dodging the bill by switching off before the 1st)
+  const owed = s.company.perksOwed ?? {};
+  if (s.company.policies.wellness || owed.wellness) spend(s, 'other_expense', WELLNESS_COST * inflation(s.day) * Object.keys(s.staff).length);
+  const rec = Math.max(s.company.recruiting, owed.recruiting ?? 0);
+  if (rec > 0) spend(s, 'recruiting', rec * 1_500 * inflation(s.day));
+  if (s.company.policies.salaryPolicy === 'generous' || owed.generous) spend(s, 'salaries', payrollMonthly(s) * 0.08);
+  s.company.perksOwed = undefined;
   // Loans
   for (const loan of s.finance.loans) {
     const interest = loan.remaining * (loan.rate / 12);
@@ -163,7 +168,8 @@ export function annualProfit(s: GameState): number {
   const months = s.finance.ledger.slice(-13, -1);
   let p = 0;
   for (const m of months) {
-    p += sum(Object.values(m.income).map((v) => v ?? 0)) - sum(Object.values(m.expense).map((v) => v ?? 0));
+    // operating profit: one-off asset sales don't count (they'd inflate valuation, funding and credit)
+    p += sum(Object.values(m.income).map((v) => v ?? 0)) - (m.income.asset_sales ?? 0) - sum(Object.values(m.expense).map((v) => v ?? 0));
   }
   return p;
 }
@@ -317,14 +323,26 @@ export function controlAfterOffering(st: { shares: number; founderShares: number
  * Issue new shares (a follow-on offering): cash for the studio, and your stake is diluted. The new money is
  * spread over more shares, so it can't conjure value per share out of nothing.
  */
+/** Days between follow-on offerings: investors won't buy share sale after share sale. */
+export const OFFERING_GAP = 180;
+
+export function offeringBlocked(s: GameState): string | null {
+  const st = s.finance.stock;
+  if (!st) return 'Not public';
+  if (st.lastOffering !== undefined && s.day - st.lastOffering < OFFERING_GAP) return `Investors need time to digest your last share sale (${Math.ceil((OFFERING_GAP - (s.day - st.lastOffering)) / 30)} more month${OFFERING_GAP - (s.day - st.lastOffering) > 30 ? 's' : ''})`;
+  return null;
+}
+
 export function secondaryOffering(s: GameState, pct: number): number {
   const st = s.finance.stock;
-  if (!st) return 0;
+  if (!st || offeringBlocked(s)) return 0;
   const n = Math.round(st.shares * pct);
   if (n <= 0 || controlAfterOffering(st, pct) < 0.05) return 0;
   const raised = n * st.price * 0.92;
+  // the company is worth what it was plus the cash it raised, spread over more shares (no value from thin air)
+  st.price = (st.price * st.shares + raised) / (st.shares + n);
   st.shares += n;
-  st.price *= 0.96;
+  st.lastOffering = s.day;
   s.company.cash += Math.round(raised);
   return raised;
 }

@@ -63,6 +63,37 @@ export function spend(s: GameState, cat: LedgerCat, amount: number): void {
   l.expense[cat] = (l.expense[cat] ?? 0) + a;
 }
 
+/**
+ * Give money back that came in as income (an advance, crowdfunding): it un-books that income instead of looking like
+ * a new cost, so cancelling never leaves the studio's revenue looking bigger than it was.
+ */
+export function refund(s: GameState, cat: LedgerCat, amount: number, bookedDay?: number): void {
+  if (!Number.isFinite(amount) || amount <= 0) return;
+  let a = Math.round(amount);
+  s.company.cash -= a;
+  const l = currentLedger(s);
+  const here = Math.min(l.income[cat] ?? 0, a);
+  if (here > 0) l.income[cat] = (l.income[cat] ?? 0) - here;
+  a -= here;
+  if (a <= 0) return;
+  // booked in an earlier month: this month shows the refund as a cost (so the books balance), and the trailing
+  // revenue those months reported no longer counts it
+  l.expense.other_expense = (l.expense.other_expense ?? 0) + a;
+  if (bookedDay === undefined) return;
+  // the month it came in, if it's still in the trailing year: that month reported it, so it un-reports it
+  const ledger = s.finance.ledger;
+  let idx = -1;
+  for (let i = ledger.length - 1; i >= 0; i--)
+    if (ledger[i]!.day <= bookedDay) {
+      idx = i;
+      break;
+    }
+  const back = ledger.length - 1 - idx; // closed months since then
+  const slot = s.finance.revenue12m.length - back;
+  if (idx < 0 || back < 1 || slot < 0) return;
+  s.finance.revenue12m[slot] = Math.max(0, s.finance.revenue12m[slot]! - a);
+}
+
 export function pushNews(s: GameState, n: Omit<NewsItem, 'id' | 'day'> & { day?: number }): NewsItem {
   s.nextNewsId += 1;
   const item: NewsItem = { id: s.nextNewsId, day: n.day ?? s.day, ...n } as NewsItem;
@@ -101,9 +132,30 @@ export function fmtUnits(n: number): string {
 }
 
 /** Change reputation (clamped 0..100) and remember why. */
+/** Above this reputation, every gain is smaller. */
+export const REP_TAPER_FROM = 50;
+
+/**
+ * What a reputation change really comes to for this studio: the last stretch to legend status takes many years of
+ * good work, whatever the source (losses are never softened). Previews use it so the numbers shown are the real ones.
+ */
+export function repGain(s: GameState, delta: number): number {
+  const rep = s.company.reputation;
+  return delta > 0 && rep > REP_TAPER_FROM ? delta * Math.max(0.08, 1 - (rep - REP_TAPER_FROM) / 40) : delta;
+}
+
+/** "Reputation +2" in a preview → the gain this studio would actually get ("Reputation +0.5"). */
+export function realRepText(s: GameState, text: string): string {
+  return text.replace(/([Rr]eputation) \+(\d+(?:\.\d+)?)/g, (_m, word: string, n: string) => {
+    const v = repGain(s, Number(n));
+    return `${word} +${v >= 0.95 ? Math.round(v) : v.toFixed(1)}`;
+  });
+}
+
 export function addRep(s: GameState, delta: number, reason: string): void {
   if (!Number.isFinite(delta) || delta === 0) return;
   const before = s.company.reputation;
+  delta = repGain(s, delta);
   s.company.reputation = Math.min(100, Math.max(0, before + delta));
   const applied = s.company.reputation - before;
   if (Math.abs(applied) < 0.005) return;
