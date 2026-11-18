@@ -6,7 +6,8 @@
  */
 import { clamp } from '../breakdown';
 import { fromDay } from '../calendar';
-import type { Rng } from '../rng';
+import type { Ctx } from '../ctx';
+import { codevShareVoid } from './codev';
 import type { CeRun, GameProject, GameState, Release } from '../types';
 import { earn, fmtUnits, pushNews, spend } from '../util';
 
@@ -54,20 +55,27 @@ export function orderCollectors(s: GameState, projectId: string, run: CeRun, std
   if (why) return why;
   const cost = ceCost(run, stdPrice);
   spend(s, 'manufacturing', cost);
-  p.collectors = { run, cost };
+  p.spent += cost; // part of what the game cost to make
+  p.collectors = { run, cost, price: stdPrice };
   pushNews(s, { category: 'studio', headline: `${p.concept.name} Collector’s Edition announced`, body: `${fmtUnits(CE_RUN[run])} numbered boxes, made to order. Pre-orders are open.`, tone: 'neutral' });
   return null;
 }
 
 /** Launch day: the boxes go on sale. */
-export function collectorsOnRelease(s: GameState, rng: Rng, p: GameProject, rel: Release): void {
+export function collectorsOnRelease(c: Ctx, p: GameProject, rel: Release): void {
+  const { s, rng } = c;
   const ce = p.collectors;
   if (!ce) return;
   const run = CE_RUN[ce.run];
   const demand = ceDemand(s, { concept: p.concept, hype: rel.hypeAtLaunch }, rel.score) * rng.range(0.85, 1.15);
   const sold = Math.min(run, Math.round(demand));
-  const price = Math.round(rel.price * CE_PRICE_MUL * 100) / 100;
-  const net = sold * price * CE_KEEP;
+  // boxes are priced as they were ordered (the standard price on order day)
+  const price = Math.round((ce.price ?? rel.price) * CE_PRICE_MUL * 100) / 100;
+  let net = sold * price * CE_KEEP;
+  // a co-development partner takes their share, a licensed engine its royalty — as with every copy
+  if (rel.coDev && !codevShareVoid(s, rel.coDev.rivalId)) net *= 1 - rel.coDev.share;
+  const eng = s.engines[rel.concept.engineId];
+  if (eng && eng.royalty > 0 && net > 0) spend(s, 'royalties', net * eng.royalty);
   rel.collectors = { run, sold, price, cost: ce.cost };
   if (net > 0) {
     earn(s, 'sales', net);
@@ -75,6 +83,8 @@ export function collectorsOnRelease(s: GameState, rng: Rng, p: GameProject, rel:
     rel.gross += sold * price;
     rel.units += sold;
     s.progress.stats.totalRevenue += net;
+    s.progress.stats.totalUnits += sold;
+    c.out.push({ type: 'income', amount: net, source: 'sales', releaseId: rel.id });
   }
   if (demand >= run * 1.5) {
     s.company.fans = Math.round(s.company.fans * 1.01);

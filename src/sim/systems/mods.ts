@@ -42,7 +42,7 @@ export function breakoutCandidate(s: GameState): Release | undefined {
     .sort((a, b) => b.score - a.score || a.day - b.day)[0];
 }
 
-function pcAlive(s: GameState, r: Release): boolean {
+export function pcAlive(s: GameState, r: Release): boolean {
   return r.platforms.some((ps) => {
     const pl = platformInfo(s, ps.platform);
     return !!pl && pl.kind === 'computer' && (pl.endDay === null || s.day <= pl.endDay);
@@ -68,8 +68,10 @@ export function modRevival(s: GameState, r: Release, frac: number): boolean {
     if (!pl || pl.kind !== 'computer' || (pl.endDay !== null && s.day > pl.endDay)) continue;
     const add = ps.potential * frac;
     if (add < 1) continue;
+    // like a new sale, it replaces an unfinished wave — a discounted one's leftover buyers fold in at half (as applySale does)
     const prev = ps.revival;
-    ps.revival = { week: r.week, potential: (prev ? prev.potential - prev.units : 0) + add, units: 0 };
+    const left = prev ? Math.max(0, prev.potential - prev.units) * (prev.priceMul !== undefined ? 0.5 : 1) : 0;
+    ps.revival = { week: r.week, potential: left + add, units: 0 };
     ps.extraPotential = (ps.extraPotential ?? 0) + add;
     revived = true;
   }

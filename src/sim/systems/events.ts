@@ -2,7 +2,7 @@
  * Random choice events. Each event's weight depends on game state, so events react to the systems
  * (crunch → incidents, fame → journalists, low cash → predatory loans…).
  */
-import { MOD_BUY, MOD_FEATURE, MOD_HIRE, breakoutCandidate, modBuyScore, modRevival, modTopic, rollMod } from './mods';
+import { MOD_BUY, MOD_FEATURE, MOD_HIRE, breakoutCandidate, modBuyScore, modRevival, modTopic, pcAlive, rollMod } from './mods';
 import { TOPIC_BY_ID } from '../../data/topics';
 import { GENRE_BY_ID } from '../../data/genres';
 import { EGGS } from './easterEggs';
@@ -971,6 +971,11 @@ export const EVENT_DEFS: EventDef[] = [
       const r = s.releases[String(e.ctx.rel)];
       if (!r || r.breakoutMod) return;
       const name = String(e.ctx.name);
+      if (r.delisted || !pcAlive(s, r)) {
+        pushNews(s, { category: 'studio', headline: `The ${name} scene moves on`, body: `${r.name} can’t be bought on computers any more, so the modders took their work elsewhere.`, tone: 'neutral' });
+        r.breakoutMod = { name, style: String(e.ctx.style), day: s.day, choice: 'feature' };
+        return;
+      }
       const style = String(e.ctx.style);
       let choice: 'hire' | 'buy' | 'feature' = opt === 'hire' ? 'hire' : opt === 'buy' ? 'buy' : 'feature';
       if (choice === 'hire' && (freeDesks(s) <= 0 || Object.keys(s.staff).length >= tierDef(s.office.tier).staffCap)) {

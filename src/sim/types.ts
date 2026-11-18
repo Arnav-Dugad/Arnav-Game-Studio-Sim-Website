@@ -347,7 +347,7 @@ export interface GameProject {
   /** A public demo (systems/demos.ts): when, and the score players saw. */
   demo?: { day: number; score: number };
   /** A Collector's Edition print run ordered (systems/collectors.ts), and what it cost. */
-  collectors?: { run: CeRun; cost: number };
+  collectors?: { run: CeRun; cost: number; price?: number };
   /** A secret someone hid in it (systems/easterEggs.ts). */
   easterEgg?: { by: string; name: string; what: string };
   /** A documentary crew is filming its making (systems/documentary.ts): since when, and crunch days caught on camera. */

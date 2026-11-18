@@ -21,8 +21,10 @@ describe("collector's editions", () => {
     expect(dispatch(s, { type: 'orderCollectors', projectId: p.id, run: 'small' }).ok).toBe(false); // not announced
     p.announcedDay = s.day;
     const cash = s.company.cash;
+    const spent = p.spent;
     expect(dispatch(s, { type: 'orderCollectors', projectId: p.id, run: 'huge' as never }).ok).toBe(false);
     expect(dispatch(s, { type: 'orderCollectors', projectId: p.id, run: 'medium' }).ok).toBe(true);
+    expect(p.spent - spent).toBe(cash - s.company.cash); // the run is part of the game's budget
     expect(s.company.cash).toBeLessThan(cash);
     expect(p.collectors?.run).toBe('medium');
     expect(dispatch(s, { type: 'orderCollectors', projectId: p.id, run: 'small' }).ok).toBe(false);
@@ -48,9 +50,9 @@ describe("collector's editions", () => {
     expect(ceDemand(s, { concept: p.concept, hype: 0.2 }, 70)).toBeGreaterThan(lo);
 
     p.collectors = { run: 'small', cost: 1 };
-    const rel = { name: 'Big Box', score: 92, price: 50, hypeAtLaunch: 3, net: 0, gross: 0, units: 0 } as unknown as Release;
+    const rel = { name: 'Big Box', score: 92, price: 50, concept: { engineId: 'e0' }, hypeAtLaunch: 3, net: 0, gross: 0, units: 0 } as unknown as Release;
     const cash = s.company.cash;
-    collectorsOnRelease(s, new Rng(seedRng(1)), p, rel);
+    collectorsOnRelease({ s, rng: new Rng(seedRng(1)), out: [] }, p, rel);
     expect(rel.collectors!.sold).toBe(CE_RUN.small); // a sell-out
     expect(rel.collectors!.price).toBe(125);
     expect(s.company.cash).toBeGreaterThan(cash);
@@ -58,8 +60,8 @@ describe("collector's editions", () => {
     const { s: s2, p: p2 } = setup();
     s2.company.fans = 1000;
     p2.collectors = { run: 'large', cost: 1 };
-    const flop = { name: 'Big Box', score: 50, price: 50, hypeAtLaunch: 0, net: 0, gross: 0, units: 0 } as unknown as Release;
-    collectorsOnRelease(s2, new Rng(seedRng(1)), p2, flop);
+    const flop = { name: 'Big Box', score: 50, price: 50, concept: { engineId: 'e0' }, hypeAtLaunch: 0, net: 0, gross: 0, units: 0 } as unknown as Release;
+    collectorsOnRelease({ s: s2, rng: new Rng(seedRng(1)), out: [] }, p2, flop);
     expect(flop.collectors!.sold).toBeLessThan(CE_RUN.large * 0.5);
   });
 

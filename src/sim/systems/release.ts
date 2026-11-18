@@ -456,7 +456,6 @@ export function releaseGame(c: Ctx, p: GameProject): void {
   partnersOnRelease(s, rel);
   docOnRelease(s, p, rel);
   eggOnRelease(p, rel);
-  collectorsOnRelease(s, rng, p, rel);
   s.releases[id] = rel;
   s.releaseOrder.push(id);
   exclusiveBuzz(s, rel);
@@ -533,6 +532,7 @@ export function releaseGame(c: Ctx, p: GameProject): void {
     body: `${GENRE_BY_ID[p.concept.genre].name} · ${TOPIC_BY_ID[p.concept.topic]?.name ?? p.concept.topic}. Users rate it ${userScore}.`,
     tone: score >= 70 ? 'good' : score >= 50 ? 'neutral' : 'bad',
   });
+  collectorsOnRelease(c, p, rel); // the boxes go on sale (after the launch headline)
   // Journal: teach the player what worked
   communityNudge(s, (userScore - 70) / 4);
   learnFromRelease(s, p, quality);
