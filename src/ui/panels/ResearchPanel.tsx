@@ -132,7 +132,26 @@ function Tree() {
               <span className="num text-xs text-ink3">{rate > 0 ? `~${Math.ceil(((active.points - s.research.progress) / rate) * 1.4)} days` : 'nobody assigned'}</span>
             </div>
             <Meter value={(s.research.progress / Math.max(1, active.points)) * 100} tone="tech" className="mt-1.5" label="Research progress" />
-            {s.research.queue.length > 0 && <div className="mt-1 text-[11px] text-ink3">Next: {s.research.queue.map((q) => RESEARCH_BY_ID[q]?.name).join(' → ')}</div>}
+            {s.research.queue.length > 0 && (
+              <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-ink3">
+                Next:
+                {s.research.queue.map((q, i) => (
+                  <span key={q} className="inline-flex items-center gap-0.5">
+                    {i > 0 && '→ '}
+                    {RESEARCH_BY_ID[q]?.name ?? q}
+                    <button
+                      type="button"
+                      className="rounded px-1 text-ink3 hover:bg-bg2 hover:text-bad"
+                      title={`Take ${RESEARCH_BY_ID[q]?.name ?? q} off the queue (full refund — no work has started)`}
+                      aria-label={`Remove ${RESEARCH_BY_ID[q]?.name ?? q} from the queue`}
+                      onClick={() => useGame.getState().actOrToast({ type: 'unqueueResearch', id: q }, `${RESEARCH_BY_ID[q]?.name ?? q} taken off the queue — budget refunded`)}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <div className="text-sm text-ink2">{researchLeft(s) ? 'No active research. Pick a project below.' : 'Nothing to research yet — new projects open up as the industry moves on.'}</div>
@@ -204,9 +223,10 @@ function Tree() {
                       onClick={() => {
                         const res = act({ type: s.research.active ? 'queueResearch' : 'research', id: r.id });
                         if (!res.ok) toast({ text: res.error, tone: 'bad' });
+                        else if (s.research.active) toast({ text: `${r.name} queued — ${fmtMoney(cost)} paid now (refunded if you take it off the queue)`, tone: 'neutral', icon: 'research' });
                       }}
                     >
-                      {s.research.active ? 'Queue' : 'Research'}
+                      {s.research.active ? `Queue · ${fmtMoney(cost)}` : 'Research'}
                     </Button>
                   ) : prereqOnly ? (
                     <Button size="sm" disabled={notLined.length > 0} title={notLined.length ? `Needs ${notLined.join(' and ')} first` : undefined} onClick={() => useGame.getState().actOrToast({ type: 'queueResearch', id: r.id }, `${r.name} queued`)}>

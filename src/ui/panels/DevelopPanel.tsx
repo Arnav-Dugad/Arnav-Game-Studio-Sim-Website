@@ -24,7 +24,7 @@ import { estimateContractDays } from '@/sim/systems/offers';
 import { upcomingReleases } from '@/sim/systems/rivals';
 import { comboFit, qualityToScore, sizeDailyCost, workShare } from '@/sim/systems/dev';
 import { clamp } from '@/sim/breakdown';
-import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential, selfReach } from '@/sim/systems/release';
+import { expansionPlatforms, expansionSizeOk, launchPrice, launchTitleMul, netPerUnit, salesPotential, selfReach, countServers } from '@/sim/systems/release';
 import { betaBlocked, betaCost, cliffhangerPending, dealAdvanceFor, devkitCost, featuresBlocked, focusTestCost, marketResearchCost, monetizationAllowed, sizeAllowed } from '@/sim/actions';
 import { FEATURE_BY_ID, GAME_FEATURES, MAX_FEATURES } from '@/data/gameFeatures';
 import type { ContractProject, EngineProject, Focus3, Franchise, GameProject, GameState, Release, Size, Staff } from '@/sim/types';
@@ -979,6 +979,13 @@ function NewGame({ onDone }: { onDone: () => void }) {
               title: (expansionRel && m !== 'premium' ? 'Expansion packs are one-off purchases' : monetizationAllowed(s, m, genre)) ?? undefined,
             }))}
           />
+          {/* online games need a server rack each, or players can't always connect */}
+          {(genre === 'mmo' || monet === 'subscription' || monet === 'f2p' || monet === 'live_service') &&
+            countServers(s) < Object.values(s.releases).filter((r) => r.active && r.serverLoad > 0).length + 1 && (
+              <p className="mt-1 text-[11px] text-warn">
+                Online game: it needs a Server Rack of its own (Office → Catalogue). Without enough racks, players can’t always connect and online games sell up to 60% less. Servers also cost {fmtMoney(money(800, s.day))} a month per game.
+              </p>
+            )}
         </div>
         {priceTierAllowed({ monetization: monet, expansionOf: expansionRel?.id, deal: deal ? { ...deal } : undefined }) && platforms.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -1141,7 +1148,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           </Field>
           <Field label="Publishing" hint={selfPub ? 'Self-publish to keep all revenue (your reach grows with reputation), or take a deal for an advance and a publisher’s reach.' : 'Research Self-Publishing to ship consoles yourself.'}>
             <select className={inputCls} value={liveDealId} onChange={(e) => setDealId(e.target.value)}>
-              <option value="">{selfPub ? 'Self-publish' : 'Self-publish (computers only)'} · {Math.round(selfReach(s) * 100)}% reach</option>
+              <option value="">{selfPub ? 'Self-publish' : yr >= 2008 ? 'Self-publish (computers & phones)' : 'Self-publish (computers only)'} · {Math.round(selfReach(s) * 100)}% reach</option>
               {s.offers.deals.map((d) => (
                 <option key={d.id} value={d.id} title={`${fmtMoney(dealAdvanceFor(d, size, s.day))} advance · ${Math.round(d.royalty * 100)}% royalty · needs ${d.minScore}+`}>
                   {COMPANY_BY_ID[d.publisherId]?.name ?? d.publisherId} · {fmtMoney(dealAdvanceFor(d, size, s.day))} · {Math.round(d.royalty * 100)}%
@@ -1149,8 +1156,8 @@ function NewGame({ onDone }: { onDone: () => void }) {
               ))}
             </select>
             {/* the same rule the studio applies when you press Start */}
-            {!liveDealId && !selfPub && yr >= 1983 && s.releaseOrder.length >= 1 && !platforms.every((p) => platformInfo(s, p)?.kind === 'computer') && (
-              <p className="mt-1 text-[11px] text-warn">Consoles need a publisher until you research Self-Publishing — pick a deal, or computers only.</p>
+            {!liveDealId && !selfPub && yr >= 1983 && s.releaseOrder.length >= 1 && !platforms.every((p) => platformInfo(s, p)?.kind === 'computer' || platformInfo(s, p)?.kind === 'mobile') && (
+              <p className="mt-1 text-[11px] text-warn">Consoles need a publisher until you research Self-Publishing — pick a deal, or computers and phones only.</p>
             )}
           </Field>
         </div>

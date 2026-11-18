@@ -15,7 +15,8 @@ export default function FinancePanel() {
   const act = useGame((g) => g.act);
   const toast = useGame((g) => g.toast);
   const [range, setRange] = useState<12 | 36 | 120>(12);
-  const limit = creditLimit(s);
+  // in whole thousands, so the shown maximum is one you can actually borrow ("$150k" was really $149,929)
+  const limit = Math.floor(creditLimit(s) / 1000) * 1000;
   const [amount, setAmount] = useState(() => Math.round(Math.min(limit, 50_000) / 1000) * 1000);
   const [months, setMonths] = useState(36);
   const ledger = s.finance.ledger.slice(-range - 1, -1);

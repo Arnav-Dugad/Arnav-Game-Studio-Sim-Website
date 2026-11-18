@@ -13,7 +13,7 @@ import { clamp } from './breakdown';
 import { fromDay } from './calendar';
 import type { Ctx } from './ctx';
 import type { CheatSettings, GameProject, GameState, Role } from './types';
-import { earn, newId, pushNews, spend } from './util';
+import { earn, newId, pushNews } from './util';
 import { candidateToStaff, generateCandidate, HIREABLE_ROLES } from './systems/staff';
 import { benchmarkPoints, workShare } from './systems/dev';
 import { tierDef } from './systems/office';
@@ -81,9 +81,8 @@ function run(c: Ctx, op: CheatOp): string | null {
       if (!finite(op.amount)) return 'Invalid amount';
       const target = op.op === 'setCash' ? op.amount : s.company.cash + op.amount;
       if (Math.abs(target) > CHEAT_LIMITS.cash) return 'That’s more money than exists';
-      const delta = target - s.company.cash;
-      if (delta > 0) earn(s, 'other_income', delta);
-      else if (delta < 0) spend(s, 'other_expense', -delta);
+      // conjured money isn't revenue or a cost: it mustn't inflate trailing revenue, valuation or the IPO
+      s.company.cash = Math.round(target);
       if (s.company.cash >= 0) delete s.company.insolventSince;
       return null;
     }
@@ -299,7 +298,7 @@ export function cheatsDaily(s: GameState): void {
   if (!ch) return;
   if (ch.infiniteMoney) {
     const floor = ch.moneyFloor ?? 1_000_000;
-    if (s.company.cash < floor) earn(s, 'other_income', floor - s.company.cash);
+    if (s.company.cash < floor) s.company.cash = floor; // topped up off the books (not revenue)
     delete s.company.insolventSince;
   }
   if (ch.noBankruptcy) delete s.company.insolventSince;

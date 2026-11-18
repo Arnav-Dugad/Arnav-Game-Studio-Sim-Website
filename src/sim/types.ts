@@ -511,6 +511,8 @@ export interface Release {
   /** Licensed content (systems/licences.ts): renewed until this day; once delisted it never sells again. */
   licenceUntil?: number;
   delisted?: boolean;
+  /** An online game whose servers were switched off (it no longer paid their upkeep): the day it happened. */
+  serversClosed?: number;
   /** Its making-of documentary: premiere day, crunch caught on camera, and how it was received once out. */
   documentary?: { premiere: number; crunchDays: number; outcome?: 'acclaimed' | 'warm' | 'mixed' | 'cautionary' };
   /** Released without ever being announced (2015+). */

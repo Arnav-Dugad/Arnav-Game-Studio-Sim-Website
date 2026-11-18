@@ -19,7 +19,8 @@ export function biography(s: GameState): string[] {
   const home = REGION_BY_ID[s.company.homeRegion ?? 'na']?.name;
   const rels: Release[] = s.releaseOrder.map((id) => s.releases[id]!).filter(Boolean);
   const startTier = s.scenario ? (SCENARIO_BY_ID[s.scenario.id]?.tier ?? 1) : 1;
-  out.push(`${name} was founded in ${s.settings.startYear}${founder ? ` by ${founder}` : ''}${home ? `, in ${home}` : ''}, with ${startTier <= 1 ? 'little more than a garage and a dream' : `a ${tierDef(startTier).name} and big ambitions`}.`);
+  const startHires = s.scenario ? (SCENARIO_BY_ID[s.scenario.id]?.hires ?? 0) : 0;
+  out.push(`${name} was founded in ${s.settings.startYear}${founder ? ` by ${founder}` : ''}${home ? `, in ${home}` : ''}, with ${startTier <= 1 ? (startHires > 0 ? 'a garage, a small team and a dream' : 'little more than a garage and a dream') : `a ${tierDef(startTier).name} and big ambitions`}.`);
   if (!rels.length) {
     out.push('Its first game was still to come.');
     return out;

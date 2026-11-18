@@ -158,6 +158,7 @@ export type Action =
   | { type: 'research'; id: string }
   | { type: 'queueResearch'; id: string }
   | { type: 'cancelResearch' }
+  | { type: 'unqueueResearch'; id: string }
   | { type: 'buildEngine'; name: string; features: string[]; team: string[] }
   | { type: 'licenseEngine'; engineDef: string }
   | { type: 'licenseOut'; engineId: string }
@@ -467,9 +468,9 @@ function apply(c: Ctx, a: Action): string | null {
       const deal = g.dealId ? s.offers.deals.find((d) => d.id === g.dealId) : undefined;
       if (g.dealId && !deal) return 'That publisher deal expired';
       if (!deal && !s.research.done.includes('biz_self_publishing') && yr >= 1983 && s.releaseOrder.length >= 1) {
-        // Early on (before self-publishing research) small studios may still self-publish on computers only.
-        const onlyComputers = g.platforms.every((p) => platformInfo(s, p)?.kind === 'computer');
-        if (!onlyComputers) return 'Research Self-Publishing (or sign a publisher deal) to ship on consoles';
+        // Before self-publishing research small studios can still sell on open platforms (computers, and phones' app stores)
+        const onlyOpen = g.platforms.every((p) => platformInfo(s, p)?.kind === 'computer' || platformInfo(s, p)?.kind === 'mobile');
+        if (!onlyOpen) return 'Research Self-Publishing (or sign a publisher deal) to ship on consoles';
       }
       if (featCost > 0) spend(s, 'other_expense', featCost);
       for (const p of g.platforms)
@@ -932,6 +933,18 @@ function apply(c: Ctx, a: Action): string | null {
         if (!Object.values(s.staff).some((x) => x.assignment.kind === 'research'))
           for (const st of Object.values(s.staff)) if (st.assignment.kind === 'idle' && !isAway(st)) st.assignment = { kind: 'research' };
       } else s.research.queue.push(def.id);
+      return null;
+    }
+    case 'unqueueResearch': {
+      // taken off the queue before any work: the whole budget comes back (anything queued behind it that needed it follows)
+      if (!s.research.queue.includes(a.id)) return 'Not in the queue';
+      s.research.queue = s.research.queue.filter((x) => x !== a.id);
+      const qd = RESEARCH_BY_ID[a.id];
+      const back = Math.round(researchPaid(s, a.id, qd ? researchCost(s, qd) : 0));
+      delete s.research.paid?.[a.id];
+      s.company.cash += back;
+      const qled = s.finance.ledger[s.finance.ledger.length - 1];
+      if (qled) qled.expense.research = Math.max(0, (qled.expense.research ?? 0) - back);
       return null;
     }
     case 'cancelResearch': {
@@ -1599,7 +1612,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (s.day - rel.day > 365 * 4) return 'Too old to port profitably';
       if (rel.concept.franchiseId && !s.franchises[rel.concept.franchiseId]) return 'You sold this IP';
       if (rel.concept.monetization === 'subscription') return 'Subscription games can’t be ported';
-      if (!rel.concept.deal && pl.kind !== 'computer' && !s.research.done.includes('biz_self_publishing')) return 'Research Self-Publishing to put your games on consoles yourself';
+      if (!rel.concept.deal && pl.kind !== 'computer' && pl.kind !== 'mobile' && !s.research.done.includes('biz_self_publishing')) return 'Research Self-Publishing to put your games on consoles yourself';
       const kit = s.devkits.includes(a.platform) ? 0 : devkitCost(s, a.platform);
       const cost = portCost(s, rel) + kit;
       if (s.company.cash < cost) return 'Not enough cash';

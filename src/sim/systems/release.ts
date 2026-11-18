@@ -710,7 +710,7 @@ export function updateSalesWeekly(c: Ctx): void {
   chartTopper(s);
 }
 
-function countServers(s: GameState): number {
+export function countServers(s: GameState): number {
   return s.office.items.filter((i) => i.item === 'server_rack').length;
 }
 
@@ -741,7 +741,7 @@ export function updateLiveMonthly(c: Ctx): void {
   const { s } = c;
   for (const rel of Object.values(s.releases)) {
     const m = rel.concept.monetization;
-    if (rel.delisted) continue;
+    if (rel.delisted || rel.serversClosed !== undefined) continue;
     if (m === 'subscription' || m === 'f2p' || m === 'live_service' || m === 'premium_dlc') {
       const age = (s.day - rel.day) / 30.44;
       if (age < 1) continue;
@@ -766,8 +766,17 @@ export function updateLiveMonthly(c: Ctx): void {
     if (merch > 0) earn(s, 'merch', merch);
   }
   // Server upkeep for online games
+  const upkeep = 800 * inflation(s.day);
+  for (const rel of Object.values(s.releases)) {
+    // a year on, a game that no longer pays for its own servers is switched off (rather than billing you forever)
+    if (!rel.active || rel.serverLoad <= 0 || s.day - rel.day < 365 || rel.liveIncome >= upkeep || (rel.lastWeekUnits ?? 0) >= 50) continue;
+    rel.active = false;
+    rel.liveIncome = 0;
+    rel.serversClosed = s.day;
+    pushNews(s, { category: 'studio', headline: `${rel.name}'s servers are switched off`, body: `It was earning less than its ${fmtMoney(upkeep)} a month in server costs. Thanks to everyone who played.`, tone: 'neutral' });
+  }
   const online = Object.values(s.releases).filter((r) => r.active && r.serverLoad > 0).length;
-  if (online > 0) spend(s, 'servers', online * 800 * inflation(s.day));
+  if (online > 0) spend(s, 'servers', online * upkeep);
 }
 
 /** Yearly awards ceremony (December). */

@@ -136,6 +136,12 @@ export function financeMonthly(c: Ctx): void {
   solvencyCheck(c);
 }
 
+/** Days left to get cash positive before bankruptcy (the full grace period if you're not insolvent yet). */
+export function insolvencyDaysLeft(s: GameState): number {
+  const grace = BALANCE.BANKRUPTCY_GRACE_DAYS[s.settings.difficulty];
+  return Math.max(0, grace - (s.company.insolventSince === undefined ? 0 : s.day - s.company.insolventSince));
+}
+
 export function solvencyCheck(c: Ctx): void {
   const { s } = c;
   const grace = BALANCE.BANKRUPTCY_GRACE_DAYS[s.settings.difficulty];

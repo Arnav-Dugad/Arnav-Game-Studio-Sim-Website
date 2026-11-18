@@ -5,7 +5,11 @@ import { advance } from '../../src/sim/advance';
 import { canFoundLeague, ESPORTS_RESEARCH } from '../../src/sim/systems/esports';
 import { adoptableIpValue, offerPrice } from '../../src/sim/systems/rivals';
 import { toDay } from '../../src/sim/calendar';
-import type { GameState } from '../../src/sim/types';
+import type { GameState, Release } from '../../src/sim/types';
+import { updateLiveMonthly } from '../../src/sim/systems/release';
+import { Rng } from '../../src/sim/rng';
+import { RESEARCH } from '../../src/data/research';
+import { researchAvailable } from '../../src/sim/systems/research';
 
 function studio(year: number, seed = 11): GameState {
   const s = createGame({ seed, companyName: 'Audit Three', founderName: 'A', startYear: year, autopause: false });
@@ -51,5 +55,30 @@ describe('sold series', () => {
     s.company.reputation = 90;
     const rel = { id: 'rz', name: 'Zed', day: s.day - 100, score: 90, concept: { genre: 'shooter', franchiseId: 'gone', platforms: [], monetization: 'premium' } } as never;
     expect(canFoundLeague(s, rel)).toBe('You sold this IP');
+  });
+});
+
+describe('research queue', () => {
+  it('a queued project can be taken off the queue for its whole budget back', () => {
+    const s = studio(1990);
+    const free = RESEARCH.filter((r) => researchAvailable(s, r).ok);
+    expect(dispatch(s, { type: 'research', id: free[0]!.id }).ok).toBe(true);
+    const before = s.company.cash;
+    expect(dispatch(s, { type: 'queueResearch', id: free[1]!.id }).ok).toBe(true);
+    expect(s.company.cash).toBeLessThan(before);
+    expect(dispatch(s, { type: 'unqueueResearch', id: free[1]!.id }).ok).toBe(true);
+    expect(s.company.cash).toBe(before);
+    expect(s.research.queue).toEqual([]);
+  });
+});
+
+describe('online games', () => {
+  it('switch their servers off once they no longer pay for them', () => {
+    const s = studio(2015);
+    const rel = { id: 'ro', name: 'Old Online', day: s.day - 800, active: true, delisted: false, serverLoad: 1, liveIncome: 10, net: 1000, userScore: 40, lastWeekUnits: 0, concept: { monetization: 'premium' } } as unknown as Release;
+    s.releases.ro = rel;
+    updateLiveMonthly({ s, rng: new Rng([1, 2, 3, 4]), out: [] });
+    expect(rel.active).toBe(false);
+    expect(rel.serversClosed).toBe(s.day);
   });
 });

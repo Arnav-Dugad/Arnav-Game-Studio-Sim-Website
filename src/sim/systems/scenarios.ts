@@ -133,6 +133,7 @@ export const SCENARIOS: ScenarioDef[] = [
     reputation: 18,
     tier: 2,
     hires: 4,
+    research: ['platform_touch'], // the whole point: phone games from day one
     goals: [{ kind: 'totalUnits', units: 25_000_000 }, { kind: 'valuation', amount: 500_000_000 }],
   },
   {
@@ -228,7 +229,7 @@ export function goalProgress(s: GameState, g: GoalDef): { p: number; text: strin
     }
     case 'score': {
       const best = Math.max(0, ...rels(s).filter((r) => (!g.genre || r.concept.genre === g.genre) && sizeOk(r, g.sizes)).map((r) => r.score));
-      return { p: best / g.score, text: `Release a ${g.score}+ game${g.genre ? ` (${g.genre})` : ''}`, now: best ? `best ${best}` : 'none yet' };
+      return { p: best / g.score, text: `Release ${/^(8|11|18)/.test(String(g.score)) ? 'an' : 'a'} ${g.score}+ game${g.genre ? ` (${g.genre})` : ''}`, now: best ? `best ${best}` : 'none yet' };
     }
     case 'genreHits': {
       const n = rels(s).filter((r) => r.concept.genre === g.genre && r.score >= g.score).length;

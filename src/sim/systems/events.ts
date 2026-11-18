@@ -1620,7 +1620,7 @@ export const EVENT_DEFS: EventDef[] = [
       const dropped = p.concept.platforms.filter((x) => x !== plat).map(pname).join(', ');
       return {
         title: 'Exclusivity offer',
-        body: `${maker ?? 'A platform holder'} offers ${fmtMoney(amount)} to make ${p.concept.name} a ${pname(plat)} exclusive. It would no longer come out on ${dropped}.`,
+        body: `${maker ?? 'A platform holder'} offers ${fmtMoney(amount)} to make ${p.concept.name} ${aOrAn(pname(plat))} exclusive. It would no longer come out on ${dropped}.`,
         options: [
           { id: 'accept', label: `Accept ${fmtMoney(amount)}`, preview: `Ships on ${pname(plat)} only — drops ${dropped}` },
           { id: 'decline', label: 'Stay multi-platform', preview: 'No change' },

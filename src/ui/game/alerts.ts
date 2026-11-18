@@ -5,14 +5,14 @@ import { RESEARCH } from '@/data/research';
 import { RND, RND_MAX, rndCost, rndLevel, rndUnlocked } from '@/sim/systems/rnd';
 import { demoBlocked } from '@/sim/systems/demos';
 import { CE_RUN, ceBlocked, ceCost, ceDemand } from '@/sim/systems/collectors';
-import { launchPrice } from '@/sim/systems/release';
+import { launchPrice, countServers } from '@/sim/systems/release';
 import { bonusBlocked, bonusCost, bonusTeam } from '@/sim/systems/launchBonus';
 import { pulseKey, teamPulse, type PulseItem } from './pulse';
 import { campaignBlocked, campaignFor } from '@/sim/systems/awardsCampaign';
 import { sabbaticalBlocked } from '@/sim/systems/staff';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { fmtMoney } from '@/sim/util';
-import { monthlyBurn, trailingRevenue } from '@/sim/systems/finance';
+import { monthlyBurn, trailingRevenue, insolvencyDaysLeft } from '@/sim/systems/finance';
 import { devProgress, qualityToScore } from '@/sim/systems/dev';
 import { platformInfo } from '@/sim/systems/market';
 import { freeDesks, tierDef } from '@/sim/systems/office';
@@ -66,7 +66,7 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
   const burn = monthlyBurn(s);
   const income = trailingRevenue(s) / 12;
   const net = income - burn;
-  if (s.company.cash < 0) out.push({ id: 'cash-neg', tone: 'bad', icon: 'warning', text: `You're ${fmtMoney(-s.company.cash)} in the red. Take a loan, cut costs or land a contract fast.`, action: { label: 'Finance', run: () => open('finance') } });
+  if (s.company.cash < 0) out.push({ id: 'cash-neg', tone: 'bad', icon: 'warning', text: `You're ${fmtMoney(-s.company.cash)} in the red — ${insolvencyDaysLeft(s)} days until bankruptcy. Take a loan, cut costs or land a contract fast.`, action: { label: 'Finance', run: () => open('finance') } });
   else if (net < 0 && s.company.cash < -net * 6)
     out.push({ id: 'runway', tone: 'warn', icon: 'hourglass', text: Math.floor(s.company.cash / -net) < 1 ? `Less than a month of cash left at this burn rate (${fmtMoney(-net)}/mo).` : `About ${plural(Math.floor(s.company.cash / -net), 'month')} of cash left at this burn rate (${fmtMoney(-net)}/mo).`, action: { label: 'Finance', run: () => open('finance') } });
   // Decisions waiting
@@ -98,7 +98,11 @@ export function studioAlerts(s: GameState, open: (p: PanelId, tab?: string) => v
       out.push({ id: 'research', tone: 'warn', icon: 'research', text: s.research.queue.length ? 'Your research queue is stuck — what’s queued needs other research first.' : 'Your researchers have nothing to research.', action: { label: 'Pick research', run: () => open('research') } });
   }
   // research you've paid for, standing still
-  if (s.research.active && !researching) out.push({ id: 'research', tone: 'warn', icon: 'research', text: 'Research is paused — nobody is working on it.', action: { label: 'Assign people', run: () => open('research') } });
+  const idleFree = staff.filter((x) => x.assignment.kind === 'idle' && !isAway(x)).length;
+  if (s.research.active && !researching && idleFree) out.push({ id: 'research', tone: 'warn', icon: 'research', text: `Research is paused — nobody is working on it, and ${idleFree === 1 ? 'one person is' : `${idleFree} people are`} free.`, action: { label: 'Assign people', run: () => open('research') } });
+  // online games without enough servers lose players
+  const onlineLive = Object.values(s.releases).filter((r) => r.active && r.serverLoad > 0).length;
+  if (onlineLive > countServers(s)) out.push({ id: 'servers', tone: 'warn', icon: 'server', text: `${onlineLive} online game${onlineLive === 1 ? '' : 's'} but ${countServers(s)} server rack${countServers(s) === 1 ? '' : 's'} — players can’t always connect, so ${onlineLive === 1 ? 'it sells' : 'they sell'} less.`, action: { label: 'Office', run: () => open('office') } });
   // Office
   const deskless = staff.filter((x) => !x.deskId).length;
   if (deskless) out.push({ id: 'desks', tone: 'warn', icon: 'build', text: `${deskless} ${deskless === 1 ? 'person has' : 'people have'} no desk and can't work properly.`, action: { label: 'Add desks', run: () => furnishDesks() } });

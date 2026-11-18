@@ -359,8 +359,9 @@ export async function getHallOfFame(uid: string): Promise<HallEntry[]> {
 
 export async function addHallOfFame(uid: string, entry: HallEntry): Promise<void> {
   const existing = await getHallOfFame(uid);
-  const key = (e: HallEntry) => `${e.company}|${e.years}|${e.ending}`;
-  if (existing.some((e) => key(e) === key(entry))) return; // reopening a finished save doesn't duplicate it
+  // the same finished run (reopened) is recorded once; a different run with the same name and years still counts
+  const key = (e: HallEntry) => `${e.company}|${e.years}|${e.ending}|${e.score}|${!!e.cheats}`;
+  if (existing.some((e) => key(e) === key(entry))) return;
   const all = [entry, ...existing].sort((a, b) => b.score - a.score).slice(0, 50);
   try {
     localStorage.setItem(HALL_KEY(uid), JSON.stringify(all));

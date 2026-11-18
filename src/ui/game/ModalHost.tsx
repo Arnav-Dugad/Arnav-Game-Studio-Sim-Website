@@ -31,7 +31,7 @@ import { availablePlatforms, platformName } from '@/sim/systems/market';
 import { EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, SALE_DISCOUNTS, canExpand, canPatch, canRemaster, canRunSale, expansionsOf, patchCost, portCost, rereleaseBlocked, rereleaseCost, saleForecast, bundleCost, bundleMul, MAX_BUNDLE } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
 import { ROLE_NAMES, SABBATICAL, favouriteGenre, marketSalary, menteesOf, mentorBlocked, moraleTarget, productivity, retirementDay, sabbaticalBlocked, vacationBlocked } from '@/sim/systems/staff';
-import { creditLimit, monthlyBurn } from '@/sim/systems/finance';
+import { creditLimit, monthlyBurn, insolvencyDaysLeft, ownerValue } from '@/sim/systems/finance';
 import { runScore } from '@/sim/systems/achievements';
 import { qualityToScore } from '@/sim/systems/dev';
 import type { BadgeShape, Focus3, Specialisation } from '@/sim/types';
@@ -1233,11 +1233,11 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
       company: s.company.name,
       founder: s.company.founderName,
       ending: s.settings.daily ? `Daily ${s.settings.daily} · ${ending}` : ending,
-      years: `${s.settings.startYear}–${fromDay(s.day).year}`,
+      years: fromDay(s.day).year > s.settings.startYear ? `${s.settings.startYear}–${fromDay(s.day).year}` : `${s.settings.startYear}`,
       score,
       bestGame: s.progress.stats.bestGame,
       bestScore: s.progress.stats.bestScore,
-      peakValuation: s.progress.stats.peakValuation,
+      peakValuation: Math.max(s.progress.stats.peakValuation, ownerValue(s)), // (the monthly peak may not have caught this month yet)
       day: Date.now(),
       ...(s.cheatsUsed ? { cheats: true } : {}),
     });
@@ -1266,7 +1266,7 @@ function GameOverModal({ onClose, slotId }: { onClose: () => void; slotId: SlotI
         <div className="mt-3">
           <StudioStory open />
         </div>
-        <p className="mt-2 text-xs text-ink3">Recorded in your Hall of Fame.</p>
+        {user && <p className="mt-2 text-xs text-ink3">Recorded in your Hall of Fame{s.cheatsUsed ? ' — marked “cheats used”' : ''}.</p>}
       </div>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         {storyEnd && (
@@ -1309,7 +1309,7 @@ function InsolventModal({ onClose }: { onClose: () => void }) {
         <div>
           <h2 className="font-display text-xl font-semibold">You’re out of cash</h2>
           <p className="mt-1 text-sm text-ink2">
-            Cash is {fmtMoney(s.company.cash)}. Get back above zero before the grace period ends or the company goes bankrupt. Monthly burn is {fmtMoney(monthlyBurn(s))}.
+            Cash is {fmtMoney(s.company.cash)}. Get back above zero within {insolvencyDaysLeft(s)} days or the company goes bankrupt (unless your credit line covers the debt). Monthly burn is {fmtMoney(monthlyBurn(s))}.
           </p>
         </div>
       </div>
@@ -1593,7 +1593,8 @@ function EndingHighlights() {
   if (st.awardsWon > 0) lines.push(`${st.awardsWon} Golden Pixel award${st.awardsWon > 1 ? 's' : ''}`);
   if (hwUnits > 0) lines.push(`${fmtUnits(hwUnits)} consoles sold`);
   if (s.subscription && s.subscription.peak > 0) lines.push(`${fmtUnits(s.subscription.peak)} pass subscribers at peak`);
-  if (st.peakValuation > 0) lines.push(`peak valuation ${fmtMoney(st.peakValuation)}`);
+  const peak = Math.max(st.peakValuation, ownerValue(s));
+  if (peak > 0) lines.push(`peak valuation ${fmtMoney(peak)}`);
   if (!lines.length) return null;
   return <p className="mt-3 text-xs text-ink2">{lines.join(' · ')}</p>;
 }

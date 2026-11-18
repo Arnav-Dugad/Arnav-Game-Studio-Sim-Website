@@ -614,12 +614,6 @@ export function finishProject(s: GameState, id: string): void {
     if (st && st.assignment.kind === 'project' && st.assignment.id === id) st.assignment = { kind: 'idle' };
   }
   delete s.projects[id];
-  // research you've paid for that nobody is working on: the freed team picks it back up
-  if (s.research.active && !Object.values(s.staff).some((x) => x.assignment.kind === 'research'))
-    for (const sid of p.team) {
-      const st = s.staff[sid];
-      if (st && st.assignment.kind === 'idle') st.assignment = { kind: 'research' };
-    }
 }
 
 export function updateProjectsDaily(c: Ctx): void {
