@@ -141,7 +141,7 @@ function Tree() {
           <span className={cx(team.length ? 'text-ink3' : 'text-warn')}>
             {team.length ? `${team.length} researcher${team.length > 1 ? 's' : ''} · ${rate.toFixed(2)} pts/day` : researchLeft(s) ? 'Nobody is researching. Idle staff can — or pick people in the Staff panel.' : 'Nobody needs to research until something new opens up.'}
           </span>
-          {!team.length && idleNow.length > 0 && researchLeft(s) && (
+          {idleNow.length > 0 && researchLeft(s) && (s.research.active || !team.length) && (
             <Button
               size="sm"
               variant="primary"
@@ -151,7 +151,7 @@ function Tree() {
                 toast({ text: `${idleNow.length === 1 ? idleNow[0]!.name.split(' ')[0] : `${idleNow.length} people`} started researching`, tone: 'good', icon: 'research' });
               }}
             >
-              Assign idle staff ({idleNow.length})
+              {team.length ? 'Add' : 'Assign'} idle staff ({idleNow.length})
             </Button>
           )}
           {active && (
@@ -171,6 +171,8 @@ function Tree() {
           const queued = s.research.queue.includes(r.id);
           const cost = researchCost(s, r);
           const prereqOnly = !av.ok && av.why?.startsWith('Requires') && yr >= r.year;
+          // what has to be researched, under way or queued before this can join the queue
+          const notLined = prereqOnly ? r.requires.filter((q) => !s.research.done.includes(q) && s.research.active !== q && !s.research.queue.includes(q)).map((q) => RESEARCH_BY_ID[q]?.name ?? q) : [];
           return (
             <li key={r.id} className={cx('flex items-center gap-3 rounded-xl border p-2.5', done ? 'border-good/40 bg-good/5' : isActive ? 'border-tech bg-tech/5' : 'border-line')}>
               <span className={cx('grid size-8 shrink-0 place-items-center rounded-lg', done ? 'bg-good/15 text-good' : 'bg-bg2 text-ink3')}>
@@ -182,6 +184,7 @@ function Tree() {
                   {r.engineTech && <Pill tone="tech">engine +{r.engineTech}</Pill>}
                 </div>
                 <div className="text-xs text-ink3">{done ? r.desc : av.ok || prereqOnly ? r.desc : av.why}</div>
+                {notLined.length > 0 && <div className="text-[11px] text-warn">Queue {notLined.join(' and ')} first</div>}
               </div>
               {!done && (
                 <div className="text-right">
@@ -206,7 +209,7 @@ function Tree() {
                       {s.research.active ? 'Queue' : 'Research'}
                     </Button>
                   ) : prereqOnly ? (
-                    <Button size="sm" onClick={() => useGame.getState().actOrToast({ type: 'queueResearch', id: r.id }, `${r.name} queued`)}>
+                    <Button size="sm" disabled={notLined.length > 0} title={notLined.length ? `Needs ${notLined.join(' and ')} first` : undefined} onClick={() => useGame.getState().actOrToast({ type: 'queueResearch', id: r.id }, `${r.name} queued`)}>
                       Queue
                     </Button>
                   ) : null}

@@ -1,4 +1,4 @@
-import { franchiseSalePrice, sellFranchiseBlocked } from '@/sim/systems/rivals';
+import { franchiseSalePrice, sellFranchiseBlocked, offerPrice } from '@/sim/systems/rivals';
 import { useState } from 'react';
 import { MOD_BUDGET, communityBlocked, communityCost, communityPledgeMul, communityUserBonus, hubName } from '@/sim/systems/community';
 import { MEDIA, MEDIA_KINDS, mediaBlocked, mediaFee } from '@/sim/systems/media';
@@ -358,6 +358,7 @@ function Acquire() {
             {s.offers.acquisitions.map((a) => {
               const r = s.rivals[a.id];
               if (!r) return null;
+              const price = offerPrice(s, a);
               return (
                 <li key={a.id} className="flex items-center gap-3 rounded-xl border border-line p-2.5 text-xs">
                   <CompanyBadge name={r.name} color={r.color} size={34} />
@@ -373,15 +374,15 @@ function Acquire() {
                   <ConfirmButton
                     size="sm"
                     variant="primary"
-                    disabled={s.company.cash < a.price || ownedStudios(s) >= MAX_SUBSIDIARIES}
+                    disabled={s.company.cash < price || ownedStudios(s) >= MAX_SUBSIDIARIES}
                     title={ownedStudios(s) >= MAX_SUBSIDIARIES ? `Your group already runs ${ownedStudios(s)} studios (the most is ${MAX_SUBSIDIARIES})` : undefined}
-                    ask={`Buy for ${fmtMoney(a.price)} (${a.price < s.company.cash * 0.01 ? '<1' : Math.round((a.price / Math.max(1, s.company.cash)) * 100)}% of your cash)? It can’t be undone.`}
+                    ask={`Buy for ${fmtMoney(price)} (${price < s.company.cash * 0.01 ? '<1' : Math.round((price / Math.max(1, s.company.cash)) * 100)}% of your cash)? It can’t be undone.`}
                     onConfirm={() => {
                       const res = act({ type: 'acquire', targetId: a.id });
                       toast(res.ok ? { text: `${r.name} is now part of ${s.company.name}!`, tone: 'gold', icon: 'cart' } : { text: res.error, tone: 'bad' });
                     }}
                   >
-                    {fmtMoney(a.price)}
+                    {fmtMoney(price)}
                   </ConfirmButton>
                 </li>
               );

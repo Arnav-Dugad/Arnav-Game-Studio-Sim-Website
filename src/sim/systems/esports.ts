@@ -51,6 +51,7 @@ export function canFoundLeague(s: GameState, rel: Release | undefined): string |
   if (!rel) return 'Pick a game';
   if (!(rel.concept.genre in ESPORTS_GENRES)) return 'Only competitive genres (shooters, strategy, fighting, MMOs, sports, racing) work as esports';
   if (rel.concept.expansionOf || rel.concept.remasterOf) return 'Run the league on the main game';
+  if (rel.concept.franchiseId && !s.franchises[rel.concept.franchiseId]) return 'You sold this IP';
   if (rel.score < LEAGUE_MIN_SCORE) return `Pro players only stick with games scoring ${LEAGUE_MIN_SCORE}+`;
   if ((s.day - rel.day) / 365.25 > LEAGUE_MAX_AGE_YEARS) return `Too old — the scene has moved on (within ${LEAGUE_MAX_AGE_YEARS} years of launch)`;
   if (s.company.reputation < LEAGUE_MIN_REP) return `Sponsors won't back a studio under ${LEAGUE_MIN_REP} reputation`;

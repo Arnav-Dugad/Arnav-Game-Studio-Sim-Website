@@ -14,7 +14,7 @@ import { clamp } from '../breakdown';
 import { fromDay, parseYM } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { Rng } from '../rng';
-import type { GameState, Rival, RivalGame, Franchise } from '../types';
+import type { GameState, Rival, RivalGame, Franchise, AcquisitionTarget } from '../types';
 import { addRep, inflation, money, pushNews } from '../util';
 import { livePlatforms, platformInfo } from './market';
 
@@ -289,6 +289,11 @@ export function acquisitionPrice(s: GameState, r: Rival): number {
   const rep = 1 + r.reputation / 60;
   // a famous studio's series come with it, so the price includes what they're worth
   return Math.round(base * rep * (r.procedural ? 1 : 2.2) + adoptableIpValue(s, r.id));
+}
+
+/** What an acquisition offer costs today: the agreed price, plus any of their series that has come out since. */
+export function offerPrice(s: GameState, t: AcquisitionTarget): number {
+  return t.ip === undefined ? t.price : Math.round(t.price + Math.max(0, adoptableIpValue(s, t.id) - t.ip));
 }
 
 /** The real-world series a studio would bring with it today (owned by it now, with games already out). */

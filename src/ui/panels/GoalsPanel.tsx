@@ -120,6 +120,7 @@ export default function GoalsPanel() {
           {ACHIEVEMENTS.map((a) => {
             const day = s.progress.achievements[a.id];
             const got = day !== undefined;
+            const outOfReach = !got && a.possible && !a.possible(s);
             return (
               <li key={a.id} className={cx('rounded-xl border p-2 text-xs', got ? 'border-gold/50 bg-gold/10' : 'border-line opacity-60')} title={a.desc}>
                 <div className="flex items-center gap-1.5">
@@ -127,6 +128,7 @@ export default function GoalsPanel() {
                   <span className="truncate font-semibold">{a.name}</span>
                 </div>
                 <div className="mt-0.5 text-ink3">{a.desc}</div>
+                {outOfReach && <div className="mt-0.5 text-[11px] italic text-ink3">Not possible in a run that started in {s.settings.startYear}</div>}
                 {got && <Pill tone="gold" className="mt-1">{formatDate(day, false)}</Pill>}
               </li>
             );

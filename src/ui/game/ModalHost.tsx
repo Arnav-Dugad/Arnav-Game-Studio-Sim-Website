@@ -26,7 +26,7 @@ import { TOPIC_BY_ID } from '@/data/topics';
 import { PERSON_BY_ID } from '@/data/people';
 import { SKILLS, type Skill } from '@/data/types';
 import { formatDate, fromDay } from '@/sim/calendar';
-import { aOrAn, fmtMoney, fmtUnits } from '@/sim/util';
+import { aOrAn, fmtMoney, fmtUnits, money } from '@/sim/util';
 import { availablePlatforms, platformName } from '@/sim/systems/market';
 import { EXPANSION_MAX_AGE_YEARS, EXPANSION_MIN_SCORE, SALE_DISCOUNTS, canExpand, canPatch, canRemaster, canRunSale, expansionsOf, patchCost, portCost, rereleaseBlocked, rereleaseCost, saleForecast, bundleCost, bundleMul, MAX_BUNDLE } from '@/sim/systems/release';
 import { devkitCost } from '@/sim/actions';
@@ -1141,9 +1141,17 @@ function StaffModal({ staffId, onClose }: { staffId: string; onClose: () => void
                   </option>
                 ))}
               </select>
-              <Button size="sm" onClick={() => run({ type: 'train', staffId, skill }, 'Training started')} disabled={!!trainWhy} title={trainWhy ?? '4 weeks off work, +~8 skill'}>
-                Train
-              </Button>
+              {(() => {
+                // the real terms: working days (fewer with a training desk), the gain at their level, and the fee
+                const days = Math.round(28 / (s.office.items.some((i) => i.item === 'training_desk') ? 1.5 : 1));
+                const gain = Math.max(0, Math.min(Math.min(100, st.potential + 5), st.skills[skill] + 8 * (1 - st.skills[skill] / 110)) - st.skills[skill]);
+                const fee = money(2_500, s.day);
+                return (
+                  <Button size="sm" onClick={() => run({ type: 'train', staffId, skill }, 'Training started')} disabled={!!trainWhy} title={trainWhy ?? `About ${Math.ceil(days / 5)} weeks off work (${days} working days), +${gain.toFixed(1)} ${skill === 'qa' ? 'QA' : skill}`}>
+                    Train · {fmtMoney(fee)}
+                  </Button>
+                );
+              })()}
             </div>
             {trainWhy && s.research.done.includes('biz_training') && <p className="mt-1 text-[11px] text-ink3">{trainWhy}</p>}
           </Section>

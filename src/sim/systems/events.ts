@@ -1490,7 +1490,10 @@ export const EVENT_DEFS: EventDef[] = [
       const l = staffList(s);
       if (l.length < 2) return null;
       const a = l.find((x) => x.traits.includes('hothead')) ?? rng.pick(l);
-      const b = rng.pick(l.filter((x) => x !== a));
+      // never a pair you've already made peace between (a mediated truce holds)
+      const others = l.filter((x) => x !== a && !((s.truces?.[pairKey(a.id, x.id)] ?? -1) > s.day));
+      if (!others.length) return null;
+      const b = rng.pick(others);
       // what they argued about: the game they're both making, or (on different things) how the studio is run
       const pa = a.assignment.kind === 'project' ? s.projects[a.assignment.id] : undefined;
       const same = pa && b.assignment.kind === 'project' && b.assignment.id === pa.id;
@@ -1611,11 +1614,15 @@ export const EVENT_DEFS: EventDef[] = [
       const plat = pid;
       const holder = Object.values(s.rivals).find((r) => r.alive && COMPANY_BY_ID[r.id]?.kind === 'platform_holder');
       const amount = money(20_000, s.day) * ({ small: 1, medium: 3, large: 8, aaa: 20 }[p.concept.size]) * (1 + s.company.reputation / 50);
+      // say which machine, who's paying, and what the game would give up
+      const pname = (id: string) => platformInfo(s, id)?.name ?? id;
+      const maker = COMPANY_BY_ID[platformInfo(s, plat)?.maker ?? '']?.name;
+      const dropped = p.concept.platforms.filter((x) => x !== plat).map(pname).join(', ');
       return {
         title: 'Exclusivity offer',
-        body: `A platform holder offers ${fmtMoney(amount)} to make ${p.concept.name} exclusive to one platform.`,
+        body: `${maker ?? 'A platform holder'} offers ${fmtMoney(amount)} to make ${p.concept.name} a ${pname(plat)} exclusive. It would no longer come out on ${dropped}.`,
         options: [
-          { id: 'accept', label: `Accept ${fmtMoney(amount)}`, preview: 'Game ships on that platform only' },
+          { id: 'accept', label: `Accept ${fmtMoney(amount)}`, preview: `Ships on ${pname(plat)} only — drops ${dropped}` },
           { id: 'decline', label: 'Stay multi-platform', preview: 'No change' },
         ],
         ctx: { project: p.id, platform: plat, amount: Math.round(amount), holder: holder?.id ?? '' },

@@ -83,8 +83,9 @@ function linesFor(s: GameState, rel: Release, week: number, r: () => number): Li
   if (user - score >= 10) L.push({ w: 3, tone: 'good', text: pick(['Critics got this one wrong. It’s great.', `Ignore the reviews, ${name} is a blast.`, 'Underrated gem.']) });
   if (score - user >= 10) L.push({ w: 3, tone: 'bad', text: pick(['Did the critics play the same game?', 'Reviews were way too generous.', 'Overrated, honestly.']) });
   // Hype
-  if (rel.hypeAtLaunch > 70 && score < 70) L.push({ w: 3, tone: 'bad', text: pick(['So much hype for this?', 'The trailers lied to me.', 'Overhyped and underbaked.']) });
-  if (rel.hypeAtLaunch < 25 && score >= 80) L.push({ w: 3, tone: 'good', text: pick(['Came out of nowhere. Wow.', `Why is nobody talking about ${name}?`, 'Hidden gem alert.']) });
+  // (launch hype runs 0 to about 2: the post-mortem calls 1+ huge and under 0.15 unknown)
+  if (rel.hypeAtLaunch >= 1 && score < 70) L.push({ w: 3, tone: 'bad', text: pick(['So much hype for this?', 'The trailers lied to me.', 'Overhyped and underbaked.']) });
+  if (rel.hypeAtLaunch < 0.15 && score >= 80 && !rel.concept.expansionOf) L.push({ w: 3, tone: 'good', text: pick(['Came out of nowhere. Wow.', `Why is nobody talking about ${name}?`, 'Hidden gem alert.']) });
   // Bugs and patches
   const buggy = rel.bugs > 40;
   if (buggy && week < 8 && !(rel.patches ?? 0)) L.push({ w: 4, tone: 'bad', text: pick(['Crashed three times in an hour.', 'Fell through the floor. Again.', 'Save file corrupted. Great.', 'The bugs are… a lot.']) });
@@ -120,9 +121,12 @@ function linesFor(s: GameState, rel: Release, week: number, r: () => number): Li
   }
   // Series
   const fr = rel.concept.franchiseId ? s.franchises[rel.concept.franchiseId] : undefined;
-  if (fr && fr.entries.length > 1 && fr.entries[0] !== rel.id) {
-    if (score >= fr.bestScore - 2) L.push({ w: 3, tone: 'good', text: pick([`Best ${fr.name} yet!`, 'The sequel tops the original.', `${fr.name} keeps getting better.`]) });
-    else if (score < fr.bestScore - 10) L.push({ w: 3, tone: 'bad', text: pick([`Not as good as the last ${fr.name}.`, 'The series has lost its way.', 'Miss the old games.']) });
+  // compared with the series' earlier games (its best score already includes this one)
+  const before = fr ? fr.entries.map((id) => s.releases[id]).filter((x) => x && x.id !== rel.id && x.day <= rel.day && !x.concept.expansionOf).map((x) => x!.score) : [];
+  const prevBest = before.length ? Math.max(...before) : 0;
+  if (fr && before.length) {
+    if (score > prevBest) L.push({ w: 3, tone: 'good', text: pick([`Best ${fr.name} yet!`, 'The sequel tops the original.', `${fr.name} keeps getting better.`]) });
+    else if (score < prevBest - 10) L.push({ w: 3, tone: 'bad', text: pick([`Not as good as the last ${fr.name}.`, 'The series has lost its way.', 'Miss the old games.']) });
   }
   if (rel.concept.remasterOf) L.push({ w: 2, tone: score >= 70 ? 'good' : 'bad', text: score >= 70 ? 'The remaster brings back memories.' : 'They ruined a classic.' });
   if (rel.concept.expansionOf) L.push({ w: 2, tone: 'good', text: 'More content? Yes please.' });

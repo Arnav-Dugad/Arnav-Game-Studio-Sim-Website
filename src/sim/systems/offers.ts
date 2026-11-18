@@ -5,7 +5,7 @@ import { fromDay } from '../calendar';
 import type { Ctx } from '../ctx';
 import type { ContractOffer, DealOffer, GameState, Size } from '../types';
 import { inflation, money } from '../util';
-import { acquisitionPrice } from './rivals';
+import { acquisitionPrice, adoptableIpValue } from './rivals';
 import { benchmarkPoints } from './dev';
 
 const CONTRACT_TEMPLATES = [
@@ -92,7 +92,7 @@ export function refreshOffers(c: Ctx): void {
     const cands = alive.filter((r) => (r.procedural || r.staff < 120) && r.reputation < s.company.reputation + 10 && !funded.has(r.id) && !s.offers.acquisitions.some((a) => a.id === r.id));
     if (cands.length) {
       const r = rng.pick(cands);
-      s.offers.acquisitions.push({ id: r.id, price: acquisitionPrice(s, r), expiresDay: s.day + 90 });
+      s.offers.acquisitions.push({ id: r.id, price: acquisitionPrice(s, r), ip: adoptableIpValue(s, r.id), expiresDay: s.day + 90 });
     }
   }
 }

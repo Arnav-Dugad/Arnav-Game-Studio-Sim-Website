@@ -10,6 +10,7 @@ import { tierDef, freeDesks, crampedCount } from '@/sim/systems/office';
 import { HIREABLE_ROLES, ROLE_NAMES, ROLE_SEARCH_COST, ROLE_SEARCH_SIZE, marketSalary } from '@/sim/systems/staff';
 import type { Candidate, GameProject } from '@/sim/types';
 import { BALANCE } from '@/data/balance';
+import { ITEM_BY_ID } from '@/data/facilities';
 import { Button, Empty, Pill, Section, Segmented, cx, inputCls } from '../components/ui';
 import { useGame } from '../store';
 import { Face, SkillBars, Traits } from './staffBits';
@@ -79,6 +80,8 @@ function Hire() {
     if (!joining.length) return null;
     return act({ type: 'setTeam', projectId: g.id, team: [...g.team, ...joining] }).ok ? g.concept.name : null;
   };
+  // the desk "Hire" adds when nobody has a free one (the newest kind you can buy, as furnishing does)
+  const hireDesk = Object.values(ITEM_BY_ID).filter((i) => i.category === 'desk' && i.year <= fromDay(s.day).year && (!i.research || s.research.done.includes(i.research))).pop();
   const hireOne = (c: Candidate) => {
     if (freeDesks(s) <= 0) act({ type: 'furnishDesks', extra: 1 });
     const r = act({ type: 'hire', candidateId: c.id });
@@ -180,6 +183,12 @@ function Hire() {
             <option value="cheap">Cheapest</option>
           </select>
         </div>
+      )}
+      {s.candidates.length > 0 && (
+        <p className="mb-2 text-[11px] text-ink3">
+          Each hire costs a {fmtMoney(money(300, s.day))} recruiting fee
+          {freeDesks(s) <= 0 && hireDesk ? `, plus a desk (${fmtMoney(money(hireDesk.cost, s.day))}) — none are free` : ''}. People poached from a rival add a headhunter’s fee of a quarter of their salary.
+        </p>
       )}
       <div className="space-y-2">
         {list.map((c) => (

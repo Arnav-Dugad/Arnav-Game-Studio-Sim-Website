@@ -58,7 +58,7 @@ import { isPlatformAvailable, platformInfo } from './systems/market';
 import { CROWD_OK, assignDesks, canPlace, crampedCount, freeDesks, itemRequirement, layout, spreadOut, tierDef, touchOffice } from './systems/office';
 import { researchAvailable, researchCost, activeResearch } from './systems/research';
 import { HIREABLE_ROLES, ROLE_SEARCH_COST, ROLE_SEARCH_SIZE, SABBATICAL, candidateQuality, candidateToStaff, generateCandidate, invalidateMentees, isAway, marketSalary, maybeSpinOff, mentorBlocked, refreshCandidates, removeStaff, sabbaticalBlocked, vacationBlocked } from './systems/staff';
-import { adoptableFranchises, adoptedFans, franchiseSalePrice, sellFranchiseBlocked } from './systems/rivals';
+import { adoptableFranchises, adoptedFans, franchiseSalePrice, offerPrice, sellFranchiseBlocked } from './systems/rivals';
 import { MAX_SUBSIDIARIES, ownedStudios } from './systems/offers';
 import { parseYM } from './calendar';
 import type { BadgeShape, FloorStyle, Focus3, GameProject, GameState, LeagueTier, Size, Specialisation } from './types';
@@ -640,7 +640,7 @@ function apply(c: Ctx, a: Action): string | null {
       } else if (p.kind === 'game' && p.crowdfund && p.crowdfund.end === undefined) addRep(s, -1, 'Pulled a crowdfunding campaign');
       if (p.kind === 'game' && p.earlyAccess) {
         addRep(s, -6, 'Abandoned an Early Access game');
-        spend(s, 'other_expense', p.earlyAccess.net * 0.5); // refunds
+        refund(s, 'sales', p.earlyAccess.net * 0.5, p.earlyAccess.day); // refunds reverse the sales
         s.company.fans = Math.round(s.company.fans * 0.96);
         pushNews(s, { category: 'studio', headline: `${p.concept.name} abandoned in Early Access`, body: `${fmtUnits(p.earlyAccess.units)} players paid for a game that will never be finished. Refund requests are pouring in.`, tone: 'bad' });
       }
@@ -1276,8 +1276,9 @@ function apply(c: Ctx, a: Action): string | null {
       const r = s.rivals[a.targetId];
       if (!t || !r || !r.alive) return 'Target no longer available';
       if (ownedStudios(s) >= MAX_SUBSIDIARIES) return `Your group already runs ${MAX_SUBSIDIARIES} studios — management can’t absorb another`;
-      if (s.company.cash < t.price) return 'Not enough cash';
-      spend(s, 'acquisitions', t.price);
+      const price = offerPrice(s, t);
+      if (s.company.cash < price) return 'Not enough cash';
+      spend(s, 'acquisitions', price);
       r.ownedByPlayer = true;
       s.subsidiaries[r.id] = {
         id: r.id,
@@ -1296,7 +1297,7 @@ function apply(c: Ctx, a: Action): string | null {
       s.progress.stats.acquisitions += 1;
       // Real companies bring their franchises
       if (!r.procedural) adoptFranchises(s, r.id);
-      const acqNews = pushNews(s, { category: 'studio', headline: `${s.company.name} acquires ${r.name}`, body: `A ${fmtMoney(t.price)} deal: their studio, their people and their games are now part of ${s.company.name}.`, tone: 'good' });
+      const acqNews = pushNews(s, { category: 'studio', headline: `${s.company.name} acquires ${r.name}`, body: `A ${fmtMoney(price)} deal: their studio, their people and their games are now part of ${s.company.name}.`, tone: 'good' });
       c.out.push({ type: 'news', newsId: acqNews.id, major: true });
       addRep(s, 3, 'Acquired a studio');
       return null;
@@ -1304,6 +1305,8 @@ function apply(c: Ctx, a: Action): string | null {
     case 'setSubsidiary': {
       const sub = s.subsidiaries[a.id];
       if (!sub) return 'No such subsidiary';
+      if (a.budget !== 'low' && a.budget !== 'normal' && a.budget !== 'high') return 'Invalid budget';
+      if (a.focusGenre !== undefined && !GENRE_BY_ID[a.focusGenre]) return 'Unknown genre';
       sub.budget = a.budget;
       sub.focusGenre = a.focusGenre;
       return null;
@@ -1592,6 +1595,7 @@ function apply(c: Ctx, a: Action): string | null {
       if (rel.concept.platforms.includes(a.platform)) return 'Already on that platform';
       const pl = platformInfo(s, a.platform);
       if (!pl || !isPlatformAvailable(s, pl)) return 'Platform not available';
+      if (rel.delisted) return 'Delisted — its licences expired';
       if (s.day - rel.day > 365 * 4) return 'Too old to port profitably';
       if (rel.concept.franchiseId && !s.franchises[rel.concept.franchiseId]) return 'You sold this IP';
       if (rel.concept.monetization === 'subscription') return 'Subscription games can’t be ported';
@@ -1651,6 +1655,7 @@ function apply(c: Ctx, a: Action): string | null {
       const mkt = money(MARKETING[a.marketing].cost, s.day);
       const firstMonths = Math.ceil(spec.rdTotal / spec.months) * 3;
       if (s.company.cash < mkt + firstMonths) return `Need ${fmtMoney(mkt + firstMonths)} on hand (launch marketing + 3 months of R&D)`;
+      if (!finite(a.price, a.feeRate) || a.feeRate < 0 || a.feeRate > 0.5) return 'Set a price and a licence fee (0–50%)';
       if (a.price < spec.refPrice * 0.3 || a.price > spec.refPrice * 4) return 'That price is unrealistic';
       spend(s, 'marketing', mkt);
       const n = s.hardware.length + 1;

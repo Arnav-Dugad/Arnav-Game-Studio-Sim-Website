@@ -754,6 +754,8 @@ export interface DealOffer extends PublisherDeal {
 export interface AcquisitionTarget {
   id: Id; // rival id
   price: number;
+  /** What their series were worth when the price was agreed (anything released since is added on top). */
+  ip?: number;
   expiresDay: number;
 }
 

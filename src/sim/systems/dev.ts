@@ -160,6 +160,8 @@ function progressGame(c: Ctx, p: GameProject): void {
     spend(s, 'other_expense', dc);
     p.spent += dc;
   }
+  // the team's pay while they make it is part of what the game cost (paid with the monthly payroll; counted here, as the planner does)
+  p.spent += p.team.reduce((t, id) => t + (s.staff[id]?.salary ?? 0), 0) / 365;
   if (crunch) s.progress.stats.crunchDays += 1;
   docDaily(p);
   if (crunch) s.progress.stats.crunchRecent = (s.progress.stats.crunchRecent ?? 0) + 1;
@@ -612,6 +614,12 @@ export function finishProject(s: GameState, id: string): void {
     if (st && st.assignment.kind === 'project' && st.assignment.id === id) st.assignment = { kind: 'idle' };
   }
   delete s.projects[id];
+  // research you've paid for that nobody is working on: the freed team picks it back up
+  if (s.research.active && !Object.values(s.staff).some((x) => x.assignment.kind === 'research'))
+    for (const sid of p.team) {
+      const st = s.staff[sid];
+      if (st && st.assignment.kind === 'idle') st.assignment = { kind: 'research' };
+    }
 }
 
 export function updateProjectsDaily(c: Ctx): void {

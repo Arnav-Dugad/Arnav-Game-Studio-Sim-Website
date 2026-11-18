@@ -564,7 +564,7 @@ export const HISTORICAL_EVENTS: readonly HistoricalEventDef[] = [
     id: 'ps2_launch',
     date: '2000-03',
     headline: 'PlayStation 2 Launches with a DVD Drive',
-    body: 'Sony’s PlayStation 2 has launched in Japan and sold out. Because it also plays DVD movies, many buyers are using it as a film player as well as a console.',
+    body: 'Sony’s PlayStation 2 has launched in Japan and sold out. Because it also plays DVD movies, many buyers are using it as a film player as well as a console. The worldwide launch, and dev kits for studios like yours, follow in October.',
     category: 'platform',
     effects: [{ kind: 'demand', target: 'console', mul: 1.1, months: 12 }],
   },

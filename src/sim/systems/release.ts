@@ -62,6 +62,7 @@ export const PRAISE: Record<string, string[]> = {
   bugs: ['Rock solid. Not a crash in sight.', 'Polished to a mirror shine.', 'Remarkably stable for a launch build.'],
   trend: ['Lands right in the middle of what players crave.', 'Perfectly in tune with the moment.', 'Right on trend.'],
   fresh: ['Something genuinely new.', 'A breath of fresh air.', 'Bold, original and a little bit strange — in a good way.'],
+  ideas: ['Full of clever ideas.', 'Inventive at every turn.', 'Brims with smart surprises.'],
   balance: ['Design and technology in perfect balance.', 'Feels as good as it looks.'],
   repeat: ['Comfort food done right.'],
   audience: ['Knows exactly who it’s for.', 'Pitched perfectly at its audience.'],
@@ -91,7 +92,8 @@ function partKey(label: string): string {
   if (label.startsWith('Engine')) return 'tech';
   if (label.startsWith('Bugs')) return 'bugs';
   if (label.includes('trend')) return 'trend';
-  if (label.startsWith('Fresh') || label.startsWith('Visionary')) return 'fresh';
+  if (label.startsWith('Fresh')) return 'fresh';
+  if (label.startsWith('Visionary')) return 'ideas'; // inventive, not necessarily new (sequels get it too)
   if (label.includes('(great for') || label.includes('(an odd fit')) return 'focus';
   if (label.startsWith('Repetitive')) return 'repeat';
   if (label.startsWith('Design/tech')) return 'balance';
@@ -119,7 +121,8 @@ function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, g
     // never praise and knock the same thing in one breath
     // …nor call it fresh and then say players have moved on (or that it's more of the same)
     const clash = (k: string) => k === gk || (gk === 'fresh' && (k === 'trend' || k === 'repeat')) || (gk === 'trend' && k === 'fresh');
-    const bw = worsts.filter((w) => w.value < 1).map((w) => partKey(w.label)).filter((k) => !clash(k) && !!CRITIQUE[k]);
+    // only a real weakness gets named (the starred audience can still sit a little under 1)
+    const bw = worsts.filter((w) => w.value < (partKey(w.label) === 'audience' ? 0.9 : 0.95)).map((w) => partKey(w.label)).filter((k) => !clash(k) && !!CRITIQUE[k]);
     // nothing actually weak: a mild verdict rather than an invented flaw
     let bk = bw.length ? bw[idx % bw.length]! : 'mild';
     if (bk === 'effort' && effortGood) bk = 'mild';
@@ -127,7 +130,7 @@ function blurb(rng: Rng, outlet: OutletDef, quality: Breakdown, score: number, g
     const bad = rng.pick(CRITIQUE[bk] ?? CRITIQUE.balance!);
     line = `${good} ${bad}`;
   } else {
-    const k = worst && worst.value < 0.95 ? partKey(worst.label) : effortGood ? 'focus' : 'effort';
+    const k = worst && worst.value < (partKey(worst.label) === 'audience' ? 0.9 : 0.95) ? partKey(worst.label) : effortGood ? 'focus' : 'effort';
     line = rng.pick(CRITIQUE[k] ?? CRITIQUE.effort!);
   }
   switch (outlet.voice) {

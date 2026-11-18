@@ -13,6 +13,8 @@ export interface AchievementDef {
   icon: string;
   check: (s: GameState) => boolean;
   secret?: boolean;
+  /** Can this run still earn it at all (some depend on when you started)? */
+  possible?: (s: GameState) => boolean;
 }
 
 const rels = (s: GameState) => s.releaseOrder.map((id) => s.releases[id]!);
@@ -43,7 +45,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'console_10m', name: 'In Every Living Room', desc: 'Sell 10 million units of your own hardware.', icon: 'handheld', check: (s) => (s.hardware ?? []).some((h) => h.unitsSold >= 10_000_000) },
   { id: 'franchise', name: 'Franchise Builder', desc: 'Release 3 games in one franchise.', icon: 'chain', check: (s) => Object.values(s.franchises).some((f) => f.entries.length >= 3) },
   { id: 'franchise_6', name: 'Long-Running Saga', desc: 'Release 6 games in one franchise.', icon: 'scroll', check: (s) => Object.values(s.franchises).some((f) => f.entries.length >= 6) },
-  { id: 'survive_crash', name: 'Survive the Crash', desc: 'Still be in business at the start of 1986.', icon: 'shield', check: (s) => s.settings.startYear <= 1983 && s.day >= toDay(1986, 1, 1) },
+  { id: 'survive_crash', name: 'Survive the Crash', desc: 'Still be in business at the start of 1986.', icon: 'shield', possible: (s) => s.settings.startYear <= 1983, check: (s) => s.settings.startYear <= 1983 && s.day >= toDay(1986, 1, 1) },
   { id: 'cash_1m', name: 'Seven Figures', desc: 'Have $1M in the bank.', icon: 'coin', check: (s) => s.company.cash >= 1_000_000 },
   { id: 'cash_100m', name: 'War Chest', desc: 'Have $100M in the bank.', icon: 'vault', check: (s) => s.company.cash >= 100_000_000 },
   { id: 'cash_1b', name: 'Billionaire Studio', desc: 'Have $1B in the bank.', icon: 'gem', check: (s) => s.company.cash >= 1_000_000_000 },
@@ -92,8 +94,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'legend', name: 'Legendary Hire', desc: 'Hire an industry legend.', icon: 'sparkle', check: (s) => Object.values(s.staff).some((x) => !!x.personId) },
   { id: 'contracts_10', name: 'For Hire', desc: 'Complete 10 contracts.', icon: 'briefcase', check: (s) => s.progress.stats.contractsDone >= 10 },
   { id: 'rep_80', name: 'Household Name', desc: 'Reach 80 reputation.', icon: 'heart', check: (s) => s.company.reputation >= 80 },
-  { id: 'year_2000', name: 'Y2K Survivor', desc: 'Reach the year 2000.', icon: 'clock', check: (s) => s.settings.startYear < 2000 && fromDay(s.day).year >= 2000 },
-  { id: 'year_2026', name: 'Present Day', desc: 'Reach 2026.', icon: 'flag', check: (s) => s.settings.startYear < 2026 && fromDay(s.day).year >= 2026 },
+  { id: 'year_2000', name: 'Y2K Survivor', desc: 'Reach the year 2000.', icon: 'clock', possible: (s) => s.settings.startYear < 2000, check: (s) => s.settings.startYear < 2000 && fromDay(s.day).year >= 2000 },
+  { id: 'year_2026', name: 'Present Day', desc: 'Reach 2026.', icon: 'flag', possible: (s) => s.settings.startYear < 2026, check: (s) => s.settings.startYear < 2026 && fromDay(s.day).year >= 2026 },
   { id: 'endless_2050', name: 'Future Proof', desc: 'Reach 2050 in endless mode.', icon: 'satellite', check: (s) => fromDay(s.day).year >= 2050 },
   { id: 'revenue_100m', name: 'Nine Figures', desc: 'Earn $100M in lifetime revenue.', icon: 'money', check: (s) => s.progress.stats.totalRevenue >= 100_000_000 },
   { id: 'genre_master', name: 'Jack of All Genres', desc: 'Release games in 10 different genres.', icon: 'palette', check: (s) => new Set(rels(s).map((r) => r.concept.genre)).size >= 10 },

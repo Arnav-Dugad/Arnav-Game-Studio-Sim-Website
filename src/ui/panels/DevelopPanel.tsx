@@ -1148,6 +1148,10 @@ function NewGame({ onDone }: { onDone: () => void }) {
                 </option>
               ))}
             </select>
+            {/* the same rule the studio applies when you press Start */}
+            {!liveDealId && !selfPub && yr >= 1983 && s.releaseOrder.length >= 1 && !platforms.every((p) => platformInfo(s, p)?.kind === 'computer') && (
+              <p className="mt-1 text-[11px] text-warn">Consoles need a publisher until you research Self-Publishing — pick a deal, or computers only.</p>
+            )}
           </Field>
         </div>
         {deal && (
@@ -1253,7 +1257,9 @@ function NewGame({ onDone }: { onDone: () => void }) {
             <Icon name="warning" size={14} /> This team can only put in about {Math.round(effortEst.ratio * 100)}% of the work {aOrAn(size === 'aaa' ? 'AAA' : SIZE_LABEL[size].toLowerCase())} game needs — that will hold the score back.{' '}
             {size === 'small'
               ? s.releaseOrder.length === 0
-                ? 'That’s normal for a first game made alone; hiring a helper (Staff → Hire) makes the next one much stronger.'
+                ? liveTeam.length === 1
+                  ? 'That’s normal for a first game made alone; hiring a helper (Staff → Hire) makes the next one much stronger.'
+                  : 'That’s normal for a first game; more (or more experienced) people make the next one much stronger.'
                 : 'Add people to the team (hire if everyone is busy), or pick stronger ones.'
               : 'Pick a smaller size, add stronger people, or hire.'}
           </p>

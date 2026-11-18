@@ -46,7 +46,7 @@ export function ambitionText(st: Staff, a: Ambition): string {
 export function ambitionGoal(a: Ambition): string {
   switch (a.kind) {
     case 'genre':
-      return `ship a ${GENRE_BY_ID[a.genre!]?.name ?? 'new'} game`;
+      return `ship ${aOrAn(GENRE_BY_ID[a.genre!]?.name ?? 'new')} game`;
     case 'hit':
       return 'ship a game that scores 80+';
     case 'first':
