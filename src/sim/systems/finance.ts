@@ -314,7 +314,7 @@ export function quarterlyEarnings(c: Ctx): void {
   pushNews(s, {
     category: 'studio',
     headline: beat ? `${s.company.name} beats earnings expectations` : `${s.company.name} misses earnings expectations`,
-    body: `Quarterly profit ${Math.round(profit / 1e3)}k vs ${Math.round(st.expectation / 1e3)}k expected. Board mood ${Math.round(st.boardMood)}%.`,
+    body: `Quarterly profit ${fmtMoney(profit)} vs ${fmtMoney(st.expectation)} expected. Board mood ${Math.round(st.boardMood)}%.`,
     tone: beat ? 'good' : 'bad',
   });
   // expectations track recent performance (they can fall after a bad year)

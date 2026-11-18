@@ -149,7 +149,7 @@ export default function OfficePanel() {
         <p className="mt-1.5 text-[11px] text-ink3">Purely cosmetic — make the place yours.</p>
       </Section>
 
-      <Section title="Catalogue">
+      <Section title="Catalogue" id="office-catalogue">
         <Segmented ariaLabel="Item category" value={cat} onChange={setCat} className="mb-2" options={CATS.map((c) => ({ value: c.id, label: c.label }))} />
         <div className="grid gap-1.5 sm:grid-cols-2">
           {ITEMS.filter((i) => cat === 'all' || i.category === cat).map((it) => {

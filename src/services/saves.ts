@@ -480,8 +480,9 @@ export class AutoSaver {
     }
     this.syncing = (async () => {
       try {
-        // a stalled connection never leaves the sync hanging: after a while it counts as offline (and retries later)
-        const r = await Promise.race([syncSlot(this.uid, this.slotId), new Promise<'offline'>((res) => setTimeout(() => res('offline'), 20_000))]);
+        // a stalled connection shows as offline after a while; the sync itself is never abandoned half-written
+        const slow = setTimeout(() => this.emit({ state: 'offline' }), 20_000); // say so, but let the write finish
+        const r = await syncSlot(this.uid, this.slotId).finally(() => clearTimeout(slow));
         if (r === 'synced') {
           this.lastCloud = Date.now();
           this.emit({ state: 'saved', lastCloud: this.lastCloud });

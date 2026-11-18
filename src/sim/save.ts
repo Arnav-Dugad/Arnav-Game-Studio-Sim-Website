@@ -52,7 +52,8 @@ export function migrate(raw: unknown): GameState {
   const s = r as unknown as GameState;
   if (!Array.isArray(s.rng) || s.rng.length !== 4 || typeof s.day !== 'number' || !s.company) throw new SaveError('Save data is corrupted');
   // the real-release schedule is found by date (so a change to the release data never skips one on an old save)
-  if (s.market) s.market.scheduleIndex = scheduleIndexFor(s.day);
+  // (a game that hasn't ticked yet starts at 0 on purpose: last month's releases still come out on its first day)
+  if (s.market && s.market.scheduleIndex > 0) s.market.scheduleIndex = scheduleIndexFor(s.day);
   return s;
 }
 

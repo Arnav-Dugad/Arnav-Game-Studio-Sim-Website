@@ -57,7 +57,7 @@ export function PanelHost() {
   return (
     <aside
       aria-label={TITLES[panel]}
-      className="glass absolute inset-x-2 bottom-[calc(4rem+var(--tut-strip,0rem))] top-auto z-30 flex max-h-[62vh] flex-col rounded-2xl animate-fade-up sm:inset-x-auto sm:bottom-3 sm:left-[4.75rem] sm:top-[7.25rem] xl:top-[4.5rem] sm:max-h-none sm:w-[min(560px,calc(100vw-6rem))]"
+      className="glass absolute inset-x-2 bottom-[calc(4rem+var(--tut-strip,0rem))] top-auto z-30 flex max-h-[62vh] flex-col rounded-2xl animate-fade-up sm:inset-x-auto sm:bottom-3 sm:left-[4.75rem] sm:top-[7.25rem] xl:top-[4.5rem] sm:max-h-none sm:w-[min(560px,calc(100vw-6rem))] [@media(max-height:560px)]:bottom-[4.5rem] [@media(max-height:560px)]:left-3"
     >
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <h2 className="font-display text-lg font-semibold">{TITLES[panel]}</h2>

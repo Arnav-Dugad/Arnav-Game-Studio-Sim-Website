@@ -8,7 +8,7 @@ export function Toasts() {
   const toasts = useGame((g) => g.toasts);
   const dismiss = useGame((g) => g.dismissToast);
   return (
-    <div className="pointer-events-none absolute bottom-[calc(4.5rem+var(--tut-strip,0rem))] right-3 z-40 flex w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-2 sm:bottom-auto sm:top-20" aria-live="polite" role="status">
+    <div className="pointer-events-none absolute right-3 top-44 z-40 flex w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-2 sm:top-[7.5rem] xl:top-20" aria-live="polite" role="status">
       {toasts.map((t) => (
         <button
           type="button"

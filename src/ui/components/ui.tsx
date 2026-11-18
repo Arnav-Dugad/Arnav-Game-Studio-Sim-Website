@@ -264,7 +264,7 @@ export function Modal({
         aria-modal="true"
         aria-label={labelledBy ? undefined : title}
         aria-labelledby={labelledBy}
-        className={cx('glass relative max-h-[90vh] w-full overflow-y-auto scroll-pb-20 rounded-2xl p-5 scroll-thin animate-pop', wide ? 'max-w-3xl' : 'max-w-lg')}
+        className={cx('glass relative max-h-[90vh] w-full overflow-y-auto scroll-pb-20 rounded-2xl p-5 scroll-thin animate-pop', dismissable && onClose && '[&_h2]:pr-8', wide ? 'max-w-3xl' : 'max-w-lg')}
       >
         {dismissable && onClose && (
           // stays in the corner however far a long dialog scrolls (and takes no room from the content)
@@ -334,9 +334,9 @@ export function Empty({ icon, title, children }: { icon: IconName; title: string
   );
 }
 
-export function Section({ title, right, children, className }: { title: string; right?: ReactNode; children: ReactNode; className?: string }) {
+export function Section({ title, right, children, className, id }: { title: string; right?: ReactNode; children: ReactNode; className?: string; id?: string }) {
   return (
-    <section className={cx('mb-5', className)}>
+    <section id={id} className={cx('mb-5 scroll-mt-2', className)}>
       <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-ink3">{title}</h3>
         {right}

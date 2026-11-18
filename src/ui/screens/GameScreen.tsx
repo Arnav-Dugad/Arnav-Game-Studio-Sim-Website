@@ -111,7 +111,7 @@ export function GameScreen({ slotId }: { slotId: SlotId }) {
     if (next === cinemaRef.current) return;
     cinemaRef.current = next;
     r.setCinematic(next);
-    if (next) useGame.getState().openPanel(null);
+    if (next) useGame.setState({ panel: null, build: null }); // look-only: nothing open, nothing being built
     setCinema(next);
   }, []);
 

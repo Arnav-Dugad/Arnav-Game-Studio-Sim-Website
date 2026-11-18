@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { OFFICE_TIERS } from '@/data/facilities';
 import { weatherGlyph } from '@/render/weather';
 import { formatDate, fromDay } from '@/sim/calendar';
@@ -40,6 +40,17 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto, onCinema }: {
   const pushModal = useGame((g) => g.pushModal);
   const openPanel = useGame((g) => g.openPanel);
   const [menu, setMenu] = useState(false);
+  // Esc closes the menu first (before the game's own Esc closes a panel or leaves build mode)
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopImmediatePropagation();
+      setMenu(false);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [menu]);
   const burn = monthlyBurn(s);
   const runway = s.company.cash > 0 ? s.company.cash / Math.max(1, burn - trailingRevenue(s) / 12) : 0;
   const stock = s.finance.stock;
@@ -111,7 +122,7 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto, onCinema }: {
           <div className="relative">
             <IconButton icon="menu" label="Menu" onClick={() => setMenu((m) => !m)} aria-expanded={menu} />
             {menu && (
-              <div className="glass absolute right-0 top-11 z-50 w-48 rounded-xl p-1 animate-pop" role="menu" onMouseLeave={() => setMenu(false)}>
+              <div className="absolute right-0 top-11 z-50 max-h-[calc(100dvh-4.5rem)] w-48 overflow-y-auto rounded-xl border border-line bg-panel p-1 shadow-xl animate-pop" role="menu" onMouseLeave={() => setMenu(false)}>
                 {[
                   { icon: 'save' as const, label: 'Save now', run: onSave },
                   ...(onPhoto ? [{ icon: 'camera' as const, label: 'Office photo (P)', run: onPhoto }] : []),

@@ -24,7 +24,7 @@ export function BuildBar() {
   const perFloor = Array.from({ length: t.floors }, () => 0);
   for (const st of Object.values(s.staff)) if (st.activity !== 'sick' && st.activity !== 'vacation') perFloor[st.deskId ? (deskFloor.get(st.deskId) ?? 0) : 0]! += 1;
   return (
-    <div className={`pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center px-2 sm:bottom-4 ${panelOpen ? `lg:pl-[656px]${build ? '' : ' sm:max-lg:hidden'}` : ''}`}>
+    <div className={`pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center px-2 sm:bottom-4 [@media(max-height:560px)]:bottom-[4.5rem] ${panelOpen ? `lg:pl-[656px]${build ? '' : ' sm:max-lg:hidden'}` : ''}`}>
       <div className="glass pointer-events-auto flex max-w-full flex-wrap items-center gap-2 rounded-2xl px-3 py-2">
         {floors && (
           <Segmented
@@ -41,7 +41,7 @@ export function BuildBar() {
                 Placing <b>{ITEM_BY_ID[build.item].name}</b> · {fmtMoney(money(ITEM_BY_ID[build.item].cost, s.day))}
               </span>
             )}
-            {build.moving && <span className="text-sm">Click a tile to move it</span>}
+            {build.moving && <span className="text-sm">Tap or click where it should go</span>}
             {build.item && <span className="hidden text-xs text-ink3 md:inline">Drag to place a row · arrows + Enter by keyboard</span>}
             {build.moving && <span className="hidden text-xs text-ink3 lg:inline">Arrows + Enter to place by keyboard</span>}
             {sel && !build.moving && (
@@ -97,8 +97,21 @@ export function BuildBar() {
               </Button>
             )}
             {!panelOpen && (
-              <Button size="sm" icon="build" className="sm:hidden" onClick={() => useGame.setState({ panel: 'office' })}>
+              <Button
+                size="sm"
+                icon="build"
+                className="sm:hidden"
+                onClick={() => {
+                  useGame.setState({ panel: 'office' });
+                  setTimeout(() => document.getElementById('office-catalogue')?.scrollIntoView({ block: 'start' }), 50); // straight to the furniture
+                }}
+              >
                 Furniture
+              </Button>
+            )}
+            {(build.item || build.moving) && (
+              <Button size="sm" variant="ghost" onClick={() => g.setBuild({ rot: build.rot })}>
+                Cancel
               </Button>
             )}
             <Button size="sm" variant="ghost" onClick={() => g.setBuild(null)}>
