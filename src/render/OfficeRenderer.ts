@@ -239,7 +239,9 @@ export class OfficeRenderer {
     const t = tierDef(s.office.tier);
     const W = t.w * T;
     const H = (t.h + 1.6) * T;
-    const sw = this.el.clientWidth - this.inset;
+    // narrow screens never keep a side-panel inset (panels open as bottom sheets there)
+    if (this.el.clientWidth <= 900) this.inset = this.insetTarget = 0;
+    const sw = Math.max(160, this.el.clientWidth - this.inset);
     const sh = this.el.clientHeight;
     const z = Math.max(0.35, Math.min(2.2, Math.min(sw / (W + 80), sh / (H + 80))));
     this.zoom = this.targetZoom = z;

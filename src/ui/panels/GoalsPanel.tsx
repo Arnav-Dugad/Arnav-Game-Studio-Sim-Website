@@ -1,5 +1,5 @@
 import { ACHIEVEMENTS, MILESTONES, nextMilestone, runScore } from '@/sim/systems/achievements';
-import { objectiveProgress, objectiveReward, objectiveText } from '@/sim/systems/objectives';
+import { objectiveProgress, objectiveReward, objectiveText, objectiveValue } from '@/sim/systems/objectives';
 import { SCENARIO_BY_ID, goalProgress, yearsLeft } from '@/sim/systems/scenarios';
 import { formatDate } from '@/sim/calendar';
 import { fmtMoney, fmtUnits } from '@/sim/util';
@@ -66,7 +66,7 @@ export default function GoalsPanel() {
                   <div className="flex items-center gap-1.5">
                     <Icon name={done ? 'check' : 'target'} size={13} className={done ? 'text-good' : 'text-ink3'} />
                     <span className={cx('flex-1', done && 'text-good line-through decoration-good/50')}>{objectiveText(o)}</span>
-                    <span className="num text-ink3">{done ? 'done' : s.day > o.until ? 'missed' : `${Math.round(p * 100)}%`}</span>
+                    <span className="num text-ink3">{done ? 'done' : s.day > o.until ? 'missed' : o.kind === 'morale' ? `now ${Math.round(objectiveValue(s, 'morale'))}%` : `${Math.round(p * 100)}% there`}</span>
                   </div>
                   {!done && (
                     <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-bg2">

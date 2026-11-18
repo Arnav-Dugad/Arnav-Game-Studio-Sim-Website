@@ -429,7 +429,7 @@ function NewStudioModal({ onClose, onCreate }: { onClose: () => void; onCreate: 
           />
         </Field>
         )}
-        <Field label="Mode" hint={o.daily ? `Today’s challenge (${dailyLabel(o.daily)}): ${SCENARIO_BY_ID[o.scenario]?.name} — ${SCENARIO_BY_ID[o.scenario]?.tagline} Everyone starts from the same world today (standard difficulty, an all-rounder founder), so compare runs with a friend.` : o.scenario ? SCENARIO_BY_ID[o.scenario]?.blurb : 'The full sandbox story: play as long as you like.'}>
+        <Field label="Mode" hint={o.daily ? `Today’s challenge (${dailyLabel(o.daily)}): ${SCENARIO_BY_ID[o.scenario]?.name} — ${SCENARIO_BY_ID[o.scenario]?.tagline} Everyone starts from the same world today (standard difficulty, an all-rounder founder), so compare runs with a friend.` : o.scenario ? SCENARIO_BY_ID[o.scenario]?.blurb : 'The full story from your start year: play as long as you like.'}>
           <Segmented
             ariaLabel="Mode"
             value={o.daily ? 'daily' : o.scenario ? 'scenario' : 'free'}

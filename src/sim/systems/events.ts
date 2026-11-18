@@ -1419,7 +1419,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'playtest_surprise',
     art: 'student',
-    cooldown: 220,
+    cooldown: 300,
     weight: (s) => (activeGames(s).some((p) => p.phase >= 1 && p.phase <= 2) ? 0.35 : 0),
     make: ({ s, rng }) => {
       const pool = activeGames(s).filter((x) => x.phase >= 1 && x.phase <= 2);
@@ -1522,7 +1522,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'team_retreat',
     art: 'mountain',
-    cooldown: 300,
+    cooldown: 540,
     weight: (s) => (staffList(s).length >= 4 ? 0.5 : 0),
     make: ({ s }) => {
       const cost = money(400, s.day) * staffList(s).length;
@@ -1693,7 +1693,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'intern',
     art: 'student',
-    cooldown: 240,
+    cooldown: 365,
     weight: (s) => (freeDesks(s) > 0 && yr(s) >= 1984 ? 0.5 : 0),
     make: ({ s, rng }) => {
       const cand = generateCandidate(s, rng, { quality: -20 });
@@ -1722,7 +1722,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'fan_mail',
     art: 'letters',
-    cooldown: 200,
+    cooldown: 365,
     weight: (s) => (s.releaseOrder.some((id) => s.releases[id]!.score >= 80) ? 0.5 : 0),
     make: ({ s }) => ({
       title: 'A sack of fan mail',
@@ -1855,7 +1855,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'game_jam',
     art: 'lightbulb',
-    cooldown: 240,
+    cooldown: 540,
     weight: (s) => (staffList(s).length >= 2 ? 0.45 : 0),
     make: () => ({
       title: 'Weekend game jam?',
@@ -2346,7 +2346,7 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'club_demo_night',
     art: 'crowd',
-    cooldown: 400,
+    cooldown: 600,
     weight: (s) => (yr(s) < 1995 && s.company.reputation < 25 && s.releaseOrder.length > 0 ? 0.6 : 0),
     make: ({ s }) => {
       const last = s.releases[s.releaseOrder[s.releaseOrder.length - 1]!];
@@ -2793,6 +2793,7 @@ export function fireEvent(c: Ctx, defId: string): boolean {
   const inst: EventInstance = { uid: s.nextEventUid, defId: def.id, day: s.day, title: made.title, body: made.body, options: made.options, ctx: made.ctx, expiresDay: s.day + 21, art: def.art };
   s.pendingEvents.push(inst);
   s.eventCooldowns[def.id] = s.day + def.cooldown;
+  s.lastEventDay = s.day;
   c.out.push({ type: 'event', uid: inst.uid });
   return true;
 }
@@ -2802,6 +2803,9 @@ export function rollRandomEvent(c: Ctx): void {
   if (s.pendingEvents.length >= 2) return;
   // New studios get a quiet first few months.
   if (s.day - toDay(s.settings.startYear, 1, 1) < 150) return;
+  // one thing at a time: never on top of a phase gate, and at least two weeks after the last popup
+  if (s.lastEventDay !== undefined && s.day - s.lastEventDay < 14) return;
+  if (Object.values(s.projects).some((p) => p.kind === 'game' && p.awaitingGate)) return;
   if (!rng.chance(0.16)) return;
   const eligible = EVENT_DEFS.filter((d) => (s.eventCooldowns[d.id] ?? -1) <= s.day && d.weight(s) > 0);
   if (!eligible.length) return;
@@ -2822,6 +2826,7 @@ export function rollRandomEvent(c: Ctx): void {
   };
   s.pendingEvents.push(inst);
   s.eventCooldowns[def.id] = s.day + def.cooldown;
+  s.lastEventDay = s.day;
   c.out.push({ type: 'event', uid: inst.uid });
 }
 

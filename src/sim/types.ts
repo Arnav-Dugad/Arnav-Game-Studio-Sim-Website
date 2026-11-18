@@ -1076,6 +1076,8 @@ export interface GameState {
   news: NewsItem[];
   pendingEvents: EventInstance[];
   eventCooldowns: Record<string, number>;
+  /** When the last event popped up (random rolls keep their distance). */
+  lastEventDay?: number;
   progress: {
     achievements: Record<string, number>;
     milestones: string[];

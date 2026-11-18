@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { weatherGlyph } from '@/render/weather';
 import { formatDate, fromDay } from '@/sim/calendar';
 import { BD } from '@/sim/breakdown';
-import { fmtMoney } from '@/sim/util';
+import { fmtMoney, fmtUnits } from '@/sim/util';
 import { monthlyBurn, trailingRevenue } from '@/sim/systems/finance';
 import type { SaveStatus } from '@/services/saves';
 import { CompanyBadge } from '../art/CompanyBadge';
@@ -71,15 +71,16 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto, onCinema }: {
           </div>
         </Tip>
         <Tip content={<RepWhy />} side="bottom">
-          <div className="flex items-center gap-1.5 px-3 py-2">
+          <div className="flex items-center gap-1.5 px-2 py-2 sm:px-3">
             <Icon name="reputation" size={16} className="text-accent" />
             <span className="num text-sm font-semibold">{Math.round(s.company.reputation)}</span>
           </div>
         </Tip>
         <Tip content={<span>Fans boost launch sales and franchise sequels.</span>} side="bottom">
-          <div className="hidden items-center gap-1.5 px-3 py-2 sm:flex">
+          <div className="flex items-center gap-1.5 px-2 py-2 sm:px-3">
             <Icon name="fans" size={16} className="text-art" />
-            <span className="num text-sm font-semibold">{Math.round(s.company.fans).toLocaleString()}</span>
+            <span className="num text-sm font-semibold sm:hidden">{fmtUnits(s.company.fans)}</span>
+            <span className="num hidden text-sm font-semibold sm:inline">{Math.round(s.company.fans).toLocaleString()}</span>
           </div>
         </Tip>
         {stock && (
@@ -95,6 +96,9 @@ export function HUD({ saveStatus, onSave, onExit, onZoom, onPhoto, onCinema }: {
           <IconButton icon="minus" label="Zoom out (-)" onClick={() => onZoom(1 / 1.2)} />
           <IconButton icon="target" label="Fit office (0)" onClick={() => onZoom(0)} />
           <IconButton icon="plus" label="Zoom in (+)" onClick={() => onZoom(1.2)} />
+        </div>
+        <div className="glass pointer-events-auto flex items-center rounded-2xl p-1 md:hidden">
+          <IconButton icon="target" label="Fit office (0)" onClick={() => onZoom(0)} />
         </div>
         <div className="glass pointer-events-auto flex items-center gap-1 rounded-2xl p-1">
           <SaveBadge st={saveStatus} onSave={onSave} />

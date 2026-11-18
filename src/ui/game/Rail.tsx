@@ -32,7 +32,7 @@ export function Rail() {
   return (
     <nav
       aria-label="Game sections"
-      className="glass absolute bottom-2 left-1/2 z-30 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 gap-0.5 overflow-x-auto rounded-2xl p-1 scroll-thin sm:bottom-auto sm:left-3 sm:top-1/2 sm:max-w-none sm:-translate-x-0 sm:-translate-y-1/2 sm:flex-col sm:overflow-visible"
+      className="glass absolute bottom-2 left-1/2 z-[35] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 gap-0.5 overflow-x-auto rounded-2xl p-1 scroll-thin sm:bottom-auto sm:left-3 sm:top-1/2 sm:max-w-none sm:-translate-x-0 sm:-translate-y-1/2 sm:flex-col sm:overflow-visible max-sm:[mask-image:linear-gradient(to_right,black_88%,transparent)]"
     >
       {ITEMS.map((it) => (
         <button

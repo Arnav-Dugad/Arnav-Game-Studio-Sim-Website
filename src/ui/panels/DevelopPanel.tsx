@@ -1059,7 +1059,7 @@ function NewGame({ onDone }: { onDone: () => void }) {
           {forecast && (
             <Tip content={<BreakdownList bd={forecast.why} title="Forecast at a 72 review score" format={(v) => v.toFixed(3)} />}>
               <div className="w-full cursor-help rounded-xl bg-bg2/70 p-2 text-left">
-                <div className="text-ink3">Forecast @72</div>
+                <div className="text-ink3">Sales if reviews ≈ 72</div>
                 <div className="num font-semibold">{fmtUnits(forecast.units)} units</div>
               </div>
             </Tip>

@@ -85,16 +85,17 @@ export function fmtMoney(n: number): string {
   if (Math.abs(n) < 0.5) return '$0';
   const a = Math.abs(n);
   const sign = n < 0 ? '-' : '';
-  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(a >= 1e10 ? 1 : 2)}B`;
-  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(a >= 1e7 ? 1 : 2)}M`;
-  if (a >= 1e4) return `${sign}$${Math.round(a / 1e3)}k`;
+  // thresholds sit just below each unit so rounding never shows “$1000k” or “$1000.0M”
+  if (a >= 999_950_000) return `${sign}$${(a / 1e9).toFixed(a >= 9_995_000_000 ? 1 : 2)}B`;
+  if (a >= 999_500) return `${sign}$${(a / 1e6).toFixed(a >= 9_995_000 ? 1 : 2)}M`;
+  if (a >= 9_950) return `${sign}$${Math.round(a / 1e3)}k`;
   if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(1)}k`;
   return `${sign}$${Math.round(a)}`;
 }
 
 export function fmtUnits(n: number): string {
-  if (n >= 1e6) return `${(n / 1e6).toFixed(n >= 1e7 ? 1 : 2)}M`;
-  if (n >= 1e3) return `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}k`;
+  if (n >= 999_500) return `${(n / 1e6).toFixed(n >= 9_995_000 ? 1 : 2)}M`;
+  if (n >= 999.5) return `${(n / 1e3).toFixed(n >= 9_950 ? 0 : 1)}k`;
   return `${Math.round(n)}`;
 }
 
